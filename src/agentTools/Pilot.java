@@ -1,42 +1,73 @@
 package agentTools;
 
+import java.awt.AWTException;
 import java.awt.Rectangle;
+import java.awt.Robot;
+import java.awt.Toolkit;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.util.EnumSet;
+import java.util.Arrays;
 import java.util.Set;
 
-import agentTools.Desk.Button;
-import agentTools.Desk.Key;
+import utils.Bug;
 
 /// Drives the desk the way a person does: the pointer glides, buttons and keys are held and released, the screen is looked at.
-public final class Pilot implements AutoCloseable{
+/// The screen must be awake: a blanked screen captures as black and no synthetic input wakes it, so whoever uses a Pilot wakes the screen first by other means and keeps it from blanking.
+public final class Pilot{
+  public enum Button{
+    left(InputEvent.BUTTON1_DOWN_MASK), middle(InputEvent.BUTTON2_DOWN_MASK), right(InputEvent.BUTTON3_DOWN_MASK);
+    final int mask;
+    Button(int mask){ this.mask= mask; }
+  }
+  public enum Key{
+    a(KeyEvent.VK_A), d(KeyEvent.VK_D), m(KeyEvent.VK_M), control(KeyEvent.VK_CONTROL), alt(KeyEvent.VK_ALT), meta(KeyEvent.VK_WINDOWS), f4(KeyEvent.VK_F4);
+    final int code;
+    Key(int code){ this.code= code; }
+  }
   public static final Set<Button> none= Set.of();
   public static final Set<Button> left= Set.of(Button.left);
-  private final Desk desk= Desk.open();
-  private final EnumSet<Button> down= EnumSet.noneOf(Button.class);
+  private final Robot robot= robot();
+  private Set<Button> down= none;
+  private static Robot robot(){
+    try{ return new Robot(); }
+    catch(AWTException e){ throw Bug.of(e); }
+  }
   /// Puts the pointer at (x0,y0) holding exactly the buttons in held, glides it to (x1,y1) at about a pixel a millisecond, then holds exactly the buttons in then.
   public void glide(int x0, int y0, Set<Button> held, int x1, int y1, Set<Button> then){
-    desk.move(x0,y0);
+    robot.mouseMove(x0,y0);
     hold(held);
     int n= Math.max(Math.abs(x1-x0),Math.abs(y1-y0))/4+1;
-    for (int i= 1; i<=n; i++){ desk.move(x0+(x1-x0)*i/n,y0+(y1-y0)*i/n); pause(4); }
+    for (int i= 1; i<=n; i++){ robot.mouseMove(x0+(x1-x0)*i/n,y0+(y1-y0)*i/n); pause(4); }
     hold(then);
   }
   private void hold(Set<Button> want){
-    for (var b: Button.values()){ if (down.contains(b)!=want.contains(b)){ desk.button(b,want.contains(b)); } }
-    down.clear();
-    down.addAll(want);
+    for (var b: Button.values()){ if (down.contains(b)!=want.contains(b)){ button(b,want.contains(b)); } }
+    down= want;
     pause(200);
   }
+  private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else { robot.mouseRelease(b.mask); } }
   public void click(int x, int y){ glide(x,y,none,x,y,left); glide(x,y,left,x,y,none); }
   public void drag(int x0, int y0, int x1, int y1){ glide(x0,y0,none,x0,y0,left); glide(x0,y0,left,x1,y1,none); }
   public void chord(Key... keys){
-    for (var k: keys){ desk.key(k,true); }
-    for (int i= keys.length-1; i>=0; i--){ desk.key(keys[i],false); }
+    for (var k: keys){ robot.keyPress(k.code); }
+    for (int i= keys.length-1; i>=0; i--){ robot.keyRelease(keys[i].code); }
     pause(200);
   }
-  public BufferedImage shot(){ return desk.shot(); }
-  @Override public void close(){ desk.close(); }
+  /// Minimizes every window through the desktop's own chord: Win+M on windows, Ctrl+Alt+D (GNOME show desktop, a toggle) elsewhere.
+  public void showDesktop(){
+    if (System.getProperty("os.name").startsWith("Windows")){ chord(Key.meta,Key.m); } else { chord(Key.control,Key.alt,Key.d); }
+    pause(800);
+  }
+  public BufferedImage shot(){
+    var img= robot.createScreenCapture(new Rectangle(Toolkit.getDefaultToolkit().getScreenSize()));
+    assert !blank(img);
+    return img;
+  }
+  private static boolean blank(BufferedImage img){
+    var px= img.getRGB(0,0,img.getWidth(),img.getHeight(),null,0,img.getWidth());
+    return Arrays.stream(px).allMatch(p->(p&0xffffff)==0);
+  }
   public static void pause(int millis){
     try{ Thread.sleep(millis); }
     catch(InterruptedException e){ throw new RuntimeException(e); }
