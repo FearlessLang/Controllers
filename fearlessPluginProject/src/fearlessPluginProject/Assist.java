@@ -29,8 +29,8 @@ import suggest.Resolver.Row;
 /// a dot, and on ctrl+space, the methods of the type of the expression before the cursor as the
 /// last compile describes them (suggest.Resolver), each with its documentation from the text
 /// rendering next to the api json. The edited file, src/_pkg/name.fear of a mirrored project,
-/// names the project and the package (a file of no mirrored project gets nothing); the compiled
-/// information is the api json of every package
+/// names the project and the package (a file of no mirrored project, or outside a package
+/// folder, gets nothing); the compiled information is the api json of every package
 /// of the project and of the standard library, read again when its file changes; the aliases are
 /// the use directives of the package head file, taken from the editor when that is the file
 /// being edited. The generic editor computes proposals off the UI thread, so the file comes from
@@ -42,7 +42,7 @@ public final class Assist implements IContentAssistProcessorExtension{
     var link= ManagerLink.find().orElseThrow();
     var file= ResourcesPlugin.getWorkspace().getRoot().getFile(FileBuffers.getTextFileBufferManager().getTextFileBuffer(viewer.getDocument()).getLocation());
     var folder= link.projects().get(file.getProject().getName());
-    if (folder == null){ return new ICompletionProposal[0]; }
+    if (folder == null || file.getProjectRelativePath().segmentCount() < 3){ return new ICompletionProposal[0]; }
     var pkgDir= file.getProjectRelativePath().segment(1);
     var out= folder.resolve(".fearless_out");
     var text= viewer.getDocument().get();
