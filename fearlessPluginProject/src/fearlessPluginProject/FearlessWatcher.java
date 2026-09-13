@@ -21,7 +21,10 @@ import fearlessPluginProject.ManagerLink.State;
 /// that ends once the manager reports no main running (a run over within one period
 /// still gets its Process, ended in the same tick).
 /// A mirrored project lives in the workspace's own folder and reaches the real project
-/// folder only through a linked folder, so Eclipse never writes into that folder.
+/// folder only through a linked folder, so Eclipse never writes into that folder. The
+/// linked folder is refreshed every tick: the workspace learns of edits made on disk by
+/// anything but Eclipse only through a refresh, and an edited source then gets its
+/// automatic build.
 /// Mirrored projects carry the Fearless nature: only those are ever deleted (from the
 /// workspace, never from disk) once the manager forgets them.
 public final class FearlessWatcher extends Job{
@@ -89,6 +92,7 @@ public final class FearlessWatcher extends Job{
   private void reflect(ManagerLink link, IProject project, java.nio.file.Path folder, IProgressMonitor monitor) throws CoreException{
     var alias= project.getName();
     var name= consolePrefix+alias;
+    project.getFolder(srcName).refreshLocal(IResource.DEPTH_INFINITE, monitor);
     var state= link.state(alias);
     var runs= state.map(State::runs).orElse(0);
     if (runs != seenRuns.getOrDefault(alias, 0) && !live.containsKey(name)){ live.put(name, Process.start(link, alias, folder, state.get().lastRun())); }
@@ -96,7 +100,6 @@ public final class FearlessWatcher extends Job{
     var problems= ManagerLink.read(link.reports(alias).resolve("problems.txt"));
     if (!problems.equals(lastProblems.get(alias))){
       lastProblems.put(alias, problems);
-      project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
       ProblemMarkers.apply(project.getFolder(srcName), problems);
     }
     tail(name, Consoles.projectType, link.reports(alias).resolve("console.txt"));
