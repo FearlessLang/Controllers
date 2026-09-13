@@ -28,10 +28,10 @@ final class DesktopDragTest{
     pilot.showDesktop();
     var screen= pilot.shot();
     int w= screen.getWidth(), h= screen.getHeight();
-    var src= new Rectangle(0,0,w/2,h);
-    var dst= new Rectangle(w/2,0,w/2,h);
-    place(pilot,source,src,KeyEvent.VK_LEFT);
-    place(pilot,destination,dst,KeyEvent.VK_RIGHT);
+    var src= new Rectangle(w*5/100,h*5/100,w*43/100,h*85/100);
+    var dst= new Rectangle(w*52/100,h*5/100,w*43/100,h*85/100);
+    place(pilot,source,src);
+    place(pilot,destination,dst);
     var item= item(pilot,src);
     pilot.drag(centerX(item),centerY(item),centerX(dst),centerY(dst));
     Pilot.pause(2000);
@@ -45,17 +45,17 @@ final class DesktopDragTest{
     assertEquals(destination.resolve("example.txt"),landed);
   }
   private boolean isTheFile(Path p){ return p.getFileName().toString().equals("example.txt") && Fs.readUtf8(p).equals(content); }
-  /// Opens the folder and puts its window on the given half of the screen through the desktop's own snap chord, then checks that half is now a window.
-  private static void place(Pilot pilot, Path folder, Rectangle half, int side){
-    var bare= crop(pilot.shot(),half);
+  /// Opens the folder and puts its window on target, then checks that target is now a window.
+  private static void place(Pilot pilot, Path folder, Rectangle target){
+    var before= pilot.shot();
     Fs.ofV(()->Desktop.getDesktop().open(folder.toFile()));
     Pilot.pause(3000);
-    pilot.chord(KeyEvent.VK_WINDOWS,side);
-    Pilot.pause(1500);
-    pilot.chord(KeyEvent.VK_ESCAPE);
-    var filled= Pilot.changed(bare,crop(pilot.shot(),half),6);
-    boolean halfIsAWindow= filled.width>half.width/2 && filled.height>half.height/2;
-    assert halfIsAWindow;
+    var win= Pilot.changed(before,pilot.shot(),6);
+    assert win.width<before.getWidth() && win.height<before.getHeight();
+    pilot.place(win,target);
+    var filled= Pilot.changed(crop(before,target),crop(pilot.shot(),target),6);
+    boolean targetIsAWindow= filled.width>target.width/2 && filled.height>target.height/2;
+    assert targetIsAWindow;
   }
   private static Rectangle item(Pilot pilot, Rectangle win){
     pilot.click(centerX(win),centerY(win));
