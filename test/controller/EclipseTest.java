@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,6 +40,15 @@ Error 7 WellFormedness
     eclipse.publish(List.of(entry("one",dir.resolve("one"))));
     eclipse.publish(List.of());
     assertEquals("",Fs.readUtf8(dir.resolve("eclipse").resolve("projects.txt")));
+  }
+  @Test void theStateIsTheKindWhetherToCompileTheRunningMainThenEveryMainWithItsFile(){
+    var mains= Map.of("hello.Hello","_hello/_rank_app.fear");
+    assertEquals("kind code\nneedsCompiling\nrunning hello.Hello\nmain hello.Hello _hello/_rank_app.fear\n",
+      Eclipse.state(Kind.code,true,Optional.of(mains),Optional.of("hello.Hello")));
+    assertEquals("kind code\nmain hello.Hello _hello/_rank_app.fear\n",Eclipse.state(Kind.code,false,Optional.of(mains),Optional.empty()));
+  }
+  @Test void aProjectThatIsNotCodeHasJustItsKind(){
+    assertEquals("kind data:readOnly\n",Eclipse.state(Kind.dataReadOnly,false,Optional.empty(),Optional.empty()));
   }
   @Test void aSourceErrorBecomesItsPathItsLineThenTheWholeMessage(@TempDir Path project){
     Eclipse.problems(project,sourceError);

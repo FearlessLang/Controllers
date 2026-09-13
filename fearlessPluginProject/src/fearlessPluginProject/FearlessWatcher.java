@@ -28,6 +28,7 @@ import org.eclipse.ui.PlatformUI;
 public final class FearlessWatcher extends Job{
   private static final long periodMs= 2000;
   static final String srcName= "src";
+  static final String consolePrefix= "Fearless ";
   private static final QualifiedName mirrored= new QualifiedName("fearlessPluginProject","mirrored");
   private final Map<String,String> lastProblems= new HashMap<>();
   private final Map<String,String> lastJUnit= new HashMap<>();
@@ -48,7 +49,7 @@ public final class FearlessWatcher extends Job{
   private void tick(ManagerLink link, IProgressMonitor monitor) throws CoreException{
     var active= fearlessActive();
     var projects= active ? link.projects() : Map.<String,java.nio.file.Path>of();
-    if (active){ tail("Fearless", link.console()); }
+    if (active){ tail("Fearless", Consoles.notesType, link.console()); }
     var root= ResourcesPlugin.getWorkspace().getRoot();
     for (var p : root.getProjects()){
       var forgotten= p.isOpen() && p.getPersistentProperty(mirrored) != null && !projects.containsKey(p.getName());
@@ -86,11 +87,11 @@ public final class FearlessWatcher extends Job{
     if (src.exists()){ src.delete(IResource.NONE, monitor); }
     src.createLink(location, IResource.NONE, monitor);
   }
-  private void tail(String name, java.nio.file.Path file){
+  private void tail(String name, String type, java.nio.file.Path file){
     var text= ManagerLink.read(file);
     var shown= shownConsole.getOrDefault(name, 0);
     if (text.length() < shown){ shown= 0; }
-    if (text.length() > shown){ Consoles.print(name, text.substring(shown), shown == 0); }
+    if (text.length() > shown){ Consoles.print(name, type, text.substring(shown), shown == 0); }
     shownConsole.put(name, text.length());
   }
   private void reflect(ManagerLink link, IProject project, IProgressMonitor monitor) throws CoreException{
@@ -101,7 +102,7 @@ public final class FearlessWatcher extends Job{
       project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
       ProblemMarkers.apply(project.getFolder(srcName), problems);
     }
-    tail("Fearless "+alias, link.reports(alias).resolve("console.txt"));
+    tail(consolePrefix+alias, Consoles.projectType, link.reports(alias).resolve("console.txt"));
     var report= link.reports(alias).resolve("report.xml");
     var xml= ManagerLink.read(report);
     if (xml.isBlank() || xml.equals(lastJUnit.get(alias))){ return; }

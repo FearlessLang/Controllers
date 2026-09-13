@@ -48,7 +48,11 @@ public final class Session{
   public synchronized String current(){ return current; }
   public synchronized Duration elapsed(){ return Duration.between(since,Instant.now()); }
   public synchronized Optional<List<String>> mains(){ return mains.map(m->List.copyOf(m.keySet())); }
-  public synchronized Optional<Map<String,String>> mainFiles(){ return mains; }
+  //Waits for a reading in progress: the answer to a state query is never the mains of before it.
+  public synchronized Optional<Map<String,String>> mainFiles(){
+    while(current.equals("reading")){ waitOrBug(0); }
+    return mains;
+  }
   public synchronized Optional<String> running(){ return child == null ? Optional.empty() : Optional.of(current); }
   public void refresh(){ submit("reading",this::readMains); }
   public void compile(){ submit("compiling",this::doCompile); }

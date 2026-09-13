@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 import controller.Info.Obj;
 import controller.Info.Obj.Field;
@@ -35,6 +36,7 @@ public final class Registry{
     public final String text;
     Kind(String text){ this.text= text; }
     public boolean isData(){ return this == dataReadOnly || this == dataReadWrite; }
+    public static Optional<Kind> of(String text){ return OneOr.opt("kind "+text, Stream.of(values()).filter(k->k.text.equals(text))); }
   }
   public record Entry(String alias, Path path, Kind kind, List<String> mains,
       Map<String,List<String>> reads, Map<String,List<String>> edits, long compiled, long run){
@@ -179,8 +181,7 @@ public final class Registry{
     var field= obj.field("kind");
     if (field.isEmpty()){ return Kind.idle; }
     var s= str(source,field.get().value(),"\"kind\"");
-    return OneOr.opt("kind "+s, List.of(Kind.values()).stream().filter(k->k.text.equals(s)))
-      .orElseThrow(()->Info.err(source,field.get().value().span(),"\"kind\" must be one of "+kinds+", not \""+s+"\"."));
+    return Kind.of(s).orElseThrow(()->Info.err(source,field.get().value().span(),"\"kind\" must be one of "+kinds+", not \""+s+"\"."));
   }
   private static String str(String source, Info value, String label){
     if (!(value instanceof Info.Str s)){ throw Info.err(source,value.span(),label+" must be a string \"...\"."); }

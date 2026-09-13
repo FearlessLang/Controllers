@@ -13,7 +13,7 @@ import java.util.UUID;
 
 import org.eclipse.core.runtime.Platform;
 
-/// What the manager left at connect time (see manager.EclipseConnect in Coordinator):
+/// What the manager left at connect time (see controller.Eclipse in Controllers):
 /// manager.txt names its messages folder, then its eclipse folder. In the latter,
 /// projects.txt lists every registered project as alias, space, folder, and each
 /// alias's reports (problems.txt, report.xml) sit in a folder of that name.
@@ -40,25 +40,29 @@ public final class ManagerLink{
   }
   public Path reports(String alias){ return eclipse.resolve(alias); }
   public Path console(){ return eclipse.resolve("console.txt"); }
-  /// What the manager answers to a state message: whether the project needs compiling,
-  /// the running main if any, and the known mains each with the file declaring it.
-  public record State(boolean needsCompiling, String running, Map<String,String> mains){}
-  public State state(String alias, Path folder){
+  /// What the manager answers to a state message: the kind as in the metadata file, whether
+  /// the project needs compiling, the running main if any, and the known mains each with the
+  /// file declaring it. Empty when the manager gave no answer in time.
+  public record State(String kind, boolean needsCompiling, String running, Map<String,String> mains){}
+  public Optional<State> state(String alias, Path folder){
     var reply= reports(alias).resolve("state.txt");
     try{ Files.deleteIfExists(reply); }
     catch(IOException e){ throw new UncheckedIOException(e); }
     send("state", folder, reply.toString());
-    for (int i= 0; i < 100 && !Files.exists(reply); i++){ pause(); }
+    for (int i= 0; i < 600 && !Files.exists(reply); i++){ pause(); }
+    if (!Files.exists(reply)){ return Optional.empty(); }
+    var kind= "";
     var needsCompiling= false;
     var running= "";
     var mains= new LinkedHashMap<String,String>();
     for (var line : read(reply).lines().toList()){
-      var words= line.split(" ");
+      var words= line.split(" ",3);
+      if (words[0].equals("kind")){ kind= words[1]; }
       if (words[0].equals("needsCompiling")){ needsCompiling= true; }
       if (words[0].equals("running")){ running= words[1]; }
       if (words[0].equals("main")){ mains.put(words[1], words[2]); }
     }
-    return new State(needsCompiling, running, mains);
+    return Optional.of(new State(kind, needsCompiling, running, mains));
   }
   private static void pause(){
     try{ Thread.sleep(5); }
