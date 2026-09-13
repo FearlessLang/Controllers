@@ -10,20 +10,17 @@ import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.Set;
 
+import tools.Fs;
 import utils.Bug;
 
 /// Drives the desk the way a person does: the pointer glides, buttons and keys are held and released, the screen is looked at.
 /// The screen must be awake: a blanked screen captures as black and no synthetic input wakes it, so whoever uses a Pilot wakes the screen first by other means and keeps it from blanking.
+/// Every coordinate is a user space pixel, the unit a screen shot is measured in; a desk scaled above 100% has more device pixels than that, and a shot is the scaled down view, so a shot and a pointer target always agree with each other and never with the device.
 public final class Pilot{
   public enum Button{
     left(InputEvent.BUTTON1_DOWN_MASK), middle(InputEvent.BUTTON2_DOWN_MASK), right(InputEvent.BUTTON3_DOWN_MASK);
     final int mask;
     Button(int mask){ this.mask= mask; }
-  }
-  public enum Key{
-    a(KeyEvent.VK_A), d(KeyEvent.VK_D), m(KeyEvent.VK_M), control(KeyEvent.VK_CONTROL), alt(KeyEvent.VK_ALT), meta(KeyEvent.VK_WINDOWS), f4(KeyEvent.VK_F4);
-    final int code;
-    Key(int code){ this.code= code; }
   }
   public static final Set<Button> none= Set.of();
   public static final Set<Button> left= Set.of(Button.left);
@@ -49,14 +46,15 @@ public final class Pilot{
   private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else { robot.mouseRelease(b.mask); } }
   public void click(int x, int y){ glide(x,y,none,x,y,left); glide(x,y,left,x,y,none); }
   public void drag(int x0, int y0, int x1, int y1){ glide(x0,y0,none,x0,y0,left); glide(x0,y0,left,x1,y1,none); }
-  public void chord(Key... keys){
-    for (var k: keys){ robot.keyPress(k.code); }
-    for (int i= keys.length-1; i>=0; i--){ robot.keyRelease(keys[i].code); }
+  /// Presses the java.awt.event.KeyEvent codes in order and releases them in reverse.
+  public void chord(int... codes){
+    for (int c: codes){ robot.keyPress(c); }
+    for (int i= codes.length-1; i>=0; i--){ robot.keyRelease(codes[i]); }
     pause(200);
   }
   /// Minimizes every window through the desktop's own chord: Win+M on windows, Ctrl+Alt+D (GNOME show desktop, a toggle) elsewhere.
   public void showDesktop(){
-    if (System.getProperty("os.name").startsWith("Windows")){ chord(Key.meta,Key.m); } else { chord(Key.control,Key.alt,Key.d); }
+    if (Fs.isWindows()){ chord(KeyEvent.VK_WINDOWS,KeyEvent.VK_M); } else { chord(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_D); }
     pause(800);
   }
   public BufferedImage shot(){
