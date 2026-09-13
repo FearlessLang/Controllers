@@ -5,8 +5,9 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /// The documentation of the methods of one type, from the text rendering the compiler writes
-/// next to the api json (docBuilder.HtmlDocRenderer.renderText): the type's header line, then
-/// one line per method at two spaces with its documentation at four or more.
+/// next to the api json (docBuilder.HtmlDocRenderer.renderText): the type's header line, its
+/// own documentation at two spaces, then one line per method at two spaces with its
+/// documentation at four or more.
 public final class Docs{
   private final List<String> lines;
   public Docs(String txt, String type){
@@ -27,7 +28,8 @@ public final class Docs{
     for (i+= 1; i < lines.size() && lines.get(i).startsWith("   "); i+= 1){ res.append("\n").append(lines.get(i).strip()); }
     return Optional.of(res.toString());
   }
-  /// name/arity of a method line: [RC] name[Bs](T1,..,Tn):T
+  /// name/arity of a method line, [RC] name[Bs](T1,..,Tn):T; a documentation line at the same
+  /// indent yields something no method is called
   static String signature(String line){
     var s= line.strip().replaceFirst("^(readH|mutH|imm|iso|read|mut) ", "");
     int j= 0;
@@ -36,7 +38,7 @@ public final class Docs{
     if (j < s.length() && s.charAt(j) == '['){ j= s.indexOf(']', j)+1; }
     if (j >= s.length() || s.charAt(j) != '('){ return name+"/0"; }
     var arity= 1;
-    for (int depth= 0, k= j+1; depth >= 0; k+= 1){
+    for (int depth= 0, k= j+1; k < s.length() && depth >= 0; k+= 1){
       var c= s.charAt(k);
       if (c == '(' || c == '['){ depth+= 1; }
       if (c == ')' || c == ']'){ depth-= 1; }
