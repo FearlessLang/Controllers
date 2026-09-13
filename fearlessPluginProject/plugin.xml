@@ -76,6 +76,10 @@
       editorId="org.eclipse.ui.genericeditor.GenericEditor"/>
   </extension>
 
+  <extension point="org.eclipse.ui.genericeditor.contentAssistProcessors">
+    <contentAssistProcessor class="fearlessPluginProject.Assist" contentType="fearlessPluginProject.source"/>
+  </extension>
+
   <extension point="org.eclipse.tm4e.registry.grammars">
     <grammar scopeName="source.fearless" path="syntaxes/fearless.tmLanguage.json"/>
     <scopeNameContentTypeBinding scopeName="source.fearless" contentTypeId="fearlessPluginProject.source"/>
