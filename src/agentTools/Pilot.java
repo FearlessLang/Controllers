@@ -5,18 +5,17 @@ import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.Set;
 
-import tools.Fs;
 import utils.Bug;
 
 /// Drives the desk the way a person does: the pointer glides, buttons and keys are held and released, the screen is looked at.
 /// The screen must be awake: a blanked screen captures as black and no synthetic input wakes it, so whoever uses a Pilot wakes the screen first by other means and keeps it from blanking.
 /// Every coordinate is a user space pixel, the unit a screen shot is measured in; a desk scaled above 100% has more device pixels than that, and a shot is the scaled down view, so a shot and a pointer target always agree with each other and never with the device.
-/// A primitive here is a gesture a person has on every desk, and the same call reaches approximately the same result on all of them: where one desk needs a different gesture than another the switch lives inside the primitive, so a caller never asks which desk it is on. Approximately, because a desk is free to snap, constrain or round what it is given.
+/// A primitive here is a gesture that needs no knowledge of which desk it is on: the pointer goes somewhere, its buttons and the keys go down and up, the screen is looked at. Nothing here asks which system this is, so nothing here branches on one, and a test written out of these calls reaches the same result everywhere.
+/// Arranging windows is not among them. Where a title bar can be grabbed and where a resize corner lies are decided by the window's own decoration, not by the desk, so no call can place a window and mean the same thing twice: a test that needs two things beside each other asks one application to show it both.
 public final class Pilot{
   public enum Button{
     left(InputEvent.BUTTON1_DOWN_MASK), middle(InputEvent.BUTTON2_DOWN_MASK), right(InputEvent.BUTTON3_DOWN_MASK);
@@ -46,38 +45,13 @@ public final class Pilot{
   }
   private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else { robot.mouseRelease(b.mask); } }
   public void click(int x, int y){ glide(x,y,none,x,y,left); glide(x,y,left,x,y,none); }
-  public void drag(int x0, int y0, int x1, int y1){ glide(x0,y0,none,x0,y0,left); glide(x0,y0,left,x1,y1,none); }
+  /// Takes hold at x0,y0, carries to x1,y1, and waits there before letting go: what is dropped lands on whatever is under the pointer, and that has to be given its moment to see the pointer arrive.
+  public void drag(int x0, int y0, int x1, int y1){ glide(x0,y0,none,x0,y0,left); glide(x0,y0,left,x1,y1,left); glide(x1,y1,left,x1,y1,none); }
   /// Presses the java.awt.event.KeyEvent codes in order and releases them in reverse.
   public void chord(int... codes){
     for (int c: codes){ robot.keyPress(c); }
     for (int i= codes.length-1; i>=0; i--){ robot.keyRelease(codes[i]); }
     pause(200);
-  }
-  /// Minimizes every window through the desktop's own chord: Win+M on windows, Ctrl+Alt+D elsewhere.
-  /// That chord shows the desk on one press and puts the windows back on the next, so the press is undone when the shot came out busier than it went in, and a desk with nothing on it stays as it is.
-  public void showDesktop(){
-    if (Fs.isWindows()){ chord(KeyEvent.VK_WINDOWS,KeyEvent.VK_M); pause(800); return; }
-    int was= busy(shot());
-    chord(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_D);
-    pause(800);
-    if (busy(shot())<=was){ return; }
-    chord(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_D);
-    pause(800);
-  }
-  /// How much of the shot is edge rather than flat colour: a desk carrying windows of text counts far above the same desk bare.
-  private static int busy(BufferedImage img){
-    int w= img.getWidth(), h= img.getHeight(), n= 0;
-    var px= img.getRGB(0,0,w,h,null,0,w);
-    for (int y= 0; y<h; y++){ for (int x= 1; x<w; x++){ if (differs(px[y*w+x-1],px[y*w+x])){ n++; } } }
-    return n;
-  }
-  /// Carries the window lying at win onto target: the title bar drags the window there, then the bottom right corner drags it to size.
-  /// The title bar is grabbed where it is empty: a windows title bar is empty right of its tabs, every other one carries its buttons at the ends and its title in between.
-  /// A target flush against a screen edge is read by the desk as a request to snap the window to that edge, which maximizes it and leaves the corner nowhere near where the resize expects it, so a target that is meant to keep the size it asks for stays a margin away from every edge.
-  public void place(Rectangle win, Rectangle target){
-    int grab= Fs.isWindows()?win.width/2:90;
-    drag(win.x+grab,win.y+20,target.x+grab,target.y+20);
-    drag(target.x+win.width-1,target.y+win.height-1,target.x+target.width-1,target.y+target.height-1);
   }
   public BufferedImage shot(){
     var img= robot.createScreenCapture(new Rectangle(Toolkit.getDefaultToolkit().getScreenSize()));
@@ -118,6 +92,7 @@ public final class Pilot{
       }
       if (n>bestN){ bestN= n; best= new Rectangle(minx-r,miny-r,maxx-minx+1+2*r,maxy-miny+1+2*r); }
     }
+    assert bestN>0;
     return best;
   }
   private static int box(int[] sum, int w, int x0, int y0, int x1, int y1){ return sum[y1*(w+1)+x1]-sum[y0*(w+1)+x1]-sum[y1*(w+1)+x0]+sum[y0*(w+1)+x0]; }
