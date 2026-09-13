@@ -47,6 +47,7 @@ import controller.Main;
 import controller.Names;
 import controller.Registry;
 import controller.Registry.Entry;
+import controller.Registry.Kind;
 import controller.Session;
 import tools.OpenPath;
 import userMessages.UserError;
@@ -131,7 +132,9 @@ public final class Window{
   public void select(Path folder){ SwingUtilities.invokeLater(()->tiles.select(folder)); }
   public void run(Path folder, Optional<String> main){ SwingUtilities.invokeLater(()->panel(folder).compileOrRun(main)); }
   public void terminate(Path folder){ SwingUtilities.invokeLater(()->panel(folder).session.terminate()); }
-  public void state(Path folder, Path reply){ SwingUtilities.invokeLater(()->panel(folder).state(reply)); }
+  public void state(Path folder, Path reply){ SwingUtilities.invokeLater(()->{ var p= panel(folder); main.worker.execute(()->p.state(reply)); }); }
+  public void kind(Path folder, Kind kind){ SwingUtilities.invokeLater(()->panel(folder).kind(kind)); }
+  public void forget(Path folder){ SwingUtilities.invokeLater(()->panel(folder).forget()); }
   public void foldersChanged(){ SwingUtilities.invokeLater(this::foldersChangedHere); }
   public List<String> runningPrograms(){ return open.values().stream().filter(this::live).map(this::describe).toList(); }
   private boolean isRunning(Path folder){ return open.containsKey(folder) && live(open.get(folder)); }

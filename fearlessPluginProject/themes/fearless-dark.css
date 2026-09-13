@@ -1,5 +1,7 @@
 .comment { color: #6A9955; }
-.comment.line.documentation.example { color: #6A9955; font-weight: bold; }
+.comment.line.documentation { color: #7FA8E0; }
+.comment.line.documentation.example { color: #7FA8E0; font-weight: bold; }
+.comment.line.documentation.testonly { color: #7FA8E0; font-weight: bold; }
 .storage.modifier { color: #FF7B72; }
 .keyword { color: #FF7B72; }
 .entity.name.type { font-weight: bold; color: #FFFFFF; }

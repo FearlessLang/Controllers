@@ -284,10 +284,11 @@ public final class Panel{
     kinds.add(kindButton("Back to idle",Kind.idle));
   }
   private JButton kindButton(String text, Kind target){
-    var res= small(text,()->changed(()->registry.update(folder,e->e.withKind(target))));
+    var res= small(text,()->kind(target));
     res.setEnabled(!session.busy());
     return res;
   }
+  void kind(Kind target){ changed(()->registry.update(folder,e->e.withKind(target))); }
   private void fillLinks(Entry entry){
     var iAmCode= entry.kind() == Kind.code;
     linksBox.removeAll();
@@ -360,9 +361,12 @@ public final class Panel{
     action.setEnabled(!busy && (needsCompile || !selectedMains().isEmpty()));
     openDocs.setEnabled(session.mains().isPresent());
   }
+  //Off the event thread: it walks the project and waits for a reading of the mains.
   void state(Path reply){
+    var kind= entry().kind();
+    var needsCompiling= kind == Kind.code && !Facts.cacheUpToDate(folder,Facts.modified(folder));
     var tmp= reply.resolveSibling(reply.getFileName()+".tmp");
-    Fs.writeUtf8(tmp,Eclipse.state(session.mainFiles(),session.running()));
+    Fs.writeUtf8(tmp,Eclipse.state(kind,needsCompiling,session.mainFiles(),session.running()));
     Fs.ofV(()->Files.move(tmp,reply,StandardCopyOption.ATOMIC_MOVE));
   }
   void compileOrRun(Optional<String> main){

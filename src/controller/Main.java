@@ -148,7 +148,6 @@ public final class Main{
     try{ messages= take(); }
     catch(IOException e){ throw Violation.couldNotDrainMessageFolder(msgDir(),e); }
     if (messages.isEmpty()){ return; }
-    window.show();
     messages.forEach(m->register(m,e->eclipse.note(e.getMessage()+"\n")));
     window.foldersChanged();
   }
@@ -173,7 +172,8 @@ public final class Main{
     return files;
   }
   //A message is the folder to select, or a verb, a newline, then the folder, then
-  //for run the optional main to run, and for state the file the answer goes to.
+  //for run the optional main to run, for state the file the answer goes to, and
+  //for kind the kind text as in the metadata file.
   public void register(String message, Consumer<UserError> report){
     var lines= message.lines().toList();
     if (lines.isEmpty()){ return; }
@@ -197,12 +197,13 @@ public final class Main{
       }
       window.foldersChanged();
     }
-    window.select(folder.get());
     switch(verb){
-      case "select" -> {}
-      case "run" -> window.run(folder.get(),lines.size() > 2 ? Optional.of(lines.get(2)) : Optional.empty());
-      case "terminate" -> window.terminate(folder.get());
+      case "select" -> { window.show(); window.select(folder.get()); }
+      case "run" -> { window.select(folder.get()); window.run(folder.get(),lines.size() > 2 ? Optional.of(lines.get(2)) : Optional.empty()); }
+      case "terminate" -> { window.select(folder.get()); window.terminate(folder.get()); }
       case "state" -> window.state(folder.get(),Path.of(lines.get(2)));
+      case "kind" -> window.kind(folder.get(),Kind.of(lines.get(2)).orElseThrow(Bug::unreachable));
+      case "forget" -> window.forget(folder.get());
       default -> throw Bug.unreachable();
     }
   }

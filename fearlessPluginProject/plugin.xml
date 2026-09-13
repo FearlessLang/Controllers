@@ -38,6 +38,15 @@
     <themeAssociation themeId="fearlessPluginProject.dark" scopeName="source.fearless" whenDark="true"/>
   </extension>
 
+  <extension point="org.eclipse.ui.console.consolePatternMatchListeners">
+    <consolePatternMatchListener id="fearlessPluginProject.links" class="fearlessPluginProject.Links"
+      regex="error line: \d+ in file \S+|In file: fear:/\S+">
+      <enablement>
+        <test property="org.eclipse.ui.console.consoleTypeTest" value="fearlessPluginProject.project"/>
+      </enablement>
+    </consolePatternMatchListener>
+  </extension>
+
   <extension point="org.eclipse.ui.commands">
     <category id="fearlessPluginProject.category" name="Fearless"/>
     <command id="fearlessPluginProject.newProject" name="New Fearless Project..."

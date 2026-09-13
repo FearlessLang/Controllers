@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import controller.Registry.Entry;
+import controller.Registry.Kind;
 import tools.Fs;
 import tools.JavacTool;
 import userMessages.Report;
@@ -26,11 +27,15 @@ public record Eclipse(Path dir){
   private static final Pattern at= Pattern.compile("(?m)^In file: fear:/(\\S+)\\n\\n(\\d+)\\| ");
   public Path reports(String alias){ return dir.resolve(alias); }
   public void note(String text){ append(dir.resolve("console.txt"),text); }
-  public static String state(Optional<Map<String,String>> mains, Optional<String> running){
-    var lines= Stream.concat(
-      Stream.concat(mains.isEmpty() ? Stream.of("needsCompiling") : Stream.of(), running.stream().map(r->"running "+r)),
+  /// The answer to a state message: the kind, needsCompiling while the compiled cache is
+  /// not up to date, the running main if any, then the known mains each with the file declaring it.
+  public static String state(Kind kind, boolean needsCompiling, Optional<Map<String,String>> mains, Optional<String> running){
+    var lines= Stream.of(
+      Stream.of("kind "+kind.text),
+      needsCompiling ? Stream.of("needsCompiling") : Stream.<String>of(),
+      running.stream().map(r->"running "+r),
       mains.orElse(Map.of()).entrySet().stream().map(e->"main "+e.getKey()+" "+e.getValue()));
-    return Join.of(lines,"","\n","\n","");
+    return Join.of(lines.flatMap(s->s),"","\n","\n","");
   }
   public static void append(Path file, String text){
     Fs.ensureDir(file.getParent());
