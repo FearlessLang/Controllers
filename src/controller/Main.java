@@ -172,8 +172,7 @@ public final class Main{
     return files;
   }
   //A message is the folder to select, or a verb, a newline, then the folder, then
-  //for run the optional main to run, for state the file the answer goes to, and
-  //for kind the kind text as in the metadata file.
+  //for run the optional main to run, and for kind the kind text as in the metadata file.
   public void register(String message, Consumer<UserError> report){
     var lines= message.lines().toList();
     if (lines.isEmpty()){ return; }
@@ -201,7 +200,8 @@ public final class Main{
       case "select" -> { window.show(); window.select(folder.get()); }
       case "run" -> { window.select(folder.get()); window.run(folder.get(),lines.size() > 2 ? Optional.of(lines.get(2)) : Optional.empty()); }
       case "terminate" -> { window.select(folder.get()); window.terminate(folder.get()); }
-      case "state" -> window.state(folder.get(),Path.of(lines.get(2)));
+      case "compile" -> { window.select(folder.get()); window.compile(folder.get()); }
+      case "clean" -> { window.select(folder.get()); window.clean(folder.get()); }
       case "kind" -> window.kind(folder.get(),Kind.of(lines.get(2)).orElseThrow(Bug::unreachable));
       case "forget" -> window.forget(folder.get());
       default -> throw Bug.unreachable();

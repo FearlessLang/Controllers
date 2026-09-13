@@ -13,7 +13,6 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import controller.Eclipse;
 import realSourceOracle.AutoloadHandler;
 import java.time.Instant;
@@ -207,6 +206,8 @@ public final class Panel{
     updateButtons(entry);
     root.revalidate();
     root.repaint();
+    var needsCompiling= entry.kind() == Kind.code && !facts.cacheUpToDate();
+    main.eclipse.state(entry.alias(),Eclipse.state(entry.kind(),needsCompiling,session.current(),session.runningMain(),session.runs(),session.lastRun(),session.exit(),session.mainFiles()));
   }
   private Entry entry(){ return registry.of(folder).orElseThrow(); }
   private Optional<String> problem(){
@@ -361,24 +362,28 @@ public final class Panel{
     action.setEnabled(!busy && (needsCompile || !selectedMains().isEmpty()));
     openDocs.setEnabled(session.mains().isPresent());
   }
-  //Off the event thread: it walks the project and waits for a reading of the mains.
-  void state(Path reply){
-    var kind= entry().kind();
-    var needsCompiling= kind == Kind.code && !Facts.cacheUpToDate(folder,Facts.modified(folder));
-    var tmp= reply.resolveSibling(reply.getFileName()+".tmp");
-    Fs.writeUtf8(tmp,Eclipse.state(kind,needsCompiling,session.mainFiles(),session.running()));
-    Fs.ofV(()->Files.move(tmp,reply,StandardCopyOption.ATOMIC_MOVE));
+  //The button: Check for a data project, Compile while the cache is stale, else Run.
+  void compileOrRun(Optional<String> main){ act(main,false); }
+  //Run from Eclipse: as the button, but a stale cache is compiled and then run.
+  void run(Optional<String> main){ act(main,true); }
+  //Build from Eclipse: as the button, but a fresh cache is left alone.
+  void compile(){
+    refresh();
+    if (entry().kind() == Kind.code && facts.cacheUpToDate()){ return; }
+    act(Optional.empty(),false);
   }
-  void compileOrRun(Optional<String> main){
+  private void act(Optional<String> main, boolean runAfterCompile){
+    refresh();
     information.setOpen(false);
     links.setOpen(false);
     var entry= entry();
     if (entry.kind() != Kind.code){ check(); return; }
-    if (facts.cacheUpToDate()){ changed(()->registry.ran(folder,System.currentTimeMillis())); session.run(main.map(List::of).orElseGet(entry::mains)); return; }
+    var chosen= main.map(List::of).orElseGet(entry::mains);
+    if (facts.cacheUpToDate()){ changed(()->registry.ran(folder,System.currentTimeMillis())); session.run(chosen); return; }
     var link= registry.linkProblem(entry);
     if (link.isPresent()){ append(link.get()+"\n"); return; }
     changed(()->registry.compiled(folder,System.currentTimeMillis()));
-    session.compile();
+    if (runAfterCompile){ session.compileThenRun(chosen); } else { session.compile(); }
   }
   private void check(){
     main.worker.execute(()->{

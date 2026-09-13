@@ -33,9 +33,13 @@ public final class Session{
   private final Executor worker;
   private final Consumer<String> out;
   private final Runnable changed;
+  private static final String compiling= "compiling";
   private ChildJvm child;
   private String current= "";
   private Instant since= Instant.now();
+  private int exit= -1;
+  private int runs= 0;
+  private String lastRun= "";
   private Optional<Map<String,String>> mains= Optional.empty();
   public Session(Path folder, Path reports, Executor worker, Consumer<String> out, Runnable changed){
     this.folder= folder;
@@ -48,15 +52,16 @@ public final class Session{
   public synchronized String current(){ return current; }
   public synchronized Duration elapsed(){ return Duration.between(since,Instant.now()); }
   public synchronized Optional<List<String>> mains(){ return mains.map(m->List.copyOf(m.keySet())); }
-  //Waits for a reading in progress: the answer to a state query is never the mains of before it.
-  public synchronized Optional<Map<String,String>> mainFiles(){
-    while(current.equals("reading")){ waitOrBug(0); }
-    return mains;
-  }
+  public synchronized Optional<Map<String,String>> mainFiles(){ return mains; }
   public synchronized Optional<String> running(){ return child == null ? Optional.empty() : Optional.of(current); }
+  public synchronized Optional<String> runningMain(){ return running().filter(r->!r.equals(compiling)); }
+  public synchronized int exit(){ return exit; }
+  public synchronized int runs(){ return runs; }
+  public synchronized String lastRun(){ return lastRun; }
   public void refresh(){ submit("reading",this::readMains); }
-  public void compile(){ submit("compiling",this::doCompile); }
+  public void compile(){ submit(compiling,this::doCompile); }
   public void run(List<String> selected){ submit("starting",()->doRun(selected)); }
+  public void compileThenRun(List<String> selected){ submit(compiling,()->{ if (doCompile()){ doRun(selected); } }); }
   public synchronized void terminate(){
     if (child == null){ return; }
     out.accept("--- terminating "+current+" ---\n");
@@ -98,24 +103,28 @@ public final class Session{
       }
     };
   }
-  private void doCompile(){
+  private boolean doCompile(){
     out.accept("--- compiling "+folder.getFileName()+" ---\n");
     var ec= await(()->ChildJvm.start(compileArgs(),out),()->{});
     out.accept("--- compile "+(ec == 0 ? "done" : "failed with "+ec)+" ---\n");
     readMains();
+    return ec == 0;
   }
   private void doRun(List<String> selected){
     readMains();
     var known= mains();
     if (known.isEmpty()){ out.accept("--- this project needs compiling ---\n"); return; }
-    var chosen= known.get().size() == 1 ? known.get() : selected;
-    chosen.stream().filter(known.get()::contains).forEach(this::runOne);
+    var chosen= known.get().size() == 1 ? known.get() : selected.stream().filter(known.get()::contains).toList();
+    if (chosen.isEmpty()){ out.accept("--- nothing to run: none of "+known.get()+" is selected ---\n"); return; }
+    chosen.forEach(this::runOne);
   }
   private void runOne(String main){
     var started= Instant.now();
+    synchronized(this){ runs+= 1; lastRun= main; }
     starting(main);
     out.accept("--- running "+main+" ---\n");
     var ec= await(()->Coordinator.startMain(folder,main,coordinator().sharedClasspath(),out),()->JUnitReport.write(reports,folder,main,started));
+    synchronized(this){ exit= ec; }
     out.accept("--- "+main+" exited with "+ec+" after "+elapsed().toSeconds()+"s ---\n");
   }
   //meanwhile runs every two seconds while the child lives, and once more after it exits.

@@ -130,9 +130,10 @@ public final class Window{
     SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,problem.getMessage(),"Fearless",JOptionPane.WARNING_MESSAGE));
   }
   public void select(Path folder){ SwingUtilities.invokeLater(()->tiles.select(folder)); }
-  public void run(Path folder, Optional<String> main){ SwingUtilities.invokeLater(()->panel(folder).compileOrRun(main)); }
+  public void run(Path folder, Optional<String> main){ SwingUtilities.invokeLater(()->panel(folder).run(main)); }
+  public void compile(Path folder){ SwingUtilities.invokeLater(()->panel(folder).compile()); }
+  public void clean(Path folder){ SwingUtilities.invokeLater(()->panel(folder).clearCache()); }
   public void terminate(Path folder){ SwingUtilities.invokeLater(()->panel(folder).session.terminate()); }
-  public void state(Path folder, Path reply){ SwingUtilities.invokeLater(()->{ var p= panel(folder); main.worker.execute(()->p.state(reply)); }); }
   public void kind(Path folder, Kind kind){ SwingUtilities.invokeLater(()->panel(folder).kind(kind)); }
   public void forget(Path folder){ SwingUtilities.invokeLater(()->panel(folder).forget()); }
   public void foldersChanged(){ SwingUtilities.invokeLater(this::foldersChangedHere); }
@@ -313,6 +314,7 @@ public final class Window{
     var live= known.stream().map(Entry::path).toList();
     open.values().stream().filter(p->!live.contains(p.folder())).forEach(p->p.session.terminate());
     open.keySet().removeIf(f->!live.contains(f));
+    live.forEach(this::panel);
     fillRunningMenu();
     if (shown != null && !live.contains(shown.folder())){ hidePanel(); return; }
     fillProjectMenu();

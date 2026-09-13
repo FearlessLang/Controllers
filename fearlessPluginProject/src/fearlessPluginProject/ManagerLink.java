@@ -14,21 +14,23 @@ import java.util.UUID;
 import org.eclipse.core.runtime.Platform;
 
 /// What the manager left at connect time (see controller.Eclipse in Controllers):
-/// manager.txt names its messages folder, then its eclipse folder. In the latter,
-/// projects.txt lists every registered project as alias, space, folder, and each
-/// alias's reports (problems.txt, report.xml) sit in a folder of that name.
-/// A message is a verb, a newline, then a project folder; the manager drains
-/// *.msg files, so a message is written as .tmp and renamed into place.
+/// manager.txt names its messages folder, its eclipse folder, then the documentation of
+/// the standard library. In the eclipse folder, projects.txt lists every registered
+/// project as alias, space, folder, and each alias's reports (state.txt, problems.txt,
+/// console.txt, report.xml) sit in a folder of that name.
+/// A message is a verb, a newline, then a project folder, then a third line some verbs
+/// use; the manager drains *.msg files, so a message is written as .tmp and renamed into place.
 public final class ManagerLink{
   private final Path messages;
   private final Path eclipse;
-  private ManagerLink(Path messages, Path eclipse){ this.messages= messages; this.eclipse= eclipse; }
+  public final Path baseDocs;
+  private ManagerLink(Path messages, Path eclipse, Path baseDocs){ this.messages= messages; this.eclipse= eclipse; this.baseDocs= baseDocs; }
   public static Optional<ManagerLink> find(){
     var install= new File(Platform.getInstallLocation().getURL().getPath());
     var file= new File(install,"dropins/fearless/manager.txt").toPath();
     if (!Files.exists(file)){ return Optional.empty(); }
     var lines= read(file).lines().toList();
-    return Optional.of(new ManagerLink(Path.of(lines.get(0)), Path.of(lines.get(1))));
+    return Optional.of(new ManagerLink(Path.of(lines.get(0)), Path.of(lines.get(1)), Path.of(lines.get(2))));
   }
   public Map<String,Path> projects(){
     var res= new LinkedHashMap<String,Path>();
@@ -40,41 +42,24 @@ public final class ManagerLink{
   }
   public Path reports(String alias){ return eclipse.resolve(alias); }
   public Path console(){ return eclipse.resolve("console.txt"); }
-  /// What the manager answers to a state message: the kind as in the metadata file, whether
-  /// the project needs compiling, the running main if any, and the known mains each with the
-  /// file declaring it. Empty when the manager gave no answer in time.
-  public record State(String kind, boolean needsCompiling, String running, Map<String,String> mains){}
-  public Optional<State> state(String alias, Path folder){
-    var reply= reports(alias).resolve("state.txt");
-    try{ Files.deleteIfExists(reply); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
-    send("state", folder, reply.toString());
-    for (int i= 0; i < 600 && !Files.exists(reply); i++){ pause(); }
-    if (!Files.exists(reply)){ return Optional.empty(); }
-    var kind= "";
-    var needsCompiling= false;
-    var running= "";
+  /// What the manager publishes about a project (see controller.Eclipse.state): its kind,
+  /// the main being run if any, how many runs it started, the main of the last one and its
+  /// exit code, and the known mains each with the file declaring it. Empty until published.
+  public record State(String kind, String running, int runs, String lastRun, int exit, Map<String,String> mains){}
+  public Optional<State> state(String alias){
+    var text= read(reports(alias).resolve("state.txt"));
+    if (text.isEmpty()){ return Optional.empty(); }
+    var o= Info.obj(Info.parse(text));
     var mains= new LinkedHashMap<String,String>();
-    for (var line : read(reply).lines().toList()){
-      var words= line.split(" ",3);
-      if (words[0].equals("kind")){ kind= words[1]; }
-      if (words[0].equals("needsCompiling")){ needsCompiling= true; }
-      if (words[0].equals("running")){ running= words[1]; }
-      if (words[0].equals("main")){ mains.put(words[1], words[2]); }
-    }
-    return Optional.of(new State(kind, needsCompiling, running, mains));
+    Info.obj(o.get("mains")).forEach((main,file)->mains.put(main, (String)file));
+    return Optional.of(new State((String)o.get("kind"), (String)o.get("running"), Integer.parseInt((String)o.get("runs")), (String)o.get("lastRun"), Integer.parseInt((String)o.get("exit")), mains));
   }
-  private static void pause(){
-    try{ Thread.sleep(5); }
-    catch(InterruptedException e){ Thread.currentThread().interrupt(); }
-  }
-  public void send(String verb, Path folder){ send(verb+"\n"+folder); }
-  public void send(String verb, Path folder, String third){ send(verb+"\n"+folder+"\n"+third); }
-  private void send(String message){
+  public void send(String verb, Path folder){ send(verb, folder, ""); }
+  public void send(String verb, Path folder, String third){
     var name= "%020d-%s".formatted(System.currentTimeMillis(), UUID.randomUUID());
     var tmp= messages.resolve(name+".tmp");
     try{
-      Files.writeString(tmp, message);
+      Files.writeString(tmp, verb+"\n"+folder+"\n"+third);
       Files.move(tmp, messages.resolve(name+".msg"), StandardCopyOption.ATOMIC_MOVE);
     }
     catch(IOException e){ throw new UncheckedIOException(e); }

@@ -41,14 +41,41 @@ Error 7 WellFormedness
     eclipse.publish(List.of());
     assertEquals("",Fs.readUtf8(dir.resolve("eclipse").resolve("projects.txt")));
   }
-  @Test void theStateIsTheKindWhetherToCompileTheRunningMainThenEveryMainWithItsFile(){
+  @Test void theStateIsInfoWithTheKindTheCacheTheJobTheRunsTheLastExitThenEveryMainWithItsFile(){
     var mains= Map.of("hello.Hello","_hello/_rank_app.fear");
-    assertEquals("kind code\nneedsCompiling\nrunning hello.Hello\nmain hello.Hello _hello/_rank_app.fear\n",
-      Eclipse.state(Kind.code,true,Optional.of(mains),Optional.of("hello.Hello")));
-    assertEquals("kind code\nmain hello.Hello _hello/_rank_app.fear\n",Eclipse.state(Kind.code,false,Optional.of(mains),Optional.empty()));
+    assertEquals("""
+      {
+        "kind": "code",
+        "needsCompiling": "false",
+        "busy": "hello.Hello",
+        "running": "hello.Hello",
+        "runs": "3",
+        "lastRun": "hello.Hello",
+        "exit": "-1",
+        "mains": {
+          "hello.Hello": "_hello/_rank_app.fear"
+        }
+      }
+      """.stripIndent(),Eclipse.state(Kind.code,false,"hello.Hello",Optional.of("hello.Hello"),3,"hello.Hello",-1,Optional.of(mains)));
   }
-  @Test void aProjectThatIsNotCodeHasJustItsKind(){
-    assertEquals("kind data:readOnly\n",Eclipse.state(Kind.dataReadOnly,false,Optional.empty(),Optional.empty()));
+  @Test void anIdleProjectWithNoKnownMainHasEmptyStrings(){
+    assertEquals("""
+      {
+        "kind": "data:readOnly",
+        "needsCompiling": "false",
+        "busy": "",
+        "running": "",
+        "runs": "0",
+        "lastRun": "",
+        "exit": "-1",
+        "mains": {}
+      }
+      """.stripIndent(),Eclipse.state(Kind.dataReadOnly,false,"",Optional.empty(),0,"",-1,Optional.empty()));
+  }
+  @Test void theStateOfAProjectIsWrittenInItsReportsFolder(@TempDir Path dir){
+    var eclipse= new Eclipse(dir.resolve("eclipse"));
+    eclipse.state("one","{}\n");
+    assertEquals("{}\n",Fs.readUtf8(dir.resolve("eclipse").resolve("one").resolve("state.txt")));
   }
   @Test void aSourceErrorBecomesItsPathItsLineThenTheWholeMessage(@TempDir Path project){
     Eclipse.problems(project,sourceError);

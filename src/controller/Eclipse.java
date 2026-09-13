@@ -10,15 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
+import controller.Info.Obj;
+import controller.Info.Obj.Field;
+import controller.Info.Str;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
 import tools.Fs;
 import tools.JavacTool;
 import userMessages.Report;
 import userMessages.Violation;
-import utils.Join;
 
 /// The manager's side of the Eclipse plugin (fearlessPluginProject). Eclipse writes
 /// nothing into a project folder: it reads projects.txt and each alias's reports from
@@ -27,16 +28,24 @@ public record Eclipse(Path dir){
   private static final Pattern at= Pattern.compile("(?m)^In file: fear:/(\\S+)\\n\\n(\\d+)\\| ");
   public Path reports(String alias){ return dir.resolve(alias); }
   public void note(String text){ append(dir.resolve("console.txt"),text); }
-  /// The answer to a state message: the kind, needsCompiling while the compiled cache is
-  /// not up to date, the running main if any, then the known mains each with the file declaring it.
-  public static String state(Kind kind, boolean needsCompiling, Optional<Map<String,String>> mains, Optional<String> running){
-    var lines= Stream.of(
-      Stream.of("kind "+kind.text),
-      needsCompiling ? Stream.of("needsCompiling") : Stream.<String>of(),
-      running.stream().map(r->"running "+r),
-      mains.orElse(Map.of()).entrySet().stream().map(e->"main "+e.getKey()+" "+e.getValue()));
-    return Join.of(lines.flatMap(s->s),"","\n","\n","");
+  /// What state.txt says about a project, as Info: its kind, whether the compiled cache is
+  /// stale, the job it is busy with if any, the main being run if any, how many runs the
+  /// manager started, the main of the last one and its exit code, and the known mains each
+  /// with the file declaring it.
+  public static String state(Kind kind, boolean needsCompiling, String busy, Optional<String> running, int runs, String lastRun, int exit, Optional<Map<String,String>> mains){
+    var mainFields= mains.orElse(Map.of()).entrySet().stream().map(e->field(e.getKey(),e.getValue())).toList();
+    return Info.print(new Obj(List.of(
+      field("kind",kind.text),
+      field("needsCompiling",""+needsCompiling),
+      field("busy",busy),
+      field("running",running.orElse("")),
+      field("runs",""+runs),
+      field("lastRun",lastRun),
+      field("exit",""+exit),
+      new Field("mains",Info.noSpan,new Obj(mainFields,Info.noSpan))),Info.noSpan));
   }
+  private static Field field(String key, String value){ return new Field(key,Info.noSpan,new Str(value,Info.noSpan)); }
+  public void state(String alias, String text){ replace(reports(alias).resolve("state.txt"),text); }
   public static void append(Path file, String text){
     Fs.ensureDir(file.getParent());
     Fs.ofV(()->Files.writeString(file,text,CREATE,APPEND));
@@ -47,19 +56,23 @@ public record Eclipse(Path dir){
     var plugin= JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("eclipsePlugin");
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     Fs.copyFresh(plugin,fearless.resolve("plugins"));
-    Fs.writeUtf8(fearless.resolve("manager.txt"),msgDir+"\n"+dir+"\n");
+    Fs.writeUtf8(fearless.resolve("manager.txt"),msgDir+"\n"+dir+"\n"+Session.stdLib("baseCache").resolve("base.html")+"\n");
     return """
 Eclipse is now connected:
 %s
 
-Restart Eclipse: every project this manager knows appears in its workspace,
-and the Fearless menu offers New project, Run and Terminate.
+Restart Eclipse: every project this manager knows appears in its Fearless
+perspective. File > New makes a project, Project > Build compiles it, the
+Run button runs it, and the Terminate button of its console stops it.
 """.formatted(eclipse);
   }
   public void publish(List<Entry> known){
-    var tmp= dir.resolve("projects.tmp");
-    Fs.writeUtf8(tmp,String.join("",known.stream().map(e->e.alias()+" "+e.path()+"\n").toList()));
-    Fs.ofV(()->Files.move(tmp,dir.resolve("projects.txt"),ATOMIC_MOVE));
+    replace(dir.resolve("projects.txt"),String.join("",known.stream().map(e->e.alias()+" "+e.path()+"\n").toList()));
+  }
+  private static void replace(Path file, String text){
+    var tmp= file.resolveSibling(file.getFileName()+".tmp");
+    Fs.writeUtf8(tmp,text);
+    Fs.ofV(()->Files.move(tmp,file,ATOMIC_MOVE));
   }
   /// One Problems view marker per project: relative file path, line number, then the message; empty when the compile succeeded.
   public static void problems(Path reports, String message){

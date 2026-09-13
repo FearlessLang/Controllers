@@ -7,6 +7,15 @@
     <persistent value="true"/>
   </extension>
 
+  <extension id="nature" point="org.eclipse.core.resources.natures" name="Fearless Nature">
+    <runtime><run class="fearlessPluginProject.Nature"/></runtime>
+    <builder id="fearlessPluginProject.builder"/>
+  </extension>
+
+  <extension id="builder" point="org.eclipse.core.resources.builders" name="Fearless Builder">
+    <builder hasNature="true"><run class="fearlessPluginProject.Builder"/></builder>
+  </extension>
+
   <extension point="org.eclipse.ui.startup">
     <startup class="fearlessPluginProject.Startup"/>
   </extension>
@@ -14,6 +23,47 @@
   <extension point="org.eclipse.ui.perspectives">
     <perspective id="fearlessPluginProject.perspective" name="Fearless"
       class="fearlessPluginProject.FearlessPerspective" icon="icons/fearless16.png"/>
+  </extension>
+
+  <extension point="org.eclipse.ui.views">
+    <view id="fearlessPluginProject.explorer" name="Fearless Explorer" icon="icons/fearless16.png"
+      class="org.eclipse.ui.navigator.CommonNavigator"/>
+  </extension>
+
+  <extension point="org.eclipse.ui.navigator.viewer">
+    <viewer viewerId="fearlessPluginProject.explorer"/>
+    <viewerContentBinding viewerId="fearlessPluginProject.explorer">
+      <includes>
+        <contentExtension pattern="org.eclipse.ui.navigator.resourceContent"/>
+        <contentExtension pattern="org.eclipse.ui.navigator.resources.filters.*"/>
+        <contentExtension pattern="org.eclipse.ui.navigator.resources.linkHelper"/>
+        <contentExtension pattern="fearlessPluginProject.only"/>
+      </includes>
+    </viewerContentBinding>
+    <viewerActionBinding viewerId="fearlessPluginProject.explorer">
+      <includes><actionExtension pattern="org.eclipse.ui.navigator.resources.*"/></includes>
+    </viewerActionBinding>
+    <viewerContentBinding viewerId="org.eclipse.ui.navigator.ProjectExplorer">
+      <includes><contentExtension pattern="fearlessPluginProject.hide"/></includes>
+    </viewerContentBinding>
+  </extension>
+
+  <extension point="org.eclipse.ui.navigator.navigatorContent">
+    <commonFilter id="fearlessPluginProject.only" name="Everything but Fearless projects"
+      activeByDefault="true" class="fearlessPluginProject.Filters$Only"/>
+    <commonFilter id="fearlessPluginProject.hide" name="Fearless projects"
+      activeByDefault="true" class="fearlessPluginProject.Filters$Hide"/>
+  </extension>
+
+  <extension point="org.eclipse.jdt.ui.javaElementFilters">
+    <filter id="fearlessPluginProject.hideJava" name="Fearless projects" enabled="true"
+      class="fearlessPluginProject.Filters$Hide" targetId="org.eclipse.jdt.ui.PackageExplorer"/>
+  </extension>
+
+  <extension point="org.eclipse.ui.newWizards">
+    <category id="fearlessPluginProject.wizards" name="Fearless"/>
+    <wizard id="fearlessPluginProject.newProject" name="Fearless Project" category="fearlessPluginProject.wizards"
+      class="fearlessPluginProject.NewProjectWizard" icon="icons/fearless16.png" project="true"/>
   </extension>
 
   <extension point="org.eclipse.core.contenttype.contentTypes">
@@ -42,36 +92,63 @@
     <consolePatternMatchListener id="fearlessPluginProject.links" class="fearlessPluginProject.Links"
       regex="error line: \d+ in file \S+|In file: fear:/\S+">
       <enablement>
-        <test property="org.eclipse.ui.console.consoleTypeTest" value="fearlessPluginProject.project"/>
+        <or>
+          <test property="org.eclipse.ui.console.consoleTypeTest" value="fearlessPluginProject.project"/>
+          <test property="org.eclipse.debug.ui.processTypeTest" value="fearless"/>
+        </or>
       </enablement>
     </consolePatternMatchListener>
   </extension>
 
-  <extension point="org.eclipse.ui.commands">
-    <category id="fearlessPluginProject.category" name="Fearless"/>
-    <command id="fearlessPluginProject.newProject" name="New Fearless Project..."
-      categoryId="fearlessPluginProject.category" defaultHandler="fearlessPluginProject.Commands"/>
-    <command id="fearlessPluginProject.run" name="Run Fearless Project"
-      categoryId="fearlessPluginProject.category" defaultHandler="fearlessPluginProject.Commands"/>
-    <command id="fearlessPluginProject.terminate" name="Terminate Fearless Project"
-      categoryId="fearlessPluginProject.category" defaultHandler="fearlessPluginProject.Commands"/>
+  <extension point="org.eclipse.debug.core.launchConfigurationTypes">
+    <launchConfigurationType id="fearlessPluginProject.launch" name="Fearless Program" modes="run"
+      delegate="fearlessPluginProject.Launcher"/>
+  </extension>
+
+  <extension point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+    <launchConfigurationTypeImage id="fearlessPluginProject.launchImage"
+      configTypeID="fearlessPluginProject.launch" icon="icons/fearless16.png"/>
+  </extension>
+
+  <extension point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+    <launchConfigurationTabGroup id="fearlessPluginProject.launchTabs"
+      type="fearlessPluginProject.launch" class="fearlessPluginProject.LaunchTab"/>
+  </extension>
+
+  <extension point="org.eclipse.debug.ui.launchShortcuts">
+    <shortcut id="fearlessPluginProject.shortcut" label="Fearless Program" modes="run"
+      icon="icons/fearless16.png" class="fearlessPluginProject.Shortcut">
+      <contextualLaunch>
+        <enablement>
+          <with variable="selection">
+            <count value="1"/>
+            <iterate>
+              <adapt type="org.eclipse.core.resources.IResource">
+                <test property="org.eclipse.core.resources.projectNature" value="fearlessPluginProject.nature"/>
+              </adapt>
+            </iterate>
+          </with>
+        </enablement>
+        <contextLabel mode="run" label="Fearless Program"/>
+      </contextualLaunch>
+      <configurationType id="fearlessPluginProject.launch"/>
+    </shortcut>
   </extension>
 
   <extension point="org.eclipse.ui.menus">
     <menuContribution locationURI="popup:org.eclipse.ui.popup.any?after=additions">
-      <dynamic class="fearlessPluginProject.PopupItems" id="fearlessPluginProject.popup"/>
-    </menuContribution>
-    <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=additions">
-      <menu id="fearlessPluginProject.menu" label="Fearless">
+      <menu id="fearlessPluginProject.menu" label="Fearless" icon="icons/fearless16.png">
         <visibleWhen checkEnabled="false">
-          <with variable="activeWorkbenchWindow.activePerspective">
-            <equals value="fearlessPluginProject.perspective"/>
+          <with variable="selection">
+            <count value="1"/>
+            <iterate>
+              <adapt type="org.eclipse.core.resources.IResource">
+                <test property="org.eclipse.core.resources.projectNature" value="fearlessPluginProject.nature"/>
+              </adapt>
+            </iterate>
           </with>
         </visibleWhen>
-        <command commandId="fearlessPluginProject.newProject" style="push"/>
-        <separator name="running" visible="true"/>
-        <command commandId="fearlessPluginProject.run" style="push"/>
-        <command commandId="fearlessPluginProject.terminate" style="push"/>
+        <dynamic class="fearlessPluginProject.PopupItems" id="fearlessPluginProject.popup"/>
       </menu>
     </menuContribution>
   </extension>
