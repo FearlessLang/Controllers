@@ -28,6 +28,7 @@ import fearlessPluginProject.ManagerLink.State;
 /// launched. The mains offered are those the selected file declares, or all the known
 /// ones when it declares none: one is run, several are asked about, and none known yet
 /// (the project is not compiled) leaves the choice to the manager, which compiles first.
+/// An idle project is first asked to become a code project; it runs only if it does.
 public final class Shortcut implements ILaunchShortcut{
   @Override public void launch(ISelection selection, String mode){
     launch(Adapters.adapt(((IStructuredSelection)selection).getFirstElement(), IResource.class), mode);
@@ -36,6 +37,7 @@ public final class Shortcut implements ILaunchShortcut{
   private static void launch(IResource resource, String mode){
     var link= ManagerLink.find().orElseThrow();
     var alias= resource.getProject().getName();
+    if (Idle.is(link, alias) && Idle.ask(link, alias, link.projects().get(alias)).filter("code"::equals).isEmpty()){ return; }
     var mains= link.state(alias).map(State::mains).orElse(Map.of());
     var inFile= resource instanceof IFile f ? mains.entrySet().stream().filter(e->e.getValue().equals(fileOf(f))).map(Map.Entry::getKey).toList() : List.<String>of();
     var offered= inFile.isEmpty() ? List.copyOf(mains.keySet()) : inFile;

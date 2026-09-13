@@ -139,7 +139,28 @@
     </shortcut>
   </extension>
 
+  <extension point="org.eclipse.ui.commands">
+    <command id="fearlessPluginProject.terminate" name="Terminate Fearless Programs" defaultHandler="fearlessPluginProject.Terminate"/>
+  </extension>
+
   <extension point="org.eclipse.ui.menus">
+    <menuContribution locationURI="toolbar:org.eclipse.debug.ui.launchActionSet?after=additions">
+      <command commandId="fearlessPluginProject.terminate" tooltip="Terminate the running Fearless programs"
+        icon="platform:/plugin/org.eclipse.debug.ui/icons/full/elcl16/terminate_co.png"
+        disabledIcon="platform:/plugin/org.eclipse.debug.ui/icons/full/dlcl16/terminate_co.png">
+        <visibleWhen checkEnabled="false">
+          <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
+        </visibleWhen>
+      </command>
+    </menuContribution>
+    <menuContribution locationURI="menu:org.eclipse.ui.run?after=additions">
+      <command commandId="fearlessPluginProject.terminate" label="Terminate Fearless Programs"
+        icon="platform:/plugin/org.eclipse.debug.ui/icons/full/elcl16/terminate_co.png">
+        <visibleWhen checkEnabled="false">
+          <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
+        </visibleWhen>
+      </command>
+    </menuContribution>
     <menuContribution locationURI="popup:org.eclipse.ui.popup.any?after=additions">
       <menu id="fearlessPluginProject.menu" label="Fearless" icon="icons/fearless16.png">
         <visibleWhen checkEnabled="false">

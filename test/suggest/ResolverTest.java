@@ -166,6 +166,11 @@ final class ResolverTest{
     assertEquals("",probe("{ x -> x }.|"));
     assertEquals("",probe("|"));
   }
+  @Test void aNameUsedInsideItsOwnThunkIsUnknown(){
+    assertEquals("",probe("Block#.let x = {x.|"));
+    assertEquals("",probe("Block#.let x = {ps.get 0} .let y = {y.age.|"));
+    assertEquals(person,probe("Block#.let x = {ps.get 0} .let y = {x.|"));
+  }
   @Test void commentsStringsAndCapabilitiesAreSkipped(){
     assertEquals(".flow .get .size",probe("// ps.flow\n ps.|"));
     assertEquals(".flow .get .size",probe("ps /* .flow */ .|"));

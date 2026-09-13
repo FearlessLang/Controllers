@@ -55,7 +55,9 @@ public final class Resolver{
   private final Map<String,String> aliases;
   private final String text;
   private final Group root;
-  private final HashSet<Group> refining= new HashSet<>();
+  /// what is being computed, a literal being refined or a sugar name being bound: asked again
+  /// meanwhile, it is unknown
+  private final HashSet<Object> busy= new HashSet<>();
   public Resolver(Api api, String pkg, Map<String,String> aliases, String text){
     this.api= api;
     this.pkg= pkg;
@@ -260,13 +262,16 @@ public final class Resolver{
   }
   /// the type x is bound to by the sugar binding it, the last of a chain of sugars
   private Ty sugarBinder(E e, String x){
+    if (!busy.add(x)){ return Ty.unknown; }
+    var res= Ty.unknown;
     for (; e instanceof Sugar s;){
       var k= continuation(s.call(), Map.of());
-      if (k.isEmpty()){ return Ty.unknown; }
-      if (s.x().equals(x)){ return k.get().x(); }
+      if (k.isEmpty()){ break; }
+      if (s.x().equals(x)){ res= k.get().x(); break; }
       e= Chain.parse(new Known(k.get().k()), s.rest());
     }
-    return Ty.unknown;
+    busy.remove(x);
+    return res;
   }
   /// a declaration the last compile does not know: the parameter comes from the supertypes in its header
   private Ty paramFromSupers(Group g, Meth meth, String x){
@@ -291,9 +296,9 @@ public final class Resolver{
     if (i > 0 && Tokens.is(items.get(i-1), Kind.UppercaseId)){ return Optional.of(parseType(items.subList(i-1, i), generics)); }
     if (i > 1 && Tokens.is(items.get(i-2), Kind.UppercaseId) && Tokens.isGroup(items.get(i-1), Kind.OSquare)){ return Optional.of(parseType(items.subList(i-2, i), generics)); }
     var expected= expectedType(g);
-    if (expected.isEmpty() || !refining.add(g)){ return expected; }
+    if (expected.isEmpty() || !busy.add(g)){ return expected; }
     var res= lambdaType(g, expected.get(), Map.of());
-    refining.remove(g);
+    busy.remove(g);
     return Optional.of(res);
   }
   /// the expected type of a curly group: the parameter type of the call it is an argument of,
