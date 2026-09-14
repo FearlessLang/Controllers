@@ -128,6 +128,7 @@ public final class Main{
     finally{ worker.shutdownNow(); }
   }
   public void quit(){ stop.quit(); }
+  public void fail(UserError problem){ stop.fail(problem); }
   public void forgetAssociation(){
     if (Fs.isMac() || !window.askForget()){ return; }
     try{ Association.launcher().ifPresent(l->Association.reconcile(l,List.of())); }
@@ -229,7 +230,7 @@ class Stop{
     catch(UserError problem){ fail(problem); }
     catch(Throwable t){ fail(Bug.of(t)); }
   }
-  private void fail(RuntimeException problem){ failure.compareAndSet(null,problem); latch.countDown(); }
+  void fail(RuntimeException problem){ failure.compareAndSet(null,problem); latch.countDown(); }
   void await(){
     try{ latch.await(); }
     catch(InterruptedException e){ throw Bug.of(e); }

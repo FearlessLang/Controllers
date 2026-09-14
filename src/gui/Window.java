@@ -74,6 +74,7 @@ public final class Window{
   private final Timer ticker= new Timer(1000,_->tick());
   private Panel shown;
   private int ticks;
+  private boolean surfaced;
   private Window(Main main){
     this.main= main;
     this.registry= main.registry;
@@ -92,7 +93,8 @@ public final class Window{
     frame.addWindowListener(new WindowAdapter(){
       @Override public void windowClosing(WindowEvent e){ frame.setVisible(false); ticker.stop(); }
       @Override public void windowIconified(WindowEvent e){ ticker.stop(); }
-      @Override public void windowDeiconified(WindowEvent e){ ticker.start(); }
+      @Override public void windowDeiconified(WindowEvent e){ ticker.start(); surfaced= true; }
+      @Override public void windowActivated(WindowEvent e){ surfaced= true; }
     });
     frame.setIconImage(Icons.app());
     if (Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE)){ Taskbar.getTaskbar().setIconImage(Icons.app()); }
@@ -112,12 +114,21 @@ public final class Window{
   }
   public void show(){
     SwingUtilities.invokeLater(()->{
+      surfaced= surfaced && onScreen();
       frame.setVisible(true);
       frame.setExtendedState(frame.getExtendedState() & ~Frame.ICONIFIED);
       frame.toFront();
       frame.requestFocus();
       ticker.start();
+      var check= new Timer(2000,_->checkSurfaced());
+      check.setRepeats(false);
+      check.start();
     });
+  }
+  private boolean onScreen(){ return frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) == 0; }
+  //A desktop that refuses to show a window reports it as iconified and never deiconifies it.
+  private void checkSurfaced(){
+    if (frame.isVisible() && !surfaced && !onScreen()){ main.fail(Violation.desktopHidesWindow()); }
   }
   public boolean askForget(){
     return onEdt(()->JOptionPane.showConfirmDialog(frame,"""
