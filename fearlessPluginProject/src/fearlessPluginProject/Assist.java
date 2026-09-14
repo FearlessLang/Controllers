@@ -20,6 +20,7 @@ import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
 
 import suggest.Api;
+import suggest.Api.Ty;
 import suggest.Api.Type;
 import suggest.Docs;
 import suggest.Resolver;
@@ -28,7 +29,8 @@ import suggest.Resolver.Row;
 /// Registered on org.eclipse.ui.genericeditor.contentAssistProcessors for Fearless sources: after
 /// a dot, and on ctrl+space, the methods of the type of the expression before the cursor as the
 /// last compile describes them (suggest.Resolver), each with its documentation from the text
-/// rendering next to the api json. The edited file, src/_pkg/name.fear of a mirrored project,
+/// rendering next to the api json, and the types of the package named before the dot, in a use
+/// directive or in code. The edited file, src/_pkg/name.fear of a mirrored project,
 /// names the project and the package (a file of no mirrored project, or outside a package
 /// folder, gets nothing); the compiled information is the api json of every package
 /// of the project and of the standard library, read again when its file changes; the aliases are
@@ -50,15 +52,20 @@ public final class Assist implements IContentAssistProcessorExtension{
     var base= link.baseDocs.resolveSibling("base.json");
     var types= Stream.concat(Stream.of(base), jsons(out)).flatMap(p->types(p).stream()).toList();
     var s= new Resolver(new Api(types), pkgDir.substring(1), Resolver.aliases(head), text).suggest(offset);
-    if (s.rows().isEmpty()){ return new ICompletionProposal[0]; }
+    var typeProposals= s.types().stream().map(t->typeProposal(t, s.from(), offset));
+    if (s.rows().isEmpty()){ return typeProposals.toArray(ICompletionProposal[]::new); }
     var receiver= s.receiver().name();
     var pkg= receiver.substring(0, receiver.indexOf('.'));
     var txt= pkg.equals("base") ? link.baseDocs.resolveSibling("base.txt") : out.resolve("gen_java").resolve(pkg+".txt");
     var docs= new Docs(ManagerLink.read(txt), receiver.substring(pkg.length()+1));
-    return s.rows().stream().map(r->proposal(r, s.from(), offset, docs)).toArray(ICompletionProposal[]::new);
+    return Stream.concat(s.rows().stream().map(r->proposal(r, s.from(), offset, docs)), typeProposals).toArray(ICompletionProposal[]::new);
   }
   private static ICompletionProposal proposal(Row r, int from, int offset, Docs docs){
     return new CompletionProposal(r.insert(), from, offset-from, r.insert().length(), null, r.display(), null, docs.of(r.name(), r.ts().size()).orElse(null));
+  }
+  private static ICompletionProposal typeProposal(Ty t, int from, int offset){
+    var insert= "."+t.name().substring(t.name().indexOf('.')+1);
+    return new CompletionProposal(insert, from, offset-from, insert.length(), null, t.show(), null, null);
   }
   private static Optional<Path> head(Path pkgDir){
     try(var files= Files.list(pkgDir)){ return files.filter(p->p.getFileName().toString().startsWith("_rank_")).findFirst(); }

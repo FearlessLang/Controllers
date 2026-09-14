@@ -33,7 +33,9 @@ import suggest.Tokens.Tok;
 /// for the top level declaration. A literal is typed from the parameter type of the call it is an
 /// argument of, and the types of its bodies flow back into the generics of that call, which also
 /// meet the declared return type of the method the call ends. Whatever cannot be typed is
-/// unknown, and unknown has no methods.
+/// unknown, and unknown has no methods. A lowercase name right before the dot that names a
+/// compiled package, after base. or while typing base.Uni, also lists the types of that package,
+/// the private ones for this package only.
 public final class Resolver{
   public record Row(String name, List<Ty> ts, Ty ret){
     public String insert(){ return name.startsWith(".") ? name : " "+name+" "; }
@@ -42,14 +44,15 @@ public final class Resolver{
       return name+ps+": "+ret.show();
     }
   }
-  /// the rows for the cursor, the receiver type they are the methods of, and the offset their
-  /// text replaces from: the dot or the typed prefix
-  public record Suggestions(int from, Ty receiver, List<Row> rows){}
+  /// the rows for the cursor, the receiver type they are the methods of, the offset their
+  /// text replaces from: the dot or the typed prefix, and the types of the package before the dot
+  public record Suggestions(int from, Ty receiver, List<Row> rows, List<Ty> types){}
   private record Cont(Ty x, Ty k){}
   private record Bound(Method m, HashMap<String,Ty> sub){}
   private static final Kind[] separators= {Kind.SemiColon, Kind.Comma, Kind.Arrow, Kind.Colon, Kind.SQuote};
   private static final Pattern use= Pattern.compile("use\\s+([a-z0-9_]+\\.[A-Za-z0-9_]+)\\s+as\\s+([A-Za-z0-9_]+)\\s*;");
   private static final Comparator<Method> order= Comparator.comparing((Method m)->!m.name().startsWith(".")).thenComparing(Method::name).thenComparing(Method::arity);
+  private static final Comparator<Ty> byName= Comparator.comparing(Ty::name).thenComparing(t->t.args().size());
   private final Api api;
   private final String pkg;
   private final Map<String,String> aliases;
@@ -80,16 +83,30 @@ public final class Resolver{
     var prefix= "";
     var touching= !items.isEmpty() && items.getLast() instanceof Tok t && pos <= t.end();
     var typing= touching && Tokens.is(items.getLast(), Kind.DotName, Kind.Op);
+    var qualifying= touching && Tokens.is(items.getLast(), Kind.UppercaseId) && ((Tok)items.getLast()).text().indexOf('.') >= 0;
     if (typing){ from= items.removeLast().start(); prefix= text.substring(from, pos); }
+    else if (qualifying){ from= items.getLast().start()+((Tok)items.getLast()).text().indexOf('.'); prefix= text.substring(from, pos); }
     else if (pos > 0 && text.charAt(pos-1) == '.'){ from= pos-1; prefix= "."; }
+    var types= types(items, from, prefix);
     var seg= touching && !typing ? List.<Item>of() : segment(items);
-    if (seg.isEmpty()){ return new Suggestions(from, Ty.unknown, List.of()); }
+    if (seg.isEmpty()){ return new Suggestions(from, Ty.unknown, List.of(), types); }
     var t= typeOf(Chain.parse(seg), Map.of());
     var ms= api.methods(t);
     if (ms.isEmpty() && t.name().startsWith(pkg+".")){ ms= supersMethods(t.name().substring(pkg.length()+1)); }
     var p= prefix;
     var rows= ms.stream().filter(m->p.equals(".") || m.name().startsWith(p)).sorted(order).map(m->new Row(m.name(), m.ts(), m.ret())).toList();
-    return new Suggestions(from, t, rows);
+    return new Suggestions(from, t, rows, types);
+  }
+  /// the types of the package named right before the dot at from, alone or as the head of the
+  /// qualified name being typed, whose simple name starts with what follows the dot
+  private List<Ty> types(List<Item> items, int from, String prefix){
+    if (!prefix.startsWith(".") || items.isEmpty() || !(items.getLast() instanceof Tok t)){ return List.of(); }
+    var lower= t.kind() == Kind.LowercaseId && t.end() == from;
+    var upper= t.kind() == Kind.UppercaseId && t.start() < from && from < t.end();
+    if (!lower && !upper){ return List.of(); }
+    var name= t.text().substring(0, from-t.start());
+    var p= name+"."+prefix.substring(1);
+    return api.types(name).stream().filter(ty->ty.name().startsWith(p) && (name.equals(pkg) || !ty.name().startsWith(name+"._"))).sorted(byName).toList();
   }
   private static List<Item> before(Group g, int pos){ return g.items.stream().filter(it->it.start() < pos).toList(); }
   /// the expression segment: what follows the last separator
