@@ -27,8 +27,7 @@ final class DesktopDragTest{
     Fs.writeUtf8(root.resolve("example.txt"),content);
     var before= pilot.shot();
     Fs.ofV(()->Desktop.getDesktop().open(root.toFile()));
-    Pilot.pause(3000);
-    var opened= pilot.shot();
+    var opened= raise(before);
     win= Pilot.changed(before,opened,6);
     assert win.width<before.getWidth() && win.height<before.getHeight();
     unselected= crop(opened,win);
@@ -44,6 +43,13 @@ final class DesktopDragTest{
     assertEquals(destination.resolve("example.txt"),landed);
   }
   private boolean isTheFile(Path p){ return p.getFileName().toString().equals("example.txt") && Fs.readUtf8(p).equals(content); }
+  /// A window opened behind whatever already holds focus gets no keys of its own: the pointer has to land on it first, a click being the one gesture no window can refuse. Whatever changed first, the window itself or only its taskbar button, is where that click goes; the shot taken after it is the one the window rect gets measured from.
+  private BufferedImage raise(BufferedImage before){
+    Pilot.pause(400);
+    var spot= Pilot.changed(before,pilot.shot(),6);
+    pilot.click(spot.x+spot.width/2,spot.y+spot.height/2);
+    return pilot.shot();
+  }
   /// The row the selection lands on after the key, measured against the same unselected window: the folder holds two entries, so down reaches the lower one and up the upper one wherever the selection starts.
   private Rectangle row(int key){
     pilot.chord(key);
