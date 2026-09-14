@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
+import suggest.Api.Ty;
 import suggest.Resolver.Row;
 import suggest.Resolver.Suggestions;
 
@@ -44,6 +45,8 @@ final class ResolverTest{
     type("base.Block",bs("R"),"[]",m(".let",bs("X"),list(c("base.MF",x("X")),c("base.Continuation",x("X"),x("R"))),x("R")),m(".return",bs(),list(c("base.MF",x("R"))),x("R"))),
     type("base.Continuation",bs("T","R"),"[]",abs("#",bs(),list(x("T"),c("base.Block",x("R"))),x("R"))),
     type("base.OrderHash",bs("T"),"[]",abs(".cmp",bs(),list(x("T"),x("T")),c("base.Bool")),abs(".hash",bs(),list(),c("base.Nat")),m(".assertEq",bs(),list(x("T")),c("base.Void"))),
+    type("base._Secret",bs(),"[]"),
+    type("test._Hidden",bs(),"[]"),
     type("test.Cat",bs(),"[]",m(".name",bs(),list(),c("base.Str")),m(".weight",bs(),list(),c("base.Nat"))),
     type("test.Person",bs(),list(sup("base.OrderHash",c("test.Person"))),
       m(".name",bs(),list(),c("base.Str")),m(".age",bs(),list(),c("base.Nat")),m(".cats",bs(),list(),c("base.List",c("test.Cat"))),
@@ -69,7 +72,9 @@ final class ResolverTest{
     return new Resolver(new Api(Api.parse(api)),"test",aliases,text.substring(0,pos)+text.substring(pos+1)).suggest(pos);
   }
   static String names(String text){ return at(text).rows().stream().map(Row::name).collect(Collectors.joining(" ")); }
+  static String types(String text){ return at(text).types().stream().map(Ty::show).collect(Collectors.joining(" ")); }
   static String probe(String snippet){ return names(file+snippet); }
+  static final String baseTypes= "Block Block[R] Bool Continuation[T,R] F[A,R] F[A,B,R] Float Flow[E] Int List[E] MF[R] Nat Opt[E] OptMatch[E,R] OrderHash[T] Str Void";
   @Test void aParameterTypedInTheHeadRootsTheChain(){ assertEquals(".flow .get .size",probe("ps.|")); }
   @Test void aTypeNameRootsTheChain(){
     assertEquals(person,probe("Persons#(1, `a`, ps).|"));
@@ -179,5 +184,37 @@ final class ResolverTest{
   }
   @Test void theHeadFileGivesTheAliases(){
     assertEquals(Map.of("List","base.List","S","base.Str"),Resolver.aliases("use base.List as List;\nuse base.Str as S;\nA: {}"));
+  }
+  @Test void aPackageNameBeforeTheDotSuggestsItsTypesPrivateOnesInTheirOwnPackageOnly(){
+    assertEquals(baseTypes,types(file+"base.|"));
+    assertEquals("Cat Cats Person Persons _Hidden",types(file+"test.|"));
+    assertEquals("",probe("base.|"));
+    assertEquals("",types(file+"ps.|"));
+    assertEquals("",types(file+"Persons.|"));
+    assertEquals("",types(file+"base |"));
+  }
+  @Test void aQualifiedNameBeingTypedFiltersTheTypesAndIsReplacedFromItsDot(){
+    var s= at(file+"base.O|");
+    assertEquals("Opt[E] OptMatch[E,R] OrderHash[T]",s.types().stream().map(Ty::show).collect(Collectors.joining(" ")));
+    assertEquals(file.length()+4,s.from());
+    assertEquals("",s.rows().stream().map(Row::name).collect(Collectors.joining(" ")));
+    assertEquals("Opt[E] OptMatch[E,R]",types(file+"base.Op|tMatch"));
+    assertEquals("",types(file+"base.o|"));
+    assertEquals("",types(file+"nope.O|"));
+  }
+  @Test void aUseDirectiveSuggestsTheTypesOfThePackage(){
+    var s= at("use base.Li|");
+    assertEquals("List[E]",s.types().stream().map(Ty::show).collect(Collectors.joining(" ")));
+    assertEquals(8,s.from());
+    assertEquals(baseTypes,types("use base.|"));
+    assertEquals("",names("use base.|"));
+  }
+  @Test void aParameterNamedLikeAPackageGetsItsMethodsAndTheTypesTogether(){
+    assertEquals(nat,names("A: { .foo(base: Nat) -> base.| }"));
+    assertEquals(baseTypes,types("A: { .foo(base: Nat) -> base.| }"));
+    assertEquals(".str",names("A: { .foo(base: Nat) -> base.s| }"));
+    assertEquals("",types("A: { .foo(base: Nat) -> base.s| }"));
+    assertEquals("",names("A: { .foo(base: Nat) -> base.O| }"));
+    assertEquals("Opt[E] OptMatch[E,R] OrderHash[T]",types("A: { .foo(base: Nat) -> base.O| }"));
   }
 }

@@ -41,9 +41,10 @@ public final class Links implements IPatternMatchListenerDelegate{
     var frame= m.group(1) != null;
     var file= m.group(frame ? 2 : 3);
     var alias= console instanceof IConsole c ? c.getProcess().getAttribute(Process.aliasAttr) : console.getName().substring(FearlessWatcher.consolePrefix.length());
-    var src= ResourcesPlugin.getWorkspace().getRoot().getProject(alias).getFolder(FearlessWatcher.srcName);
+    var f= ResourcesPlugin.getWorkspace().getRoot().getProject(alias).getFolder(FearlessWatcher.srcName).getFile(new Path(file));
+    if (!f.exists()){ return; }
     IntSupplier line= frame ? ()->Integer.parseInt(m.group(1)) : ()->numberedLineAfter(console.getDocument(), offset);
-    console.addHyperlink(new Link(src.getFile(new Path(file)), line), offset+m.start(frame ? 2 : 3), file.length());
+    console.addHyperlink(new Link(f, line), offset+m.start(frame ? 2 : 3), file.length());
   }
   private static int numberedLineAfter(IDocument doc, int offset){
     try{

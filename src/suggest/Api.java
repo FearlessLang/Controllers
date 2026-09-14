@@ -61,6 +61,10 @@ public final class Api{
     assert res.size() <= 1;
     return res.stream().findFirst();
   }
+  /// one Ty per declaration of the package, with its generics as type variables
+  public List<Ty> types(String pkg){
+    return types.values().stream().flatMap(List::stream).filter(t->t.name.startsWith(pkg+".")).map(t->new Ty(t.name, t.bs.stream().map(b->new Ty(b, List.of())).toList())).toList();
+  }
   /// the arity of a name declared at exactly one arity, else 0
   int onlyArity(String name){
     var l= types.getOrDefault(name, List.of());
