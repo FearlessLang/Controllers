@@ -116,10 +116,11 @@ public final class Main{
     WatchService watcher;
     try{ watcher= FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(),e); }
+    Thread.setDefaultUncaughtExceptionHandler((_,t)->stop.fail(t instanceof UserError e ? e : Bug.of(t)));
     window= Window.create(this);
     UserError.owner(window.frame);
     Violation.running(window::runningPrograms);
-    Tray.install(window,this::quit);
+    Tray.install(window,this);
     window.show();
     drain();
     worker.submit(stop.worker(()->watch(watcher)));
