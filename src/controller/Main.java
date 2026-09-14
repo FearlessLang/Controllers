@@ -47,6 +47,8 @@ import utils.Bug;
 /// The manager process. Every launch leaves one message file (the folder it was
 /// started on) in the manager folder, then tries to take the instance lock: the one
 /// process holding it owns the window and drains every message, its own included.
+/// A message naming no folder shows that window, so starting the manager again is what
+/// brings back a window that was closed.
 /// Resources that live for the whole process life (the lock, the watch service, the
 /// workers, the window) are never closed by us: every path out of main leads to
 /// System.exit, and the operating system reclaims them on process death.
@@ -175,10 +177,9 @@ public final class Main{
   //for run the optional main to run, and for kind the kind text as in the metadata file.
   public void register(String message, Consumer<UserError> report){
     var lines= message.lines().toList();
-    if (lines.isEmpty()){ return; }
+    var folder= projectFolder(lines.isEmpty() ? "" : lines.get(lines.size() == 1 ? 0 : 1),managerDir);
+    if (folder.isEmpty()){ window.show(); return; }
     var verb= lines.size() == 1 ? "select" : lines.getFirst();
-    var folder= projectFolder(lines.get(lines.size() == 1 ? 0 : 1),managerDir);
-    if (folder.isEmpty()){ return; }
     if (!registry.has(folder.get())){
       var nested= registry.overlapping(folder.get());
       if (nested.isPresent()){ report.accept(Report.folderNestedWithRegistered(folder.get(),nested.get())); return; }
