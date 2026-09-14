@@ -6,15 +6,15 @@ import java.awt.PopupMenu;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
 
-import javax.swing.SwingUtilities;
+import userMessages.Violation;
 
-/// No tray support (some desktops), or a failure while adding the icon, is not an error.
+/// The icon is the way back to a closed window, so no tray support (some desktops), or
+/// a failure while adding the icon, stops the manager.
 /// The icon lives for the whole process life and is removed by process death.
 public final class Tray{
   private Tray(){}
-  public static void install(Window window, Runnable onQuit){ SwingUtilities.invokeLater(()->tryInstall(window,onQuit)); }
-  private static void tryInstall(Window window, Runnable onQuit){
-    if (!SystemTray.isSupported()){ return; }
+  public static void install(Window window, Runnable onQuit){
+    if (!SystemTray.isSupported()){ throw Violation.noSystemTray(); }
     var show= new MenuItem("Show manager");
     show.addActionListener(_->window.show());
     var quit= new MenuItem("Quit manager");
@@ -27,6 +27,6 @@ public final class Tray{
     icon.setImageAutoSize(true);
     icon.addActionListener(_->window.show());
     try{ SystemTray.getSystemTray().add(icon); }
-    catch(AWTException|UnsupportedOperationException|SecurityException e){}
+    catch(AWTException e){ throw Violation.couldNotAddTrayIcon(e); }
   }
 }
