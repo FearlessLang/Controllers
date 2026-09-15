@@ -4,32 +4,47 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-/// The documentation of the methods of one type, from the text rendering the compiler writes
-/// next to the api json (docBuilder.HtmlDocRenderer.renderText): the type's header line, its
-/// own documentation at two spaces, then one line per method at two spaces with its
-/// documentation at four or more.
+/// The documentation of the types of one package and of their methods, from the text rendering
+/// the compiler writes next to the api json (docBuilder.HtmlDocRenderer.renderText): a type's
+/// header line, the type's own documentation indented under it, then one line per method opened
+/// by a tab, with its own documentation indented under that. A tab opens a method line and
+/// nothing else.
 public final class Docs{
-  private final List<String> lines;
-  public Docs(String txt, String type){
-    var all= List.of(txt.split("\n"));
+  private record Entry(String header, List<String> lines){}
+  private final List<String> all;
+  public Docs(String txt){ this.all= List.of(txt.split("\n")); }
+  /// the type's line and its own documentation, the lines before its first method
+  public Optional<String> type(String type){
+    return entry(type).map(e->text(e.header, e.lines.stream().takeWhile(l->!l.startsWith("\t")).toList()));
+  }
+  /// the method's line and its documentation, when the method is there
+  public Optional<String> method(String type, String name, int arity){
+    var e= entry(type);
+    if (e.isEmpty()){ return Optional.empty(); }
+    var lines= e.get().lines;
+    int i= 0;
+    for (; i < lines.size() && !(lines.get(i).startsWith("\t") && signature(lines.get(i)).equals(name+"/"+arity)); i+= 1){}
+    if (i >= lines.size()){ return Optional.empty(); }
+    int j= i+1;
+    for (; j < lines.size() && !lines.get(j).startsWith("\t"); j+= 1){}
+    return Optional.of(text(lines.get(i), lines.subList(i+1, j)));
+  }
+  /// the header line of the type and the lines written under it
+  private Optional<Entry> entry(String type){
     var header= Pattern.compile(Pattern.quote(type)+"(\\[.*| :.*)?");
     int i= 0;
     for (; i < all.size() && !header.matcher(all.get(i)).matches(); i+= 1){}
-    int j= Math.min(i+1, all.size());
-    for (; j < all.size() && all.get(j).startsWith("  "); j+= 1){}
-    this.lines= all.subList(Math.min(i+1, all.size()), j);
+    if (i >= all.size()){ return Optional.empty(); }
+    int j= i+1;
+    for (; j < all.size() && (all.get(j).startsWith("\t") || all.get(j).startsWith("  ")); j+= 1){}
+    return Optional.of(new Entry(all.get(i), all.subList(i+1, j)));
   }
-  /// the method's line and its documentation, when the method is there
-  public Optional<String> of(String name, int arity){
-    int i= 0;
-    for (; i < lines.size() && (lines.get(i).startsWith("   ") || !signature(lines.get(i)).equals(name+"/"+arity)); i+= 1){}
-    if (i >= lines.size()){ return Optional.empty(); }
-    var res= new StringBuilder(lines.get(i).strip());
-    for (i+= 1; i < lines.size() && lines.get(i).startsWith("   "); i+= 1){ res.append("\n").append(lines.get(i).strip()); }
-    return Optional.of(res.toString());
+  private static String text(String head, List<String> rest){
+    var res= new StringBuilder(head.strip());
+    rest.forEach(l->res.append("\n").append(l.strip()));
+    return res.toString();
   }
-  /// name/arity of a method line, [RC] name[Bs](T1,..,Tn):T; a documentation line at the same
-  /// indent yields something no method is called
+  /// name/arity of a method line, [RC] name[Bs](T1,..,Tn):T
   static String signature(String line){
     var s= line.strip().replaceFirst("^(readH|mutH|imm|iso|read|mut) ", "");
     int j= 0;
