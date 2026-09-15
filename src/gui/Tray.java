@@ -9,14 +9,17 @@ import java.beans.PropertyChangeListener;
 import java.util.Arrays;
 
 import controller.Main;
+import tools.Fs;
 import userMessages.Violation;
 
 /// The icon is the way back to a closed window, so no tray support (some desktops), a
 /// failure while adding the icon, or the desktop later taking the icon away, stops the manager.
+/// On Linux the icon is a StatusNotifierItem on the session bus (Sni); elsewhere it is the AWT tray icon.
 /// The icon lives for the whole process life and is removed by process death.
 public final class Tray{
   private Tray(){}
   public static void install(Window window, Main main){
+    if (Fs.isLinux()){ Sni.install(window::show,Icons.app()); return; }
     if (!SystemTray.isSupported()){ throw Violation.noSystemTray(); }
     var show= new MenuItem("Show manager");
     show.addActionListener(_->window.show());
