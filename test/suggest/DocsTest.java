@@ -11,23 +11,25 @@ final class DocsTest{
     package base
 
     Nat : Sealed, ToStr
-      read !=(read Nat):Bool
+    \tread !=(read Nat):Bool
         from: DataType[Nat,Nat]!=
-      +(Nat):Nat
+    \t+(Nat):Nat
         ``this + x`` returns the checked sum.
         example:
             .check{(2 + 3) .assertEq 5}
-      .aluAnd(Nat):Nat
-      .str:Str
+    \t.aluAnd(Nat):Nat
+    \t.str:Str
 
     NatMatch[R:*]
-      .some(Nat):R
-      mut .map[R:*](mut MF[T,R]):mut Action[R]
+    \t.some(Nat):R
+    \tmut .map[R:*](mut MF[T,R]):mut Action[R]
 
     Gui
       Text is drawn with fonts bundled in the standard library (Noto Sans, one Noto font per major script,
       Noto Sans Symbols/Math): a character outside those fonts is drawn as a box [everywhere.
-      mut .run(mut Consumer[mut Frame]):Void
+      example:
+        .check{Gui.run{}}
+    \tmut .run(mut Consumer[mut Frame]):Void
         ``this.run f`` runs the gui.
     """;
   static final Docs docs= new Docs(txt);
@@ -38,11 +40,11 @@ final class DocsTest{
     assertEquals(Optional.of(".some(Nat):R"),docs.method("NatMatch",".some",1));
   }
   @Test void aTypeLineComesWithItsOwnDocumentation(){
-    assertEquals(Optional.of("Gui\nText is drawn with fonts bundled in the standard library (Noto Sans, one Noto font per major script,\nNoto Sans Symbols/Math): a character outside those fonts is drawn as a box [everywhere."),docs.type("Gui"));
     assertEquals(Optional.of("Nat : Sealed, ToStr"),docs.type("Nat"));
     assertEquals(Optional.of("NatMatch[R:*]"),docs.type("NatMatch"));
   }
-  @Test void theTypeDocumentationAtTheSameIndentIsNoMethodWhateverItContains(){
+  @Test void theTabTellsTheDocumentationOfTheTypeFromTheMethodsWhateverItContains(){
+    assertEquals(Optional.of("Gui\nText is drawn with fonts bundled in the standard library (Noto Sans, one Noto font per major script,\nNoto Sans Symbols/Math): a character outside those fonts is drawn as a box [everywhere.\nexample:\n.check{Gui.run{}}"),docs.type("Gui"));
     assertEquals(Optional.of("mut .run(mut Consumer[mut Frame]):Void\n``this.run f`` runs the gui."),docs.method("Gui",".run",1));
     assertEquals(Optional.empty(),docs.method("Gui",".some",1));
   }
@@ -53,17 +55,10 @@ final class DocsTest{
     assertEquals(Optional.empty(),docs.method("Nope",".str",0));
     assertEquals(Optional.empty(),docs.type("Nope"));
   }
-  @Test void onlyAMethodNameMakesALineAMethod(){
-    assertEquals(true,Docs.isMethod("  read .assertEq(read A1,read LazyInfo):Void"));
-    assertEquals(true,Docs.isMethod("  <=>(Nat):Bool"));
-    assertEquals(false,Docs.isMethod("  example:"));
-    assertEquals(false,Docs.isMethod("  - a bullet of the documentation"));
-    assertEquals(false,Docs.isMethod("    .str:Str"));
-  }
   @Test void theSignatureIsTheNameAndTheArityWhateverTheTypes(){
-    assertEquals(".map/1",Docs.signature("  mut .map[R:*](mut MF[T,R]):mut Action[R]"));
-    assertEquals(".assertEq/2",Docs.signature("  read .assertEq(read A1,read LazyInfo):Void"));
-    assertEquals("!/0",Docs.signature("  ![R:**]:R"));
-    assertEquals("<=>/2",Docs.signature("  read <=>(read Nat,mut Ordering[Nat]):Bool"));
+    assertEquals(".map/1",Docs.signature("\tmut .map[R:*](mut MF[T,R]):mut Action[R]"));
+    assertEquals(".assertEq/2",Docs.signature("\tread .assertEq(read A1,read LazyInfo):Void"));
+    assertEquals("!/0",Docs.signature("\t![R:**]:R"));
+    assertEquals("<=>/2",Docs.signature("\tread <=>(read Nat,mut Ordering[Nat]):Bool"));
   }
 }
