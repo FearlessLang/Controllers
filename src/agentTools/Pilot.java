@@ -45,6 +45,12 @@ public final class Pilot{
   }
   private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else { robot.mouseRelease(b.mask); } }
   public void click(int x, int y){ glide(x,y,none,x,y,left); glide(x,y,left,x,y,none); }
+  /// Two clicks close enough together to be read as one gesture, which is what opens an icon on every desk. Calling click twice does not make one: a desk counts the time from the first press to the second, about 400 milliseconds, and a click leaves the pointer settled for longer than that.
+  public void doubleClick(int x, int y){
+    glide(x,y,none,x,y,none);
+    for (int i= 0; i<2; i++){ button(Button.left,true); pause(50); button(Button.left,false); pause(50); }
+    pause(200);
+  }
   /// Takes hold at x0,y0, carries to x1,y1, and waits there before letting go: what is dropped lands on whatever is under the pointer, and that has to be given its moment to see the pointer arrive.
   public void drag(int x0, int y0, int x1, int y1){ glide(x0,y0,none,x0,y0,left); glide(x0,y0,left,x1,y1,left); glide(x1,y1,left,x1,y1,none); }
   /// Presses the java.awt.event.KeyEvent codes in order and releases them in reverse.
