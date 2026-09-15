@@ -43,7 +43,17 @@ final class DesktopDragTest{
     340,377,1520,700,
     956,304,
     1856,304};
-  private static final int[] onWindows= null;
+  private static final int[] onWindows= {
+    36,28,
+    300,14,300,300,
+    727,15,
+    36,135,
+    435,14,800,300,
+    950,696,
+    380,696,
+    505,182,1050,300,
+    535,24,
+    1250,15};
   private static final Path desk= Path.of(System.getProperty("user.home"),"Desktop");
   private static final Path test1= desk.resolve("test1");
   private static final Path test2= desk.resolve("test2");
