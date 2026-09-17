@@ -60,7 +60,7 @@ public final class PopupItems extends CompoundContributionItem{
   private static void docs(ManagerLink link, Path folder){
     var genJava= folder.resolve(".fearless_out").resolve("gen_java");
     try(var pages= Files.isDirectory(genJava) ? Files.walk(genJava) : Stream.<Path>of()){
-      Stream.concat(pages.filter(p->p.toString().endsWith(".html")), Stream.of(link.baseDocs)).forEach(PopupItems::open);
+      Stream.concat(pages.filter(p->p.toString().endsWith(".html")).sorted(), Stream.of(link.baseDocs)).forEach(PopupItems::open);
     }
     catch(IOException e){ throw new UncheckedIOException(e); }
   }

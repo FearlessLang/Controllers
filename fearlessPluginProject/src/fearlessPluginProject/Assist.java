@@ -78,7 +78,7 @@ public final class Assist implements IContentAssistProcessorExtension{
   }
   private static Stream<Path> jsons(Path out){
     if (!Files.isDirectory(out)){ return Stream.of(); }
-    try(var files= Files.list(out)){ return files.filter(p->p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).toList().stream(); }
+    try(var files= Files.list(out)){ return files.filter(p->p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
     catch(IOException e){ throw new UncheckedIOException(e); }
   }
   private static synchronized List<Type> types(Path json){
