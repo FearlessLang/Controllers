@@ -1,0 +1,16 @@
+/// Every sample yields many molecules; the heaviest of each sample is kept.
+/// The outer flow is over the samples, the inner one over each sample's molecules.
+Sample: {
+  .id: Nat;
+  .analyse: mut List[Nat] -> (1 =~~= 20000).flow.map{i -> i.aluMulWrap(this.id).aluRem 100003}.list;
+  }
+Samples: { #(n: Nat): mut List[Sample] -> (1 =~~= n).flow.map{i -> Sample{.id -> i}}.list }
+
+MoleculesPar: Main{_ -> Block#(
+  Samples#200 .flow.map{s -> s.analyse}.mapFilter{ms -> ms.flow.max{::}.first}.list,
+  Void
+  )}
+MoleculesSeq: Main{_ -> Block#(
+  Samples#200 .seqFlow.map{s -> s.analyse}.mapFilter{ms -> ms.seqFlow.max{::}.first}.list,
+  Void
+  )}

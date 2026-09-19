@@ -1,0 +1,5 @@
+/// Trial division: a parallel filter whose predicate is a sequential inner flow of uneven length.
+IsPrime: F[Nat, base.Bool]{ k -> (2 =~~= (k.getTruncDiv 2)).flow.none{d -> k.getRem d == 0} }
+
+PrimesPar: Main{_ -> Block#(Elems#6000 .flow.filter{k -> k >= 2}.filter{k -> IsPrime#k}.size, Void)}
+PrimesSeq: Main{_ -> Block#(Elems#6000 .seqFlow.filter{k -> k >= 2}.filter{k -> IsPrime#k}.size, Void)}

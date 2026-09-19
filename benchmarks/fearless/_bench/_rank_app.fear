@@ -1,0 +1,35 @@
+use base.Main as Main;
+use base.Void as Void;
+use base.Nat as Nat;
+use base.List as List;
+use base.Lists as Lists;
+use base.Flow as Flow;
+use base.Flows as Flows;
+use base.Block as Block;
+use base.Continue as Continue;
+use base.Break as Break;
+use base.Opt as Opt;
+use base.Opts as Opts;
+use base.ELists as ELists;
+use base.EList as EList;
+use base.F as F;
+
+/// Burns as many iterations of a wrap-around multiply-add as the given tokens and returns the
+/// last value, so the work is consumed by whatever the flow does with it.
+Burn: {
+  .cpu(tokens: Nat): Nat -> Block#
+    .var[Nat] t = {tokens}
+    .var[Nat] x = {tokens + 1}
+    .loop {Block#
+      .if {t.get == 0} .return {Break#}
+      .do {x.set(x.get.aluMulWrap 6364136223846793005 .aluAddWrap 1442695040888963407)}
+      .do {t.set(t.get - 1)}
+      .return {Continue#}
+      }
+    .return {x.get};
+  }
+
+Elems: { #(n: Nat): mut List[Nat] -> (1 =~~= n).flow.list }
+
+/// Folds the flow into one number, so every stage is consumed.
+Drain: { #(f: mut Flow[Nat]): Void -> Block#(f.fold({0}, {a, e -> a.aluAddWrap e}), Void) }

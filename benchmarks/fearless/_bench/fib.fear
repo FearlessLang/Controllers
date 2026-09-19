@@ -1,0 +1,18 @@
+Fib: {
+  .seq(n: Nat): Nat -> n <= 1 .if {
+    .then -> n;
+    .else -> Fib.seq(n - 1) + (Fib.seq(n - 2));
+    };
+  .flow(n: Nat): Nat -> n <= 20 .if {
+    .then -> Fib.seq n;
+    .else -> Lists#(n - 1, n - 2).flow.map{m -> Fib.flow m}.sum 0;
+    };
+  .flowAlways(n: Nat): Nat -> n <= 1 .if {
+    .then -> n;
+    .else -> Lists#(n - 1, n - 2).flow.map{m -> Fib.flowAlways m}.sum 0;
+    };
+  }
+
+FibSeq: Main{_ -> Block#(Fib.seq 30, Void)}
+FibFlow: Main{_ -> Block#(Fib.flow 30, Void)}
+FibFlowAlways: Main{_ -> Block#(Fib.flowAlways 18, Void)}
