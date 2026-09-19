@@ -1,6 +1,7 @@
 use base.Main as Main;
 use base.Void as Void;
 use base.Nat as Nat;
+use base.Byte as Byte;
 use base.List as List;
 use base.Lists as Lists;
 use base.Flow as Flow;
@@ -14,16 +15,27 @@ use base.ELists as ELists;
 use base.EList as EList;
 use base.F as F;
 
-/// Burns as many iterations of a wrap-around multiply-add as the given tokens and returns the
-/// last value, so the work is consumed by whatever the flow does with it.
+/// Burns as many rounds of 255 wrap-around byte multiply-adds as the given tokens and returns
+/// the last byte, so the work is consumed by whatever the flow does with it. Every Byte is a
+/// cached instance, so the loop allocates nothing.
 Burn: {
-  .cpu(tokens: Nat): Nat -> Block#
+  .cpu(tokens: Nat): Byte -> Block#
     .var[Nat] t = {tokens}
-    .var[Nat] x = {tokens + 1}
+    .var[Byte] x = {tokens.softByte}
     .loop {Block#
       .if {t.get == 0} .return {Break#}
-      .do {x.set(x.get.aluMulWrap 6364136223846793005 .aluAddWrap 1442695040888963407)}
+      .do {x.set(Burn.round(x.get))}
       .do {t.set(t.get - 1)}
+      .return {Continue#}
+      }
+    .return {x.get};
+  .round(start: Byte): Byte -> Block#
+    .var[Byte] i = {0.getByte}
+    .var[Byte] x = {start}
+    .loop {Block#
+      .if {i.get == (255.getByte)} .return {Break#}
+      .do {x.set(x.get.aluMulWrap(37.getByte).aluAddWrap(i.get).aluXor(113.getByte))}
+      .do {i.set(i.get.aluAddWrap(1.getByte))}
       .return {Continue#}
       }
     .return {x.get};
@@ -31,5 +43,5 @@ Burn: {
 
 Elems: { #(n: Nat): mut List[Nat] -> (1 =~~= n).flow.list }
 
-/// Folds the flow into one number, so every stage is consumed.
-Drain: { #(f: mut Flow[Nat]): Void -> Block#(f.fold({0}, {a, e -> a.aluAddWrap e}), Void) }
+/// Folds the flow into one byte, so every stage is consumed.
+Drain: { #(f: mut Flow[Byte]): Void -> Block#(f.fold({0.getByte}, {a, e -> a.aluXor e}), Void) }

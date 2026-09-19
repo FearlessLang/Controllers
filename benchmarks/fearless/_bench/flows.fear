@@ -1,51 +1,54 @@
 /// The flow benchmarks: DP is a parallel flow of a list, PP the same flow after a stateful stage
 /// (limit) that pipelines what follows, Seq the sequential flow of the same list.
 
-Three: { #(f: mut Flow[Nat], tokens: Nat): mut Flow[Nat] -> f
+Three: { #(f: mut Flow[Nat], tokens: Nat): mut Flow[Byte] -> f
   .map{_ -> Burn.cpu tokens}
   .map{_ -> Burn.cpu tokens}
   .map{_ -> Burn.cpu tokens}
   }
-Many: { #(f: mut Flow[Nat], stages: Nat, tokens: Nat): mut Flow[Nat] -> stages == 0 .if {
+Many: { #(f: mut Flow[Nat], stages: Nat, tokens: Nat): mut Flow[Byte] -> stages == 0 .if {
+  .then -> f.map{_ -> Burn.cpu tokens};
+  .else -> Many.more(f.map{_ -> Burn.cpu tokens}, stages - 1, tokens);
+  }; .more(f: mut Flow[Byte], stages: Nat, tokens: Nat): mut Flow[Byte] -> stages == 0 .if {
   .then -> f;
-  .else -> Many#(f.map{_ -> Burn.cpu tokens}, stages - 1, tokens);
+  .else -> Many.more(f.map{_ -> Burn.cpu tokens}, stages - 1, tokens);
   }}
-Uneven: { #(f: mut Flow[Nat]): mut Flow[Nat] -> f
-  .map{_ -> Burn.cpu 1342}
-  .map{_ -> Burn.cpu 3125}
-  .map{_ -> Burn.cpu 12500}
-  .map{_ -> Burn.cpu 3125}
-  .map{_ -> Burn.cpu 3125}
-  .map{_ -> Burn.cpu 4000000}
-  .map{_ -> Burn.cpu 3125}
-  .map{_ -> Burn.cpu 3125}
-  .map{_ -> Burn.cpu 3125}
-  .map{_ -> Burn.cpu 2}
+Uneven: { #(f: mut Flow[Nat]): mut Flow[Byte] -> f
+  .map{_ -> Burn.cpu 5}
+  .map{_ -> Burn.cpu 12}
+  .map{_ -> Burn.cpu 50}
+  .map{_ -> Burn.cpu 12}
+  .map{_ -> Burn.cpu 12}
+  .map{_ -> Burn.cpu 15000}
+  .map{_ -> Burn.cpu 12}
+  .map{_ -> Burn.cpu 12}
+  .map{_ -> Burn.cpu 12}
+  .map{_ -> Burn.cpu 1}
   }
 
-FlowOfCheapOpsDP: Main{_ -> Drain#(Three#(Elems#8 .flow, 4))}
-FlowOfCheapOpsPP: Main{_ -> Drain#(Three#(Elems#8 .flow.limit 100, 4))}
-FlowOfCheapOpsSeq: Main{_ -> Drain#(Three#(Elems#8 .seqFlow, 4))}
+FlowOfCheapOpsDP: Main{_ -> Drain#(Three#(Elems#8 .flow, 1))}
+FlowOfCheapOpsPP: Main{_ -> Drain#(Three#(Elems#8 .flow.limit 100, 1))}
+FlowOfCheapOpsSeq: Main{_ -> Drain#(Three#(Elems#8 .seqFlow, 1))}
 
-FlowOfExpensiveOpsDP: Main{_ -> Drain#(Three#(Elems#64 .flow, 150000))}
-FlowOfExpensiveOpsPP: Main{_ -> Drain#(Three#(Elems#64 .flow.limit 100, 150000))}
+FlowOfExpensiveOpsDP: Main{_ -> Drain#(Three#(Elems#64 .flow, 600))}
+FlowOfExpensiveOpsPP: Main{_ -> Drain#(Three#(Elems#64 .flow.limit 100, 600))}
 FlowOfExpensiveOpsDPThenPP: Main{_ -> Drain#(Three#(Elems#64 .flow, 150000).limit 100)}
-FlowOfExpensiveOpsSeq: Main{_ -> Drain#(Three#(Elems#64 .seqFlow, 150000))}
+FlowOfExpensiveOpsSeq: Main{_ -> Drain#(Three#(Elems#64 .seqFlow, 600))}
 
-FlowOfFewElemsManyOpsDP: Main{_ -> Drain#(Many#(Elems#32 .flow, 64, 10000))}
-FlowOfFewElemsManyOpsPP: Main{_ -> Drain#(Many#(Elems#32 .flow.limit 100, 64, 10000))}
-FlowOfFewElemsManyOpsSeq: Main{_ -> Drain#(Many#(Elems#32 .seqFlow, 64, 10000))}
+FlowOfFewElemsManyOpsDP: Main{_ -> Drain#(Many#(Elems#32 .flow, 64, 40))}
+FlowOfFewElemsManyOpsPP: Main{_ -> Drain#(Many#(Elems#32 .flow.limit 100, 64, 40))}
+FlowOfFewElemsManyOpsSeq: Main{_ -> Drain#(Many#(Elems#32 .seqFlow, 64, 40))}
 
-FlowOfManyCheapOpsDP: Main{_ -> Drain#(Three#(Elems#1000000 .flow, 10))}
-FlowOfManyCheapOpsPP: Main{_ -> Drain#(Three#(Elems#1000000 .flow.limit 5000000, 10))}
-FlowOfManyCheapOpsSeq: Main{_ -> Drain#(Three#(Elems#1000000 .seqFlow, 10))}
+FlowOfManyCheapOpsDP: Main{_ -> Drain#(Three#(Elems#100000 .flow, 1))}
+FlowOfManyCheapOpsPP: Main{_ -> Drain#(Three#(Elems#100000 .flow.limit 5000000, 1))}
+FlowOfManyCheapOpsSeq: Main{_ -> Drain#(Three#(Elems#100000 .seqFlow, 1))}
 
 FlowOfUnevenOpsDP: Main{_ -> Drain#(Uneven#(Elems#5 .flow))}
 FlowOfUnevenOpsPP: Main{_ -> Drain#(Uneven#(Elems#5 .flow.limit 100))}
 FlowOfUnevenOpsSeq: Main{_ -> Drain#(Uneven#(Elems#5 .seqFlow))}
 
 /// Short-circuit terminals: how much work is done past the decision.
-FlowFirstDP: Main{_ -> Block#(Elems#100000 .flow.map{e -> Burn.cpu 100 .aluAddWrap e}.filter{e -> e.aluRem 7 == 0}.first, Void)}
-FlowFirstSeq: Main{_ -> Block#(Elems#100000 .seqFlow.map{e -> Burn.cpu 100 .aluAddWrap e}.filter{e -> e.aluRem 7 == 0}.first, Void)}
-FlowAnyLastDP: Main{_ -> Block#(Elems#100000 .flow.map{e -> Burn.cpu 100 .aluAddWrap e}.any{e -> e == 0}, Void)}
-FlowAnyLastSeq: Main{_ -> Block#(Elems#100000 .seqFlow.map{e -> Burn.cpu 100 .aluAddWrap e}.any{e -> e == 0}, Void)}
+FlowFirstDP: Main{_ -> Block#(Elems#100000 .flow.map{e -> Burn.cpu 1 .nat.aluAddWrap e}.filter{e -> e.aluRem 7 == 0}.first, Void)}
+FlowFirstSeq: Main{_ -> Block#(Elems#100000 .seqFlow.map{e -> Burn.cpu 1 .nat.aluAddWrap e}.filter{e -> e.aluRem 7 == 0}.first, Void)}
+FlowAnyLastDP: Main{_ -> Block#(Elems#100000 .flow.map{e -> Burn.cpu 1 .nat.aluAddWrap e}.any{e -> e == 0}, Void)}
+FlowAnyLastSeq: Main{_ -> Block#(Elems#100000 .seqFlow.map{e -> Burn.cpu 1 .nat.aluAddWrap e}.any{e -> e == 0}, Void)}
