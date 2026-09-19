@@ -32,7 +32,7 @@ FlowOfCheapOpsSeq: Main{_ -> Drain#(Three#(Elems#8 .seqFlow, 1))}
 
 FlowOfExpensiveOpsDP: Main{_ -> Drain#(Three#(Elems#64 .flow, 600))}
 FlowOfExpensiveOpsPP: Main{_ -> Drain#(Three#(Elems#64 .flow.limit 100, 600))}
-FlowOfExpensiveOpsDPThenPP: Main{_ -> Drain#(Three#(Elems#64 .flow, 150000).limit 100)}
+FlowOfExpensiveOpsDPThenPP: Main{_ -> Drain#(Three#(Elems#64 .flow, 600).limit 100)}
 FlowOfExpensiveOpsSeq: Main{_ -> Drain#(Three#(Elems#64 .seqFlow, 600))}
 
 FlowOfFewElemsManyOpsDP: Main{_ -> Drain#(Many#(Elems#32 .flow, 64, 40))}

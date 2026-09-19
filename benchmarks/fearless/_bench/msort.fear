@@ -9,15 +9,25 @@ Merge: { #(a: read List[Nat], b: read List[Nat], cost: Nat): mut List[Nat] -> Bl
   .var[Nat] i = {0}
   .var[Nat] j = {0}
   .loop {Block#
-    .if {i.get == (a.size)} .return {Block#(b.subList(j.get).flow.forEach{e -> acc.add e}, Break#)}
-    .if {j.get == (b.size)} .return {Block#(a.subList(i.get).flow.forEach{e -> acc.add e}, Break#)}
+    .if {i.get == (a.size)} .return {Block#(Rest#(b, j.get, acc), Break#)}
+    .if {j.get == (b.size)} .return {Block#(Rest#(a, i.get, acc), Break#)}
     .do {Block#(Burn.cpu cost, Void)}
     .if {a.get(i.get) <= (b.get(j.get))} .return {Block#(acc.add(a.get(i.get)), i.set(i.get + 1), Continue#)}
     .return {Block#(acc.add(b.get(j.get)), j.set(j.get + 1), Continue#)}
     }
   .return {acc.list};
   }
+Rest: { #(xs: read List[Nat], from: Nat, acc: mut EList[Nat]): Void -> Block#[Void]
+  .var[Nat] k = {from}
+  .loop {Block#
+    .if {k.get == (xs.size)} .return {Break#}
+    .do {acc.add(xs.get(k.get))}
+    .do {k.set(k.get + 1)}
+    .return {Continue#}
+    }
+  .return {Void}
+  }
 Shuffled: { #(n: Nat): mut List[Nat] -> (1 =~~= n).flow.scan(12345, {x, _ -> x.aluMulWrap 6364136223846793005 .aluAddWrap 1 .aluShiftRight 33}).list }
 
-SortCost30: Main{_ -> Block#(MSort#(Shuffled#2000, 30), Void)}
-SortCost1000: Main{_ -> Block#(MSort#(Shuffled#2000, 1000), Void)}
+SortCost1: Main{_ -> Block#(MSort#(Shuffled#2000, 1), Void)}
+SortCost10: Main{_ -> Block#(MSort#(Shuffled#2000, 10), Void)}

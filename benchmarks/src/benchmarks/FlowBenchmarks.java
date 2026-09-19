@@ -62,6 +62,6 @@ public class FlowBenchmarks{
   @Benchmark public void primesPar(){ loaded.run("PrimesPar"); }
   @Benchmark public void primesSeq(){ loaded.run("PrimesSeq"); }
 
-  @Benchmark public void sortCost30(){ loaded.run("SortCost30"); }
-  @Benchmark public void sortCost1000(){ loaded.run("SortCost1000"); }
+  @Benchmark public void sortCost1(){ loaded.run("SortCost1"); }
+  @Benchmark public void sortCost10(){ loaded.run("SortCost10"); }
 }
