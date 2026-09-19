@@ -16,7 +16,7 @@ Uneven: { #(f: mut Flow[Nat]): mut Flow[Nat] -> f
   .map{_ -> Burn.cpu 12500}
   .map{_ -> Burn.cpu 3125}
   .map{_ -> Burn.cpu 3125}
-  .map{_ -> Burn.cpu 9375000}
+  .map{_ -> Burn.cpu 4000000}
   .map{_ -> Burn.cpu 3125}
   .map{_ -> Burn.cpu 3125}
   .map{_ -> Burn.cpu 3125}
@@ -27,14 +27,14 @@ FlowOfCheapOpsDP: Main{_ -> Drain#(Three#(Elems#8 .flow, 4))}
 FlowOfCheapOpsPP: Main{_ -> Drain#(Three#(Elems#8 .flow.limit 100, 4))}
 FlowOfCheapOpsSeq: Main{_ -> Drain#(Three#(Elems#8 .seqFlow, 4))}
 
-FlowOfExpensiveOpsDP: Main{_ -> Drain#(Three#(Elems#64 .flow, 300000))}
-FlowOfExpensiveOpsPP: Main{_ -> Drain#(Three#(Elems#64 .flow.limit 100, 300000))}
-FlowOfExpensiveOpsDPThenPP: Main{_ -> Drain#(Three#(Elems#64 .flow, 300000).limit 100)}
-FlowOfExpensiveOpsSeq: Main{_ -> Drain#(Three#(Elems#64 .seqFlow, 300000))}
+FlowOfExpensiveOpsDP: Main{_ -> Drain#(Three#(Elems#64 .flow, 150000))}
+FlowOfExpensiveOpsPP: Main{_ -> Drain#(Three#(Elems#64 .flow.limit 100, 150000))}
+FlowOfExpensiveOpsDPThenPP: Main{_ -> Drain#(Three#(Elems#64 .flow, 150000).limit 100)}
+FlowOfExpensiveOpsSeq: Main{_ -> Drain#(Three#(Elems#64 .seqFlow, 150000))}
 
-FlowOfFewElemsManyOpsDP: Main{_ -> Drain#(Many#(Elems#32 .flow, 64, 30000))}
-FlowOfFewElemsManyOpsPP: Main{_ -> Drain#(Many#(Elems#32 .flow.limit 100, 64, 30000))}
-FlowOfFewElemsManyOpsSeq: Main{_ -> Drain#(Many#(Elems#32 .seqFlow, 64, 30000))}
+FlowOfFewElemsManyOpsDP: Main{_ -> Drain#(Many#(Elems#32 .flow, 64, 10000))}
+FlowOfFewElemsManyOpsPP: Main{_ -> Drain#(Many#(Elems#32 .flow.limit 100, 64, 10000))}
+FlowOfFewElemsManyOpsSeq: Main{_ -> Drain#(Many#(Elems#32 .seqFlow, 64, 10000))}
 
 FlowOfManyCheapOpsDP: Main{_ -> Drain#(Three#(Elems#1000000 .flow, 10))}
 FlowOfManyCheapOpsPP: Main{_ -> Drain#(Three#(Elems#1000000 .flow.limit 5000000, 10))}

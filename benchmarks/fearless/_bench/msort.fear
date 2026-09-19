@@ -20,4 +20,4 @@ Merge: { #(a: read List[Nat], b: read List[Nat], cost: Nat): mut List[Nat] -> Bl
 Shuffled: { #(n: Nat): mut List[Nat] -> (1 =~~= n).flow.scan(12345, {x, _ -> x.aluMulWrap 6364136223846793005 .aluAddWrap 1 .aluShiftRight 33}).list }
 
 SortCost30: Main{_ -> Block#(MSort#(Shuffled#2000, 30), Void)}
-SortCost3000: Main{_ -> Block#(MSort#(Shuffled#2000, 3000), Void)}
+SortCost1000: Main{_ -> Block#(MSort#(Shuffled#2000, 1000), Void)}

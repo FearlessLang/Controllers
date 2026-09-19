@@ -19,8 +19,8 @@ import org.openjdk.jmh.annotations.Warmup;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Fork(1)
-@Warmup(iterations= 2, time= 2)
-@Measurement(iterations= 3, time= 2)
+@Warmup(iterations= 2, time= 3)
+@Measurement(iterations= 5, time= 3)
 public class FlowBenchmarks{
   @Param({"wc"}) public String runtime;
   Runtimes.Loaded loaded;
@@ -63,5 +63,5 @@ public class FlowBenchmarks{
   @Benchmark public void primesSeq(){ loaded.run("PrimesSeq"); }
 
   @Benchmark public void sortCost30(){ loaded.run("SortCost30"); }
-  @Benchmark public void sortCost3000(){ loaded.run("SortCost3000"); }
+  @Benchmark public void sortCost1000(){ loaded.run("SortCost1000"); }
 }
