@@ -77,7 +77,7 @@ final class ResolverTest{
   static final String baseTypes= "Block Block[R] Bool Continuation[T,R] F[A,R] F[A,B,R] Float Flow[E] Int List[E] MF[R] Nat Opt[E] OptMatch[E,R] OrderHash[T] Str Void";
   @Test void aParameterTypedInTheHeadRootsTheChain(){ assertEquals(".flow .get .size",probe("ps.|")); }
   @Test void aTypeNameRootsTheChain(){
-    assertEquals(person,probe("Persons#(1, `a`, ps).|"));
+    assertEquals(person,probe("Persons#(1, \"a\", ps).|"));
     assertEquals("#",probe("Cats.|"));
     assertEquals("#",probe("test.Cats.|"));
   }
@@ -125,7 +125,7 @@ final class ResolverTest{
     assertEquals(".size +",probe("ps.flow.map{::.name}.first.match{ .some s -> s.|"));
   }
   @Test void thisIsTheTopLevelDeclarationAndTheSelfNameItsLiteral(){
-    assertEquals(person,names("Person: OrderHash[Person] { 'self .name: Str -> `a`; .foo -> self.| }"));
+    assertEquals(person,names("Person: OrderHash[Person] { 'self .name: Str -> \"a\"; .foo -> self.| }"));
     assertEquals(person,names("Person: OrderHash[Person] { .foo -> this.| }"));
     assertEquals("#",names(file.replace("-> name;","-> this.|;")));
     assertEquals(person,names(file.replace("-> age;","-> self.|;")));
@@ -150,10 +150,10 @@ final class ResolverTest{
     assertEquals(".filter .first .fold",s.rows().stream().map(Row::name).collect(Collectors.joining(" ")));
     assertEquals(file.length()+7,s.from());
     assertEquals(".map",names(file+"ps.flow.ma|p"));
-    assertEquals("+",probe("`a`.size +|"));
+    assertEquals("+",probe("\"a\".size +|"));
   }
   @Test void theDotIsReplacedAndOperatorsAreInsertedWithSpaces(){
-    var s= at(file+"`a`.size.|");
+    var s= at(file+"\"a\".size.|");
     assertEquals(file.length()+8,s.from());
     assertEquals(" + ",s.rows().get(1).insert());
     assertEquals(".str",s.rows().get(0).insert());
