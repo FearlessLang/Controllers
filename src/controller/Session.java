@@ -123,7 +123,7 @@ public final class Session{
     synchronized(this){ runs+= 1; lastRun= main; }
     starting(main);
     out.accept("--- running "+main+" ---\n");
-    var ec= await(()->Coordinator.startMain(folder,main,coordinator().sharedClasspath(),out),()->JUnitReport.write(reports,folder,main,started));
+    var ec= await(()->Coordinator.startMain(folder,stdLib("base"),main,coordinator().sharedClasspath(),out),()->JUnitReport.write(reports,folder,main,started));
     synchronized(this){ exit= ec; }
     out.accept("--- "+main+" exited with "+ec+" after "+elapsed().toSeconds()+"s ---\n");
   }
