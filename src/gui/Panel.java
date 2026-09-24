@@ -182,8 +182,9 @@ public final class Panel{
   }
   void recheckFreshness(){
     if (session.busy() || !checking.compareAndSet(false,true)){ return; }
+    var kind= entry().kind();
     main.worker.execute(()->{
-      var fresh= Facts.of(folder,entry().kind());
+      var fresh= Facts.of(folder,kind);
       SwingUtilities.invokeLater(()->{
         checking.set(false);
         var same= fresh.cacheUpToDate() == facts.cacheUpToDate() && fresh.modified() == facts.modified() && fresh.problem().equals(facts.problem());
