@@ -183,7 +183,7 @@ public final class Main{
     var at= lines.isEmpty() ? "" : lines.get(lines.size() > 1 ? 1 : 0);
     if (at.isBlank()){ window.show(); return; }
     Path folder;
-    try{ folder= projectFolder(at,managerDir); }
+    try{ folder= verb.equals("select") ? projectFolder(at,managerDir) : Path.of(at).toAbsolutePath().normalize(); }
     catch(UserError e){ tell(e); return; }
     if (!registry.has(folder) && !verb.equals("select")){ tell(Report.notRegistered(verb,folder)); return; }
     if (!registry.has(folder) && !add(folder)){ return; }

@@ -150,7 +150,8 @@ public final class Window{
   public void forget(Path folder){ now(()->panel(folder).forget()); }
   private static void now(Runnable action){
     try{ SwingUtilities.invokeAndWait(action); }
-    catch(InterruptedException|InvocationTargetException e){ throw Bug.of(e); }
+    catch(InvocationTargetException e){ throw e.getCause() instanceof RuntimeException r ? r : Bug.of(e); }
+    catch(InterruptedException e){ throw Bug.of(e); }
   }
   public void foldersChanged(){ SwingUtilities.invokeLater(this::foldersChangedHere); }
   public List<String> runningPrograms(){ return open.values().stream().filter(this::live).map(this::describe).toList(); }
