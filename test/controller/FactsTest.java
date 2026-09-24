@@ -189,6 +189,14 @@ final class FactsTest{
       """,()->Facts.icon(project));
     assertTrue(Facts.of(project,"someproject",Kind.code).problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }
+  @Test void aBrokenIconDoesNotHideAnUpToDateCache(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"),"not an image");
+    cache(project,"hello",after(project));
+    var facts= Facts.of(project,"someproject",Kind.code);
+    assertTrue(facts.upToDate());
+    assertTrue(facts.problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
+  }
   @Test void aDataFolderStillRejectsUnsafeNames(@TempDir Path dir){
     var project= dir.resolve("publicFiles");
     Fs.writeUtf8(project.resolve("Bad Name.txt"),"hi\n");

@@ -70,6 +70,7 @@ public final class FearlessWatcher extends Job implements IStartup{
     for (var p : root.getProjects()){
       if (Nature.marks(p) && !projects.containsKey(p.getName())){ p.delete(false, true, monitor); }
     }
+    live.keySet().stream().filter(a->!projects.containsKey(a)).toList().forEach(a->live.remove(a).ended(-1));
     for (var e : projects.entrySet()){ reflect(mirror(root.getProject(e.getKey()), e.getValue(), monitor), e.getValue(), monitor); }
   }
   private static IProject mirror(IProject project, Project p, IProgressMonitor monitor) throws CoreException{
@@ -91,7 +92,7 @@ public final class FearlessWatcher extends Job implements IStartup{
   private void reflect(IProject project, Project p, IProgressMonitor monitor) throws CoreException{
     var alias= project.getName();
     var before= seen.put(alias, p);
-    if (before != null && before.runs() != p.runs() && !live.containsKey(alias)){ live.put(alias, Process.start(alias, p.folder(), p.lastRun())); }
+    if (before != null && before.runs() < p.runs() && !live.containsKey(alias)){ live.put(alias, Process.start(alias, p.folder(), p.lastRun())); }
     if (before == null || !before.problem().equals(p.problem())){ mark(project, p.problem()); }
     tail(alias, consoleType, ManagerLink.eclipse().resolve(alias).resolve("console.txt"));
     if (p.running().isEmpty() && live.containsKey(alias)){ live.remove(alias).ended(p.exit()); }
