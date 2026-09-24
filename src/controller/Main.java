@@ -89,6 +89,7 @@ public final class Main{
     catch(IOException e){ throw Violation.couldNotUseInstanceLock(lockFile,e); }
     if (lock == null){ return; }
     UserError.becameManagerOwner();
+    Fs.writeUtf8(main.eclipse.notes(),"");
     main.own();
   }
   private static String versionId(){ return JavacTool.reqVersionId(Violation::mustUseLauncher); }
