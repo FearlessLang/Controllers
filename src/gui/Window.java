@@ -186,7 +186,7 @@ public final class Window implements Manager.View{
     var f= on.map(Project::folder);
     project.add(item("Clear cache",on.isPresent(),()->ask("clean",f.get(),"")));
     project.add(item("Browse files",on.isPresent(),()->OpenPath.open(f.get())));
-    project.add(item("View documentation",on.isPresent(),()->Panel.openDocs(f.get())));
+    project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(f.get())));
     project.add(item("View base documentation",true,()->OpenPath.open(Deployed.stdLib("baseCache").resolve("base.html"))));
     project.add(item("Error report",on.flatMap(Project::problem).isPresent(),()->showText(frame,on.get().problem().get(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE)));
     project.addSeparator();
