@@ -52,6 +52,7 @@ import controller.Session;
 import tools.OpenPath;
 import userMessages.UserError;
 import userMessages.Violation;
+import utils.Bug;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
 /// the selected one on the right. Closing the window only hides it; Quit ends the process.
@@ -140,13 +141,17 @@ public final class Window{
   public void explain(UserError problem){
     SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,problem.getMessage(),"Fearless",JOptionPane.WARNING_MESSAGE));
   }
-  public void select(Path folder){ SwingUtilities.invokeLater(()->tiles.select(folder)); }
-  public void run(Path folder, Optional<String> main){ SwingUtilities.invokeLater(()->panel(folder).run(main)); }
-  public void compile(Path folder){ SwingUtilities.invokeLater(()->panel(folder).compile()); }
-  public void clean(Path folder){ SwingUtilities.invokeLater(()->panel(folder).clearCache()); }
-  public void terminate(Path folder){ SwingUtilities.invokeLater(()->panel(folder).session.terminate()); }
-  public void kind(Path folder, Kind kind){ SwingUtilities.invokeLater(()->panel(folder).kind(kind)); }
-  public void forget(Path folder){ SwingUtilities.invokeLater(()->panel(folder).forget()); }
+  public void select(Path folder){ now(()->tiles.select(folder)); }
+  public void run(Path folder, Optional<String> main){ now(()->panel(folder).run(main)); }
+  public void compile(Path folder){ now(()->panel(folder).compile()); }
+  public void clean(Path folder){ now(()->panel(folder).clearCache()); }
+  public void terminate(Path folder){ now(()->panel(folder).session.terminate()); }
+  public void kind(Path folder, Kind kind){ now(()->panel(folder).kind(kind)); }
+  public void forget(Path folder){ now(()->panel(folder).forget()); }
+  private static void now(Runnable action){
+    try{ SwingUtilities.invokeAndWait(action); }
+    catch(InterruptedException|InvocationTargetException e){ throw Bug.of(e); }
+  }
   public void foldersChanged(){ SwingUtilities.invokeLater(this::foldersChangedHere); }
   public List<String> runningPrograms(){ return open.values().stream().filter(this::live).map(this::describe).toList(); }
   private boolean isRunning(Path folder){ return open.containsKey(folder) && live(open.get(folder)); }
