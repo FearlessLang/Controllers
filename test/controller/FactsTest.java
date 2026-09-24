@@ -1,5 +1,6 @@
 package controller;
 
+import static controller.Errs.err;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -96,6 +97,38 @@ final class FactsTest{
     var facts= Facts.of(project,Kind.dataReadOnly);
     assertTrue(facts.valid());
     assertEquals(List.of(),facts.pkgs());
+  }
+  @Test void twoIconsAreAProjectProblem(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"),"");
+    Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("b.png"),"");
+    err("""
+      More than one .png file was found for this project's icon.
+
+      Looked in:
+      [###]icon
+
+      Found:
+        a.png
+        b.png
+
+      Keep exactly one .png file there.
+      """,()->Facts.icon(project));
+    assertFalse(Facts.of(project,Kind.code).valid());
+  }
+  @Test void anIconThatIsNotAnImageIsAProjectProblem(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"),"not an image");
+    err("""
+      The icon of this project is not a PNG image Fearless can read.
+
+      File:
+      [###]a.png
+
+      The icon of a project is the only .png file in its ".config/icon" folder:
+      replace that file with a PNG image, or remove it.
+      """,()->Facts.icon(project));
+    assertTrue(Facts.of(project,Kind.code).problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }
   @Test void aDataFolderStillRejectsUnsafeNames(@TempDir Path dir){
     var project= dir.resolve("publicFiles");

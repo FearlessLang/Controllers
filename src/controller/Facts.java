@@ -1,22 +1,28 @@
 package controller;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
 
 import controller.Registry.Kind;
 import coordinator.Coordinator;
 import fileSupport.LogFiles;
 import realSourceOracle.RealSourceOracleWithZip;
 import tools.Fs;
+import userMessages.Report;
 import userMessages.UserError;
 
 /// What the file system says about a project folder: its authored files, and the
 /// compiled cache Fearless keeps for it under `.fearless_out`.
-public record Facts(Path folder, int files, long bytes, long modified, long jsonStamp, long cacheStamp, List<String> pkgs, Optional<String> problem){
+public record Facts(Path folder, int files, long bytes, long modified, long jsonStamp, long cacheStamp, List<String> pkgs, Optional<BufferedImage> icon, Optional<String> problem){
   public static final String outDir= Coordinator.outDir;
   public boolean valid(){ return problem.isEmpty(); }
   public boolean cacheUpToDate(){ return cacheStamp >= 0 && cacheStamp >= modified; }
@@ -26,11 +32,33 @@ public record Facts(Path folder, int files, long bytes, long modified, long json
     var f= folder.toAbsolutePath().normalize();
     var src= sources(f);
     List<String> pkgs= List.of();
+    Optional<BufferedImage> icon= Optional.empty();
     Optional<String> problem= Optional.empty();
     UserError.root= f;
-    try{ if (kind == Kind.code){ pkgs= Coordinator.pkgNames(f); } else { new RealSourceOracleWithZip(f); } }
+    try{
+      icon= icon(f);
+      if (kind == Kind.code){ pkgs= Coordinator.pkgNames(f); } else { new RealSourceOracleWithZip(f); }
+    }
     catch(UserError e){ problem= Optional.of(e.getMessage()); }
-    return new Facts(f,src.size(),src.stream().mapToLong(p->Fs.of(()->Files.size(p))).sum(),modified(f),stamp(f,".json",true),stamp(f,".built",false),pkgs,problem);
+    return new Facts(f,src.size(),src.stream().mapToLong(p->Fs.of(()->Files.size(p))).sum(),modified(f),stamp(f,".json",true),stamp(f,".built",false),pkgs,icon,problem);
+  }
+  static Optional<BufferedImage> icon(Path folder){
+    var dir= folder.resolve(".config").resolve("icon");
+    if (!Files.isDirectory(dir)){ return Optional.empty(); }
+    var pngs= Fs.of(()->{ try(var s= Files.list(dir)){ return s
+      .filter(Files::isRegularFile)
+      .filter(p->p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png"))
+      .sorted()
+      .toList();
+    }});
+    if (pngs.size() > 1){ throw Report.projectIconsMany(dir,pngs); }
+    if (pngs.isEmpty()){ return Optional.empty(); }
+    var png= pngs.getFirst();
+    BufferedImage res;
+    try{ res= ImageIO.read(png.toFile()); }
+    catch(IOException e){ throw Report.projectIconUnreadable(png); }
+    if (res == null){ throw Report.projectIconUnreadable(png); }
+    return Optional.of(res);
   }
   public static long modified(Path folder){
     var f= folder.toAbsolutePath().normalize();

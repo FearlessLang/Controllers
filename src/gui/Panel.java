@@ -151,7 +151,7 @@ public final class Panel{
   //inside Information, where a long path can scroll instead of forcing this row wide.
   private JPanel header(){
     var res= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
-    res.add(new JLabel(new Icons.Badge(Icons.folder(folder,iconSize),iconSize,Icons.Mark.none)));
+    res.add(new JLabel(new Icons.Badge(Icons.folder(facts,iconSize),iconSize,Icons.Mark.none)));
     res.add(action);
     name.setFont(name.getFont().deriveFont(Font.BOLD,18f));
     res.add(name);

@@ -10,7 +10,6 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Random;
@@ -19,7 +18,7 @@ import javax.imageio.ImageIO;
 import javax.swing.Icon;
 
 import controller.Association;
-import tools.Fs;
+import controller.Facts;
 import userMessages.Violation;
 import utils.Range;
 
@@ -31,17 +30,9 @@ public final class Icons{
     if (app == null){ app= read(Association.iconFile()); }
     return app;
   }
-  public static Image folder(Path folder, int size){
-    var dir= folder.toAbsolutePath().normalize().resolve(".config").resolve("icon");
-    if (!Files.isDirectory(dir)){ return generated(controller.Names.compactName(folder),size); }
-    var pngs= Fs.of(()->{ try(var s= Files.list(dir)){ return s
-      .filter(Files::isRegularFile)
-      .filter(p->p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png"))
-      .sorted()
-      .toList();
-    }});
-    if (pngs.size() > 1){ throw Violation.multipleIcons(dir,pngs); }
-    return pngs.isEmpty() ? generated(controller.Names.compactName(folder),size) : read(pngs.getFirst());
+  public static Image folder(Facts facts, int size){
+    if (facts.icon().isPresent()){ return facts.icon().get(); }
+    return generated(controller.Names.compactName(facts.folder()),size);
   }
   public static Image read(Path file){
     try{

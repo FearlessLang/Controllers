@@ -3,6 +3,7 @@ package gui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -16,7 +17,6 @@ import java.util.stream.IntStream;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
-import javax.swing.Icon;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -66,7 +66,7 @@ public final class Tiles extends JPanel{
       };
     }
   }
-  public record Row(Entry entry, Icon icon, long modified, State state){}
+  public record Row(Entry entry, Image image, long modified, State state){}
   public enum Sort{
     Name, Modified, Compiled, Run;
     Comparator<Row> comparator(){ return switch(this){
@@ -121,7 +121,7 @@ public final class Tiles extends JPanel{
       if (!row.entry().path().equals(folder)){ continue; }
       if (row.state() == State.codeInvalid || row.state() == State.dataInvalid){ return; }
       var e= row.entry();
-      var updated= build(e,modified,State.of(e.kind(),true,Facts.hasCache(folder),upToDate,isRunning.test(folder)));
+      var updated= new Row(e,row.image(),modified,State.of(e.kind(),true,Facts.hasCache(folder),upToDate,isRunning.test(folder)));
       if (updated.state() == row.state() && updated.modified() == row.modified()){ return; }
       model.set(i,updated);
       syncSpinner();
@@ -146,10 +146,7 @@ public final class Tiles extends JPanel{
   private Row row(Entry e){
     var facts= Facts.of(e.path(),e.kind());
     var valid= facts.valid() && registry.linkProblem(e).isEmpty() && controller.Names.markerProblem(e.path(),e.alias()).isEmpty();
-    return build(e,facts.modified(),State.of(e.kind(),valid,facts.hasCache(),facts.cacheUpToDate(),isRunning.test(e.path())));
-  }
-  private static Row build(Entry e, long modified, State state){
-    return new Row(e,new Icons.Badge(Icons.folder(e.path(),iconSize),iconSize,state.mark()),modified,state);
+    return new Row(e,Icons.folder(facts,iconSize),facts.modified(),State.of(e.kind(),valid,facts.hasCache(),facts.cacheUpToDate(),isRunning.test(e.path())));
   }
   private void open(Point p){
     var i= list.locationToIndex(p);
@@ -161,7 +158,7 @@ public final class Tiles extends JPanel{
       var res= (JLabel)super.getListCellRendererComponent(l,value,i,selected,focus);
       var row= (Row)value;
       res.setText(row.entry().alias());
-      res.setIcon(row.icon());
+      res.setIcon(new Icons.Badge(row.image(),iconSize,row.state().mark()));
       res.setHorizontalAlignment(CENTER);
       res.setHorizontalTextPosition(CENTER);
       res.setVerticalTextPosition(BOTTOM);

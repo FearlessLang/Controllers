@@ -1,8 +1,8 @@
 package gui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
@@ -17,8 +17,9 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import controller.Facts;
+import controller.Registry.Kind;
 import tools.Fs;
-import userMessages.UserError;
 
 final class IconsTest{
   private static Path folder(Path dir, String name){
@@ -35,7 +36,7 @@ final class IconsTest{
     Fs.ensureDir(file.getParent());
     Fs.ofV(()->ImageIO.write(img,"png",file.toFile()));
   }
-  private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.folder(folder,64); }
+  private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.folder(Facts.of(folder,Kind.dataReadOnly),64); }
   @Test void theIconIsThePngInDotConfigIcon(@TempDir Path dir){
     var project= folder(dir,"someProject");
     png(project.resolve(".config").resolve("icon").resolve("whatever.png"),Color.red);
@@ -48,11 +49,12 @@ final class IconsTest{
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("icon.ico"),"not really an ico");
     assertEquals(64,icon(project).getWidth());
   }
-  @Test void multiplePngsInDotConfigIconIsAnError(@TempDir Path dir){
+  @Test void multiplePngsInDotConfigIconMakeTheProjectInvalidAndTheIconMadeUp(@TempDir Path dir){
     var project= folder(dir,"someProject");
     png(project.resolve(".config").resolve("icon").resolve("a.png"),Color.red);
     png(project.resolve(".config").resolve("icon").resolve("b.png"),Color.blue);
-    assertThrows(UserError.class,()->icon(project));
+    assertFalse(Facts.of(project,Kind.dataReadOnly).valid());
+    assertEquals(64,icon(project).getWidth());
   }
   @Test void withNoIconOneIsMadeUpOfTheRightSize(@TempDir Path dir){
     var got= icon(folder(dir,"someProject"));
