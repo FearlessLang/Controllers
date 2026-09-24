@@ -104,12 +104,22 @@ final class RegistryTest{
     new Registry(dir).add("someproject",project);
     assertEquals(List.of(new Entry("someproject",project.toAbsolutePath().normalize(),Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)),new Registry(dir).all());
   }
-  @Test void addingTheSameFolderTwiceRegistersItOnce(@TempDir Path dir){
+  @Test void addingARegisteredFolderOrNameAgainIsABug(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
     r.add("someproject",project);
-    r.add("again",project.resolve("..").resolve("someproject"));
+    assertThrows(AssertionError.class,()->r.add("again",project.resolve("..").resolve("someproject")));
+    assertThrows(AssertionError.class,()->r.add("someproject",folder(dir,"other")));
     assertEquals(1,new Registry(dir).all().size());
+  }
+  @Test void aForgottenFolderForgetsItsTimesToo(@TempDir Path dir){
+    var project= folder(dir,"someproject");
+    var r= new Registry(dir);
+    r.add("someproject",project);
+    r.compiled(project,111);
+    r.remove(project);
+    r.add("someproject",project);
+    assertEquals(-1,r.all().getFirst().compiled());
   }
   @Test void compileRunTimesAndMainsSurviveAReRead(@TempDir Path dir){
     var project= folder(dir,"someproject");

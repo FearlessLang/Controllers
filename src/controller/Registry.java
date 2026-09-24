@@ -66,28 +66,30 @@ public final class Registry{
     var f= norm(folder);
     return all().stream().map(Entry::path).filter(o->!o.equals(f) && (f.startsWith(o) || o.startsWith(f))).findFirst();
   }
-  public void add(String alias, Path folder){
+  public synchronized void add(String alias, Path folder){
     var f= norm(folder);
     var current= raw();
-    if (current.stream().anyMatch(e->e.path().equals(f))){ return; }
-    assert current.stream().noneMatch(e->e.alias().equals(alias));
+    assert current.stream().noneMatch(e->e.path().equals(f) || e.alias().equals(alias));
     assert overlapping(f).isEmpty();
     write(Push.of(current,new Entry(alias,f,Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)));
   }
-  public void remove(Path folder){
+  public synchronized void remove(Path folder){
     var f= norm(folder);
     write(raw().stream().filter(e->!e.path().equals(f)).toList());
+    var times= readTimes();
+    times.remove(f);
+    writeTimes(times);
   }
-  public void update(Path folder, UnaryOperator<Entry> op){
+  public synchronized void update(Path folder, UnaryOperator<Entry> op){
     var f= norm(folder);
     var current= raw();
     assert current.stream().anyMatch(e->e.path().equals(f));
     write(current.stream().map(e->e.path().equals(f) ? op.apply(e) : e).toList());
   }
-  public void compiled(Path folder, long millis){ updateTimes(folder,t->new long[]{millis,t[1]}); }
-  public void ran(Path folder, long millis){ updateTimes(folder,t->new long[]{t[0],millis}); }
+  public synchronized void compiled(Path folder, long millis){ updateTimes(folder,t->new long[]{millis,t[1]}); }
+  public synchronized void ran(Path folder, long millis){ updateTimes(folder,t->new long[]{t[0],millis}); }
   public String text(){ return Files.exists(infoFile()) ? read(infoFile()) : Info.print(toInfo(List.of())); }
-  public void commit(String text){ write(entries(text)); }
+  public synchronized void commit(String text){ write(entries(text)); }
   public Optional<String> linkProblem(Entry e){
     if (e.kind() != Kind.code){ return Optional.empty(); }
     var all= all();
@@ -95,7 +97,7 @@ public final class Registry{
   }
   private static Optional<String> problemIn(Map<String,List<String>> links, String field, boolean needsWrite, List<Entry> all){
     for (var alias: links.keySet()){
-      var target= all.stream().filter(o->o.alias().equals(alias)).findFirst();
+      var target= OneOr.opt("registered "+alias,all.stream().filter(o->o.alias().equals(alias)));
       if (target.isEmpty()){
         return Optional.of("\""+field+"\" refers to \""+alias+"\", but no project called \""+alias+"\" is registered.");
       }
@@ -119,6 +121,9 @@ public final class Registry{
     var f= norm(folder);
     var times= readTimes();
     times.put(f,op.apply(times.getOrDefault(f,new long[]{-1,-1})));
+    writeTimes(times);
+  }
+  private void writeTimes(Map<Path,long[]> times){
     var lines= times.entrySet().stream().map(e->e.getValue()[0]+" "+e.getValue()[1]+" "+e.getKey().toUri());
     writeText(activityFile(),Join.of(lines,"","\n","\n",""));
   }
