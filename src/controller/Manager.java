@@ -115,10 +115,11 @@ public final class Manager{
     scan(e.path());
   }
   private void apply(String message){
-    var lines= message.lines().toList();
-    var at= lines.size() > 1 ? lines.get(1) : lines.isEmpty() ? "" : lines.getFirst();
-    if (at.isBlank()){ view.show(); return; }
+    if (message.isEmpty()){ view.show(); return; }
+    var lines= List.of(message.split("\n",-1));
+    var at= lines.size() > 1 ? lines.get(1) : lines.getFirst();
     var verb= lines.size() > 1 ? lines.getFirst() : "select";
+    if (at.isBlank()){ tell("The manager was asked to \""+verb+"\" a project, but the message names no folder: a message is empty, to show the window, or a path, or a request: a verb, then a folder, then for some verbs a third line."); return; }
     Path folder;
     try{ folder= path(at); }
     catch(UserError e){ tell(e.getMessage()); return; }
@@ -309,7 +310,15 @@ public final class Manager{
     var fresh= Facts.of(f,e.alias(),e.kind());
     if (fresh.equals(l.facts)){ return; }
     l.facts= fresh;
-    l.mains= e.kind() == Kind.code && fresh.upToDate() ? tools.mains(f) : Optional.empty();
+    l.mains= Optional.empty();
+    if (e.kind() != Kind.code || !fresh.upToDate()){ return; }
+    Optional<String> error= Optional.empty();
+    try{ l.mains= tools.mains(f); }
+    catch(UserError err){ error= Optional.of(err.getMessage()); }
+    if (l.mains.isPresent()){ return; }
+    l.facts= null;
+    if (!Facts.of(f,e.alias(),e.kind()).equals(fresh)){ scan(f); return; }
+    l.facts= fresh.outOfDate(error);
   }
   private void rotate(){
     selected.ifPresent(this::scan);
