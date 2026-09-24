@@ -27,7 +27,8 @@ import userMessages.Violation;
 public record Eclipse(Path dir){
   private static final Pattern at= Pattern.compile("(?m)^In file: fear:/(\\S+)\\n\\n(\\d+)\\| ");
   public Path reports(String alias){ return dir.resolve(alias); }
-  public void note(String text){ append(dir.resolve("console.txt"),text); }
+  public Path notes(){ return dir.resolve("console.txt"); }
+  public void note(String text){ append(notes(),text); }
   /// What state.txt says about a project, as Info: its kind, whether the compiled cache is
   /// stale, the job it is busy with if any, the main being run if any, how many runs the
   /// manager started, the main of the last one and its exit code, and the known mains each

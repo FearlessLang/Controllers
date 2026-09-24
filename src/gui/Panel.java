@@ -97,6 +97,7 @@ public final class Panel{
     this.folder= folder;
     this.onChange= onChange;
     console= main.eclipse.reports(entry().alias()).resolve("console.txt");
+    Fs.writeUtf8(console,"");
     session= new Session(folder,main.eclipse.reports(entry().alias()),main.worker,this::append,this::refreshLater);
     facts= Facts.of(folder,entry().kind());
     output.setEditable(false);
