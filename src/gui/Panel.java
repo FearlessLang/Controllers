@@ -91,6 +91,7 @@ public final class Panel{
   private final JButton deleteLog= small("Delete",this::deleteLog);
   private final Collapsible logs= new Collapsible("Logs",logScroll,false,viewLog,copyLog,deleteLog);
   private Facts facts;
+  private boolean dropped;
   Panel(Main main, Path folder, Runnable onChange){
     this.main= main;
     this.registry= main.registry;
@@ -193,7 +194,12 @@ public final class Panel{
       });
     });
   }
+  void drop(){
+    dropped= true;
+    session.terminate();
+  }
   private void refresh(){
+    if (dropped){ return; }
     var entry= entry();
     facts= Facts.of(folder,entry.kind());
     name.setText(entry.alias());
@@ -390,8 +396,8 @@ public final class Panel{
     if (runAfterCompile){ session.compileThenRun(main,entry.mains()); } else { session.compile(); }
   }
   private void check(){
+    var entry= entry();
     main.worker.execute(()->{
-      var entry= entry();
       var problem= Facts.of(folder,entry.kind()).problem().or(()->registry.linkProblem(entry)).or(()->Names.markerProblem(folder,entry.alias()));
       append(problem.map(p->p+"\n").orElse("--- ok: no problem found ---\n"));
       SwingUtilities.invokeLater(this::refresh);

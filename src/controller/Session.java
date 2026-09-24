@@ -35,6 +35,7 @@ public final class Session{
   private final Runnable changed;
   private static final String compiling= "compiling";
   private ChildJvm child;
+  private boolean terminated;
   private String current= "";
   private Instant since= Instant.now();
   private int exit= -1;
@@ -63,10 +64,13 @@ public final class Session{
   public void run(Optional<String> named, List<String> selected){ submit("run","starting",()->doRun(named,selected)); }
   public void compileThenRun(Optional<String> named, List<String> selected){ submit("run",compiling,()->{ if (doCompile()){ doRun(named,selected); } }); }
   public synchronized void terminate(){
+    if (!busy()){ return; }
+    terminated= true;
     if (child == null){ return; }
     out.accept("--- terminating "+current+" ---\n");
     child.kill();
   }
+  private synchronized boolean terminated(){ return terminated; }
   public synchronized boolean refused(String request){
     while(current.equals("reading")){ waitOrBug(0); }
     if (!busy()){ return false; }
@@ -75,6 +79,7 @@ public final class Session{
   }
   private synchronized void submit(String request, String what, Runnable job){
     if (refused(request)){ return; }
+    terminated= false;
     starting(what);
     worker.execute(()->guard(job));
   }
@@ -124,7 +129,10 @@ public final class Session{
     if (named.isPresent() && !all.contains(named.get())){ out.accept("--- nothing to run: "+named.get()+" is not one of the mains "+all+" ---\n"); return; }
     var chosen= named.map(List::of).orElseGet(()->all.size() == 1 ? all : all.stream().filter(selected::contains).toList());
     if (chosen.isEmpty()){ out.accept("--- nothing to run: none of "+all+" is selected ---\n"); return; }
-    chosen.forEach(this::runOne);
+    for (var main: chosen){
+      if (terminated()){ return; }
+      runOne(main);
+    }
   }
   private void runOne(String main){
     var started= Instant.now();
