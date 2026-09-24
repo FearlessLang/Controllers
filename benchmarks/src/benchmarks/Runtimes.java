@@ -100,11 +100,11 @@ public final class Runtimes{
     final Object system;
     Loaded(ClassLoader cl){
       this.cl= cl;
-      this.system= reflect(()->cl.loadClass("base._System$2o$0").getConstructor().newInstance());
+      this.system= reflect(()->cl.loadClass("_base._System$2o$0").getConstructor().newInstance());
     }
     public void run(String main){
       reflect(()->{
-        var c= cl.loadClass("bench."+main+"$"+tag(main)+"$0");
+        var c= cl.loadClass("_bench."+main+"$"+tag(main)+"$0");
         var instance= c.getField("instance").get(null);
         return c.getMethod("imm$main$1", Object.class).invoke(instance, system);
       });
