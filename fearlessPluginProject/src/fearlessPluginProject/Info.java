@@ -1,13 +1,17 @@
 package fearlessPluginProject;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /// Reads the Info files the manager writes (controller.Info in Controllers): objects {...} of
-/// strings "..." (escapes \" \\ \n) and objects; an object becomes a Map in field order.
+/// strings "..." (escapes \" \\ \n \\u(...)) and objects; an object becomes a Map in field order.
 /// Anything else is an error naming the file and the offset.
 final class Info{
+  private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
   private final Path file;
   private final String text;
   private int i;
@@ -44,15 +48,21 @@ final class Info{
     expect('"');
     var sb= new StringBuilder();
     for (var c= text.charAt(i++); c != '"'; c= text.charAt(i++)){
-      if (c == '\\'){ c= escape(text.charAt(i++)); }
-      sb.append(c);
+      sb.append(c == '\\' ? escape(text.charAt(i++)) : String.valueOf(c));
     }
     return sb.toString();
   }
-  private char escape(char c){
-    if (c == 'n'){ return '\n'; }
-    if (c == '"' || c == '\\'){ return c; }
-    throw bad("an escape \\n, \\\" or \\\\");
+  private String escape(char c){
+    if (c == 'n'){ return "\n"; }
+    if (c == '"' || c == '\\'){ return String.valueOf(c); }
+    if (c != 'u' || text.charAt(i++) != '('){ throw bad("an escape \\n, \\\", \\\\ or \\u(...)"); }
+    var end= text.indexOf(')',i);
+    var body= end < 0 ? "" : text.substring(i,end);
+    if (!uCodeText.matcher(body).matches()){ throw bad("a \\u(...) of code points, each 1 to 6 uppercase hex digits, separated by single spaces,"); }
+    var cps= Stream.of(body.split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
+    if (Arrays.stream(cps).anyMatch(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))){ throw bad("a \\u(...) of Unicode scalars only (no D800 to DFFF, nothing above 10FFFF)"); }
+    i= end+1;
+    return new String(cps,0,cps.length);
   }
   private boolean next(char c){
     ws();

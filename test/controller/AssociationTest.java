@@ -43,7 +43,7 @@ final class AssociationTest{
   @Test void theLauncherIsTheOneJpackageNamesAndItMustBeOfTheFamily(){
     Errs.err("Error: Fearless has been started without using its launcher.[###]",Association::launcher);
     System.setProperty("jpackage.app-path",Path.of("editor.exe").toString());
-    try{ Errs.err("[###]whose name does not say it is a Fearless program[###]",Association::launcher); }
+    try{ Errs.err("[###]its launcher does not have \"fearless\" in its name[###]",Association::launcher); }
     finally{ System.clearProperty("jpackage.app-path"); }
     System.setProperty("jpackage.app-path",winLauncher.toString());
     try{ assertEquals(winLauncher,Association.launcher()); }
