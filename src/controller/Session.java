@@ -26,7 +26,7 @@ import utils.Bug;
 
 /// The work Fearless does on one project: reading its mains, compiling it in a child
 /// JVM, running its mains one at a time, and killing whichever child is alive.
-/// At most one job runs per project; a job asked for while another runs is dropped.
+/// At most one job runs per project; a job asked for while another runs is refused.
 public final class Session{
   private final Path folder;
   private final Path reports;
@@ -58,18 +58,23 @@ public final class Session{
   public synchronized int exit(){ return exit; }
   public synchronized int runs(){ return runs; }
   public synchronized String lastRun(){ return lastRun; }
-  public void refresh(){ submit("reading",this::readMains); }
-  public void compile(){ submit(compiling,this::doCompile); }
-  public void run(List<String> selected){ submit("starting",()->doRun(selected)); }
-  public void compileThenRun(List<String> selected){ submit(compiling,()->{ if (doCompile()){ doRun(selected); } }); }
+  public synchronized void refresh(){ if (!busy()){ submit("read the mains","reading",this::readMains); } }
+  public void compile(){ submit("compile",compiling,this::doCompile); }
+  public void run(Optional<String> named, List<String> selected){ submit("run","starting",()->doRun(named,selected)); }
+  public void compileThenRun(Optional<String> named, List<String> selected){ submit("run",compiling,()->{ if (doCompile()){ doRun(named,selected); } }); }
   public synchronized void terminate(){
     if (child == null){ return; }
     out.accept("--- terminating "+current+" ---\n");
     child.kill();
   }
-  private synchronized void submit(String what, Runnable job){
+  public synchronized boolean refused(String request){
     while(current.equals("reading")){ waitOrBug(0); }
-    if (busy()){ return; }
+    if (!busy()){ return false; }
+    out.accept("--- "+request+" refused: the project is busy with "+current+" ---\n");
+    return true;
+  }
+  private synchronized void submit(String request, String what, Runnable job){
+    if (refused(request)){ return; }
     starting(what);
     worker.execute(()->guard(job));
   }
@@ -110,12 +115,15 @@ public final class Session{
     readMains();
     return ec == 0;
   }
-  private void doRun(List<String> selected){
+  private void doRun(Optional<String> named, List<String> selected){
     readMains();
     var known= mains();
     if (known.isEmpty()){ out.accept("--- this project needs compiling ---\n"); return; }
-    var chosen= known.get().size() == 1 ? known.get() : selected.stream().filter(known.get()::contains).toList();
-    if (chosen.isEmpty()){ out.accept("--- nothing to run: none of "+known.get()+" is selected ---\n"); return; }
+    var all= known.get();
+    if (all.isEmpty()){ out.accept("--- nothing to run: this project has no main ---\n"); return; }
+    if (named.isPresent() && !all.contains(named.get())){ out.accept("--- nothing to run: "+named.get()+" is not one of the mains "+all+" ---\n"); return; }
+    var chosen= named.map(List::of).orElseGet(()->all.size() == 1 ? all : all.stream().filter(selected::contains).toList());
+    if (chosen.isEmpty()){ out.accept("--- nothing to run: none of "+all+" is selected ---\n"); return; }
     chosen.forEach(this::runOne);
   }
   private void runOne(String main){
