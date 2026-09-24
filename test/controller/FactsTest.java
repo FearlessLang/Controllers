@@ -140,7 +140,7 @@ final class FactsTest{
   }
   @Test void aFolderWithoutItsMarkerIsInvalid(@TempDir Path dir){
     var project= project(dir,"someProject");
-    assertTrue(Facts.of(project,"other",Kind.code).problem().orElseThrow().contains("\"other.fearless\" is missing"));
+    same("[###]\"other.fearless\" is missing[###]",Facts.of(project,"other",Kind.code).problem().orElseThrow());
   }
   @Test void aMissingFolderIsAProblemNotACrash(@TempDir Path dir){
     same("""

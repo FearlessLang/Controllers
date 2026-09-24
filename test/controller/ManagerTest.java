@@ -178,7 +178,7 @@ final class ManagerTest{
     send(m,"run",hello.toString());
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     assertEquals(Optional.of("hello.Slow"),project(m,hello).running());
-    assertTrue(eclipse(dir,"state.info").contains("\"running\": \"hello.Slow\""));
+    same("[###]\"running\": \"hello.Slow\"[###]",eclipse(dir,"state.info"));
     send(m,"run",hello.toString());
     send(m,"compile",hello.toString());
     send(m,"clean",hello.toString());
@@ -333,7 +333,7 @@ final class ManagerTest{
     assertEquals(List.of(Map.of("data",List.of("Data","Pub")),Map.of("data",List.of("Data","Pub"))),List.of(entry.reads(),entry.edits()));
     assertEquals(Optional.empty(),project(m,hello).problem());
     send(m,"link",hello.toString(),"data read lower");
-    assertTrue(view.notes.getLast().contains("\"lower\" in \"reads\".\"data\" is not a Fearless type name"));
+    same("[###]\"lower\" in \"reads\".\"data\" is not a Fearless type name[###]",view.notes.getLast());
     assertEquals(entry,project(m,hello).entry());
     send(m,"kind",data.toString(),"idle");
     assertEquals(Project.State.codeInvalid,project(m,hello).state());
@@ -350,7 +350,7 @@ final class ManagerTest{
     m.commit("{\"data\": {\"path\": \"nowhere\"}}",()->done.add("bad"));
     m.settle();
     assertEquals(List.of(),done);
-    assertTrue(view.notes.getLast().contains("\"path\" must be an absolute path"));
+    same("[###]\"path\" must be an absolute path[###]",view.notes.getLast());
     m.commit(Registry.text(List.of(project(m,data).entry().withKind(Kind.dataReadWrite))),()->done.add("good"));
     m.settle();
     assertEquals(List.of("good"),done);
