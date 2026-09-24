@@ -101,15 +101,15 @@ public final class Session{
   }
   private void readMains(){
     Optional<Map<String,String>> res;
-    try{ var c= coordinator(); res= c.mains(folder,c.sourceOracle(stdLib("base"))); }
+    try{ var c= coordinator(folder); res= c.mains(folder,c.sourceOracle(stdLib("base"))); }
     catch(UserError _){ res= Optional.empty(); }
     synchronized(this){ mains= res; }
   }
-  private Coordinator coordinator(){
+  static Coordinator coordinator(Path project){
     return new Coordinator(){
       @Override public Optional<Path> baseCachePath(){ return Optional.of(stdLib("baseCache")); }
       @Override public BackendTools backendTools(String pkgName, SourceOracle oracle, OtherPackages other, List<Literal> core, CapabilityEnvironment capabilities){
-        return BackendTools.of(pkgName,oracle,other,core,folder.resolve(Coordinator.outDir),baseCachePath(),stdLib("rt"),capabilities);
+        return BackendTools.of(pkgName,oracle,other,core,project.resolve(Coordinator.outDir),baseCachePath(),stdLib("rt"),capabilities);
       }
     };
   }
@@ -139,7 +139,7 @@ public final class Session{
     synchronized(this){ runs+= 1; lastRun= main; }
     starting(main);
     out.accept("--- running "+main+" ---\n");
-    var ec= await(()->Coordinator.startMain(folder,stdLib("base"),main,coordinator().sharedClasspath(),out),()->JUnitReport.write(reports,folder,main,started));
+    var ec= await(()->Coordinator.startMain(folder,stdLib("base"),main,coordinator(folder).sharedClasspath(),out),()->JUnitReport.write(reports,folder,main,started));
     synchronized(this){ exit= ec; }
     out.accept("--- "+main+" exited with "+ec+" after "+elapsed().toSeconds()+"s ---\n");
   }

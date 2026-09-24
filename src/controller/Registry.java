@@ -90,6 +90,7 @@ public final class Registry{
   public synchronized void ran(Path folder, long millis){ updateTimes(folder,t->new long[]{t[0],millis}); }
   public String text(){ return Files.exists(infoFile()) ? read(infoFile()) : Info.print(toInfo(List.of())); }
   public synchronized void commit(String text){ write(entries(text)); }
+  public Optional<String> problem(Entry e, Facts f){ return f.problem().or(()->linkProblem(e)).or(()->Names.markerProblem(e.path(),e.alias())); }
   public Optional<String> linkProblem(Entry e){
     if (e.kind() != Kind.code){ return Optional.empty(); }
     var all= all();

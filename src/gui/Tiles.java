@@ -140,7 +140,7 @@ public final class Tiles extends JPanel{
     }
   }
   private Row row(Entry e, Facts facts){
-    var valid= facts.valid() && registry.linkProblem(e).isEmpty() && controller.Names.markerProblem(e.path(),e.alias()).isEmpty();
+    var valid= registry.problem(e,facts).isEmpty();
     return new Row(e,Icons.folder(facts,iconSize),facts.modified(),State.of(e.kind(),valid,facts.hasCache(),facts.cacheUpToDate(),isRunning.test(e.path())));
   }
   private void open(Point p){

@@ -3,7 +3,6 @@ package gui;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.awt.Taskbar;
@@ -269,8 +268,7 @@ public final class Window{
     });
   }
   private void editMetadata(){
-    var area= new JTextArea(registry.text(),30,100);
-    area.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13));
+    var area= Panel.mono(new JTextArea(registry.text(),30,100));
     var dialog= new JDialog(frame,"Edit project metadata",true);
     var commit= new JButton("Commit");
     var close= new JButton("Close");
@@ -294,12 +292,7 @@ public final class Window{
       foldersChangedHere();
     });
   }
-  private void showRawState(){
-    var text= new JTextArea(rawState(),30,100);
-    text.setEditable(false);
-    text.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13));
-    JOptionPane.showMessageDialog(frame,new JScrollPane(text),"Raw project state (everything the manager tracks that is not in the metadata file)",JOptionPane.PLAIN_MESSAGE);
-  }
+  private void showRawState(){ Panel.showText(frame,rawState(),"Raw project state (everything the manager tracks that is not in the metadata file)",JOptionPane.PLAIN_MESSAGE); }
   private String rawState(){
     var sb= new StringBuilder();
     for (var e: registry.all()){

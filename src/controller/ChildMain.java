@@ -1,17 +1,9 @@
 package controller;
 
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
 
-import coordinator.CapabilityEnvironment;
-import coordinator.Coordinator;
-import core.E.Literal;
-import core.OtherPackages;
 import fileSupport.NativeLocaleForcer;
-import naiveBackend.BackendTools;
 import tools.ChildJvm;
-import tools.SourceOracle;
 import userMessages.UserError;
 
 /// The child JVM the manager starts to compile one project: args are the project
@@ -26,7 +18,7 @@ public class ChildMain{
     var exitCode= 0;
     var problem= "";
     try{ compile(project); }
-    catch(UserError e){ exitCode= 1; problem= e.getMessage(); System.err.print(problem); }
+    catch(UserError e){ exitCode= 1; problem= e.getMessage(); System.err.println(problem.stripTrailing()); }
     catch(Throwable t){ exitCode= 2; System.err.print(UserError.crash(t)); }
     Eclipse.problems(reports,problem);
     System.out.flush();
@@ -35,12 +27,7 @@ public class ChildMain{
   }
   private static void compile(Path project){
     UserError.root= project;
-    var c= new Coordinator(){
-      @Override public Optional<Path> baseCachePath(){ return Optional.of(Session.stdLib("baseCache")); }
-      @Override public BackendTools backendTools(String pkgName, SourceOracle oracle, OtherPackages other, List<Literal> core, CapabilityEnvironment capabilities){
-        return BackendTools.of(pkgName,oracle,other,core,project.resolve(Coordinator.outDir),baseCachePath(),Session.stdLib("rt"),capabilities);
-      }
-    };
+    var c= Session.coordinator(project);
     c.compile(project,c.sourceOracle(Session.stdLib("base")));
   }
 }

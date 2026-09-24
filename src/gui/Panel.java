@@ -1,6 +1,7 @@
 package gui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -69,11 +70,11 @@ public final class Panel{
   private final Path console;
   private final AtomicBoolean checking= new AtomicBoolean();
   private final JPanel root= new JPanel(new BorderLayout(8,8));
-  private final JTextArea output= named(new JTextArea(10,60),"output");
+  private final JTextArea output= mono(named(new JTextArea(10,60),"output"));
   private final JScrollPane outputScroll= new JScrollPane(output);
   private final JButton clearOutput= small("Clear output",this::clearAll);
   private final JLayeredPane outputLayer= new JLayeredPane();
-  private final JTextArea details= named(new JTextArea(9,40),"details");
+  private final JTextArea details= mono(named(new JTextArea(9,40),"details"));
   private final JPanel kinds= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
   private final JPanel mainsBox= named(new JPanel(),"mains");
   private final JScrollPane mainsScroll= new JScrollPane(mainsBox);
@@ -102,9 +103,7 @@ public final class Panel{
     session= new Session(folder,main.eclipse.reports(entry().alias()),main.worker,this::append,this::refreshLater);
     facts= Facts.of(folder,entry().kind());
     output.setEditable(false);
-    output.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13));
     details.setEditable(false);
-    details.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13));
     mainsBox.setLayout(new BoxLayout(mainsBox,BoxLayout.Y_AXIS));
     linksBox.setLayout(new BoxLayout(linksBox,BoxLayout.Y_AXIS));
     var pick= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
@@ -140,9 +139,9 @@ public final class Panel{
   }
   public JPanel panel(){ return root; }
   public Path folder(){ return folder; }
-  public Facts facts(){ return facts; }
   void reload(){ session.refresh(); refresh(); }
   static <T extends JComponent> T named(T c, String name){ c.setName(name); return c; }
+  static JTextArea mono(JTextArea area){ area.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13)); return area; }
   static JButton small(String text, Runnable action){
     var res= new JButton(text);
     res.setMargin(new Insets(0,6,0,6));
@@ -218,11 +217,7 @@ public final class Panel{
     main.eclipse.state(entry.alias(),Eclipse.state(entry.kind(),needsCompiling,session.current(),session.runningMain(),session.runs(),session.lastRun(),session.exit(),session.mainFiles()));
   }
   private Entry entry(){ return registry.of(folder).orElseThrow(); }
-  private Optional<String> problem(){
-    var entry= entry();
-    return facts.problem().or(()->registry.linkProblem(entry)).or(()->Names.markerProblem(folder,entry.alias()));
-  }
-  boolean hasProblem(){ return problem().isPresent(); }
+  boolean hasProblem(){ return registry.problem(entry(),facts).isPresent(); }
   private void setAll(boolean on){ changed(()->registry.update(folder,e->e.withMains(on ? session.mains().orElse(List.of()) : List.of()))); }
   private void fillLogs(){
     logList.setListData(LogFiles.list(folder).toArray(LogFiles.Entry[]::new));
@@ -236,7 +231,7 @@ public final class Panel{
   }
   private void viewLog(){
     var sel= logList.getSelectedValue();
-    showText(Fs.readUtf8(sel.path()),sel.path().getFileName().toString(),JOptionPane.PLAIN_MESSAGE);
+    showText(root,Fs.readUtf8(sel.path()),sel.path().getFileName().toString(),JOptionPane.PLAIN_MESSAGE);
   }
   private void copyLog(){
     var selection= new StringSelection(Fs.readUtf8(logList.getSelectedValue().path()));
@@ -248,11 +243,10 @@ public final class Panel{
     Fs.rmTree(sel.path());
     fillLogs();
   }
-  private void showText(String text, String title, int kind){
-    var area= new JTextArea(text,24,90);
+  static void showText(Component parent, String text, String title, int kind){
+    var area= mono(new JTextArea(text,24,90));
     area.setEditable(false);
-    area.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13));
-    JOptionPane.showMessageDialog(root,new JScrollPane(area),title,kind);
+    JOptionPane.showMessageDialog(parent,new JScrollPane(area),title,kind);
   }
   //For a code project: what it can run. Unknown until compiled, a single main needs
   //no choice, and several mains are picked one by one or with All and None.
@@ -400,7 +394,7 @@ public final class Panel{
   private void check(){
     var entry= entry();
     main.worker.execute(()->{
-      var problem= Facts.of(folder,entry.kind()).problem().or(()->registry.linkProblem(entry)).or(()->Names.markerProblem(folder,entry.alias()));
+      var problem= registry.problem(entry,Facts.of(folder,entry.kind()));
       append(problem.map(p->p+"\n").orElse("--- ok: no problem found ---\n"));
       SwingUtilities.invokeLater(this::refresh);
     });
@@ -431,7 +425,7 @@ public final class Panel{
     chooser.setDialogTitle("Files of "+Names.compactName(folder));
     chooser.showOpenDialog(root);
   }
-  void report(){ showText(problem().orElseThrow(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE); }
+  void report(){ showText(root,registry.problem(entry(),facts).orElseThrow(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE); }
   private List<String> lines(Entry entry){
     var linkProblem= registry.linkProblem(entry);
     var out= new ArrayList<>(List.of(
