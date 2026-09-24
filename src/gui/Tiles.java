@@ -4,19 +4,19 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Image;
-import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.IntStream;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -24,71 +24,29 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.Timer;
 
-import controller.Facts;
-import controller.Registry;
-import controller.Registry.Entry;
-import controller.Registry.Kind;
-import utils.Range;
+import controller.Manager.State;
+import controller.Project;
 
 /// The grid of registered projects: one tile per project, its icon badged with its state.
 @SuppressWarnings("serial")
 public final class Tiles extends JPanel{
-  public enum State{
-    codeInvalid, dataInvalid, idle, dataReadOnly, dataReadWrite, codeNoCache, codeOutdated, codeCompiled, codeRunning;
-    Icons.Mark mark(){ return switch(this){
-      case codeInvalid, dataInvalid -> Icons.Mark.invalid;
-      case codeRunning -> Icons.Mark.running;
-      case codeNoCache, codeOutdated -> Icons.Mark.attention;
-      case idle -> Icons.Mark.idle;
-      case dataReadOnly -> Icons.Mark.dataReadOnly;
-      case dataReadWrite -> Icons.Mark.dataReadWrite;
-      case codeCompiled -> Icons.Mark.compiled;
-    };}
-    String text(){ return switch(this){
-      case codeInvalid -> "code: invalid content";
-      case dataInvalid -> "data: invalid content";
-      case idle -> "idle";
-      case dataReadOnly -> "data: read only";
-      case dataReadWrite -> "data: read write";
-      case codeNoCache -> "code: not compiled (no cache)";
-      case codeOutdated -> "code: not compiled (cache out of date)";
-      case codeCompiled -> "code: compiled";
-      case codeRunning -> "code: compiled and running";
-    };}
-    static State of(Kind kind, boolean valid, boolean hasCache, boolean cacheUpToDate, boolean running){
-      if (running){ return codeRunning; }
-      if (!valid){ return kind == Kind.code ? codeInvalid : dataInvalid; }
-      return switch(kind){
-        case idle -> idle;
-        case dataReadOnly -> dataReadOnly;
-        case dataReadWrite -> dataReadWrite;
-        case code -> !hasCache ? codeNoCache : !cacheUpToDate ? codeOutdated : codeCompiled;
-      };
-    }
-  }
-  public record Row(Entry entry, Image image, long modified, State state){}
   public enum Sort{
     Name, Modified, Compiled, Run;
-    Comparator<Row> comparator(){ return switch(this){
-      case Name -> Comparator.comparing(r->r.entry().alias(),String.CASE_INSENSITIVE_ORDER);
-      case Modified -> Comparator.comparingLong(Row::modified).reversed();
-      case Compiled -> Comparator.<Row>comparingLong(r->r.entry().compiled()).reversed();
-      case Run -> Comparator.<Row>comparingLong(r->r.entry().run()).reversed();
+    Comparator<Project> comparator(){ return switch(this){
+      case Name -> Comparator.comparing(Project::alias,String.CASE_INSENSITIVE_ORDER);
+      case Modified -> Comparator.<Project>comparingLong(p->p.facts().modified()).reversed();
+      case Compiled -> Comparator.<Project>comparingLong(p->p.entry().compiled()).reversed();
+      case Run -> Comparator.<Project>comparingLong(p->p.entry().run()).reversed();
     };}
   }
   private static final int iconSize= 48;
-  private final Registry registry;
-  private final Predicate<Path> isRunning;
-  private final Consumer<Optional<Path>> onOpen;
-  private final DefaultListModel<Row> model= new DefaultListModel<>();
-  final JList<Row> list= new JList<>(model);
-  private final JComboBox<Sort> sort= new JComboBox<>(Sort.values());
+  final JList<Project> list= new JList<>();
+  final JComboBox<Sort> sort= new JComboBox<>(Sort.values());
   private final Timer spinner= new Timer(80,_->list.repaint());
-  public Tiles(Registry registry, Predicate<Path> isRunning, Consumer<Optional<Path>> onOpen){
+  private State state= new State(List.of(),Optional.empty());
+  private Map<Project,Image> images= Map.of();
+  public Tiles(Consumer<Path> onSelect){
     super(new BorderLayout());
-    this.registry= registry;
-    this.isRunning= isRunning;
-    this.onOpen= onOpen;
     list.setName("tiles");
     list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
     list.setVisibleRowCount(-1);
@@ -96,68 +54,43 @@ public final class Tiles extends JPanel{
     list.setFixedCellHeight(88);
     list.setCellRenderer(new Tile());
     list.addMouseListener(new MouseAdapter(){
-      @Override public void mouseClicked(MouseEvent e){ open(e.getPoint()); }
+      @Override public void mouseClicked(MouseEvent e){
+        var i= list.locationToIndex(e.getPoint());
+        if (i >= 0 && list.getCellBounds(i,i).contains(e.getPoint())){ onSelect.accept(list.getModel().getElementAt(i).folder()); }
+      }
     });
     sort.setName("sort");
-    sort.addActionListener(_->refresh());
+    sort.addActionListener(_->render(state));
     var top= new JPanel(new FlowLayout(FlowLayout.LEFT));
     top.add(new JLabel("Order by"));
     top.add(sort);
     add(top,BorderLayout.NORTH);
     add(new JScrollPane(list),BorderLayout.CENTER);
-    refresh();
   }
-  public void refresh(){
-    var selected= Optional.ofNullable(list.getSelectedValue()).map(r->r.entry().path());
-    var rows= registry.all().stream().map(e->row(e,Facts.of(e.path(),e.kind()))).sorted(((Sort)sort.getSelectedItem()).comparator()).toList();
-    model.clear();
-    rows.forEach(model::addElement);
-    selected.ifPresent(p->IntStream.range(0,model.size()).filter(i->model.get(i).entry().path().equals(p)).forEach(list::setSelectedIndex));
-    syncSpinner();
+  public void render(State s){
+    var moved= !s.selected().equals(state.selected());
+    state= s;
+    var old= images;
+    images= s.projects().stream().collect(Collectors.toMap(Function.identity(),p->old.containsKey(p) ? old.get(p) : Icons.of(p,iconSize)));
+    var rows= s.projects().stream().sorted(((Sort)sort.getSelectedItem()).comparator()).toList();
+    list.setListData(rows.toArray(Project[]::new));
+    var at= s.selected().map(f->rows.stream().map(Project::folder).toList().indexOf(f)).orElse(-1);
+    if (at >= 0){ list.setSelectedIndex(at); }
+    if (at >= 0 && moved){ list.ensureIndexIsVisible(at); }
+    var anyBusy= rows.stream().anyMatch(Project::busy);
+    if (anyBusy && !spinner.isRunning()){ spinner.start(); }
+    if (!anyBusy && spinner.isRunning()){ spinner.stop(); }
   }
-  void update(Entry e, Facts facts){
-    var row= row(e,facts);
-    for(int i : Range.of(0,model.size())){
-      if (!model.get(i).entry().path().equals(row.entry().path())){ continue; }
-      model.set(i,row);
-      syncSpinner();
-      return;
-    }
-  }
-  private void syncSpinner(){
-    var anyRunning= IntStream.range(0,model.size()).mapToObj(model::get).anyMatch(r->r.state() == State.codeRunning);
-    if (anyRunning && !spinner.isRunning()){ spinner.start(); }
-    if (!anyRunning && spinner.isRunning()){ spinner.stop(); }
-  }
-  public void sortBy(Sort order){ sort.setSelectedItem(order); }
-  public void select(Path folder){
-    for(int i : Range.of(0,model.size())){
-      if (!model.get(i).entry().path().equals(folder)){ continue; }
-      list.setSelectedIndex(i);
-      list.ensureIndexIsVisible(i);
-      onOpen.accept(Optional.of(folder));
-      return;
-    }
-  }
-  private Row row(Entry e, Facts facts){
-    var valid= registry.problem(e,facts).isEmpty();
-    return new Row(e,Icons.folder(facts,iconSize),facts.modified(),State.of(e.kind(),valid,facts.hasCache(),facts.cacheUpToDate(),isRunning.test(e.path())));
-  }
-  private void open(Point p){
-    var i= list.locationToIndex(p);
-    if (i < 0 || !list.getCellBounds(i,i).contains(p)){ list.clearSelection(); onOpen.accept(Optional.empty()); return; }
-    onOpen.accept(Optional.of(model.get(i).entry().path()));
-  }
-  private static final class Tile extends DefaultListCellRenderer{
+  private final class Tile extends DefaultListCellRenderer{
     @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focus){
       var res= (JLabel)super.getListCellRendererComponent(l,value,i,selected,focus);
-      var row= (Row)value;
-      res.setText(row.entry().alias());
-      res.setIcon(new Icons.Badge(row.image(),iconSize,row.state().mark()));
+      var p= (Project)value;
+      res.setText(p.alias());
+      res.setIcon(new Icons.Badge(images.get(p),iconSize,p.state()));
       res.setHorizontalAlignment(CENTER);
       res.setHorizontalTextPosition(CENTER);
       res.setVerticalTextPosition(BOTTOM);
-      res.setToolTipText(row.entry().path()+" - "+row.state().text());
+      res.setToolTipText(p.folder()+" - "+p.state().text);
       res.setBorder(selected ? BorderFactory.createLineBorder(l.getSelectionBackground().darker(),3) : null);
       return res;
     }

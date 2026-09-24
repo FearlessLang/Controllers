@@ -8,14 +8,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 import controller.Info.Obj;
 import controller.Info.Obj.Field;
 import controller.Info.Str;
-import controller.Registry.Entry;
-import controller.Registry.Kind;
 import tools.Fs;
 import tools.JavacTool;
 import userMessages.Report;
@@ -27,26 +24,27 @@ import userMessages.Violation;
 public record Eclipse(Path dir){
   private static final Pattern at= Pattern.compile("(?m)^In file: fear:/(\\S+)\\n\\n(\\d+)\\| ");
   public Path reports(String alias){ return dir.resolve(alias); }
+  public Path console(String alias){ return reports(alias).resolve("console.txt"); }
   public Path notes(){ return dir.resolve("console.txt"); }
-  public void note(String text){ append(notes(),text); }
   /// What state.txt says about a project, as Info: its kind, whether the compiled cache is
-  /// stale, the job it is busy with if any, the main being run if any, how many runs the
-  /// manager started, the main of the last one and its exit code, and the known mains each
-  /// with the file declaring it.
-  public static String state(Kind kind, boolean needsCompiling, String busy, Optional<String> running, int runs, String lastRun, int exit, Optional<Map<String,String>> mains){
-    var mainFields= mains.orElse(Map.of()).entrySet().stream().map(e->field(e.getKey(),e.getValue())).toList();
+  /// stale, its job if any, the main being run if any, how many runs the manager started,
+  /// the main of the last one and its exit code, and the known mains each with the file declaring it.
+  public static String stateText(Project p){
+    var mainFields= p.mains().orElse(Map.of()).entrySet().stream().map(e->field(e.getKey(),e.getValue())).toList();
     return Info.print(new Obj(List.of(
-      field("kind",kind.text),
-      field("needsCompiling",""+needsCompiling),
-      field("busy",busy),
-      field("running",running.orElse("")),
-      field("runs",""+runs),
-      field("lastRun",lastRun),
-      field("exit",""+exit),
+      field("kind",p.kind().text),
+      field("needsCompiling",""+p.needsCompiling()),
+      field("busy",p.job()),
+      field("running",p.running().orElse("")),
+      field("runs",""+p.runs()),
+      field("lastRun",p.lastRun()),
+      field("exit",""+p.exit()),
       new Field("mains",Info.noSpan,new Obj(mainFields,Info.noSpan))),Info.noSpan));
   }
   private static Field field(String key, String value){ return new Field(key,Info.noSpan,new Str(value,Info.noSpan)); }
-  public void state(String alias, String text){ replace(reports(alias).resolve("state.txt"),text); }
+  public static String listing(List<Project> projects){ return String.join("",projects.stream().map(p->p.alias()+" "+p.folder()+"\n").toList()); }
+  public void publish(String listing){ replace(dir.resolve("projects.txt"),listing); }
+  public void state(Project p){ replace(reports(p.alias()).resolve("state.txt"),stateText(p)); }
   public static void append(Path file, String text){
     Fs.ensureDir(file.getParent());
     Fs.ofV(()->Files.writeString(file,text,CREATE,APPEND));
@@ -57,7 +55,7 @@ public record Eclipse(Path dir){
     var plugin= JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("eclipsePlugin");
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     Fs.copyFresh(plugin,fearless.resolve("plugins"));
-    Fs.writeUtf8(fearless.resolve("manager.txt"),msgDir+"\n"+dir+"\n"+Session.stdLib("baseCache").resolve("base.html")+"\n");
+    Fs.writeUtf8(fearless.resolve("manager.txt"),msgDir+"\n"+dir+"\n"+Deployed.stdLib("baseCache").resolve("base.html")+"\n");
     return """
 Eclipse is now connected:
 %s
@@ -66,9 +64,6 @@ Restart Eclipse: every project this manager knows appears in its Fearless
 perspective. File > New makes a project, Project > Build compiles it, the
 Run button runs it, and the Terminate button of its console stops it.
 """.formatted(eclipse);
-  }
-  public void publish(List<Entry> known){
-    replace(dir.resolve("projects.txt"),String.join("",known.stream().map(e->e.alias()+" "+e.path()+"\n").toList()));
   }
   private static void replace(Path file, String text){
     var tmp= file.resolveSibling(file.getFileName()+".tmp");

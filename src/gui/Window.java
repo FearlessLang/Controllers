@@ -1,28 +1,30 @@
 package gui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
+import java.awt.Insets;
 import java.awt.Taskbar;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -39,54 +41,44 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.TransferHandler;
 import javax.swing.WindowConstants;
-import javax.swing.filechooser.FileFilter;
 
-import controller.Facts;
+import controller.Deployed;
 import controller.Main;
-import controller.Names;
+import controller.Manager;
+import controller.Manager.State;
+import controller.Project;
 import controller.Registry;
-import controller.Registry.Entry;
-import controller.Registry.Kind;
-import controller.Session;
 import tools.OpenPath;
-import userMessages.UserError;
 import userMessages.Violation;
-import utils.Bug;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
-/// the selected one on the right. Closing the window only hides it; Quit ends the process.
-public final class Window{
+/// the selected one on the right. It shows the State the Manager hands it and turns every
+/// click into a request to the Manager. Closing the window only hides it; Quit ends the process.
+public final class Window implements Manager.View{
   //A divider dragged to the tiles-only edge would otherwise restore to that same edge
   //on every future selection, silently reopening each panel too narrow to see.
   private static final int minPanelWidth= 300;
   public final JFrame frame= new JFrame("Fearless Manager");
   private final Main main;
-  private final Registry registry;
   private final JLabel status= new JLabel();
-  final Tiles tiles;
-  final JSplitPane split;
-  private final JPanel body= new JPanel(new BorderLayout());
+  final Tiles tiles= new Tiles(this::select);
+  final JSplitPane split= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,tiles,new JPanel());
   private final JMenu running= new JMenu("Running");
   private final JMenu project= new JMenu("Project");
-  private final Map<Path,Panel> open= new LinkedHashMap<>();
-  private final AtomicBoolean rotating= new AtomicBoolean();
+  private final Map<Path,Panel> panels= new HashMap<>();
   private final Instant start= Instant.now();
   private final Timer ticker= new Timer(1000,_->tick());
-  private Panel shown;
-  private int ticks;
+  private State state= new State(List.of(),Optional.empty());
+  private Optional<Panel> shown= Optional.empty();
   private boolean surfaced;
   private Window(Main main){
     this.main= main;
-    this.registry= main.registry;
     status.setBorder(BorderFactory.createEmptyBorder(4,8,4,8));
-    tiles= new Tiles(registry,this::isRunning,this::showFolder);
     tiles.setBorder(BorderFactory.createTitledBorder("Registered project folders"));
-    split= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,tiles,new JPanel());
     split.setResizeWeight(0.3);
     split.setDividerLocation(320);
-    body.add(tiles,BorderLayout.CENTER);
     frame.setJMenuBar(menuBar());
-    frame.add(body,BorderLayout.CENTER);
+    frame.add(split,BorderLayout.CENTER);
     frame.add(status,BorderLayout.SOUTH);
     frame.getRootPane().setTransferHandler(dropHandler());
     frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -112,7 +104,7 @@ public final class Window{
     catch(InterruptedException|InvocationTargetException e){ throw Violation.couldNotStartGui(e); }
     return result.get();
   }
-  public void show(){
+  @Override public void show(){
     SwingUtilities.invokeLater(()->{
       surfaced= surfaced && onScreen();
       frame.setVisible(true);
@@ -125,6 +117,9 @@ public final class Window{
       check.start();
     });
   }
+  @Override public void state(State s){ SwingUtilities.invokeLater(()->render(s)); }
+  @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(()->panel(folder).append(text)); }
+  @Override public void note(String text){ SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE)); }
   private boolean onScreen(){ return frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) == 0; }
   //A desktop that refuses to show a window reports it as iconified and never deiconifies it.
   private void checkSurfaced(){
@@ -137,60 +132,36 @@ public final class Window{
       What your desktop already remembers by hand is left exactly as it is:
       this only removes what Fearless itself registered.""","Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);
   }
-  public void explain(UserError problem){
-    SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,problem.getMessage(),"Fearless",JOptionPane.WARNING_MESSAGE));
+  void ask(String verb, Path folder, String arg){ main.manager().ask(verb,folder,arg); }
+  private void select(Path folder){ ask("select",folder,""); }
+  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,f->new Panel(this,f)); }
+  private void render(State s){
+    state= s;
+    tiles.render(s);
+    panels.keySet().removeIf(f->s.of(f).isEmpty());
+    s.shown().ifPresent(p->panel(p.folder()).render(p,s.projects()));
+    var next= s.shown().map(p->panel(p.folder()));
+    if (!next.equals(shown)){ place(next); }
+    fillProjectMenu();
+    running.removeAll();
+    if (s.running().isEmpty()){ running.add(item("<nothing running>",false,()->{})); }
+    s.projects().stream().filter(Project::busy).forEach(p->running.add(item(p.alias()+" - "+p.job(),true,()->select(p.folder()))));
   }
-  public void select(Path folder){ now(()->tiles.select(folder)); }
-  public void run(Path folder, Optional<String> main){ now(()->panel(folder).run(main)); }
-  public void compile(Path folder){ now(()->panel(folder).compile()); }
-  public void clean(Path folder){ now(()->panel(folder).clearCache()); }
-  public void terminate(Path folder){ now(()->panel(folder).session.terminate()); }
-  public void kind(Path folder, Kind kind){ now(()->panel(folder).kind(kind)); }
-  public void forget(Path folder){ now(()->panel(folder).forget()); }
-  private static void now(Runnable action){
-    try{ SwingUtilities.invokeAndWait(action); }
-    catch(InvocationTargetException e){ throw e.getCause() instanceof RuntimeException r ? r : Bug.of(e); }
-    catch(InterruptedException e){ throw Bug.of(e); }
-  }
-  public void foldersChanged(){ SwingUtilities.invokeLater(this::foldersChangedHere); }
-  public List<String> runningPrograms(){ return open.values().stream().filter(this::live).map(this::describe).toList(); }
-  private boolean isRunning(Path folder){ return open.containsKey(folder) && live(open.get(folder)); }
-  private boolean live(Panel p){ return p.session.running().isPresent(); }
-  private String describe(Panel p){ return registry.of(p.folder()).map(Entry::alias).orElseGet(()->Names.compactName(p.folder()))+" - "+p.session.running().orElseThrow(); }
-  private Panel panel(Path folder){ return open.computeIfAbsent(folder,f->new Panel(main,f,this::foldersChangedHere)); }
-  private void showFolder(Optional<Path> folder){
-    if (folder.isEmpty()){ hidePanel(); return; }
-    shown= panel(folder.get());
-    shown.reload();
-    var where= split.getDividerLocation();
-    if (split.getWidth() > 0){ where= Math.min(where,split.getWidth()-minPanelWidth); }
-    split.setLeftComponent(tiles);
-    split.setRightComponent(shown.panel());
-    body.removeAll();
-    body.add(split,BorderLayout.CENTER);
+  private void place(Optional<Panel> next){
+    shown= next;
+    var where= split.getWidth() > 0 ? Math.min(split.getDividerLocation(),split.getWidth()-minPanelWidth) : split.getDividerLocation();
+    split.setRightComponent(next.map(p->(Component)p.root).orElseGet(JPanel::new));
     split.setDividerLocation(where);
-    fillProjectMenu();
-    body.revalidate();
-    body.repaint();
-  }
-  private void hidePanel(){
-    shown= null;
-    split.setRightComponent(new JPanel());
-    body.removeAll();
-    body.add(tiles,BorderLayout.CENTER);
-    fillProjectMenu();
-    body.revalidate();
-    body.repaint();
   }
   private JMenuBar menuBar(){
     var res= new JMenuBar();
     var manager= new JMenu("Manager");
     manager.setMnemonic('M');
     manager.add(item("Edit project metadata...",true,this::editMetadata));
-    manager.add(item("Show raw project state...",true,this::showRawState));
+    manager.add(item("Show raw project state...",true,()->showText(frame,rawState(),"Raw project state",JOptionPane.PLAIN_MESSAGE)));
     manager.add(item("Connect Eclipse...",true,this::connectEclipse));
     manager.addSeparator();
-    manager.add(item("Forget association",true,main::forgetAssociation));
+    manager.add(item("Forget association",true,()->main.forgetAssociation(this)));
     manager.add(item("Quit manager",true,main::quit));
     project.setMnemonic('P');
     running.setMnemonic('R');
@@ -198,10 +169,9 @@ public final class Window{
     res.add(project);
     res.add(running);
     fillProjectMenu();
-    fillRunningMenu();
     return res;
   }
-  private static JMenuItem item(String text, boolean enabled, Runnable action){
+  static JMenuItem item(String text, boolean enabled, Runnable action){
     var res= new JMenuItem(text);
     res.setEnabled(enabled);
     res.addActionListener(_->action.run());
@@ -211,34 +181,23 @@ public final class Window{
     project.removeAll();
     project.add(item("Add folder...",true,this::addFolder));
     project.addSeparator();
-    var on= shown;
-    project.add(item("Clear cache",on != null,()->on.clearCache()));
-    project.add(item("Browse files",on != null,()->on.browse()));
-    project.add(item("View documentation",on != null,()->on.openDocs()));
-    project.add(item("View base documentation",true,()->OpenPath.open(Session.stdLib("baseCache").resolve("base.html"))));
-    project.add(item("Error report",on != null && on.hasProblem(),()->on.report()));
+    var on= state.shown();
+    var f= on.map(Project::folder);
+    project.add(item("Clear cache",on.isPresent(),()->ask("clean",f.get(),"")));
+    project.add(item("Browse files",on.isPresent(),()->OpenPath.open(f.get())));
+    project.add(item("View documentation",on.isPresent(),()->Panel.openDocs(f.get())));
+    project.add(item("View base documentation",true,()->OpenPath.open(Deployed.stdLib("baseCache").resolve("base.html"))));
+    project.add(item("Error report",on.flatMap(Project::problem).isPresent(),()->showText(frame,on.get().problem().get(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE)));
     project.addSeparator();
-    project.add(item("Forget project",on != null,()->on.forget()));
-  }
-  private void fillRunningMenu(){
-    running.removeAll();
-    var live= open.values().stream().filter(this::live).toList();
-    if (live.isEmpty()){ running.add(item("<nothing running>",false,()->{})); return; }
-    live.forEach(p->running.add(item(describe(p),true,()->tiles.select(p.folder()))));
+    project.add(item("Forget project",on.isPresent(),()->ask("forget",f.get(),"")));
   }
   private void addFolder(){
     var chooser= new JFileChooser();
     chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-    chooser.setFileFilter(new FileFilter(){
-      @Override public boolean accept(File f){ return f.isDirectory() || f.getName().endsWith(Names.ext); }
-      @Override public String getDescription(){ return "Fearless project folder or *.fearless file"; }
-    });
-    chooser.setAcceptAllFileFilterUsed(false);
     chooser.setDialogTitle("Add a Fearless project folder");
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
-    register(List.of(chooser.getSelectedFile().toPath()));
+    main.manager().message(chooser.getSelectedFile().toPath().toString());
   }
-  void register(List<Path> folders){ folders.forEach(p->main.ask(p.toString())); }
   private TransferHandler dropHandler(){
     return new TransferHandler(){
       @Override public boolean canImport(TransferSupport support){
@@ -249,7 +208,7 @@ public final class Window{
       @Override public boolean importData(TransferSupport support){
         var paths= Drop.paths(support.getTransferable());
         if (paths.isEmpty()){ return false; }
-        register(paths);
+        paths.forEach(p->main.manager().message(p.toString()));
         return true;
       }
     };
@@ -259,20 +218,14 @@ public final class Window{
     chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
     chooser.setDialogTitle("Select the Eclipse executable");
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
-    var chosen= chooser.getSelectedFile().toPath();
-    main.worker.execute(()->{
-      String done;
-      try{ done= main.eclipse.connect(chosen,main.msgDir()); }
-      catch(UserError e){ explain(e); return; }
-      SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,done,"Fearless",JOptionPane.INFORMATION_MESSAGE));
-    });
+    main.manager().connect(chooser.getSelectedFile().toPath());
   }
   private void editMetadata(){
-    var area= Panel.mono(new JTextArea(registry.text(),30,100));
+    var area= mono(new JTextArea(Registry.text(state.projects().stream().map(Project::entry).toList()),30,100));
     var dialog= new JDialog(frame,"Edit project metadata",true);
     var commit= new JButton("Commit");
     var close= new JButton("Close");
-    commit.addActionListener(_->main.worker.execute(()->tryCommit(area.getText(),dialog)));
+    commit.addActionListener(_->main.manager().commit(area.getText(),()->SwingUtilities.invokeLater(dialog::dispose)));
     close.addActionListener(_->dialog.dispose());
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(commit);
@@ -283,64 +236,27 @@ public final class Window{
     dialog.setLocationRelativeTo(frame);
     dialog.setVisible(true);
   }
-  private void tryCommit(String text, JDialog dialog){
-    try{ registry.commit(text); }
-    catch(UserError e){ explain(e); return; }
-    SwingUtilities.invokeLater(()->{
-      dialog.dispose();
-      open.values().forEach(Panel::reload);
-      foldersChangedHere();
-    });
-  }
-  private void showRawState(){ Panel.showText(frame,rawState(),"Raw project state (everything the manager tracks that is not in the metadata file)",JOptionPane.PLAIN_MESSAGE); }
   private String rawState(){
-    var sb= new StringBuilder();
-    for (var e: registry.all()){
-      var facts= Facts.of(e.path(),e.kind());
-      sb.append(e.alias()).append("  (").append(e.path()).append(")\n");
-      sb.append("  files: ").append(facts.files()).append(", bytes: ").append(facts.bytes()).append('\n');
-      sb.append("  last modified: ").append(facts.modified()).append('\n');
-      sb.append("  cache up to date: ").append(facts.cacheUpToDate()).append('\n');
-      sb.append("  structurally valid: ").append(facts.valid());
-      facts.problem().ifPresent(p->sb.append(" (").append(p.lines().findFirst().orElse(p)).append(')'));
-      sb.append('\n');
-      sb.append("  marker file: ").append(Names.markerProblem(e.path(),e.alias()).map(p->p.lines().findFirst().orElse(p)).orElse("ok")).append('\n');
-      sb.append("  last compiled: ").append(e.compiled()).append(", last run: ").append(e.run()).append('\n');
-      var p= open.get(e.path());
-      if (p != null){
-        sb.append("  session busy: ").append(p.session.busy()).append('\n');
-        sb.append("  session running: ").append(p.session.running().orElse("<no>")).append('\n');
-        sb.append("  known mains from last compile: ").append(p.session.mains().orElse(List.of())).append('\n');
-      }
-      sb.append('\n');
-    }
-    return sb.isEmpty() ? "<nothing registered>" : sb.toString();
-  }
-  private void foldersChangedHere(){
-    tiles.refresh();
-    var known= registry.all();
-    main.eclipse.publish(known);
-    var live= known.stream().map(Entry::path).toList();
-    open.values().stream().filter(p->!live.contains(p.folder())).forEach(Panel::drop);
-    open.keySet().removeIf(f->!live.contains(f));
-    live.forEach(this::panel);
-    fillRunningMenu();
-    if (shown != null && !live.contains(shown.folder())){ hidePanel(); return; }
-    fillProjectMenu();
+    if (state.projects().isEmpty()){ return "<nothing registered>"; }
+    return String.join("\n\n",state.projects().stream().map(Project::information).toList());
   }
   private void tick(){
     var up= Duration.between(start,Instant.now()).toSeconds();
-    status.setText("Running for "+clock(up)+(shown == null ? "" : "   -   "+shown.status()));
-    ticks+= 1;
-    if (ticks%3 != 0){ return; }
-    if (shown != null){ shown.recheckFreshness(); }
-    var registered= registry.all().stream().filter(e->shown == null || !e.path().equals(shown.folder())).toList();
-    if (registered.isEmpty() || !rotating.compareAndSet(false,true)){ return; }
-    var entry= registered.get(ticks/3%registered.size());
-    main.worker.execute(()->{
-      var facts= Facts.of(entry.path(),entry.kind());
-      SwingUtilities.invokeLater(()->{ rotating.set(false); tiles.update(entry,facts); });
-    });
+    var job= state.shown().filter(Project::busy).map(p->"   -   "+p.job()+"   "+clock(Duration.between(p.since(),Instant.now()).toSeconds()));
+    status.setText("Running for "+clock(up)+job.orElse(""));
   }
   static String clock(long seconds){ return "%02d:%02d:%02d".formatted(seconds/3600,(seconds/60)%60,seconds%60); }
+  static <T extends JComponent> T named(T c, String name){ c.setName(name); return c; }
+  static JTextArea mono(JTextArea area){ area.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13)); return area; }
+  static JButton small(String text, Runnable action){
+    var res= new JButton(text);
+    res.setMargin(new Insets(0,6,0,6));
+    res.addActionListener(_->action.run());
+    return res;
+  }
+  static void showText(Component parent, String text, String title, int kind){
+    var area= mono(new JTextArea(text,24,90));
+    area.setEditable(false);
+    JOptionPane.showMessageDialog(parent,new JScrollPane(area),title,kind);
+  }
 }

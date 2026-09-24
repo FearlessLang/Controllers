@@ -10,7 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import tools.Fs;
 
-final class MainTest{
+final class ManagerFolderTest{
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -18,20 +18,20 @@ final class MainTest{
   }
   @Test void aStartedFolderIsTheProjectItself(@TempDir Path dir){
     var project= folder(dir,"myProject");
-    assertEquals(project,Main.projectFolder(project.toString(),folder(dir,"manager")));
+    assertEquals(project,Manager.projectFolder(project.toString(),folder(dir,"manager")));
   }
   @Test void aStartedFileIsTheFolderAround(@TempDir Path dir){
     var project= folder(dir,"myProject");
     var file= project.resolve("hello.fearless");
     Fs.writeUtf8(file,"anything");
-    assertEquals(project,Main.projectFolder(file.toString(),folder(dir,"manager")));
+    assertEquals(project,Manager.projectFolder(file.toString(),folder(dir,"manager")));
   }
   @Test void aPathNamingNothingIsRefused(@TempDir Path dir){
     err("""
       Nothing exists at the given path.
       [###]myProject[###]
       Start Fearless on an existing project folder, or on a file inside one.
-      """,()->Main.projectFolder(dir.resolve("myProject").toString(),folder(dir,"manager")));
+      """,()->Manager.projectFolder(dir.resolve("myProject").toString(),folder(dir,"manager")));
   }
   @Test void theManagerFolderIsNotAProject(@TempDir Path dir){
     var managerDir= folder(dir,"manager");
@@ -40,13 +40,13 @@ final class MainTest{
       [###]
       The manager folder holds what Fearless remembers about your projects: it is
       never part of a project, and no project is inside it.
-      """,()->Main.projectFolder(managerDir.toString(),managerDir));
+      """,()->Manager.projectFolder(managerDir.toString(),managerDir));
   }
   @Test void aFileInTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     var managerDir= folder(dir,"manager");
     var file= managerDir.resolve("example.fearless");
     Fs.writeUtf8(file,"anything");
-    err("Fearless cannot keep track of this folder as a project.[###]",()->Main.projectFolder(file.toString(),managerDir));
+    err("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(file.toString(),managerDir));
   }
   @Test void aFolderWhosePathFearlessCanNotRecordIsRefused(@TempDir Path dir){
     err("""
@@ -59,19 +59,19 @@ final class MainTest{
       Fearless file holds only letters from a to z and from A to Z, digits, space,
       newline and common punctuation. Move the project into a folder whose path
       uses only those characters.
-      """,()->Main.projectFolder(folder(dir,"caf\u00e9").toString(),folder(dir,"manager")));
+      """,()->Manager.projectFolder(folder(dir,"caf\u00e9").toString(),folder(dir,"manager")));
   }
   @Test void aFolderInsideTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     var managerDir= folder(dir,"manager");
-    err("Fearless cannot keep track of this folder as a project.[###]",()->Main.projectFolder(folder(managerDir,"messages").toString(),managerDir));
+    err("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(folder(managerDir,"messages").toString(),managerDir));
   }
   @Test void aFolderHoldingTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
-    err("Fearless cannot keep track of this folder as a project.[###]",()->Main.projectFolder(dir.toString(),folder(dir,"manager")));
+    err("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(dir.toString(),folder(dir,"manager")));
   }
   @Test void theRootOfADriveIsNotAProject(@TempDir Path dir){
     err("""
       Fearless cannot keep track of the root of a drive or of the file system as a
       project.
-      [###]""",()->Main.projectFolder(dir.getRoot().toString(),folder(dir,"manager")));
+      [###]""",()->Manager.projectFolder(dir.getRoot().toString(),folder(dir,"manager")));
   }
 }

@@ -3,6 +3,7 @@ package controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,7 +16,11 @@ import controller.Registry.Kind;
 import tools.Fs;
 
 final class EclipseTest{
-  private static Entry entry(String alias, Path path){ return new Entry(alias,path,Kind.code,List.of(),Map.of(),Map.of(),-1,-1); }
+  static Project project(String alias, Path path, Kind kind, Optional<Map<String,String>> mains, String job, int runs, String lastRun){
+    var facts= new Facts(0,0,-1,List.of(),true,true,Optional.empty(),List.of(),Optional.empty());
+    return new Project(new Entry(alias,path,kind,List.of(),Map.of(),Map.of(),-1,-1),facts,mains,Optional.empty(),job,Instant.EPOCH,runs,lastRun,-1);
+  }
+  private static Project project(String alias, Path path){ return project(alias,path,Kind.code,Optional.empty(),"",0,""); }
   private static final String sourceError= """
 In file: fear:/_pkb/_rank_app200.fear
 
@@ -27,19 +32,13 @@ Package "nonexistentpkg" does not exist.
 Visible packages: "base".
 Error 7 WellFormedness
 """;
-  @Test void everyKnownProjectIsPublishedAsItsAliasThenItsPathAndReportsSitByAlias(@TempDir Path dir){
+  @Test void everyKnownProjectIsListedAsItsAliasThenItsPathAndReportsSitByAlias(@TempDir Path dir){
     var eclipse= new Eclipse(dir.resolve("eclipse"));
     var one= dir.resolve("one");
     var two= dir.resolve("with space");
-    eclipse.publish(List.of(entry("one",one),entry("two",two)));
+    eclipse.publish(Eclipse.listing(List.of(project("one",one),project("two",two))));
     assertEquals("one "+one+"\ntwo "+two+"\n",Fs.readUtf8(dir.resolve("eclipse").resolve("projects.txt")));
-    assertEquals(dir.resolve("eclipse").resolve("two"),eclipse.reports("two"));
-  }
-  @Test void publishingAgainReplacesTheListing(@TempDir Path dir){
-    var eclipse= new Eclipse(dir.resolve("eclipse"));
-    eclipse.publish(List.of(entry("one",dir.resolve("one"))));
-    eclipse.publish(List.of());
-    assertEquals("",Fs.readUtf8(dir.resolve("eclipse").resolve("projects.txt")));
+    assertEquals(dir.resolve("eclipse").resolve("two").resolve("console.txt"),eclipse.console("two"));
   }
   @Test void theStateIsInfoWithTheKindTheCacheTheJobTheRunsTheLastExitThenEveryMainWithItsFile(){
     var mains= Map.of("hello.Hello","_hello/_rank_app.fear");
@@ -56,9 +55,13 @@ Error 7 WellFormedness
           "hello.Hello": "_hello/_rank_app.fear"
         }
       }
-      """.stripIndent(),Eclipse.state(Kind.code,false,"hello.Hello",Optional.of("hello.Hello"),3,"hello.Hello",-1,Optional.of(mains)));
+      """.stripIndent(),Eclipse.stateText(project("a",Path.of("a"),Kind.code,Optional.of(mains),"hello.Hello",3,"hello.Hello")));
   }
-  @Test void anIdleProjectWithNoKnownMainHasEmptyStrings(){
+  @Test void compilingIsAJobButNotARunningMain(){
+    var state= Eclipse.stateText(project("a",Path.of("a"),Kind.code,Optional.empty(),Project.compiling,0,""));
+    assertEquals(true,state.contains("\"busy\": \"compiling\",\n  \"running\": \"\","));
+  }
+  @Test void aDataProjectWithNoKnownMainHasEmptyStrings(){
     assertEquals("""
       {
         "kind": "data:readOnly",
@@ -70,12 +73,13 @@ Error 7 WellFormedness
         "exit": "-1",
         "mains": {}
       }
-      """.stripIndent(),Eclipse.state(Kind.dataReadOnly,false,"",Optional.empty(),0,"",-1,Optional.empty()));
+      """.stripIndent(),Eclipse.stateText(project("a",Path.of("a"),Kind.dataReadOnly,Optional.empty(),"",0,"")));
   }
   @Test void theStateOfAProjectIsWrittenInItsReportsFolder(@TempDir Path dir){
     var eclipse= new Eclipse(dir.resolve("eclipse"));
-    eclipse.state("one","{}\n");
-    assertEquals("{}\n",Fs.readUtf8(dir.resolve("eclipse").resolve("one").resolve("state.txt")));
+    var p= project("one",dir.resolve("one"));
+    eclipse.state(p);
+    assertEquals(Eclipse.stateText(p),Fs.readUtf8(dir.resolve("eclipse").resolve("one").resolve("state.txt")));
   }
   @Test void aSourceErrorBecomesItsPathItsLineThenTheWholeMessage(@TempDir Path project){
     Eclipse.problems(project,sourceError);

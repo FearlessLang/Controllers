@@ -1,16 +1,18 @@
 package gui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import javax.imageio.ImageIO;
 
@@ -18,10 +20,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import controller.Facts;
+import controller.Project;
+import controller.Registry.Entry;
 import controller.Registry.Kind;
 import tools.Fs;
 
 final class IconsTest{
+  static Project project(Path folder, Kind kind){
+    var alias= folder.getFileName().toString().toLowerCase();
+    Fs.writeUtf8(folder.resolve(alias+".fearless"),"");
+    var entry= new Entry(alias,folder.toAbsolutePath().normalize(),kind,List.of(),Map.of(),Map.of(),-1,-1);
+    return new Project(entry,Facts.of(entry.path(),alias,kind),Optional.empty(),Optional.empty(),"",Instant.EPOCH,0,"",-1);
+  }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -36,7 +46,7 @@ final class IconsTest{
     Fs.ensureDir(file.getParent());
     Fs.ofV(()->ImageIO.write(img,"png",file.toFile()));
   }
-  private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.folder(Facts.of(folder,Kind.dataReadOnly),64); }
+  private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.of(project(folder,Kind.dataReadOnly),64); }
   @Test void theIconIsThePngInDotConfigIcon(@TempDir Path dir){
     var project= folder(dir,"someProject");
     png(project.resolve(".config").resolve("icon").resolve("whatever.png"),Color.red);
@@ -53,7 +63,7 @@ final class IconsTest{
     var project= folder(dir,"someProject");
     png(project.resolve(".config").resolve("icon").resolve("a.png"),Color.red);
     png(project.resolve(".config").resolve("icon").resolve("b.png"),Color.blue);
-    assertFalse(Facts.of(project,Kind.dataReadOnly).valid());
+    assertEquals(Project.State.dataInvalid,project(project,Kind.dataReadOnly).state());
     assertEquals(64,icon(project).getWidth());
   }
   @Test void withNoIconOneIsMadeUpOfTheRightSize(@TempDir Path dir){
@@ -62,9 +72,7 @@ final class IconsTest{
     assertEquals(64,got.getHeight());
   }
   @Test void theMadeUpIconOnlyDependsOnTheName(@TempDir Path dir){
-    var same= folder(dir,"twin").resolve("someProject");
-    Fs.ensureDir(same);
-    assertEquals(pixels(icon(folder(dir,"someProject"))),pixels(icon(same)));
+    assertEquals(pixels(icon(folder(dir,"someProject"))),pixels(icon(folder(folder(dir,"twin"),"someProject"))));
   }
   @Test void differentNamesAreToldApart(@TempDir Path dir){
     assertNotEquals(pixels(icon(folder(dir,"someProject"))),pixels(icon(folder(dir,"otherProject"))));
