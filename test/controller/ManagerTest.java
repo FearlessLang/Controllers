@@ -449,4 +449,17 @@ final class ManagerTest{
     assertEquals(Project.State.codeCompiled,p.state());
     assertTrue(p.entry().run() > 0);
   }
+  @Test void aFolderUnderAPathOutsideTheCharacterSetIsRegisteredRunAndRemembered(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(folder(dir,"caf\u00e9 \ud83d\ude00"),"hello");
+    send(m,hello.toString());
+    send(m,"run",hello.toString());
+    idle(m);
+    assertEquals("hello "+hello+"\n",eclipse(dir,"projects.txt"));
+    same("[###]ran hello.Hello[###]",eclipse(dir,"hello","console.txt"));
+    same("[###]\"path\": \"[###]/caf\\u(E9) \\u(1F600)/hello\"[###]",Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(Project.State.codeCompiled,project(again,hello).state());
+  }
 }
