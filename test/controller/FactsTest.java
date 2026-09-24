@@ -99,6 +99,17 @@ final class FactsTest{
     cache(project,"other",6000);
     assertTrue(Facts.of(project,Kind.code).cacheUpToDate());
   }
+  @Test void aPackageBuiltBeforeTheApiOfALowerRankIsStale(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    at(project.resolve("_hello").resolve("_rank_app.fear"),"use base.Main as Main;\n",1000);
+    at(project.resolve("_lib").resolve("_rank_core.fear"),"",1000);
+    cache(project,"hello",2000);
+    at(project.resolve(".fearless_out").resolve("lib.built"),"fear:/_lib/_rank_core.fear",3000);
+    at(project.resolve(".fearless_out").resolve("lib.json"),"{}\n",3000);
+    assertFalse(Facts.of(project,Kind.code).cacheUpToDate());
+    cache(project,"hello",4000);
+    assertTrue(Facts.of(project,Kind.code).cacheUpToDate());
+  }
   @Test void aFileOutsideEveryPackageNeverMakesTheCacheStale(@TempDir Path dir){
     var project= project(dir,"someProject");
     var stamp= after(project);

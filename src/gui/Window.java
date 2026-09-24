@@ -339,8 +339,8 @@ public final class Window{
     if (registered.isEmpty() || !rotating.compareAndSet(false,true)){ return; }
     var entry= registered.get(ticks/3%registered.size());
     main.worker.execute(()->{
-      var row= tiles.row(entry);
-      SwingUtilities.invokeLater(()->{ rotating.set(false); tiles.update(row); });
+      var facts= Facts.of(entry.path(),entry.kind());
+      SwingUtilities.invokeLater(()->{ rotating.set(false); tiles.update(entry,facts); });
     });
   }
   static String clock(long seconds){ return "%02d:%02d:%02d".formatted(seconds/3600,(seconds/60)%60,seconds%60); }

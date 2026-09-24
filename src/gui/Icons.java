@@ -31,8 +31,7 @@ public final class Icons{
     return app;
   }
   public static Image folder(Facts facts, int size){
-    if (facts.icon().isPresent()){ return facts.icon().get(); }
-    return generated(controller.Names.compactName(facts.folder()),size);
+    return facts.icon().<Image>map(i->i).orElseGet(()->generated(controller.Names.compactName(facts.folder()),size));
   }
   public static Image read(Path file){
     try{

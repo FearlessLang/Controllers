@@ -109,13 +109,14 @@ public final class Tiles extends JPanel{
   }
   public void refresh(){
     var selected= Optional.ofNullable(list.getSelectedValue()).map(r->r.entry().path());
-    var rows= registry.all().stream().map(this::row).sorted(((Sort)sort.getSelectedItem()).comparator()).toList();
+    var rows= registry.all().stream().map(e->row(e,Facts.of(e.path(),e.kind()))).sorted(((Sort)sort.getSelectedItem()).comparator()).toList();
     model.clear();
     rows.forEach(model::addElement);
     selected.ifPresent(p->IntStream.range(0,model.size()).filter(i->model.get(i).entry().path().equals(p)).forEach(list::setSelectedIndex));
     syncSpinner();
   }
-  void update(Row row){
+  void update(Entry e, Facts facts){
+    var row= row(e,facts);
     for(int i : Range.of(0,model.size())){
       if (!model.get(i).entry().path().equals(row.entry().path())){ continue; }
       model.set(i,row);
@@ -138,8 +139,7 @@ public final class Tiles extends JPanel{
       return;
     }
   }
-  Row row(Entry e){
-    var facts= Facts.of(e.path(),e.kind());
+  private Row row(Entry e, Facts facts){
     var valid= facts.valid() && registry.linkProblem(e).isEmpty() && controller.Names.markerProblem(e.path(),e.alias()).isEmpty();
     return new Row(e,Icons.folder(facts,iconSize),facts.modified(),State.of(e.kind(),valid,facts.hasCache(),facts.cacheUpToDate(),isRunning.test(e.path())));
   }
