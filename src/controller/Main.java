@@ -79,9 +79,7 @@ public final class Main{
     catch(InterruptedException ie){ e.displayStderr(ie); }
   }
   private static void run(String message){
-    var binDir= binDir();
-    var host= Install.isInstalled(binDir) ? Install.userDataHome() : binDir.getParent();
-    var main= new Main(host.resolve(JavacTool.dataDirNameFor(versionId())));
+    var main= new Main(binDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
     try{ Files.createDirectories(main.msgDir()); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir,e); }
     leave(main.msgDir(),message);
