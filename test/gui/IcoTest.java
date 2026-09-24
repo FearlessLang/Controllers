@@ -2,6 +2,7 @@ package gui;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -15,20 +16,26 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.opentest4j.AssertionFailedError;
 
+import fileAssociations.Ico;
 import tools.Fs;
+import utils.Err;
 import utils.Range;
 
 final class IcoTest{
-  private static Path redLeftHalf(Path dir){
-    var img= new BufferedImage(512,384,BufferedImage.TYPE_INT_ARGB);
+  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
+  private static Path redLeftHalf(Path dir){ return redLeftHalf(dir,512,512); }
+  private static Path redLeftHalf(Path dir, int w, int h){
+    var img= new BufferedImage(w,h,BufferedImage.TYPE_INT_ARGB);
     var g= img.createGraphics();
     g.setBackground(new Color(0,255,0,0));
-    g.clearRect(0,0,512,384);
+    g.clearRect(0,0,w,h);
     g.setColor(Color.red);
-    g.fillRect(0,0,256,384);
+    g.fillRect(0,0,w/2,h);
     g.dispose();
     var res= dir.resolve("source.png");
     Fs.ofV(()->ImageIO.write(img,"png",res.toFile()));
@@ -60,7 +67,6 @@ final class IcoTest{
     assertEquals(List.of(256,256),List.of(img.getWidth(),img.getHeight()));
     assertEquals(Color.red.getRGB(),img.getRGB(64,128));
     assertEquals(0,img.getRGB(192,128)>>>24);
-    assertEquals(0,img.getRGB(64,10)>>>24);
     assertEquals(0,greenPixels(img));
   }
   @Test void smallerFramesAreBottomUp32BitDibsWithAMatchingAndMask(@TempDir Path dir){
@@ -82,9 +88,15 @@ final class IcoTest{
       }
       assertEquals(Color.red.getRGB(),img.getRGB(s/4,s/2));
       assertEquals(0,img.getRGB(3*s/4,s/2)>>>24);
-      assertEquals(0,img.getRGB(s/4,0)>>>24);
       assertEquals(0,greenPixels(img));
     }
+  }
+  @Test void aNonSquarePngIsRejected(@TempDir Path dir){
+    var png= redLeftHalf(dir,512,384);
+    var e= assertThrows(IllegalArgumentException.class,()->Ico.fromPng(png,dir.resolve("out.ico")));
+    Err.strCmp("""
+The icon "[###]source.png" is 512x384 pixels, but an icon must be square: its width and its height must be equal, for example 256x256.
+""",e.getMessage()+"\n");
   }
   private static long greenPixels(BufferedImage img){
     return Arrays.stream(img.getRGB(0,0,img.getWidth(),img.getHeight(),null,0,img.getWidth()))
