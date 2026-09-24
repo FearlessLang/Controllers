@@ -153,7 +153,7 @@ public final class Panel{
   //inside Information, where a long path can scroll instead of forcing this row wide.
   private JPanel header(){
     var res= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
-    res.add(new JLabel(new Icons.Badge(Icons.folder(folder,iconSize),iconSize,Icons.Mark.none)));
+    res.add(new JLabel(new Icons.Badge(Icons.folder(facts,iconSize),iconSize,Icons.Mark.none)));
     res.add(action);
     name.setFont(name.getFont().deriveFont(Font.BOLD,18f));
     res.add(name);
@@ -184,12 +184,13 @@ public final class Panel{
   }
   void recheckFreshness(){
     if (session.busy() || !checking.compareAndSet(false,true)){ return; }
+    var kind= entry().kind();
     main.worker.execute(()->{
-      var modified= Facts.modified(folder);
-      var upToDate= Facts.cacheUpToDate(folder,modified);
+      var fresh= Facts.of(folder,kind);
       SwingUtilities.invokeLater(()->{
         checking.set(false);
-        if (upToDate == facts.cacheUpToDate() && modified == facts.modified()){ return; }
+        var same= fresh.cacheUpToDate() == facts.cacheUpToDate() && fresh.modified() == facts.modified() && fresh.problem().equals(facts.problem());
+        if (same){ return; }
         refresh();
         onChange.run();
       });
@@ -442,7 +443,6 @@ public final class Panel{
       row("Total size",bytes(facts.bytes())),
       row("Last modified",stamp(facts.modified()))));
     if (entry.kind() == Kind.code){
-      out.add(row("Package data",stamp(facts.jsonStamp())));
       out.add(row("Compiled cache",facts.cacheUpToDate() ? "up to date" : "needs compiling"));
       out.add(row("Last compile",stamp(entry.compiled())));
       out.add(row("Last run",stamp(entry.run())));

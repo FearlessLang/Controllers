@@ -307,7 +307,6 @@ public final class Window{
       sb.append(e.alias()).append("  (").append(e.path()).append(")\n");
       sb.append("  files: ").append(facts.files()).append(", bytes: ").append(facts.bytes()).append('\n');
       sb.append("  last modified: ").append(facts.modified()).append('\n');
-      sb.append("  package-data stamp: ").append(facts.jsonStamp()).append(", cache stamp: ").append(facts.cacheStamp()).append('\n');
       sb.append("  cache up to date: ").append(facts.cacheUpToDate()).append('\n');
       sb.append("  structurally valid: ").append(facts.valid());
       facts.problem().ifPresent(p->sb.append(" (").append(p.lines().findFirst().orElse(p)).append(')'));
@@ -342,13 +341,12 @@ public final class Window{
     ticks+= 1;
     if (ticks%3 != 0){ return; }
     if (shown != null){ shown.recheckFreshness(); }
-    var registered= registry.all().stream().map(Entry::path).filter(f->shown == null || !f.equals(shown.folder())).toList();
+    var registered= registry.all().stream().filter(e->shown == null || !e.path().equals(shown.folder())).toList();
     if (registered.isEmpty() || !rotating.compareAndSet(false,true)){ return; }
-    var folder= registered.get(ticks/3%registered.size());
+    var entry= registered.get(ticks/3%registered.size());
     main.worker.execute(()->{
-      var modified= Facts.modified(folder);
-      var upToDate= Facts.cacheUpToDate(folder,modified);
-      SwingUtilities.invokeLater(()->{ rotating.set(false); tiles.updateFreshness(folder,modified,upToDate); });
+      var facts= Facts.of(entry.path(),entry.kind());
+      SwingUtilities.invokeLater(()->{ rotating.set(false); tiles.update(entry,facts); });
     });
   }
   static String clock(long seconds){ return "%02d:%02d:%02d".formatted(seconds/3600,(seconds/60)%60,seconds%60); }
