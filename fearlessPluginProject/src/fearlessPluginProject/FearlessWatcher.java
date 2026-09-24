@@ -57,7 +57,7 @@ public final class FearlessWatcher extends Job implements IStartup{
   @Override public void earlyStartup(){ schedule(); }
   @Override protected IStatus run(IProgressMonitor monitor){
     try{ tick(monitor); }
-    catch(CoreException|RuntimeException e){
+    catch(CoreException|RuntimeException|ExceptionInInitializerError e){
       StatusManager.getManager().handle(Status.error("Fearless stopped following the manager.", e), StatusManager.SHOW|StatusManager.LOG);
       return Status.CANCEL_STATUS;
     }
