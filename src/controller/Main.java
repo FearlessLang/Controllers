@@ -230,8 +230,6 @@ public final class Main{
     var manager= managerDir.toAbsolutePath().normalize();
     if (folder.getFileName() == null){ throw Report.projectFolderIsRoot(folder); }
     if (folder.startsWith(manager) || manager.startsWith(folder)){ throw Report.managerFolderNotAProject(path,manager); }
-    var unsafe= folder.toString().codePoints().filter(c->Fs.allowed.indexOf(c) < 0).findFirst();
-    if (unsafe.isPresent()){ throw Report.projectFolderUnsafePath(folder,unsafe.getAsInt()); }
     return folder;
   }
 }
