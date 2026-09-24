@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -26,6 +27,7 @@ import controller.Manager.State;
 import controller.Registry.Kind;
 import tools.ChildJvm;
 import tools.Fs;
+import userMessages.Report;
 
 /// The whole manager without a window: messages in, Eclipse files and View calls out.
 /// Compiling writes a fresh cache and every job is a real child JVM running Child.
@@ -45,7 +47,7 @@ final class ManagerTest{
       """);
     Fs.runTool("javac",List.of("-d",classes.toString(),src.toString()));
   }
-  record Fake(Map<String,String> mains) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       FactsTest.cache(folder,"hello",FactsTest.after(folder));
       return jvm(out,"compiled","0","0");
@@ -53,7 +55,7 @@ final class ManagerTest{
     @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
       return jvm(out,"ran "+main,"0",main.endsWith("Slow") ? "60000" : "0");
     }
-    @Override public Optional<Map<String,String>> mains(Path folder){ return Optional.of(mains); }
+    @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
     private static ChildJvm jvm(Consumer<String> out, String... args){
       return ChildJvm.start(Stream.concat(Stream.of("-cp",classes.toString(),"Child"),Stream.of(args)).toList(),out);
     }
@@ -75,8 +77,10 @@ final class ManagerTest{
   private Manager manager(Path dir, String... mains){
     var map= new LinkedHashMap<String,String>();
     for (var m: mains){ map.put(m,"_hello/_rank_app.fear"); }
-    return new Manager(dir.resolve("manager"),new Fake(Collections.unmodifiableMap(map)),view,failures::add);
+    var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
+    return manager(dir,_->known);
   }
+  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read),view,failures::add); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -380,6 +384,57 @@ final class ManagerTest{
     m.commit("{\"other\": {\"path\": \""+data.toString().replace('\\','/')+"\"}}",()->{});
     m.settle();
     assertEquals("--- ok: no problem found ---\n",eclipse(dir,"other","console.txt"));
+  }
+  @Test void aRequestNamingNoFolderIsRefused(@TempDir Path dir){
+    var m= manager(dir);
+    send(m,"run","");
+    send(m,"  ");
+    send(m,"select","");
+    assertEquals(0,view.shown);
+    assertEquals(3,view.notes.size());
+    same("""
+      The manager was asked to "run" a project, but the message names no folder: a message is empty, to show the window, or a path, or a request: a verb, then a folder, then for some verbs a third line.
+      """,view.notes.getFirst()+"\n");
+    assertTrue(view.notes.get(1).startsWith("The manager was asked to \"select\" a project, but the message names no folder"));
+    assertTrue(view.notes.get(2).startsWith("The manager was asked to \"select\" a project, but the message names no folder"));
+  }
+  @Test void mainsThatCanNotBeReadMakeTheProjectInvalidAndOutOfDate(@TempDir Path dir){
+    var m= manager(dir,_->{ throw Report.launchPathNotFound(dir.resolve("gone")); });
+    var hello= folder(dir,"hello");
+    send(m,hello.toString());
+    send(m,"compile",hello.toString());
+    idle(m);
+    var p= project(m,hello);
+    assertEquals(Project.State.codeInvalid,p.state());
+    assertTrue(p.needsCompiling());
+    assertEquals(Report.launchPathNotFound(dir.resolve("gone")).getMessage(),p.problem().orElseThrow());
+  }
+  @Test void mainsTheCompilerWouldCompileMakeTheProjectOutOfDate(@TempDir Path dir){
+    var m= manager(dir,_->Optional.empty());
+    var hello= folder(dir,"hello");
+    send(m,hello.toString());
+    send(m,"compile",hello.toString());
+    idle(m);
+    var p= project(m,hello);
+    assertEquals(Project.State.codeOutdated,p.state());
+    assertEquals("Compile",p.action().text());
+  }
+  @Test void aProjectChangedWhileItsMainsAreReadIsCheckedAgain(@TempDir Path dir){
+    var reads= new ArrayList<Path>();
+    var m= manager(dir,f->{
+      reads.add(f);
+      if (reads.size() > 1){ return Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear")); }
+      Fs.writeUtf8(f.resolve("readme.txt"),"new\n");
+      throw Report.launchPathNotFound(f);
+    });
+    var hello= folder(dir,"hello");
+    send(m,hello.toString());
+    send(m,"compile",hello.toString());
+    idle(m);
+    var p= project(m,hello);
+    assertEquals(2,reads.size());
+    assertEquals(Project.State.codeCompiled,p.state());
+    assertEquals(List.of("hello.Hello"),p.knownMains());
   }
   @Test void aNewManagerRemembersTheProjectsAndStartsWithEmptyConsoles(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");

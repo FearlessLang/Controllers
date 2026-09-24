@@ -56,6 +56,7 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     var bytes= src.stream().mapToLong(p->Fs.of(()->Files.size(p))).sum();
     return new Facts(src.size(),bytes,modified,List.copyOf(built.keySet()),Files.isDirectory(folder.resolve(outDir)),upToDate,icon,LogFiles.list(folder),problem);
   }
+  Facts outOfDate(Optional<String> error){ return new Facts(files,bytes,modified,pkgs,hasCache,false,icon,logs,problem.or(()->error)); }
   static Optional<Icon> icon(Path folder){
     var dir= folder.resolve(".config").resolve("icon");
     if (!Files.isDirectory(dir)){ return Optional.empty(); }

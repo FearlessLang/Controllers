@@ -106,7 +106,7 @@ public final class Main{
     drain();
     Thread.startVirtualThread(()->watch(watcher));
     manager.start();
-    if (!Fs.isMac()){ Association.launcher().ifPresent(l->Association.reconcile(l,Association.extensions(l))); }
+    if (!Fs.isMac()){ var l= Association.launcher(); Association.reconcile(l,Association.extensions(l)); }
     try{ done.await(); }
     catch(InterruptedException e){ throw Bug.of(e); }
     var problem= failure.get();
@@ -116,7 +116,7 @@ public final class Main{
   public void fail(RuntimeException problem){ failure.compareAndSet(null,problem); done.countDown(); }
   public void forgetAssociation(Window window){
     if (Fs.isMac() || !window.askForget()){ return; }
-    try{ Association.launcher().ifPresent(l->Association.reconcile(l,List.of())); }
+    try{ Association.reconcile(Association.launcher(),List.of()); }
     catch(UserError e){ display(e); System.exit(1); }
     System.exit(0);
   }
