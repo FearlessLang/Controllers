@@ -233,7 +233,7 @@ public final class Window{
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
     register(List.of(chooser.getSelectedFile().toPath()));
   }
-  void register(List<Path> folders){ main.worker.execute(()->folders.forEach(p->main.register(p.toString(),this::explain))); }
+  void register(List<Path> folders){ folders.forEach(p->main.ask(p.toString())); }
   private TransferHandler dropHandler(){
     return new TransferHandler(){
       @Override public boolean canImport(TransferSupport support){

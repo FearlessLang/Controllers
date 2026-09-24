@@ -26,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import controller.Registry.Entry;
@@ -152,7 +151,7 @@ public final class Main{
     try{ messages= take(); }
     catch(IOException e){ throw Violation.couldNotDrainMessageFolder(msgDir(),e); }
     if (messages.isEmpty()){ return; }
-    messages.forEach(m->register(m,e->eclipse.note(e.getMessage()+"\n")));
+    messages.forEach(this::apply);
     window.foldersChanged();
   }
   private List<String> take() throws IOException{
@@ -175,49 +174,62 @@ public final class Main{
     try(var stream= Files.newDirectoryStream(msgDir(),glob)){ stream.forEach(files::add); }
     return files;
   }
+  public void ask(String message){ leave(msgDir(),message); }
   //A message is the folder to select, or a verb, a newline, then the folder, then
   //for run the optional main to run, and for kind the kind text as in the metadata file.
-  public void register(String message, Consumer<UserError> report){
+  private void apply(String message){
     var lines= message.lines().toList();
-    var folder= projectFolder(lines.isEmpty() ? "" : lines.get(lines.size() == 1 ? 0 : 1),managerDir);
-    if (folder.isEmpty()){ window.show(); return; }
-    var verb= lines.size() == 1 ? "select" : lines.getFirst();
-    if (!registry.has(folder.get())){
-      var nested= registry.overlapping(folder.get());
-      if (nested.isPresent()){ report.accept(Report.folderNestedWithRegistered(folder.get(),nested.get())); return; }
-      var wanted= Names.compactName(folder.get());
-      var fresh= Fs.of(()->{ try(var s= Files.list(folder.get())){ return s.findAny().isEmpty(); } });
-      var taken= registry.all().stream().map(Entry::alias).collect(Collectors.toSet());
-      var alias= Names.makeUnique(folder.get(),taken);
-      if (!alias.equals(wanted)){ report.accept(Report.projectNamed(folder.get(),wanted,alias)); }
-      Fs.rmTree(folder.get().resolve(Facts.outDir));
-      Fs.rmTree(eclipse.reports(alias));
-      registry.add(alias,folder.get());
-      if (fresh){
-        registry.update(folder.get(),e->e.withKind(Kind.code));
-        MakeDemo.hello(folder.get(),Names.pkgName(alias),AutoloadHandler.capFirst(alias));
-      }
-      window.foldersChanged();
-    }
+    var verb= lines.size() > 1 ? lines.getFirst() : "select";
+    var at= lines.isEmpty() ? "" : lines.get(lines.size() > 1 ? 1 : 0);
+    if (at.isBlank()){ window.show(); return; }
+    Path folder;
+    try{ folder= projectFolder(at,managerDir); }
+    catch(UserError e){ tell(e); return; }
+    if (!registry.has(folder) && !verb.equals("select")){ tell(Report.notRegistered(verb,folder)); return; }
+    if (!registry.has(folder) && !add(folder)){ return; }
     switch(verb){
-      case "select" -> { window.show(); window.select(folder.get()); }
-      case "run" -> { window.select(folder.get()); window.run(folder.get(),lines.size() > 2 ? Optional.of(lines.get(2)) : Optional.empty()); }
-      case "terminate" -> { window.select(folder.get()); window.terminate(folder.get()); }
-      case "compile" -> { window.select(folder.get()); window.compile(folder.get()); }
-      case "clean" -> { window.select(folder.get()); window.clean(folder.get()); }
-      case "kind" -> window.kind(folder.get(),Kind.of(lines.get(2)).orElseThrow(Bug::unreachable));
-      case "forget" -> window.forget(folder.get());
+      case "select" -> { window.show(); window.select(folder); }
+      case "run" -> { window.select(folder); window.run(folder,lines.size() > 2 ? Optional.of(lines.get(2)) : Optional.empty()); }
+      case "terminate" -> { window.select(folder); window.terminate(folder); }
+      case "compile" -> { window.select(folder); window.compile(folder); }
+      case "clean" -> { window.select(folder); window.clean(folder); }
+      case "kind" -> window.kind(folder,Kind.of(lines.get(2)).orElseThrow(Bug::unreachable));
+      case "forget" -> window.forget(folder);
       default -> throw Bug.unreachable();
     }
   }
+  private void tell(UserError e){
+    eclipse.note(e.getMessage()+"\n");
+    window.explain(e);
+  }
+  private boolean add(Path folder){
+    var nested= registry.overlapping(folder);
+    if (nested.isPresent()){ tell(Report.folderNestedWithRegistered(folder,nested.get())); return false; }
+    var wanted= Names.compactName(folder);
+    var fresh= Fs.of(()->{ try(var s= Files.list(folder)){ return s.findAny().isEmpty(); } });
+    var taken= registry.all().stream().map(Entry::alias).collect(Collectors.toSet());
+    var alias= Names.makeUnique(folder,taken);
+    if (!alias.equals(wanted)){ tell(Report.projectNamed(folder,wanted,alias)); }
+    Fs.rmTree(folder.resolve(Facts.outDir));
+    Fs.rmTree(eclipse.reports(alias));
+    registry.add(alias,folder);
+    if (fresh){
+      registry.update(folder,e->e.withKind(Kind.code));
+      MakeDemo.hello(folder,Names.pkgName(alias),AutoloadHandler.capFirst(alias));
+    }
+    window.foldersChanged();
+    return true;
+  }
   //The manager folder is not a project: a Fearless started on it registers nothing.
-  static Optional<Path> projectFolder(String message, Path managerDir){
-    if (message.isBlank()){ return Optional.empty(); }
+  static Path projectFolder(String given, Path managerDir){
     Path path;
-    try{ path= Path.of(message).toAbsolutePath().normalize(); }
-    catch(InvalidPathException e){ return Optional.empty(); }
-    var folder= Files.isDirectory(path) ? Optional.of(path) : Files.isRegularFile(path) ? Optional.ofNullable(path.getParent()) : Optional.<Path>empty();
-    return folder.filter(f->!f.equals(managerDir.toAbsolutePath().normalize()));
+    try{ path= Path.of(given).toAbsolutePath().normalize(); }
+    catch(InvalidPathException e){ throw Violation.badLaunchArg(given,false); }
+    if (!Files.exists(path)){ throw Report.launchPathNotFound(path); }
+    var folder= Files.isDirectory(path) ? path : path.getParent();
+    var manager= managerDir.toAbsolutePath().normalize();
+    if (folder.startsWith(manager)){ throw Report.managerFolderNotAProject(path,manager); }
+    return folder;
   }
 }
 //Note: A worker stopped by shutdownNow records a problem that nobody ever reads; this is harmless.
