@@ -51,12 +51,13 @@ public final class Main{
   public static void main(String[] args){
     NativeLocaleForcer.forceEnglish();
     var exitCode= 0;
-    try{ run(args.length == 0 ? "" : args[0]); }
+    try{ run(message(args)); }
     catch(UserError e){ exitCode= 1; display(e); }
     catch(VirtualMachineError|LinkageError e){ exitCode= 2; display(Violation.vmOrLinkageFailure(e)); }
     catch(Throwable t){ exitCode= 3; display(UserError.crashed(t)); }
     System.exit(exitCode);
   }
+  static String message(String... args){ return args.length == 0 ? "" : Manager.path(args[0]).toString(); }
   private static void display(UserError e){
     try{ e.display(); }
     catch(InterruptedException ie){ e.displayStderr(ie); }
