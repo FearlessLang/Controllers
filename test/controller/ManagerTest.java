@@ -455,7 +455,8 @@ final class ManagerTest{
     send(m,hello.toString());
     send(m,"run",hello.toString());
     idle(m);
-    assertEquals("hello "+hello+"\n",eclipse(dir,"projects.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
+    same("[###]caf\\u(E9) \\u(1F600)[###]",eclipse(dir,"state.info"));
     same("[###]ran hello.Hello[###]",eclipse(dir,"hello","console.txt"));
     same("[###]\"path\": \"[###]/caf\\u(E9) \\u(1F600)/hello\"[###]",Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
     var again= manager(dir,"hello.Hello");
