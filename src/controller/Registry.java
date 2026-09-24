@@ -15,21 +15,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import controller.Info.Obj;
 import controller.Info.Obj.Field;
 import core.TName;
 import fileSupport.StringFiles;
-import realSourceOracle.RealSourceOracleWithZip;
 import userMessages.UserError;
 import userMessages.Violation;
 import utils.Join;
 import utils.OneOr;
 import utils.Push;
 
+/// The registered projects: read once from `projects.info` and `activity.txt`, then kept
+/// in memory and written back whole on every change.
 public final class Registry{
   public enum Kind{
     idle("idle"), code("code"), dataReadOnly("data:readOnly"), dataReadWrite("data:readWrite");
@@ -43,59 +46,46 @@ public final class Registry{
     public Entry withKind(Kind k){ return new Entry(alias,path,k,mains,reads,edits,compiled,run); }
     public Entry withMains(List<String> m){ return new Entry(alias,path,kind,List.copyOf(m),reads,edits,compiled,run); }
     public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias,path,kind,mains,Map.copyOf(r),Map.copyOf(e),compiled,run); }
-    Entry withTimes(long[] t){ return new Entry(alias,path,kind,mains,reads,edits,t[0],t[1]); }
+    public Entry withTimes(long c, long r){ return new Entry(alias,path,kind,mains,reads,edits,c,r); }
   }
   private static final List<String> keys= List.of("path","kind","mains","reads","edits");
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
   private static final String typeShape= "a Fearless type name: after any leading underscores, it starts with an uppercase letter";
   private final Path dir;
-  public Registry(Path dir){ this.dir= dir; }
+  private List<Entry> all;
+  public Registry(Path dir){
+    this.dir= dir;
+    all= Files.exists(infoFile()) ? withTimes(entries(read(infoFile()))) : List.of();
+  }
   private Path infoFile(){ return dir.resolve("projects.info"); }
   private Path activityFile(){ return dir.resolve("activity.txt"); }
-  public List<Entry> all(){
-    var times= readTimes();
-    return raw().stream().map(e->e.withTimes(times.getOrDefault(e.path(),new long[]{-1,-1}))).toList();
-  }
-  public Optional<Entry> of(Path folder){
-    var f= norm(folder);
-    return OneOr.opt("registered "+f, all().stream().filter(e->e.path().equals(f)));
-  }
-  public boolean has(Path folder){ return of(folder).isPresent(); }
+  public List<Entry> all(){ return all; }
+  public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all.stream().filter(e->e.path().equals(folder))); }
   public Optional<Path> overlapping(Path folder){
-    var f= norm(folder);
-    return all().stream().map(Entry::path).filter(o->!o.equals(f) && (f.startsWith(o) || o.startsWith(f))).findFirst();
+    return all.stream().map(Entry::path).filter(o->!o.equals(folder) && (folder.startsWith(o) || o.startsWith(folder))).findFirst();
   }
   public void add(String alias, Path folder){
-    var f= norm(folder);
-    var current= raw();
-    if (current.stream().anyMatch(e->e.path().equals(f))){ return; }
-    assert current.stream().noneMatch(e->e.alias().equals(alias));
-    assert overlapping(f).isEmpty();
-    write(Push.of(current,new Entry(alias,f,Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)));
+    assert folder.equals(folder.toAbsolutePath().normalize());
+    assert all.stream().noneMatch(e->e.path().equals(folder) || e.alias().equals(alias));
+    assert overlapping(folder).isEmpty();
+    save(Push.of(all,new Entry(alias,folder,Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)));
   }
-  public void remove(Path folder){
-    var f= norm(folder);
-    write(raw().stream().filter(e->!e.path().equals(f)).toList());
-  }
+  public void remove(Path folder){ save(all.stream().filter(e->!e.path().equals(folder)).toList()); }
   public void update(Path folder, UnaryOperator<Entry> op){
-    var f= norm(folder);
-    var current= raw();
-    assert current.stream().anyMatch(e->e.path().equals(f));
-    write(current.stream().map(e->e.path().equals(f) ? op.apply(e) : e).toList());
+    assert of(folder).isPresent();
+    save(all.stream().map(e->e.path().equals(folder) ? op.apply(e) : e).toList());
   }
-  public void compiled(Path folder, long millis){ updateTimes(folder,t->new long[]{millis,t[1]}); }
-  public void ran(Path folder, long millis){ updateTimes(folder,t->new long[]{t[0],millis}); }
-  public String text(){ return Files.exists(infoFile()) ? read(infoFile()) : Info.print(toInfo(List.of())); }
-  public void commit(String text){ write(entries(text)); }
-  public Optional<String> linkProblem(Entry e){
+  public void commit(String text){ save(entries(text).stream().map(e->of(e.path()).map(o->e.withTimes(o.compiled(),o.run())).orElse(e)).toList()); }
+  public static String text(List<Entry> entries){ return Info.print(toInfo(entries)); }
+  /// Why the links of a code project are broken, if they are; invalid says why a project is invalid.
+  public Optional<String> linkProblem(Entry e, Function<Path,Optional<String>> invalid){
     if (e.kind() != Kind.code){ return Optional.empty(); }
-    var all= all();
-    return problemIn(e.reads(),"reads",false,all).or(()->problemIn(e.edits(),"edits",true,all));
+    return problemIn(e.reads(),"reads",false,invalid).or(()->problemIn(e.edits(),"edits",true,invalid));
   }
-  private static Optional<String> problemIn(Map<String,List<String>> links, String field, boolean needsWrite, List<Entry> all){
+  private Optional<String> problemIn(Map<String,List<String>> links, String field, boolean needsWrite, Function<Path,Optional<String>> invalid){
     for (var alias: links.keySet()){
-      var target= all.stream().filter(o->o.alias().equals(alias)).findFirst();
+      var target= OneOr.opt("registered "+alias,all.stream().filter(o->o.alias().equals(alias)));
       if (target.isEmpty()){
         return Optional.of("\""+field+"\" refers to \""+alias+"\", but no project called \""+alias+"\" is registered.");
       }
@@ -105,31 +95,24 @@ public final class Registry{
         var needed= needsWrite ? "\"data:readWrite\"" : "\"data:readOnly\" or \"data:readWrite\"";
         return Optional.of("\""+field+"\" refers to \""+alias+"\", but the kind of \""+alias+"\" is \""+kind.text+"\"; \""+field+"\" accepts only "+needed+".");
       }
-      try{ new RealSourceOracleWithZip(target.get().path()); }
-      catch(UserError err){ return Optional.of("\""+field+"\" refers to \""+alias+"\", which is itself invalid:\n"+err.getMessage()); }
+      var problem= invalid.apply(target.get().path());
+      if (problem.isPresent()){ return Optional.of("\""+field+"\" refers to \""+alias+"\", which is itself invalid:\n"+problem.get()); }
     }
     return Optional.empty();
   }
-  private List<Entry> raw(){ return Files.exists(infoFile()) ? entries(read(infoFile())) : List.of(); }
   private List<Entry> entries(String text){ return fromInfo(text,Info.parse(text,infoFile().toUri())); }
-  private void write(List<Entry> entries){ writeText(infoFile(),Info.print(toInfo(entries))); }
-  private static Path norm(Path folder){ return folder.toAbsolutePath().normalize(); }
-  private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
-  private void updateTimes(Path folder, UnaryOperator<long[]> op){
-    var f= norm(folder);
-    var times= readTimes();
-    times.put(f,op.apply(times.getOrDefault(f,new long[]{-1,-1})));
-    var lines= times.entrySet().stream().map(e->e.getValue()[0]+" "+e.getValue()[1]+" "+e.getKey().toUri());
-    writeText(activityFile(),Join.of(lines,"","\n","\n",""));
+  private void save(List<Entry> entries){
+    var text= text(entries);
+    this.entries(text);
+    writeText(infoFile(),text);
+    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+e.path().toUri()),"","\n","\n",""));
+    all= entries;
   }
-  private Map<Path,long[]> readTimes(){
-    var out= new LinkedHashMap<Path,long[]>();
-    if (!Files.exists(activityFile())){ return out; }
-    for (var line: read(activityFile()).lines().toList()){
-      var parts= line.split(" ",3);
-      out.put(Path.of(URI.create(parts[2])),new long[]{Long.parseLong(parts[0]),Long.parseLong(parts[1])});
-    }
-    return out;
+  private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
+  private List<Entry> withTimes(List<Entry> entries){
+    if (!Files.exists(activityFile())){ return entries; }
+    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->Path.of(URI.create(p[2])),p->p));
+    return entries.stream().map(e->Optional.ofNullable(times.get(e.path())).map(t->e.withTimes(Long.parseLong(t[0]),Long.parseLong(t[1]))).orElse(e)).toList();
   }
   private void writeText(Path file, String text){
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");

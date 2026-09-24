@@ -22,29 +22,27 @@ import org.eclipse.debug.core.model.IStreamsProxy;
 
 /// A main the manager is running, shown as Eclipse shows a process it started itself: in
 /// the Debug view, and in the Console view with its output and its Terminate button. The
-/// watcher starts it when the manager's state names a running main, appends the output the
-/// manager writes meanwhile, and ends it when the state names none; Terminate asks the
-/// manager to kill the child.
+/// watcher starts it when the manager's state counts a new run, appends the output the manager
+/// writes meanwhile, and ends it when the state names no running main; Terminate asks the
+/// manager to end the job.
 public final class Process extends PlatformObject implements IProcess{
   static final String type= "fearless";
   static final String aliasAttr= "fearlessPluginProject.alias";
   private final ILaunch launch;
-  private final ManagerLink link;
   private final Path folder;
   private final String label;
   private final Map<String,String> attributes= new HashMap<>();
   private final Stream out= new Stream();
   private int exit;
   private boolean terminated;
-  private Process(ILaunch launch, ManagerLink link, Path folder, String label){
+  private Process(ILaunch launch, Path folder, String label){
     this.launch= launch;
-    this.link= link;
     this.folder= folder;
     this.label= label;
   }
-  static Process start(ManagerLink link, String alias, Path folder, String main){
+  static Process start(String alias, Path folder, String main){
     var launch= new Launch(null, ILaunchManager.RUN_MODE, null);
-    var res= new Process(launch, link, folder, alias+" - "+main);
+    var res= new Process(launch, folder, alias+" - "+main);
     res.setAttribute(ATTR_PROCESS_TYPE, type);
     res.setAttribute(aliasAttr, alias);
     launch.addProcess(res);
@@ -61,7 +59,7 @@ public final class Process extends PlatformObject implements IProcess{
   private void fire(int kind){ DebugPlugin.getDefault().fireDebugEventSet(new DebugEvent[]{new DebugEvent(this, kind)}); }
   @Override public boolean canTerminate(){ return !terminated; }
   @Override public boolean isTerminated(){ return terminated; }
-  @Override public void terminate(){ link.send("terminate", folder); }
+  @Override public void terminate(){ ManagerLink.send("terminate", folder); }
   @Override public String getLabel(){ return label; }
   @Override public ILaunch getLaunch(){ return launch; }
   @Override public IStreamsProxy getStreamsProxy(){ return out; }

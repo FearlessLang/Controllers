@@ -19,7 +19,7 @@ import org.eclipse.ui.console.TextConsole;
 import org.eclipse.ui.ide.IDE;
 
 /// Registered on org.eclipse.ui.console.consolePatternMatchListeners for the project
-/// consoles (Consoles.projectType) and the consoles of a Process: in a stack frame
+/// consoles (FearlessWatcher.consoleType) and the consoles of a Process: in a stack frame
 /// "error line: N in file F" and in a compile error header "In file: fear:/F", F is a link
 /// opening that file at line N. A compile error carries its N on the numbered source line
 /// "N| " below the header; the console fills in pieces, so that line is looked up when the

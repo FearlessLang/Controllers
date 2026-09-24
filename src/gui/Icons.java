@@ -10,7 +10,6 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Random;
@@ -19,31 +18,20 @@ import javax.imageio.ImageIO;
 import javax.swing.Icon;
 
 import controller.Association;
-import tools.Fs;
+import controller.Project;
 import userMessages.Violation;
 import utils.Range;
 
 public final class Icons{
   private Icons(){}
-  public enum Mark{ none, idle, dataReadOnly, dataReadWrite, attention, invalid, compiled, running }
   private static Image app;
   static Image app(){
     if (app == null){ app= read(Association.iconFile()); }
     return app;
   }
-  public static Image folder(Path folder, int size){
-    var dir= folder.toAbsolutePath().normalize().resolve(".config").resolve("icon");
-    if (!Files.isDirectory(dir)){ return generated(controller.Names.compactName(folder),size); }
-    var pngs= Fs.of(()->{ try(var s= Files.list(dir)){ return s
-      .filter(Files::isRegularFile)
-      .filter(p->p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png"))
-      .sorted()
-      .toList();
-    }});
-    if (pngs.size() > 1){ throw Violation.multipleIcons(dir,pngs); }
-    return pngs.isEmpty() ? generated(controller.Names.compactName(folder),size) : read(pngs.getFirst());
-  }
-  public static Image read(Path file){
+  /// The icon of a project: its own PNG, or one made up from its name.
+  public static Image of(Project p, int size){ return p.facts().icon().<Image>map(i->i.image()).orElseGet(()->generated(p.alias(),size)); }
+  static Image read(Path file){
     try{
       var res= ImageIO.read(file.toFile());
       if (res == null){ throw Violation.couldNotDecodeIcon(file); }
@@ -74,22 +62,21 @@ public final class Icons{
     g.dispose();
     return res;
   }
-  public record Badge(Image image, int size, Mark mark) implements Icon{
+  public record Badge(Image image, int size, Project.State state) implements Icon{
     @Override public int getIconWidth(){ return size; }
     @Override public int getIconHeight(){ return size; }
     @Override public void paintIcon(Component c, Graphics g, int x, int y){
       var g2= (Graphics2D)g.create();
       g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
       g2.drawImage(image,x,y,size,size,c);
-      switch(mark){
-        case none -> {}
+      switch(state){
         case idle -> dot(g2,x,y,new Color(0x757575),"");
         case dataReadOnly -> dot(g2,x,y,new Color(0x1565C0),"R");
         case dataReadWrite -> dot(g2,x,y,new Color(0x6A1B9A),"W");
-        case attention -> dot(g2,x,y,new Color(0xEF6C00),"!");
-        case invalid -> dot(g2,x,y,new Color(0xC62828),"X");
-        case compiled -> dot(g2,x,y,new Color(0x2E7D32),">");
-        case running -> running(g2,x,y);
+        case codeNoCache, codeOutdated -> dot(g2,x,y,new Color(0xEF6C00),"!");
+        case codeInvalid, dataInvalid -> dot(g2,x,y,new Color(0xC62828),"X");
+        case codeCompiled -> dot(g2,x,y,new Color(0x2E7D32),">");
+        case busy -> busy(g2,x,y);
       }
       g2.dispose();
     }
@@ -106,7 +93,7 @@ public final class Icons{
       g.drawString(glyph,at+(d-m.stringWidth(glyph))/2f,top+(d+m.getAscent()-m.getDescent())/2f);
     }
     //a partial ring drawn at a time-derived angle, so a list that repaints while this project runs shows it spinning
-    private void running(Graphics2D g, int x, int y){
+    private void busy(Graphics2D g, int x, int y){
       var d= Math.max(8,size/4);
       var at= x+size-d;
       var top= y+size-d;

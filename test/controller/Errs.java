@@ -11,6 +11,7 @@ final class Errs{
   static{ utils.Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static void err(String expected, Runnable body){
     var e= Assertions.assertThrows(UserError.class,body::run);
-    utils.Err.strCmp(expected,e.getMessage());
+    same(expected,e.getMessage());
   }
+  static void same(String expected, String actual){ utils.Err.strCmp(expected,actual); }
 }
