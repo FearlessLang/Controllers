@@ -48,6 +48,7 @@ public final class FearlessWatcher extends Job implements IStartup{
   private final Map<String,Project> seen= new HashMap<>();
   private final Map<String,Process> live= new HashMap<>();
   private final Map<String,String> reports= new HashMap<>();
+  private final Map<String,String> marks= new HashMap<>();
   public FearlessWatcher(){
     super("Fearless connect");
     setSystem(true);
@@ -71,6 +72,8 @@ public final class FearlessWatcher extends Job implements IStartup{
       if (Nature.marks(p) && !projects.containsKey(p.getName())){ p.delete(false, true, monitor); }
     }
     live.keySet().stream().filter(a->!projects.containsKey(a)).toList().forEach(a->live.remove(a).ended(-1));
+    seen.keySet().retainAll(projects.keySet());
+    marks.keySet().retainAll(projects.keySet());
     for (var e : projects.entrySet()){ reflect(mirror(root.getProject(e.getKey()), e.getValue(), monitor), e.getValue(), monitor); }
   }
   private static IProject mirror(IProject project, Project p, IProgressMonitor monitor) throws CoreException{
@@ -93,7 +96,9 @@ public final class FearlessWatcher extends Job implements IStartup{
     var alias= project.getName();
     var before= seen.put(alias, p);
     if (before != null && before.runs() < p.runs() && !live.containsKey(alias)){ live.put(alias, Process.start(alias, p.folder(), p.lastRun())); }
-    if (before == null || !before.problem().equals(p.problem())){ mark(project, p.problem()); }
+    var on= on(project, p.problem());
+    var key= p.problem()+" on "+on.getFullPath();
+    if (!key.equals(marks.put(alias, key))){ mark(project, on, p.problem()); }
     tail(alias, consoleType, ManagerLink.eclipse().resolve(alias).resolve("console.txt"));
     if (p.running().isEmpty() && live.containsKey(alias)){ live.remove(alias).ended(p.exit()); }
     var report= ManagerLink.eclipse().resolve(alias).resolve("report.xml");
@@ -105,13 +110,16 @@ public final class FearlessWatcher extends Job implements IStartup{
     catch(IOException e){ throw new UncheckedIOException(e); }
     JUnitCore.importTestRunSession(copy.toFile());
   }
-  private static void mark(IProject project, Map<String,String> problem) throws CoreException{
+  private static IResource on(IProject project, Map<String,String> problem){
+    if (problem.isEmpty()){ return project; }
+    var file= project.getFolder(srcName).getFile(new Path(problem.get("file")));
+    return file.exists() ? file : project;
+  }
+  private static void mark(IProject project, IResource on, Map<String,String> problem) throws CoreException{
     project.deleteMarkers(problemType, true, IResource.DEPTH_INFINITE);
     if (problem.isEmpty()){ return; }
-    var src= project.getFolder(srcName);
-    var file= src.getFile(new Path(problem.get("file")));
-    var marker= (file.exists() ? file : src).createMarker(problemType);
-    marker.setAttribute(IMarker.LINE_NUMBER, Integer.parseInt(problem.get("line")));
+    var marker= on.createMarker(problemType);
+    if (on != project){ marker.setAttribute(IMarker.LINE_NUMBER, Integer.parseInt(problem.get("line"))); }
     marker.setAttribute(IMarker.MESSAGE, problem.get("message"));
     marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
   }
@@ -119,7 +127,7 @@ public final class FearlessWatcher extends Job implements IStartup{
   /// project if any, else to its console; a file that is no longer an extension of what was
   /// shown is shown again from the start.
   private void tail(String alias, String type, java.nio.file.Path file){
-    var text= ManagerLink.read(file);
+    var text= ManagerLink.lines(file);
     var before= shown.getOrDefault(alias, "");
     if (text.equals(before)){ return; }
     shown.put(alias, text);
