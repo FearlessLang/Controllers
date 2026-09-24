@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -226,19 +227,22 @@ public record Resolver(Api api, String pkg, Map<String,String> aliases, String t
     result.ifPresent(r->unify(m.get().ret(), r, sub, open));
     return Optional.of(new Bound(m.get(), sub));
   }
-  /// an open generic meets a bound type and is bound; a class meets the same class and their
-  /// arguments meet, or a subclass and its supertypes meet the class in turn
+  /// an open generic meets a bound type and is bound; a class meets a type whose supertypes, the
+  /// type included and each visited once, hold that class: their arguments meet
   private void unify(Ty pt, Ty at, HashMap<String,Ty> sub, List<String> open){
     if (pt.isX()){
       if (open.contains(pt.name()) && !bound(sub.getOrDefault(pt.name(), Ty.unknown), open) && bound(at, open)){ sub.put(pt.name(), at); }
       return;
     }
     if (!at.isC()){ return; }
-    if (pt.name().equals(at.name()) && pt.args().size() == at.args().size()){
-      IntStream.range(0, pt.args().size()).forEach(j->unify(pt.args().get(j), at.args().get(j), sub, open));
-      return;
-    }
-    entry(at).ifPresent(e->e.supers().forEach(sup->unify(pt, sup.subst(e.bind(at)), sub, open)));
+    var supers= new LinkedHashMap<String,Ty>();
+    supers(at, supers);
+    supers.values().stream().filter(s->s.name().equals(pt.name()) && s.args().size() == pt.args().size())
+      .forEach(s->IntStream.range(0, pt.args().size()).forEach(j->unify(pt.args().get(j), s.args().get(j), sub, open)));
+  }
+  private void supers(Ty t, LinkedHashMap<String,Ty> seen){
+    if (seen.putIfAbsent(t.name()+"/"+t.args().size(), t) != null){ return; }
+    entry(t).ifPresent(e->e.supers().forEach(s->supers(s.subst(e.bind(t)), seen)));
   }
   private static boolean bound(Ty t, List<String> open){ return !t.equals(Ty.unknown) && !(t.isX() && open.contains(t.name())); }
   /// recv.m x = thunk: the continuation is the second parameter; its only abstract method of two
@@ -274,29 +278,32 @@ public record Resolver(Api api, String pkg, Map<String,String> aliases, String t
     if (meth.name().isPresent()){ return t.method(meth.name().get(), n); }
     return t.lambda(n, Chain.methodsOf(g).stream().flatMap(m->m.name().stream()).collect(Collectors.toSet()));
   }
-  /// the compiled type, or a declaration of this file the last compile does not know
-  private Optional<Type> entry(Ty t){
+  private Optional<Type> entry(Ty t){ return entry(t, new HashSet<>()); }
+  /// the compiled type, or a declaration of this file the last compile does not know, with the
+  /// methods of its supertypes; seen are the declarations already visited, which add nothing
+  private Optional<Type> entry(Ty t, HashSet<String> seen){
     var res= api.entry(t);
-    if (res.isPresent() || !t.name().startsWith(pkg+".")){ return res; }
-    return declaration(root, t.name().substring(pkg.length()+1)).filter(h->h.xs().size() == t.args().size()).map(this::declared);
+    if (res.isPresent() || !t.name().startsWith(pkg+".") || !seen.add(t.name())){ return res; }
+    return declaration(root, t.name().substring(pkg.length()+1)).filter(h->h.xs().size() == t.args().size()).map(h->declared(h, seen));
   }
-  private Type declared(Header h){
+  private Type declared(Header h, HashSet<String> seen){
     var xs= new HashMap<String,Ty>();
     h.xs().forEach(x->xs.put(x, new Ty(x, List.of())));
     var supers= h.supers().stream().map(c->parseType(c, xs)).toList();
-    return new Type(pkg+"."+h.name(), h.xs(), supers, supers.stream().flatMap(c->methods(c).stream()).toList());
+    return new Type(pkg+"."+h.name(), h.xs(), supers, supers.stream().flatMap(c->methods(c, seen).stream()).toList());
   }
   private static Optional<Header> declaration(Group g, String name){
     return g.items.stream().filter(it->it instanceof Group).map(Group.class::cast)
       .flatMap(c->(c.open == Kind.OCurly ? Chain.header(c) : Optional.<Header>empty()).filter(h->h.name().equals(name)).or(()->declaration(c, name)).stream()).findFirst();
   }
   /// one method per name and arity, with the type's arguments substituted
-  private List<Method> methods(Ty t){
-    var e= entry(t);
+  private List<Method> methods(Ty t){ return methods(t, new HashSet<>()); }
+  private List<Method> methods(Ty t, HashSet<String> seen){
+    var e= entry(t, seen);
     if (e.isEmpty()){ return List.of(); }
     var sub= e.get().bind(t);
-    var seen= new HashSet<String>();
-    return e.get().ms().stream().filter(m->seen.add(m.name()+"/"+m.arity())).map(m->m.subst(sub)).toList();
+    var names= new HashSet<String>();
+    return e.get().ms().stream().filter(m->names.add(m.name()+"/"+m.arity())).map(m->m.subst(sub)).toList();
   }
   /// the qualified name a type name written in the source stands for: a literal's, an alias's, or
   /// one of this package

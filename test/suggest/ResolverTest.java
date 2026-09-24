@@ -165,6 +165,13 @@ final class ResolverTest{
     same("",names("NewThing[T]: OrderHash[NewThing[T]] { .foo(l: List[T]) -> l.get(0).| }"));
     same(".assertEq .cmp .hash",names("A: { .foo(n: NewThing) -> n.| }\nNewThing: OrderHash[NewThing] { }"));
   }
+  @Test void cyclicSupertypesTheLastCompileDoesNotKnowAddNoMethods(){
+    same(".assertEq .cmp .hash",names("A: B, OrderHash[A] { .foo(a: A) -> a.| }\nB: A { }"));
+    same(".assertEq .cmp .hash",names("A: B, OrderHash[A] { .foo(b: B) -> b.| }\nB: A { }"));
+    same("",names("A: B { .foo(a: A) -> a.| }\nB: A { }"));
+    same(nat,names("A: B { .foo(f: F[A,Nat]) -> Block#.let x = {f#(this)} .return{ x.| } }\nB: A { }"));
+    same("",names("A: B { .foo(o: Opt[A]) -> o.match{ .some s -> s.| } }\nB: A { }"));
+  }
   @Test void nothingWhileANameIsBeingTyped(){
     same("",probe("Perso|"));
     same("",probe("ps|"));
