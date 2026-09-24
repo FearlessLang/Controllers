@@ -165,6 +165,11 @@ final class ResolverTest{
     same("",names("NewThing[T]: OrderHash[NewThing[T]] { .foo(l: List[T]) -> l.get(0).| }"));
     same(".assertEq .cmp .hash",names("A: { .foo(n: NewThing) -> n.| }\nNewThing: OrderHash[NewThing] { }"));
   }
+  @Test void aDeclarationTheLastCompileDoesNotKnowHasTheMethodOfItsFirstSupertypeHavingIt(){
+    same(opt,names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.| }"));
+    same(nat,names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.get.| }"));
+    same(".size +",names("NewThing: Opt[Str], Opt[Nat] { .foo -> this.get.| }"));
+  }
   @Test void cyclicSupertypesTheLastCompileDoesNotKnowAddNoMethods(){
     same(".assertEq .cmp .hash",names("A: B, OrderHash[A] { .foo(a: A) -> a.| }\nB: A { }"));
     same(".assertEq .cmp .hash",names("A: B, OrderHash[A] { .foo(b: B) -> b.| }\nB: A { }"));

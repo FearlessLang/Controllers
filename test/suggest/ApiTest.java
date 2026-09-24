@@ -24,4 +24,9 @@ final class ApiTest{
     var t= "[\"a.B\",\"imm\",[],[],[],\"this\"]";
     assertThrows(IllegalStateException.class,()->new Api(Api.parse("["+t+","+t+"]")));
   }
+  @Test void aCompiledTypeWithTwoMethodsOfTheSameNameAndArityIsAnError(){
+    var m= ResolverTest.m(".a",ResolverTest.bs(),ResolverTest.list(),ResolverTest.c("a.B"));
+    var t= Api.parse(ResolverTest.list(ResolverTest.type("a.B",ResolverTest.bs(),"[]",m,m))).getFirst();
+    same("Type a.B has two methods .a of 0 parameters",assertThrows(IllegalArgumentException.class,()->t.method(".a",0)).getMessage());
+  }
 }

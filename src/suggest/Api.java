@@ -37,7 +37,7 @@ public final class Api{
     Method subst(Map<String,Ty> sub){ return new Method(name, bs, ts.stream().map(t->t.subst(sub)).toList(), ret.subst(sub), abs); }
   }
   public record Type(String name, List<String> bs, List<Ty> supers, List<Method> ms){
-    Optional<Method> method(String name, int arity){ return ms.stream().filter(m->m.name.equals(name) && m.arity() == arity).findFirst(); }
+    Optional<Method> method(String name, int arity){ return ms.stream().filter(m->m.name.equals(name) && m.arity() == arity).reduce((a,b)->{ throw new IllegalArgumentException("Type "+this.name+" has two methods "+a.name+" of "+arity+" parameters"); }); }
     /// the abstract method of that arity a method without name implements: the only one but for the taken names
     Optional<Method> lambda(int arity, Set<String> taken){
       var names= ms.stream().filter(m->m.abs && m.arity() == arity && !taken.contains(m.name)).map(Method::name).distinct().toList();

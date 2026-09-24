@@ -290,7 +290,8 @@ public record Resolver(Api api, String pkg, Map<String,String> aliases, String t
     var xs= new HashMap<String,Ty>();
     h.xs().forEach(x->xs.put(x, new Ty(x, List.of())));
     var supers= h.supers().stream().map(c->parseType(c, xs)).toList();
-    return new Type(pkg+"."+h.name(), h.xs(), supers, supers.stream().flatMap(c->methods(c, seen).stream()).toList());
+    var names= new HashSet<String>();
+    return new Type(pkg+"."+h.name(), h.xs(), supers, supers.stream().flatMap(c->methods(c, seen).stream()).filter(m->names.add(m.name()+"/"+m.arity())).toList());
   }
   private static Optional<Header> declaration(Group g, String name){
     return g.items.stream().filter(it->it instanceof Group).map(Group.class::cast)
@@ -302,8 +303,7 @@ public record Resolver(Api api, String pkg, Map<String,String> aliases, String t
     var e= entry(t, seen);
     if (e.isEmpty()){ return List.of(); }
     var sub= e.get().bind(t);
-    var names= new HashSet<String>();
-    return e.get().ms().stream().filter(m->names.add(m.name()+"/"+m.arity())).map(m->m.subst(sub)).toList();
+    return e.get().ms().stream().map(m->m.subst(sub)).toList();
   }
   /// the qualified name a type name written in the source stands for: a literal's, an alias's, or
   /// one of this package
