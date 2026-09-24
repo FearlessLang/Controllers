@@ -8,11 +8,9 @@ import coordinator.CapabilityEnvironment;
 import coordinator.Coordinator;
 import core.E.Literal;
 import core.OtherPackages;
-import fileSupport.LogFiles;
 import fileSupport.NativeLocaleForcer;
 import naiveBackend.BackendTools;
 import tools.ChildJvm;
-import tools.Fs;
 import tools.SourceOracle;
 import userMessages.UserError;
 
@@ -25,9 +23,6 @@ public class ChildMain{
     var project= Path.of(args[0]);
     var reports= Path.of(args[1]);
     Eclipse.problems(reports,"");
-    //Puts .out in place before the compile stamps .fearless_out, so the project
-    //root's mtime cannot end up newer than that stamp.
-    Fs.ensureDir(project.resolve(LogFiles.runDir));
     var exitCode= 0;
     var problem= "";
     try{ compile(project); }

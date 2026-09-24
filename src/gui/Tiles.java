@@ -115,15 +115,10 @@ public final class Tiles extends JPanel{
     selected.ifPresent(p->IntStream.range(0,model.size()).filter(i->model.get(i).entry().path().equals(p)).forEach(list::setSelectedIndex));
     syncSpinner();
   }
-  public void updateFreshness(Path folder, long modified, boolean upToDate){
+  void update(Row row){
     for(int i : Range.of(0,model.size())){
-      var row= model.get(i);
-      if (!row.entry().path().equals(folder)){ continue; }
-      if (row.state() == State.codeInvalid || row.state() == State.dataInvalid){ return; }
-      var e= row.entry();
-      var updated= new Row(e,row.image(),modified,State.of(e.kind(),true,Facts.hasCache(folder),upToDate,isRunning.test(folder)));
-      if (updated.state() == row.state() && updated.modified() == row.modified()){ return; }
-      model.set(i,updated);
+      if (!model.get(i).entry().path().equals(row.entry().path())){ continue; }
+      model.set(i,row);
       syncSpinner();
       return;
     }
@@ -143,7 +138,7 @@ public final class Tiles extends JPanel{
       return;
     }
   }
-  private Row row(Entry e){
+  Row row(Entry e){
     var facts= Facts.of(e.path(),e.kind());
     var valid= facts.valid() && registry.linkProblem(e).isEmpty() && controller.Names.markerProblem(e.path(),e.alias()).isEmpty();
     return new Row(e,Icons.folder(facts,iconSize),facts.modified(),State.of(e.kind(),valid,facts.hasCache(),facts.cacheUpToDate(),isRunning.test(e.path())));

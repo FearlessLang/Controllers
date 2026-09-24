@@ -183,11 +183,11 @@ public final class Panel{
   void recheckFreshness(){
     if (session.busy() || !checking.compareAndSet(false,true)){ return; }
     main.worker.execute(()->{
-      var modified= Facts.modified(folder);
-      var upToDate= Facts.cacheUpToDate(folder,modified);
+      var fresh= Facts.of(folder,entry().kind());
       SwingUtilities.invokeLater(()->{
         checking.set(false);
-        if (upToDate == facts.cacheUpToDate() && modified == facts.modified()){ return; }
+        var same= fresh.cacheUpToDate() == facts.cacheUpToDate() && fresh.modified() == facts.modified() && fresh.problem().equals(facts.problem());
+        if (same){ return; }
         refresh();
         onChange.run();
       });
@@ -430,7 +430,6 @@ public final class Panel{
       row("Total size",bytes(facts.bytes())),
       row("Last modified",stamp(facts.modified()))));
     if (entry.kind() == Kind.code){
-      out.add(row("Package data",stamp(facts.jsonStamp())));
       out.add(row("Compiled cache",facts.cacheUpToDate() ? "up to date" : "needs compiling"));
       out.add(row("Last compile",stamp(entry.compiled())));
       out.add(row("Last run",stamp(entry.run())));

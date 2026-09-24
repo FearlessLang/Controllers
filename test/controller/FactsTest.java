@@ -25,14 +25,14 @@ final class FactsTest{
     return res;
   }
   static void cache(Path project, String pkg, long stamp){
-    at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear\n",stamp);
+    at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear",stamp);
     at(project.resolve(".fearless_out").resolve(pkg+".json"),"{}\n",stamp);
   }
   private static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file,content);
     Fs.ofV(()->Files.setLastModifiedTime(file,FileTime.fromMillis(stamp)));
   }
-  static long after(Path project){ return Facts.modified(project)+1000; }
+  static long after(Path project){ return Facts.of(project,Kind.code).modified()+1000; }
   @Test void countsAndSizesTheSourceFiles(@TempDir Path dir){
     var facts= Facts.of(project(dir,"someProject"),Kind.code);
     assertEquals(2,facts.files());
@@ -42,9 +42,7 @@ final class FactsTest{
   @Test void theCompiledCacheIsNotCountedAsSource(@TempDir Path dir){
     var project= project(dir,"someProject");
     cache(project,"hello",after(project));
-    var facts= Facts.of(project,Kind.code);
-    assertEquals(2,facts.files());
-    assertTrue(facts.jsonStamp() > facts.modified());
+    assertEquals(2,Facts.of(project,Kind.code).files());
   }
   //A log or an Eclipse report lands after the build stamp, inside the project folder
   @Test void whatFearlessWritesAboutAProjectIsNotCountedAsSource(@TempDir Path dir){
@@ -85,10 +83,34 @@ final class FactsTest{
     assertTrue(facts.hasCache());
     assertTrue(facts.cacheUpToDate());
   }
-  @Test void aCacheOlderThanOneSourceIsStale(@TempDir Path dir){
+  @Test void aPackageBuiltBeforeOneOfItsFilesChangedIsStale(@TempDir Path dir){
     var project= project(dir,"someProject");
+    Fs.writeUtf8(project.resolve("_other").resolve("_rank_app.fear"),"");
     cache(project,"hello",after(project));
     cache(project,"other",1000);
+    assertFalse(Facts.of(project,Kind.code).cacheUpToDate());
+  }
+  @Test void eachPackageIsComparedWithItsOwnFilesOnly(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    var other= project.resolve("_other").resolve("_rank_app.fear");
+    at(other,"",5000);
+    at(project.resolve("_hello").resolve("_rank_app.fear"),"use base.Main as Main;\n",1000);
+    cache(project,"hello",2000);
+    cache(project,"other",6000);
+    assertTrue(Facts.of(project,Kind.code).cacheUpToDate());
+  }
+  @Test void aFileOutsideEveryPackageNeverMakesTheCacheStale(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    var stamp= after(project);
+    cache(project,"hello",stamp);
+    at(project.resolve("readme"),"edited\n",stamp+5000);
+    at(project.resolve("someproject.fearless"),"",stamp+5000);
+    assertTrue(Facts.of(project,Kind.code).cacheUpToDate());
+  }
+  @Test void aFileAddedToAPackageMakesItStaleWhateverItsTime(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    cache(project,"hello",after(project));
+    at(project.resolve("_hello").resolve("more.fear"),"",1000);
     assertFalse(Facts.of(project,Kind.code).cacheUpToDate());
   }
   @Test void aDataFolderNeedsNoPackageStructure(@TempDir Path dir){
