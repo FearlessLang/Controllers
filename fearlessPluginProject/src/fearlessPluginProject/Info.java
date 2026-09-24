@@ -1,61 +1,66 @@
 package fearlessPluginProject;
 
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
-/// Reads what controller.Info (in Controllers) prints: a string "..." with the escapes
-/// \" \\ \n, a list [...] or an object {...}; a string becomes a String, a list a List,
-/// an object a Map in field order. What the manager prints is well formed, so nothing is checked.
-public final class Info{
+/// Reads the Info files the manager writes (controller.Info in Controllers): objects {...} of
+/// strings "..." (escapes \" \\ \n) and objects; an object becomes a Map in field order.
+/// Anything else is an error naming the file and the offset.
+final class Info{
+  private final Path file;
   private final String text;
   private int i;
-  private Info(String text){ this.text= text; }
-  public static Object parse(String text){ return new Info(text).value(); }
-  @SuppressWarnings("unchecked") public static Map<String,Object> obj(Object value){ return (Map<String,Object>)value; }
+  private Info(Path file){ this.file= file; this.text= ManagerLink.read(file); }
+  static Map<String,Object> parse(Path file){
+    var p= new Info(file);
+    try{
+      var res= p.obj();
+      p.ws();
+      if (p.i != p.text.length()){ throw p.bad("the end of the file"); }
+      return res;
+    }
+    catch(IndexOutOfBoundsException e){ throw p.bad("more text"); }
+  }
+  @SuppressWarnings("unchecked") static Map<String,Object> obj(Object value){ return (Map<String,Object>)value; }
   private Object value(){
     ws();
-    var c= text.charAt(i);
-    if (c == '"'){ return str(); }
-    if (c == '['){ return list(); }
-    return obj();
-  }
-  private List<Object> list(){
-    var res= new ArrayList<Object>();
-    for (i+= 1; !closes(']'); comma()){ res.add(value()); }
-    return res;
+    return text.charAt(i) == '"' ? str() : obj();
   }
   private Map<String,Object> obj(){
     var res= new LinkedHashMap<String,Object>();
-    for (i+= 1; !closes('}'); comma()){
+    expect('{');
+    if (next('}')){ return res; }
+    do{
       var key= str();
-      ws();
-      i+= 1;
-      res.put(key, value());
+      expect(':');
+      if (res.put(key, value()) != null){ throw bad("a key other than \""+key+"\""); }
     }
+    while(next(','));
+    expect('}');
     return res;
   }
-  private boolean closes(char c){
+  private String str(){
+    expect('"');
+    var sb= new StringBuilder();
+    for (var c= text.charAt(i++); c != '"'; c= text.charAt(i++)){
+      if (c == '\\'){ c= escape(text.charAt(i++)); }
+      sb.append(c);
+    }
+    return sb.toString();
+  }
+  private char escape(char c){
+    if (c == 'n'){ return '\n'; }
+    if (c == '"' || c == '\\'){ return c; }
+    throw bad("an escape \\n, \\\" or \\\\");
+  }
+  private boolean next(char c){
     ws();
     if (text.charAt(i) != c){ return false; }
     i+= 1;
     return true;
   }
-  private void comma(){
-    ws();
-    if (text.charAt(i) == ','){ i+= 1; }
-  }
-  private void ws(){ while(text.charAt(i) == ' ' || text.charAt(i) == '\n'){ i+= 1; } }
-  private String str(){
-    ws();
-    var sb= new StringBuilder();
-    for (i+= 1; text.charAt(i) != '"'; i+= 1){
-      var c= text.charAt(i);
-      if (c == '\\'){ i+= 1; c= text.charAt(i) == 'n' ? '\n' : text.charAt(i); }
-      sb.append(c);
-    }
-    i+= 1;
-    return sb.toString();
-  }
+  private void expect(char c){ if (!next(c)){ throw bad("'"+c+"'"); } }
+  private void ws(){ while(i < text.length() && (text.charAt(i) == ' ' || text.charAt(i) == '\n')){ i+= 1; } }
+  private IllegalStateException bad(String expected){ return new IllegalStateException("The file "+file+" is not what the manager writes: "+expected+" was expected at offset "+i+"."); }
 }

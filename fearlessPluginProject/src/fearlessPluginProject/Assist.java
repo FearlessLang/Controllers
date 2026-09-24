@@ -43,21 +43,20 @@ public final class Assist implements IContentAssistProcessorExtension{
   private static final Map<Path,Loaded> loaded= new HashMap<>();
   private static final Map<Path,Text> texts= new HashMap<>();
   @Override public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset){
-    var link= ManagerLink.find().orElseThrow();
     var file= ResourcesPlugin.getWorkspace().getRoot().getFile(FileBuffers.getTextFileBufferManager().getTextFileBuffer(viewer.getDocument()).getLocation());
-    var folder= link.projects().get(file.getProject().getName());
-    if (folder == null || file.getProjectRelativePath().segmentCount() < 3){ return new ICompletionProposal[0]; }
+    var project= ManagerLink.projects().get(file.getProject().getName());
+    if (project == null || file.getProjectRelativePath().segmentCount() < 3){ return new ICompletionProposal[0]; }
     var pkgDir= file.getProjectRelativePath().segment(1);
-    var out= folder.resolve(".fearless_out");
+    var out= project.folder().resolve(".fearless_out");
     var text= viewer.getDocument().get();
-    var head= file.getName().startsWith("_rank_") ? text : head(folder.resolve(pkgDir)).map(ManagerLink::read).orElse("");
-    var base= link.baseDocs.resolveSibling("base.json");
+    var head= file.getName().startsWith("_rank_") ? text : head(project.folder().resolve(pkgDir)).map(ManagerLink::read).orElse("");
+    var base= ManagerLink.baseCache.resolve("base.json");
     var types= Stream.concat(Stream.of(base), jsons(out)).flatMap(p->types(p).stream()).toList();
     var s= new Resolver(new Api(types), pkgDir.substring(1), Resolver.aliases(head), text).suggest(offset);
-    var typeProposals= s.types().stream().map(t->typeProposal(t, s.from(), offset, docs(txt(link, out, pkg(t.name())))));
+    var typeProposals= s.types().stream().map(t->typeProposal(t, s.from(), offset, docs(txt(out, pkg(t.name())))));
     if (s.rows().isEmpty()){ return typeProposals.toArray(ICompletionProposal[]::new); }
     var receiver= s.receiver().name();
-    var docs= docs(txt(link, out, pkg(receiver)));
+    var docs= docs(txt(out, pkg(receiver)));
     return Stream.concat(s.rows().stream().map(r->proposal(r, s.from(), offset, docs, simple(receiver))), typeProposals).toArray(ICompletionProposal[]::new);
   }
   private static ICompletionProposal proposal(Row r, int from, int offset, Docs docs, String type){
@@ -69,8 +68,8 @@ public final class Assist implements IContentAssistProcessorExtension{
   }
   private static String pkg(String name){ return name.substring(0, name.indexOf('.')); }
   private static String simple(String name){ return name.substring(name.indexOf('.')+1); }
-  private static Path txt(ManagerLink link, Path out, String pkg){
-    return pkg.equals("base") ? link.baseDocs.resolveSibling("base.txt") : out.resolve("gen_java").resolve(pkg+".txt");
+  private static Path txt(Path out, String pkg){
+    return pkg.equals("base") ? ManagerLink.baseCache.resolve("base.txt") : out.resolve("gen_java").resolve(pkg+".txt");
   }
   private static Optional<Path> head(Path pkgDir){
     try(var files= Files.list(pkgDir)){ return files.filter(p->p.getFileName().toString().startsWith("_rank_")).findFirst(); }

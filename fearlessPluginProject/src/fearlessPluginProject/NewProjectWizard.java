@@ -29,7 +29,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     var folder= Path.of(page.folder.getText().strip());
     try{ Files.createDirectories(folder); }
     catch(IOException e){ throw new UncheckedIOException(e); }
-    ManagerLink.find().orElseThrow().send("select", folder);
+    ManagerLink.send("select", folder);
     return true;
   }
   private static final class Page extends WizardPage{

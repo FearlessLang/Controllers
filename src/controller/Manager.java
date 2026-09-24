@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 import controller.Registry.Entry;
 import controller.Registry.Kind;
-import fileSupport.JUnitReport;
 import mainCoordinator.MakeDemo;
 import realSourceOracle.AutoloadHandler;
 import tools.ChildJvm;
@@ -43,7 +42,7 @@ public final class Manager{
     void note(String text);
   }
   public interface Tools{
-    ChildJvm compile(Path folder, Path reports, Consumer<String> out);
+    ChildJvm compile(Path folder, Consumer<String> out);
     ChildJvm run(Path folder, String main, Consumer<String> out);
     Optional<Map<String,String>> mains(Path folder);
   }
@@ -60,6 +59,8 @@ public final class Manager{
     int runs;
     String lastRun= "";
     int exit= -1;
+    StringBuilder compiled= new StringBuilder();
+    String failure= "";
     ChildJvm child;
     boolean terminated;
     boolean thenRun;
@@ -105,7 +106,7 @@ public final class Manager{
   }
   private void load(){
     Fs.writeUtf8(eclipse.notes(),"");
-    eclipse.publish("");
+    eclipse.publish(Eclipse.state(List.of()));
     registry.all().forEach(this::open);
   }
   private void open(Entry e){
@@ -133,7 +134,7 @@ public final class Manager{
       case "terminate" -> terminate(folder);
       case "clean" -> clean(folder);
       case "kind" -> kind(folder,arg);
-      case "forget" -> { drop(folder); Fs.rmTree(eclipse.reports(alias(folder))); registry.remove(folder); }
+      case "forget" -> { drop(folder); registry.remove(folder); }
       case "mains" -> edit(folder,e->e.withMains(words(arg)));
       case "link" -> link(folder,words(arg));
       case "clear" -> Fs.writeUtf8(console(folder),"");
@@ -154,7 +155,6 @@ public final class Manager{
     var alias= Names.makeUnique(folder,registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
     if (!alias.equals(wanted)){ tell(Report.projectNamed(folder,wanted,alias).getMessage()); }
     Fs.rmTree(folder.resolve(Facts.outDir));
-    Fs.rmTree(eclipse.reports(alias));
     registry.add(alias,folder);
     if (fresh){
       registry.update(folder,e->e.withKind(Kind.code));
@@ -176,7 +176,8 @@ public final class Manager{
     l.named= named;
     registry.update(f,e->e.withTimes(System.currentTimeMillis(),e.run()));
     output(f,"--- compiling "+f.getFileName()+" ---\n");
-    start(f,Project.compiling,tools.compile(f,eclipse.reports(p.alias()),out(f)));
+    l.compiled.setLength(0);
+    start(f,Project.compiling,tools.compile(f,out(f)));
   }
   private List<String> chosen(Path f, Optional<String> named){
     var p= project(f);
@@ -199,9 +200,9 @@ public final class Manager{
     registry.update(f,e->e.withTimes(e.compiled(),System.currentTimeMillis()));
     output(f,"--- running "+main+" ---\n");
     start(f,main,tools.run(f,main,out(f)));
-    var reports= eclipse.reports(alias(f));
+    var alias= alias(f);
     var since= l.since;
-    l.reporting= core.scheduleAtFixedRate(()->step(()->JUnitReport.write(reports,f,main,since)),2,2,TimeUnit.SECONDS);
+    l.reporting= core.scheduleAtFixedRate(()->step(()->eclipse.report(alias,f,main,since)),2,2,TimeUnit.SECONDS);
   }
   private void start(Path f, String what, ChildJvm child){
     var l= live.get(f);
@@ -222,6 +223,7 @@ public final class Manager{
     l.child= null;
     l.job= "";
     if (what.equals(Project.compiling)){
+      l.failure= ec == 0 ? "" : l.compiled.toString();
       output(f,"--- compile "+(ec == 0 ? "done" : "failed with "+ec)+" ---\n");
       scan(f);
       l.todo= ec == 0 && l.thenRun && !l.terminated ? chosen(f,l.named) : List.of();
@@ -229,7 +231,7 @@ public final class Manager{
       return;
     }
     l.reporting.cancel(false);
-    JUnitReport.write(eclipse.reports(alias(f)),f,what,l.since);
+    eclipse.report(alias(f),f,what,l.since);
     l.exit= ec;
     output(f,"--- "+what+" exited with "+ec+" after "+Duration.between(l.since,Instant.now()).toSeconds()+"s ---\n");
     next(f);
@@ -280,7 +282,7 @@ public final class Manager{
     done.run();
   }
   private void connectNow(Path eclipseExe){
-    try{ tell(eclipse.connect(eclipseExe,dir.resolve("messages"))); }
+    try{ tell(eclipse.connect(eclipseExe,dir)); }
     catch(UserError e){ tell(e.getMessage()); }
   }
   private void drop(Path f){
@@ -313,7 +315,7 @@ public final class Manager{
   }
   private Project project(Entry e){
     var l= live.get(e.path());
-    return new Project(e,l.facts,l.mains,registry.linkProblem(e,f->live.get(f).facts.problem()),l.job,l.since,l.runs,l.lastRun,l.exit);
+    return new Project(e,l.facts,l.mains,registry.linkProblem(e,f->live.get(f).facts.problem()),l.job,l.since,l.runs,l.lastRun,l.exit,l.failure);
   }
   private Project project(Path f){ return project(registry.of(f).orElseThrow()); }
   private String alias(Path f){ return registry.of(f).orElseThrow().alias(); }
@@ -322,9 +324,8 @@ public final class Manager{
     var next= new State(registry.all().stream().map(this::project).toList(),selected);
     if (next.equals(state)){ return; }
     var old= state;
-    var listing= Eclipse.listing(next.projects());
-    if (!listing.equals(Eclipse.listing(old.projects()))){ eclipse.publish(listing); }
-    next.projects().stream().filter(p->!old.projects().contains(p)).forEach(eclipse::state);
+    var text= Eclipse.state(next.projects());
+    if (!text.equals(Eclipse.state(old.projects()))){ eclipse.publish(text); }
     state= next;
     view.state(next);
   }
@@ -337,7 +338,12 @@ public final class Manager{
     view.output(f,text);
   }
   private Consumer<String> out(Path f){ return s->post(()->late(f,s)); }
-  private void late(Path f, String text){ if (live.containsKey(f)){ output(f,text); } }
+  private void late(Path f, String text){
+    var l= live.get(f);
+    if (l == null){ return; }
+    if (l.job.equals(Project.compiling)){ l.compiled.append(text); }
+    output(f,text);
+  }
   static Path projectFolder(String given, Path managerDir){
     var path= path(given);
     if (!Files.exists(path)){ throw Report.launchPathNotFound(path); }

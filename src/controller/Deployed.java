@@ -30,7 +30,7 @@ public final class Deployed implements Manager.Tools{
       }
     };
   }
-  @Override public ChildJvm compile(Path folder, Path reports, Consumer<String> out){
+  @Override public ChildJvm compile(Path folder, Consumer<String> out){
     return ChildJvm.start(List.of(
       "-Djava.awt.headless=true",
       "-D"+JavacTool.appDirKey+"="+appDir(),
@@ -39,8 +39,7 @@ public final class Deployed implements Manager.Tools{
       "--enable-native-access=Commons,Coordinator",
       "-p", appDir().resolve(JavacTool.deployedModsDirName).toString(),
       "-m", "Controller/controller.ChildMain",
-      folder.toString(),
-      reports.toString()),out);
+      folder.toString()),out);
   }
   @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
     return Coordinator.startMain(folder,stdLib("base"),main,coordinator(folder).sharedClasspath(),out);

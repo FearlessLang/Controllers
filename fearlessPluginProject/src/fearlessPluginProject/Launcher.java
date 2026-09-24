@@ -20,7 +20,7 @@ public final class Launcher extends LaunchConfigurationDelegate{
   public static final String mainAttr= "main";
   @Override public boolean buildForLaunch(ILaunchConfiguration configuration, String mode, IProgressMonitor monitor){ return false; }
   @Override public void launch(ILaunchConfiguration configuration, String mode, ILaunch launch, IProgressMonitor monitor) throws CoreException{
-    ManagerLink.find().orElseThrow().send("run", Path.of(configuration.getAttribute(folderAttr, "")), configuration.getAttribute(mainAttr, ""));
+    ManagerLink.send("run", Path.of(configuration.getAttribute(folderAttr, "")), configuration.getAttribute(mainAttr, ""));
     DebugPlugin.getDefault().getLaunchManager().removeLaunch(launch);
   }
 }

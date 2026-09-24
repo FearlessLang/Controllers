@@ -46,7 +46,7 @@ final class ManagerTest{
     Fs.runTool("javac",List.of("-d",classes.toString(),src.toString()));
   }
   record Fake(Map<String,String> mains) implements Manager.Tools{
-    @Override public ChildJvm compile(Path folder, Path reports, Consumer<String> out){
+    @Override public ChildJvm compile(Path folder, Consumer<String> out){
       FactsTest.cache(folder,"hello",FactsTest.after(folder));
       return jvm(out,"compiled","0","0");
     }
@@ -104,17 +104,21 @@ final class ManagerTest{
     for (var p: path){ file= file.resolve(p); }
     return Fs.readUtf8(file);
   }
+  private static List<String> listed(Path dir){
+    var state= (Info.Obj)Info.parse(eclipse(dir,"state.info"),dir.toUri());
+    return state.fields().stream().map(f->f.key()+" "+((Info.Str)((Info.Obj)f.value()).field("folder").orElseThrow().value()).value()).toList();
+  }
   @Test void aMessageWithNoFolderShowsTheWindow(@TempDir Path dir){
     var m= manager(dir);
     send(m,"");
     assertEquals(1,view.shown);
-    assertEquals("",eclipse(dir,"projects.txt"));
+    assertEquals(List.of(),listed(dir));
   }
   @Test void selectingAnEmptyFolderMakesItAHelloWorldCodeProject(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    assertEquals("hello "+hello+"\n",eclipse(dir,"projects.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
     assertTrue(Files.isRegularFile(hello.resolve("hello.fearless")));
     assertTrue(Files.isRegularFile(hello.resolve("_hello").resolve("_rank_app.fear")));
     var p= project(m,hello);
@@ -122,14 +126,13 @@ final class ManagerTest{
     assertEquals(Project.State.codeNoCache,p.state());
     assertEquals(Optional.of(hello),m.state().selected());
     assertEquals(1,view.shown);
-    assertTrue(eclipse(dir,"hello","state.txt").contains("\"needsCompiling\": \"true\""));
   }
   @Test void aFileSelectsTheFolderItIsIn(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");
     Fs.writeUtf8(hello.resolve("hello.fearless"),"");
     send(m,"select",hello.resolve("hello.fearless").toString());
-    assertEquals("hello "+hello+"\n",eclipse(dir,"projects.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
   }
   @Test void aRunMessageCompilesThenRunsTheOnlyMain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
@@ -169,7 +172,7 @@ final class ManagerTest{
     send(m,"run",hello.toString());
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     assertEquals(Optional.of("hello.Slow"),project(m,hello).running());
-    assertTrue(eclipse(dir,"hello","state.txt").contains("\"running\": \"hello.Slow\""));
+    assertTrue(eclipse(dir,"state.info").contains("\"running\": \"hello.Slow\""));
     send(m,"run",hello.toString());
     send(m,"compile",hello.toString());
     send(m,"clean",hello.toString());
@@ -247,7 +250,7 @@ final class ManagerTest{
     send(m,"run",hello.toString());
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     send(m,"forget",hello.toString());
-    assertEquals("",eclipse(dir,"projects.txt"));
+    assertEquals(List.of(),listed(dir));
     assertEquals(Optional.empty(),m.state().selected());
     send(m,"run",hello.toString());
     assertTrue(view.notes.getLast().startsWith("Fearless was asked to \"run\" a folder it does not keep track of:"));
@@ -257,7 +260,7 @@ final class ManagerTest{
     var m= manager(dir);
     var hello= folder(dir,"hello");
     send(m,"compile",hello.toString());
-    assertEquals("",eclipse(dir,"projects.txt"));
+    assertEquals(List.of(),listed(dir));
     same("""
       Fearless was asked to "compile" a folder it does not keep track of:
       [###]hello
@@ -284,7 +287,7 @@ final class ManagerTest{
     send(m,hello.toString());
     send(m,folder(hello,"inner").toString());
     assertEquals(1,view.notes.size());
-    assertEquals("hello "+hello+"\n",eclipse(dir,"projects.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
   }
   @Test void kindsChangeFromIdleAndBackToIdleOnly(@TempDir Path dir){
     var m= manager(dir);
@@ -347,7 +350,7 @@ final class ManagerTest{
     assertEquals(Kind.dataReadWrite,project(m,data).kind());
     m.commit("{}",()->done.add("empty"));
     m.settle();
-    assertEquals("",eclipse(dir,"projects.txt"));
+    assertEquals(List.of(),listed(dir));
   }
   @Test void aProjectWhoseFolderIsGoneIsInvalidAndCanBeForgotten(@TempDir Path dir){
     var m= manager(dir);
@@ -359,7 +362,7 @@ final class ManagerTest{
     send(m,"compile",data.toString());
     assertTrue(eclipse(dir,"data","console.txt").startsWith("The folder of this project does not exist:"));
     send(m,"forget",data.toString());
-    assertEquals("",eclipse(dir,"projects.txt"));
+    assertEquals(List.of(),listed(dir));
   }
   @Test void aNewManagerRemembersTheProjectsAndStartsWithEmptyConsoles(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");

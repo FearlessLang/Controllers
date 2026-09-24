@@ -14,8 +14,8 @@ import controller.Registry.Kind;
 import utils.Join;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
-/// folder holds, its mains once known, why its links are broken, and its job, if any.
-public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mains, Optional<String> linkProblem, String job, Instant since, int runs, String lastRun, int exit){
+/// folder holds, its mains once known, why its links are broken, its job, if any, and the output of its last compile when that failed.
+public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mains, Optional<String> linkProblem, String job, Instant since, int runs, String lastRun, int exit, String failure){
   public static final String compiling= "compiling";
   public enum State{
     codeInvalid("code: invalid content"), dataInvalid("data: invalid content"), idle("idle"), dataReadOnly("data: read only"), dataReadWrite("data: read write"),
