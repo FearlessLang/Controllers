@@ -48,7 +48,7 @@ final class Panel{
   private final Window window;
   private final Path folder;
   final JPanel root= new JPanel(new BorderLayout(8,8));
-  private final JTextArea output= mono(named(new JTextArea(10,60),"output"));
+  final JTextArea output= mono(named(new JTextArea(10,60),"output"));
   private final JScrollPane outputScroll= new JScrollPane(output);
   private final JButton clearOutput= small("Clear output",this::clearOutput);
   private final JTextArea details= mono(named(new JTextArea(9,40),"details"));
@@ -111,7 +111,7 @@ final class Panel{
     outputPanel.add(outputScroll,BorderLayout.CENTER);
     root.add(outputPanel,BorderLayout.CENTER);
   }
-  private void clearOutput(){ output.setText(""); window.ask("clear",folder,""); }
+  private void clearOutput(){ window.ask("clear",folder,""); }
   void append(String text){
     var bar= outputScroll.getVerticalScrollBar();
     var following= bar.getValue()+bar.getVisibleAmount() >= bar.getMaximum()-16;

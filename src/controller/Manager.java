@@ -40,6 +40,7 @@ public final class Manager{
     void state(State s);
     void output(Path folder, String text);
     void note(String text);
+    void clear(Path folder);
   }
   public interface Tools{
     ChildJvm compile(Path folder, Consumer<String> out);
@@ -106,8 +107,8 @@ public final class Manager{
   }
   private void load(){
     Fs.writeUtf8(eclipse.notes(),"");
-    eclipse.publish(Eclipse.state(List.of()));
     registry.all().forEach(this::open);
+    eclipse.publish(Eclipse.state(registry.all().stream().map(this::project).toList()));
   }
   private void open(Entry e){
     live.put(e.path(),new Live());
@@ -120,7 +121,7 @@ public final class Manager{
     if (at.isBlank()){ view.show(); return; }
     var verb= lines.size() > 1 ? lines.getFirst() : "select";
     Path folder;
-    try{ folder= verb.equals("select") ? projectFolder(at,dir) : path(at); }
+    try{ folder= path(at); }
     catch(UserError e){ tell(e.getMessage()); return; }
     request(verb,folder,lines.size() > 2 ? lines.get(2) : "");
   }
@@ -137,11 +138,14 @@ public final class Manager{
       case "forget" -> { drop(folder); registry.remove(folder); }
       case "mains" -> edit(folder,e->e.withMains(words(arg)));
       case "link" -> link(folder,words(arg));
-      case "clear" -> Fs.writeUtf8(console(folder),"");
+      case "clear" -> { Fs.writeUtf8(console(folder),""); view.clear(folder); }
       default -> tell("The manager was asked to \""+verb+"\" a project, but \""+verb+"\" is not a request it knows: the requests are \"select\", \"run\", \"compile\", \"terminate\", \"clean\", \"kind\", \"forget\", \"mains\", \"link\" and \"clear\".");
     }
   }
-  private void select(Path folder){
+  private void select(Path given){
+    Path folder;
+    try{ folder= live.containsKey(given) ? given : projectFolder(given.toString(),dir); }
+    catch(UserError e){ tell(e.getMessage()); return; }
     if (!live.containsKey(folder) && !add(folder)){ return; }
     selected= Optional.of(folder);
     scan(folder);
@@ -274,8 +278,11 @@ public final class Manager{
     catch(UserError e){ tell(e.getMessage()); }
   }
   private void commitNow(String text, Runnable done){
+    var old= registry.all();
     try{ registry.commit(text); }
     catch(UserError e){ tell(e.getMessage()); return; }
+    var renamed= old.stream().filter(o->registry.of(o.path()).filter(e->!e.alias().equals(o.alias())).isPresent()).collect(Collectors.toMap(Entry::path,o->Fs.readUtf8(eclipse.console(o.alias()))));
+    renamed.forEach((f,shown)->Fs.writeUtf8(console(f),shown));
     live.keySet().stream().filter(f->registry.of(f).isEmpty()).toList().forEach(this::drop);
     registry.all().stream().filter(e->!live.containsKey(e.path())).forEach(this::open);
     registry.all().forEach(e->scan(e.path()));
@@ -337,10 +344,12 @@ public final class Manager{
     Eclipse.append(console(f),text);
     view.output(f,text);
   }
-  private Consumer<String> out(Path f){ return s->post(()->late(f,s)); }
-  private void late(Path f, String text){
+  private Consumer<String> out(Path f){
     var l= live.get(f);
-    if (l == null){ return; }
+    return s->post(()->late(f,l,s));
+  }
+  private void late(Path f, Live l, String text){
+    if (live.get(f) != l){ return; }
     if (l.job.equals(Project.compiling)){ l.compiled.append(text); }
     output(f,text);
   }

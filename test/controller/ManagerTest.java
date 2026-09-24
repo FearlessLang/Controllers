@@ -66,6 +66,8 @@ final class ManagerTest{
     @Override public void state(State s){ state= s; }
     @Override public void output(Path folder, String text){}
     @Override public void note(String text){ notes.add(text); }
+    final List<Path> cleared= new ArrayList<>();
+    @Override public void clear(Path folder){ cleared.add(folder); }
   }
   private final List<RuntimeException> failures= Collections.synchronizedList(new ArrayList<>());
   private final View view= new View();
@@ -225,6 +227,7 @@ final class ManagerTest{
       --- hello.Three exited with 0 after [###]s ---
       """,eclipse(dir,"hello","console.txt"));
     assertEquals(List.of("hello.One","hello.Three"),project(m,hello).selectedMains());
+    assertEquals(List.of(hello),view.cleared);
   }
   @Test void aNamedMainRunsAloneAndAnUnknownOneIsRefused(@TempDir Path dir){
     var m= manager(dir,"hello.One","hello.Two");
@@ -358,11 +361,25 @@ final class ManagerTest{
     send(m,data.toString());
     Fs.rmTree(data);
     send(m,"select",data.toString());
-    assertTrue(view.notes.getLast().startsWith("Nothing exists at the given path."));
+    assertEquals(Optional.of(data),m.state().selected());
+    assertEquals(List.of(),view.notes);
     send(m,"compile",data.toString());
     assertTrue(eclipse(dir,"data","console.txt").startsWith("The folder of this project does not exist:"));
     send(m,"forget",data.toString());
     assertEquals(List.of(),listed(dir));
+    m.ask("select",data,"");
+    m.settle();
+    assertTrue(view.notes.getLast().startsWith("Nothing exists at the given path."));
+    assertEquals(List.of(),listed(dir));
+  }
+  @Test void renamingAProjectKeepsItsConsole(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    send(m,data.toString());
+    send(m,"compile",data.toString());
+    m.commit("{\"other\": {\"path\": \""+data.toString().replace('\\','/')+"\"}}",()->{});
+    m.settle();
+    assertEquals("--- ok: no problem found ---\n",eclipse(dir,"other","console.txt"));
   }
   @Test void aNewManagerRemembersTheProjectsAndStartsWithEmptyConsoles(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");

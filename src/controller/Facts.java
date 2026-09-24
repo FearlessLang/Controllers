@@ -46,8 +46,8 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     Optional<Icon> icon= Optional.empty();
     Optional<String> problem;
     try{
-      icon= icon(folder);
       if (kind == Kind.code){ built= Coordinator.pkgsBuilt(folder); } else { new RealSourceOracleWithZip(folder); }
+      icon= icon(folder);
       problem= Names.markerProblem(folder,alias);
     }
     catch(UserError e){ problem= Optional.of(e.getMessage()); }
