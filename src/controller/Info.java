@@ -72,7 +72,7 @@ public sealed interface Info{
     sb.append('"').append(unsafeRun.matcher(escaped).replaceAll(Info::codePoints)).append('"');
   }
   private static String codePoints(MatchResult run){
-    var hex= run.group().codePoints().mapToObj(c->Integer.toHexString(c).toUpperCase()).collect(Collectors.joining(" "));
+    var hex= run.group().codePoints().mapToObj("%04X"::formatted).collect(Collectors.joining(" "));
     return Matcher.quoteReplacement("\\u("+hex+")");
   }
   final class Parser{
@@ -124,14 +124,14 @@ public sealed interface Info{
       };
     }
     private String codePoints(Span at){
-      if (!more() || peek() != '('){ throw err(from(at),"The escape \\u needs its code points in parentheses, like \\u(E9 301)."); }
+      if (!more() || peek() != '('){ throw err(from(at),"The escape \\u needs its code points in parentheses, like \\u(00E9 0301)."); }
       advance();
       var body= new StringBuilder();
       while(more() && ")\"\n".indexOf(peek()) < 0){ body.append(advance()); }
       if (!more() || peek() != ')'){ throw err(from(at),"The escape \"\\u("+body+"\" is never closed with a matching )."); }
       advance();
       var escape= "\"\\u("+body+")\"";
-      if (!uCodeText.matcher(body).matches()){ throw err(from(at),"The escape "+escape+" is malformed: inside \\u(...) write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like \\u(E9 301)."); }
+      if (!uCodeText.matcher(body).matches()){ throw err(from(at),"The escape "+escape+" is malformed: inside \\u(...) write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like \\u(00E9 0301)."); }
       var cps= Stream.of(body.toString().split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
       var bad= Arrays.stream(cps).filter(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)).findFirst();
       if (bad.isPresent()){ throw err(from(at),"The escape "+escape+" holds "+Integer.toHexString(bad.getAsInt()).toUpperCase()+", which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters."); }

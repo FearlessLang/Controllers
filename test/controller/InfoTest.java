@@ -59,20 +59,20 @@ final class InfoTest{
     assertEquals(value,((Info.Str)parse(printed)).value());
   }
   @Test void aCharacterOutsideTheSetRoundTripsAsCodePoints(){
-    roundTrip("C:/data/caf\u00e9/hello","\"C:/data/caf\\u(E9)/hello\"\n");
+    roundTrip("C:/data/caf\u00e9/hello","\"C:/data/caf\\u(00E9)/hello\"\n");
   }
   @Test void aSupplementaryCharacterIsOneCodePoint(){
     roundTrip("a\ud83d\ude00b","\"a\\u(1F600)b\"\n");
   }
   @Test void aRunOfCharactersOutsideTheSetIsOneEscape(){
-    roundTrip("e\u0301\u00e9\t\ud83d\ude00\"\\\n\u00e9","\"e\\u(301 E9 9 1F600)\\\"\\\\\\n\\u(E9)\"\n");
+    roundTrip("e\u0301\u00e9\t\ud83d\ude00\"\\\n\u00e9","\"e\\u(0301 00E9 0009 1F600)\\\"\\\\\\n\\u(00E9)\"\n");
   }
   @Test void codePointsMayHaveLeadingZeros(){
     assertEquals("\u00e9\u0301",((Info.Str)parse("\"\\u(00E9 000301)\"")).value());
   }
   @Test void lowercaseCodePointsAreRejected(){
     err("""
-      [###]The escape "\\u(e9)" is malformed: inside \\u(...) write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like \\u(E9 301).[###]""",()->parse("\"\\u(e9)\""));
+      [###]The escape "\\u(e9)" is malformed: inside \\u(...) write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like \\u(00E9 0301).[###]""",()->parse("\"\\u(e9)\""));
   }
   @Test void aCodePointOfSevenDigitsIsRejected(){
     err("[###]The escape \"\\u(00000E9)\" is malformed[###]",()->parse("\"\\u(00000E9)\""));
@@ -91,7 +91,7 @@ final class InfoTest{
     err("[###]holds 110000, which is not a Unicode scalar[###]",()->parse("\"\\u(110000)\""));
   }
   @Test void aMissingOpenParenIsRejected(){
-    err("[###]The escape \\u needs its code points in parentheses, like \\u(E9 301).[###]",()->parse("\"\\uE9\""));
+    err("[###]The escape \\u needs its code points in parentheses, like \\u(00E9 0301).[###]",()->parse("\"\\uE9\""));
   }
   @Test void aMissingCloseParenIsRejected(){
     err("[###]The escape \"\\u(E9\" is never closed with a matching ).[###]",()->parse("\"\\u(E9\""));
