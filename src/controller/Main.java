@@ -76,8 +76,9 @@ public final class Main{
     main.own();
   }
   private static String versionId(){ return JavacTool.reqVersionId(Violation::mustUseLauncher); }
+  static String programName(){ return "fearlessManaged"+versionId(); }
   private static Path binDir(){
-    var expected= "fearlessManaged"+versionId()+(Fs.isMac() ? ".app" : "");
+    var expected= programName()+(Fs.isMac() ? ".app" : "");
     var startedFrom= JavacTool.reqAppDir(Violation::mustUseLauncher).toAbsolutePath().normalize();
     for(var dir= startedFrom; dir != null && dir.getFileName() != null; dir= dir.getParent()){
       if (dir.getFileName().toString().equals(expected)){ return dir; }
