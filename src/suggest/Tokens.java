@@ -5,32 +5,37 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/// The token kinds of fearlessParser.TokenKind that the chain parser needs, matched the same
-/// way: longest match, ties to the earlier kind. Whitespace, comments and unclosed strings or
-/// comments are dropped, and so is any character no kind accepts, so a buffer being typed always
-/// tokenizes. Brackets nest the tokens into groups; an unclosed group runs to the end of the
-/// buffer, a stray closer is ignored, and }id closes a curly group.
+/// The tokens of fearlessParser.TokenKind: the same kinds, in the same order, with the same
+/// regular expressions, matched the same way: longest match, ties to the earlier kind.
+/// Whitespace, comments, the kinds Frontend rejects (Bad...) and a character no kind matches are
+/// dropped. Brackets nest the tokens into groups as fearlessParser.Parse does: (..), [..] opened by
+/// OSquareArg, {..} closed by } or by }id. The text is still being typed: an unclosed group runs to
+/// the end of the text, a closer closes the innermost group it closes and the groups inside it,
+/// and a closer closing no group is dropped.
 final class Tokens{
   enum Kind{
-    Ws("\\s+",true), LineComment("//[^\\n]*",true), BlockComment("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/",true),
-    UnclosedBlockComment("(?s)/\\*(?!.*?\\*/).*",true),
+    Ws("\\s+"), LineComment("//[^\\n]*"), BlockComment("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/"),
+    BadUnclosedBlockComment("(?s)/\\*(?!.*?\\*/).*"), BadUnopenedBlockCommentClose("\\*/"),
     Arrow("->"), ORound("\\("), CRound("\\)"), OCurly("\\{"), CCurlyId("\\}[A-Za-z0-9_]+'*"), CCurly("\\}"),
-    OSquare("\\["), CSquare("\\]"), Underscore("_"), Comma(","), SemiColon(";"), ColonColon("::"), Colon(":"),
-    Eq("="), SQuote("'"), ReadImm("read/imm"), RCap("readH|mutH|imm|iso|read|mut"),
-    SignedFloat("[+-][0-9](?:[0-9_]*[0-9])?\\.[0-9](?:[0-9_]*[0-9])?(?:[eE][+-]?[0-9](?:[0-9_]*[0-9])?)?(?:soft)?"),
-    UnsignedFloat("[0-9](?:[0-9_]*[0-9])?\\.[0-9](?:[0-9_]*[0-9])?(?:[eE][+-]?[0-9](?:[0-9_]*[0-9])?)?(?:soft)?"),
+    OSquareArg("(?<=[A-Za-z0-9_'`\\x22\\x5C/#\\x2A\\x2D\\x2B%<>=!&\\x5E~\\x3F\\x7C])\\["), BadOSquare("\\["), CSquare("\\]"),
+    Underscore("_"), Comma(","), SemiColon(";"), ColonColon("::"), Colon(":"), Eq("="), SQuote("'"),
+    ReadImm("read/imm"), RCap("readH|mutH|imm|iso|read|mut"),
+    SignedFloat("[+-](?:[0-9](?:[0-9_]*[0-9])?)\\.(?:[0-9](?:[0-9_]*[0-9])?)(?:[eE][+-]?[0-9](?:[0-9_]*[0-9])?)?(?:soft)?"),
+    UnSignedFloat("[0-9](?:[0-9_]*[0-9])?\\x2E(?:[0-9](?:[0-9_]*[0-9])?)(?:[eE][\\x2B\\x2D]?[0-9](?:[0-9_]*[0-9])?)?(?:soft)?"),
     SignedInt("[+-][0-9](?:[0-9_]*[0-9])?"), UnsignedInt("[0-9](?:[0-9_]*[0-9])?"),
-    UnclosedUStr("\"[^\"\\n]*(?=\\n|\\z)",true), UnclosedSStr("`[^`\\n]*(?=\\n|\\z)",true),
-    UStr("\"[^\"\\n]*\""), SStr("`[^`\\n]*`"),
+    BadUStrUnclosed("\\x22[^\\x22\\x0A]*(?=\\x0A|\\z)"), BadSStrUnclosed("`[^`\\x0A]*(?=\\x0A|\\z)"),
+    UStr("\\x22[^\\x22\\x0A]*\\x22"), SStr("`[^`\\x0A]*`"),
     DotName("\\._*[a-z][A-Za-z0-9_]*'*"),
-    UppercaseId("(?:[a-z][a-z0-9_]*\\.)?_*[A-Z][A-Za-z0-9_]*'*"),
+    UppercaseId("(?:(?!(?:con|prn|aux|nul)(?![a-z0-9_])|(?:com|lpt)[1-9](?![a-z0-9_]))[a-z][a-z0-9_]*\\x2E)?_*[A-Z][A-Za-z0-9_]*'*"),
+    BadUppercaseId("(?:[a-z][a-z0-9_]*\\x2E)?_*[A-Z][A-Za-z0-9_]*'*"),
     LowercaseId("_*[a-z][A-Za-z0-9_]*'*"),
-    Op("(?:(?!/\\*|\\*/|//)[\\\\/#*\\-+%<>=!&^~?|])+");
+    BadSStrQuote("'[^'\\x0A]*'"),
+    Op("(?:(?!/\\x2A|\\x2A/|//)[\\x5C/#\\x2A\\x2D\\x2B%<>=!&\\x5E~\\x3F\\x7C])+");
     final Pattern pattern;
-    final boolean hidden;
-    Kind(String regex){ this(regex,false); }
-    Kind(String regex, boolean hidden){ this.pattern= Pattern.compile(regex); this.hidden= hidden; }
+    Kind(String regex){ this.pattern= Pattern.compile(regex); }
+    boolean hidden(){ return ordinal() < 3 || name().startsWith("Bad"); }
   }
+  static final Kind[] typeName= {Kind.UppercaseId, Kind.SignedFloat, Kind.UnSignedFloat, Kind.SignedInt, Kind.UnsignedInt, Kind.SStr, Kind.UStr};
   sealed interface Item permits Tok, Group{ int start(); }
   record Tok(Kind kind, String text, int start, int end) implements Item{}
   static final class Group implements Item{
@@ -42,10 +47,10 @@ final class Tokens{
     Group(Kind open, int start, Group parent){ this.open= open; this.start= start; this.parent= parent; }
     @Override public int start(){ return start; }
   }
-  static Group group(String text){
-    var matchers= Arrays.stream(Kind.values()).map(k->k.pattern.matcher(text)).toList();
-    var root= new Group(null, 0, null);
-    var cur= root;
+  /// every token of the text, the dropped ones included
+  static List<Tok> tokens(String text){
+    var matchers= Arrays.stream(Kind.values()).map(k->k.pattern.matcher(text).useTransparentBounds(true)).toList();
+    var res= new ArrayList<Tok>();
     for (int i= 0; i < text.length();){
       var best= Kind.Ws;
       var end= i;
@@ -54,19 +59,26 @@ final class Tokens{
         if (m.lookingAt() && m.end() > end){ best= k; end= m.end(); }
       }
       if (end == i){ i+= 1; continue; }
-      var tok= new Tok(best, text.substring(i, end), i, end);
+      res.add(new Tok(best, text.substring(i, end), i, end));
       i= end;
-      if (best.hidden){ continue; }
-      switch (best){
-        case OCurly, ORound, OSquare -> { var g= new Group(best, tok.start, cur); cur.items.add(g); cur= g; }
-        case CCurly, CCurlyId, CRound, CSquare -> cur= close(cur, tok);
-        default -> cur.items.add(tok);
+    }
+    return res;
+  }
+  static Group group(List<Tok> tokens){
+    var root= new Group(null, 0, null);
+    var cur= root;
+    for (var t : tokens){
+      if (t.kind.hidden()){ continue; }
+      switch (t.kind){
+        case OCurly, ORound, OSquareArg -> { var g= new Group(t.kind, t.start, cur); cur.items.add(g); cur= g; }
+        case CCurly, CCurlyId, CRound, CSquare -> cur= close(cur, t);
+        default -> cur.items.add(t);
       }
     }
     return root;
   }
   private static Group close(Group cur, Tok closer){
-    var open= switch (closer.kind){ case CRound -> Kind.ORound; case CSquare -> Kind.OSquare; default -> Kind.OCurly; };
+    var open= switch (closer.kind){ case CRound -> Kind.ORound; case CSquare -> Kind.OSquareArg; default -> Kind.OCurly; };
     var g= cur;
     while (g.parent != null && g.open != open){ g= g.parent; }
     if (g.parent == null){ return cur; }
@@ -82,4 +94,5 @@ final class Tokens{
   }
   static boolean is(Item it, Kind... kinds){ return it instanceof Tok t && List.of(kinds).contains(t.kind); }
   static boolean isGroup(Item it, Kind open){ return it instanceof Group g && g.open == open; }
+  static String text(Item it){ return ((Tok)it).text; }
 }
