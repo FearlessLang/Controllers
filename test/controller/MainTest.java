@@ -48,6 +48,19 @@ final class MainTest{
     Fs.writeUtf8(file,"anything");
     err("Fearless cannot keep track of this folder as a project.[###]",()->Main.projectFolder(file.toString(),managerDir));
   }
+  @Test void aFolderWhosePathFearlessCanNotRecordIsRefused(@TempDir Path dir){
+    err("""
+      Fearless cannot keep track of this project folder: its path holds the
+      character [U+00E9], outside the Fearless character set.
+
+      You started Fearless on:
+      [###]caf[###]
+      Fearless records the path of every project folder it keeps track of, and a
+      Fearless file holds only letters from a to z and from A to Z, digits, space,
+      newline and common punctuation. Move the project into a folder whose path
+      uses only those characters.
+      """,()->Main.projectFolder(folder(dir,"café").toString(),folder(dir,"manager")));
+  }
   @Test void aFolderInsideTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     var managerDir= folder(dir,"manager");
     err("Fearless cannot keep track of this folder as a project.[###]",()->Main.projectFolder(folder(managerDir,"messages").toString(),managerDir));

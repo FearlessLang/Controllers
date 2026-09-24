@@ -229,6 +229,8 @@ public final class Main{
     var folder= Files.isDirectory(path) ? path : path.getParent();
     var manager= managerDir.toAbsolutePath().normalize();
     if (folder.startsWith(manager)){ throw Report.managerFolderNotAProject(path,manager); }
+    var unsafe= folder.toString().codePoints().filter(c->Fs.allowed.indexOf(c) < 0).findFirst();
+    if (unsafe.isPresent()){ throw Report.projectFolderUnsafePath(folder,unsafe.getAsInt()); }
     return folder;
   }
 }
