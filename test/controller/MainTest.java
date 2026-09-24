@@ -39,7 +39,7 @@ final class MainTest{
       Fearless cannot keep track of this folder as a project.
       [###]
       The manager folder holds what Fearless remembers about your projects: it is
-      never a project itself.
+      never part of a project, and no project is inside it.
       """,()->Main.projectFolder(managerDir.toString(),managerDir));
   }
   @Test void aFileInTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
@@ -59,10 +59,19 @@ final class MainTest{
       Fearless file holds only letters from a to z and from A to Z, digits, space,
       newline and common punctuation. Move the project into a folder whose path
       uses only those characters.
-      """,()->Main.projectFolder(folder(dir,"café").toString(),folder(dir,"manager")));
+      """,()->Main.projectFolder(folder(dir,"caf\u00e9").toString(),folder(dir,"manager")));
   }
   @Test void aFolderInsideTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     var managerDir= folder(dir,"manager");
     err("Fearless cannot keep track of this folder as a project.[###]",()->Main.projectFolder(folder(managerDir,"messages").toString(),managerDir));
+  }
+  @Test void aFolderHoldingTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
+    err("Fearless cannot keep track of this folder as a project.[###]",()->Main.projectFolder(dir.toString(),folder(dir,"manager")));
+  }
+  @Test void theRootOfADriveIsNotAProject(@TempDir Path dir){
+    err("""
+      Fearless cannot keep track of the root of a drive or of the file system as a
+      project.
+      [###]""",()->Main.projectFolder(dir.getRoot().toString(),folder(dir,"manager")));
   }
 }
