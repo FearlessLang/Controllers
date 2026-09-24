@@ -373,7 +373,7 @@ public final class Manager{
     if (unsafe.isPresent()){ throw Report.projectFolderUnsafePath(folder,unsafe.getAsInt()); }
     return folder;
   }
-  private static Path path(String given){
+  static Path path(String given){
     try{ return Path.of(given).toAbsolutePath().normalize(); }
     catch(InvalidPathException e){ throw Violation.badLaunchArg(given,false); }
   }
