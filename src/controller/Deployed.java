@@ -14,7 +14,6 @@ import naiveBackend.BackendTools;
 import tools.ChildJvm;
 import tools.JavacTool;
 import tools.SourceOracle;
-import userMessages.UserError;
 import userMessages.Violation;
 
 /// The compiler and the mains of a project, as the deployed manager runs them: the
@@ -46,7 +45,6 @@ public final class Deployed implements Manager.Tools{
   }
   @Override public Optional<Map<String,String>> mains(Path folder){
     var c= coordinator(folder);
-    try{ return c.mains(folder,c.sourceOracle(stdLib("base"))); }
-    catch(UserError _){ return Optional.empty(); }
+    return c.mains(folder,c.sourceOracle(stdLib("base")));
   }
 }

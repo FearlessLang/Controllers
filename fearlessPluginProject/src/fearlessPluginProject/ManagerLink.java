@@ -2,6 +2,8 @@ package fearlessPluginProject;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -54,6 +56,15 @@ public final class ManagerLink{
   }
   static String read(Path file){
     try{ return Files.readString(file); }
+    catch(IOException e){ throw new UncheckedIOException(e); }
+  }
+  static String lines(Path file){
+    try{
+      var bytes= Files.readAllBytes(file);
+      var end= bytes.length;
+      while(end > 0 && bytes[end-1] != '\n'){ end-= 1; }
+      return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes, 0, end)).toString();
+    }
     catch(IOException e){ throw new UncheckedIOException(e); }
   }
 }
