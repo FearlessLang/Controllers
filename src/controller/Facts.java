@@ -33,8 +33,8 @@ public record Facts(Path folder, int files, long bytes, long modified, List<Stri
     Optional<String> problem= Optional.empty();
     UserError.root= f;
     try{
-      icon= icon(f);
       if (kind == Kind.code){ built= Coordinator.pkgsBuilt(f); } else { new RealSourceOracleWithZip(f); }
+      icon= icon(f);
     }
     catch(UserError e){ problem= Optional.of(e.getMessage()); }
     var upToDate= !built.isEmpty() && !built.containsValue(false);
