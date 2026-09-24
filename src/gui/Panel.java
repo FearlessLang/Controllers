@@ -91,6 +91,7 @@ public final class Panel{
   private final JButton deleteLog= small("Delete",this::deleteLog);
   private final Collapsible logs= new Collapsible("Logs",logScroll,false,viewLog,copyLog,deleteLog);
   private Facts facts;
+  private boolean dropped;
   Panel(Main main, Path folder, Runnable onChange){
     this.main= main;
     this.registry= main.registry;
@@ -193,7 +194,12 @@ public final class Panel{
       });
     });
   }
+  void drop(){
+    dropped= true;
+    session.terminate();
+  }
   private void refresh(){
+    if (dropped){ return; }
     var entry= entry();
     facts= Facts.of(folder,entry.kind());
     name.setText(entry.alias());
@@ -289,7 +295,10 @@ public final class Panel{
     res.setEnabled(!session.busy());
     return res;
   }
-  void kind(Kind target){ changed(()->registry.update(folder,e->e.withKind(target))); }
+  void kind(Kind target){
+    if (session.refused("kind change")){ return; }
+    changed(()->registry.update(folder,e->e.withKind(target)));
+  }
   private void fillLinks(Entry entry){
     var iAmCode= entry.kind() == Kind.code;
     linksBox.removeAll();
@@ -378,22 +387,24 @@ public final class Panel{
     links.setOpen(false);
     var entry= entry();
     if (entry.kind() != Kind.code){ check(); return; }
-    var chosen= main.map(List::of).orElseGet(entry::mains);
-    if (facts.cacheUpToDate()){ changed(()->registry.ran(folder,System.currentTimeMillis())); session.run(chosen); return; }
+    var upToDate= facts.cacheUpToDate();
+    if (session.refused(upToDate || runAfterCompile ? "run" : "compile")){ return; }
+    if (upToDate){ changed(()->registry.ran(folder,System.currentTimeMillis())); session.run(main,entry.mains()); return; }
     var link= registry.linkProblem(entry);
     if (link.isPresent()){ append(link.get()+"\n"); return; }
     changed(()->registry.compiled(folder,System.currentTimeMillis()));
-    if (runAfterCompile){ session.compileThenRun(chosen); } else { session.compile(); }
+    if (runAfterCompile){ session.compileThenRun(main,entry.mains()); } else { session.compile(); }
   }
   private void check(){
+    var entry= entry();
     main.worker.execute(()->{
-      var entry= entry();
       var problem= Facts.of(folder,entry.kind()).problem().or(()->registry.linkProblem(entry)).or(()->Names.markerProblem(folder,entry.alias()));
       append(problem.map(p->p+"\n").orElse("--- ok: no problem found ---\n"));
       SwingUtilities.invokeLater(this::refresh);
     });
   }
   void clearCache(){
+    if (session.refused("clear cache")){ return; }
     Fs.rmTree(folder.resolve(Facts.outDir));
     session.refresh();
     changed(()->{});

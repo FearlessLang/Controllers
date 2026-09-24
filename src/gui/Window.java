@@ -329,7 +329,7 @@ public final class Window{
     var known= registry.all();
     main.eclipse.publish(known);
     var live= known.stream().map(Entry::path).toList();
-    open.values().stream().filter(p->!live.contains(p.folder())).forEach(p->p.session.terminate());
+    open.values().stream().filter(p->!live.contains(p.folder())).forEach(Panel::drop);
     open.keySet().removeIf(f->!live.contains(f));
     live.forEach(this::panel);
     fillRunningMenu();
