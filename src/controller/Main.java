@@ -57,7 +57,7 @@ public final class Main{
     catch(Throwable t){ exitCode= 3; display(UserError.crashed(t)); }
     System.exit(exitCode);
   }
-  static String message(String... args){ return args.length == 0 ? "" : Manager.path(args[0]).toString(); }
+  static String message(String... args){ return args.length == 0 ? "" : Info.pathText(Manager.path(args[0]).toString()); }
   private static void display(UserError e){
     try{ e.display(); }
     catch(InterruptedException ie){ e.displayStderr(ie); }

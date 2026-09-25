@@ -3,7 +3,6 @@ package controller;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -124,15 +123,16 @@ public final class Registry{
     var text= text(entries);
     this.entries(text);
     writeText(infoFile(),text);
-    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+e.path().toUri()),"","\n","\n",""));
+    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+Info.expr(Info.pathText(e.path().toString()))),"","\n","\n",""));
     all= entries;
   }
   private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
   private List<Entry> withTimes(List<Entry> entries){
     if (!Files.exists(activityFile())){ return entries; }
-    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->Path.of(URI.create(p[2])),p->p));
+    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->activityPath(p[2]),p->p));
     return entries.stream().map(e->Optional.ofNullable(times.get(e.path())).map(t->e.withTimes(Long.parseLong(t[0]),Long.parseLong(t[1]))).orElse(e)).toList();
   }
+  private Path activityPath(String text){ return Path.of(Info.path(text,(Info.Str)Info.parse(text,activityFile().toUri()))); }
   private void writeText(Path file, String text){
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     StringFiles.writeNew(tmp,text,UserError.onFileError());
@@ -180,7 +180,8 @@ public final class Registry{
   }
   private static Path pathOf(String source, String alias, Obj obj){
     var field= obj.field("path").orElseThrow(()->Info.err(source,obj.span(),"Project \""+alias+"\" is missing its \"path\": the absolute path of the project folder."));
-    var s= str(source,field.value(),"\"path\"");
+    str(source,field.value(),"\"path\"");
+    var s= Info.path(source,(Info.Str)field.value());
     if (s.isEmpty()){ throw Info.err(source,field.value().span(),"\"path\" cannot be empty: it is the absolute path of the project folder."); }
     Path path;
     try{ path= Path.of(s); }
@@ -234,7 +235,7 @@ public final class Registry{
   }
   private static Info entryToInfo(Entry e){
     var fields= new ArrayList<Field>();
-    fields.add(new Field("path",Info.noSpan,new Info.Str(e.path().toString().replace('\\','/'),Info.noSpan)));
+    fields.add(new Field("path",Info.noSpan,new Info.Str(Info.pathText(e.path().toString().replace('\\','/')),Info.noSpan)));
     fields.add(new Field("kind",Info.noSpan,new Info.Str(e.kind().text,Info.noSpan)));
     if (!e.mains().isEmpty()){ fields.add(new Field("mains",Info.noSpan,strList(e.mains()))); }
     if (!e.reads().isEmpty()){ fields.add(new Field("reads",Info.noSpan,aliasMap(e.reads()))); }

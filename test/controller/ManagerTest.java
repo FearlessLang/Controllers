@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -501,6 +502,17 @@ final class ManagerTest{
     var p= project(again,hello);
     assertEquals(Project.State.codeCompiled,p.state());
     assertTrue(p.entry().run() > 0);
+  }
+  @Test void aWindowsFolderWhoseNameIsNotUnicodeIsRegisteredAndRememberedAsBase16(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isWindows());
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(folder(dir,"a\ud800"),"hello");
+    send(m,Main.message(hello.toString()));
+    assertEquals(List.of("hello "+Info.pathText(hello.toString())),listed(dir));
+    same("[###]\"path\": \"Base16:[###]D800002F00680065006C006C006F\",[###]",Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(Kind.code,project(again,hello).kind());
   }
   @Test void aFolderUnderAPathOutsideTheCharacterSetIsRegisteredRunAndRemembered(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");

@@ -26,8 +26,8 @@ public final class ManagerLink{
   public record Project(Path folder, String kind, String running, int runs, String lastRun, int exit, Map<String,String> mains, Map<String,String> problem){}
   private ManagerLink(){}
   private static final Map<String,Object> link= Info.parse(FileLocator.getBundleFileLocation(FrameworkUtil.getBundle(ManagerLink.class)).orElseThrow().toPath().getParent().resolveSibling("manager.info"));
-  private static final Path manager= Path.of((String)link.get("manager"));
-  static final Path baseCache= Path.of((String)link.get("baseCache"));
+  private static final Path manager= path(link.get("manager"));
+  static final Path baseCache= path(link.get("baseCache"));
   static Path eclipse(){ return manager.resolve("eclipse"); }
   static Map<String,Project> projects(){
     var res= new LinkedHashMap<String,Project>();
@@ -36,8 +36,24 @@ public final class ManagerLink{
   }
   static Project project(String alias){ return Objects.requireNonNull(projects().get(alias)); }
   private static Project project(Map<String,Object> o){
-    return new Project(Path.of((String)o.get("folder")), (String)o.get("kind"), (String)o.get("running"), Integer.parseInt((String)o.get("runs")),
+    return new Project(path(o.get("folder")), (String)o.get("kind"), (String)o.get("running"), Integer.parseInt((String)o.get("runs")),
       (String)o.get("lastRun"), Integer.parseInt((String)o.get("exit")), strings(o.get("mains")), strings(o.get("problem")));
+  }
+  /// a path is its text, or, when it is not Unicode, Base16: then its UTF-16 code units, 4 uppercase hex digits each
+  static String pathText(String path){
+    if (path.codePoints().noneMatch(c->c >= 0xD800 && c <= 0xDFFF)){ return path; }
+    var res= new StringBuilder("Base16:");
+    path.chars().forEach(c->res.append("%04X".formatted(c)));
+    return res.toString();
+  }
+  private static Path path(Object text){
+    var s= (String)text;
+    if (!s.startsWith("Base16:")){ return Path.of(s); }
+    var hex= s.substring("Base16:".length());
+    if (!hex.matches("(?:[0-9A-F]{4})+")){ throw new IllegalStateException("The manager wrote the malformed path \""+s+"\"."); }
+    var res= new StringBuilder();
+    for (int i= 0; i < hex.length(); i+= 4){ res.append((char)Integer.parseInt(hex.substring(i, i+4), 16)); }
+    return Path.of(res.toString());
   }
   private static Map<String,String> strings(Object o){
     var res= new LinkedHashMap<String,String>();
