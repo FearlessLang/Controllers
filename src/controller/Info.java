@@ -97,18 +97,22 @@ public sealed interface Info{
     return res;
   }
   private static String uExpr(int[] cps){
-    var terms= new ArrayList<String>();
-    for (int i= 0; i < cps.length; ){
-      var safe= safe(cps[i]);
-      var j= i+1;
-      while (j < cps.length && safe(cps[j]) == safe){ j++; }
-      var part= Arrays.copyOfRange(cps,i,j);
-      terms.add(safe ? receiver(strExpr(new String(part,0,part.length)))+".u" : "\"\".u("+strExpr(Arrays.stream(part).mapToObj("%04X"::formatted).collect(Collectors.joining(" ")))+")");
-      i= j;
-    }
-    return terms.size() == 1 ? terms.getFirst() : String.join(" + ",terms.stream().map(t->"("+t+")").toList());
+    var res= new StringBuilder();
+    var i= 0;
+    do{
+      var j= run(cps,i,true);
+      var k= run(cps,j,false);
+      var hex= k == j ? "" : "\""+Arrays.stream(Arrays.copyOfRange(cps,j,k)).mapToObj("%04X"::formatted).collect(Collectors.joining(" "))+"\"";
+      var term= receiver(strExpr(new String(cps,i,j-i)))+".u"+hex;
+      res.append(i == 0 ? term : "+("+term+")");
+      i= k;
+    } while (i < cps.length);
+    return res.toString();
   }
-  private static String receiver(String e){
+  private static int run(int[] cps, int i, boolean safe){
+    while (i < cps.length && safe(cps[i]) == safe){ i++; }
+    return i;
+  }  private static String receiver(String e){
     var oneLiteral= e.length() >= 2 && (e.charAt(0) == '"' || e.charAt(0) == '`') && e.charAt(e.length()-1) == e.charAt(0);
     return oneLiteral ? e : "("+e+")";
   }
@@ -182,23 +186,19 @@ public sealed interface Info{
       var at= here();
       advance();
       var named= more() && peek() == 'u' && (i+1 == text.length() || !Character.isLetterOrDigit(text.charAt(i+1)));
-      if (!named){ throw err(from(at),"After a string, only .u and .u(\"...\") are allowed: .u makes it a UStr, .u(\"E9 301\") adds the characters with those code points."); }
+      if (!named){ throw err(from(at),"After a string, only .u and .u\"...\" are allowed: .u makes it a UStr, .u\"E9 301\" adds the characters with those code points."); }
       advance();
-      if (!more() || peek() != '('){ return; }
-      advance();
-      var hex= text();
-      ws();
-      if (!more() || peek() != ')'){ throw err(here(),"Expected ')' here, to close .u(...)."); }
-      advance();
-      sb.append(codePoints(hex));
-    }
-    private String codePoints(Str hex){
+      if (!atomNext()){ return; }
+      var start= here();
+      var body= atom();
+      sb.append(codePoints(new Str(body,from(start))));
+    }    private String codePoints(Str hex){
       var body= hex.value();
       if (body.isEmpty()){ return ""; }
-      if (!uCodeText.matcher(body).matches()){ throw err(hex.span(),"The code points \""+body+"\" of .u(...) are malformed: write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like .u(\"00E9 0301\")."); }
+      if (!uCodeText.matcher(body).matches()){ throw err(hex.span(),"The code points \""+body+"\" of .u\"...\" are malformed: write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like .u\"00E9 0301\"."); }
       var cps= Stream.of(body.split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
       var bad= Arrays.stream(cps).filter(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)).findFirst();
-      if (bad.isPresent()){ throw err(hex.span(),"The code points \""+body+"\" of .u(...) hold "+Integer.toHexString(bad.getAsInt()).toUpperCase()+", which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters."); }
+      if (bad.isPresent()){ throw err(hex.span(),"The code points \""+body+"\" of .u\"...\" hold "+Integer.toHexString(bad.getAsInt()).toUpperCase()+", which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters."); }
       return new String(cps,0,cps.length);
     }    private Lst list(){
       var start= here();

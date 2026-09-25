@@ -65,39 +65,40 @@ final class InfoTest{
     roundTrip("\n","\"\"|");
   }
   @Test void aStringOutsideTheSetIsWrittenAsFearlessWritesAUStr(){
-    roundTrip("\u00e9","\"\".u(\"00E9\")");
-    roundTrip("C:/data/caf\u00e9/hello","(\"C:/data/caf\".u) + (\"\".u(\"00E9\")) + (\"/hello\".u)");
-    roundTrip("a\ud83d\ude00b","(\"a\".u) + (\"\".u(\"1F600\")) + (\"b\".u)");
-    roundTrip("e\u0301\u00e9\t\ud83d\ude00","(\"e\".u) + (\"\".u(\"0301 00E9 0009 1F600\"))");
-    roundTrip("\u00e9\na\"b","(\"\".u(\"00E9\")) + ((\"\" | `a\"b`).u)");
+    roundTrip("\u00e9","\"\".u\"00E9\"");
+    roundTrip("C:/data/caf\u00e9/hello","\"C:/data/caf\".u\"00E9\"+(\"/hello\".u)");
+    roundTrip("a\ud83d\ude00b\u00e9c","\"a\".u\"1F600\"+(\"b\".u\"00E9\")+(\"c\".u)");
+    roundTrip("e\u0301\u00e9\t\ud83d\ude00","\"e\".u\"0301 00E9 0009 1F600\"");
+    roundTrip("\u00e9\na\"b","\"\".u\"00E9\"+((\"\" | `a\"b`).u)");
   }
   @Test void anyFearlessStringExpressionOfThatShapeIsRead(){
     assertEquals("ab\"c\nd\"",((Info.Str)parse("(\"a\" + `b`) ^ \"c\" | \"d\" ^")).value());
     assertEquals("\u00e9\u0301x",((Info.Str)parse("\"\".u(\"E9 000301\") + \"x\".u")).value());
-    assertEquals("",((Info.Str)parse("\"\".u(\"\")")).value());
+    assertEquals("\u00e9x",((Info.Str)parse("\"\".u \"E9\"+\"x\".u")).value());
+    assertEquals("",((Info.Str)parse("\"\".u\"\"")).value());
   }
   @Test void lowercaseCodePointsAreRejected(){
     err("""
-      [###]The code points "e9" of .u(...) are malformed: write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like .u("00E9 0301").[###]""",()->parse("\"\".u(\"e9\")"));
+      [###]The code points "e9" of .u"..." are malformed: write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like .u"00E9 0301".[###]""",()->parse("\"\".u\"e9\""));
   }
   @Test void aCodePointOfSevenDigitsIsRejected(){
-    err("[###]The code points \"00000E9\" of .u(...) are malformed[###]",()->parse("\"\".u(\"00000E9\")"));
+    err("[###]The code points \"00000E9\" of .u\"...\" are malformed[###]",()->parse("\"\".u\"00000E9\""));
   }
   @Test void twoSpacesAreRejected(){
-    err("[###]The code points \"E9  301\" of .u(...) are malformed[###]",()->parse("\"\".u(\"E9  301\")"));
+    err("[###]The code points \"E9  301\" of .u\"...\" are malformed[###]",()->parse("\"\".u\"E9  301\""));
   }
   @Test void aSurrogateIsRejected(){
     err("""
-      [###]The code points "E9 D83D" of .u(...) hold D83D, which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters.[###]""",()->parse("\"\".u(\"E9 D83D\")"));
+      [###]The code points "E9 D83D" of .u"..." hold D83D, which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters.[###]""",()->parse("\"\".u\"E9 D83D\""));
   }
   @Test void aCodePointAboveTheLastIsRejected(){
-    err("[###]hold 110000, which is not a Unicode scalar[###]",()->parse("\"\".u(\"110000\")"));
+    err("[###]hold 110000, which is not a Unicode scalar[###]",()->parse("\"\".u\"110000\""));
   }
   @Test void aMethodOtherThanUIsRejected(){
-    err("[###]After a string, only .u and .u(\"...\") are allowed[###]",()->parse("\"a\".size"));
+    err("[###]After a string, only .u and .u\"...\" are allowed[###]",()->parse("\"a\".size"));
   }
   @Test void aMissingCloseParenIsRejected(){
-    err("[###]Expected ')' here, to close .u(...).[###]",()->parse("\"\".u(\"E9\""));
+    err("[###]Expected ')' here, to close the parenthesis.[###]",()->parse("\"\".u(\"E9\""));
   }
   @Test void aKeyIsOneQuotedLiteral(){
     err("[###]Expected a quoted key \"...\" here.[###]",()->parse("{`a`: \"1\"}"));

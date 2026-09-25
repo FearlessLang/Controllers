@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 
 /// Reads the Info files the manager writes (controller.Info in Controllers): objects {...} of
 /// strings and objects; an object becomes a Map in field order. A key is "..."; a string is written
-/// as Fearless writes one: "..." and `...` joined by +, | and ^, parentheses, .u and .u("...").
+/// as Fearless writes one: "..." and `...` joined by +, | and ^, parentheses, .u and .u"...".
 /// Anything else is an error naming the file and the offset.
 final class Info{
   private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
@@ -56,10 +56,9 @@ final class Info{
       if (c == '|' || c == '^'){ i+= 1; sb.append(c == '|' ? "\n" : "\""); ws(); if (i < text.length() && "\"`(".indexOf(text.charAt(i)) >= 0){ sb.append(atom()); } continue; }
       if (c != '.'){ return sb.toString(); }
       i+= 1;
-      if (text.charAt(i++) != 'u' || (i < text.length() && Character.isLetterOrDigit(text.charAt(i)))){ throw bad(".u or .u(...)"); }
-      if (!next('(')){ continue; }
-      sb.append(codePoints(text()));
-      expect(')');
+      if (text.charAt(i++) != 'u' || (i < text.length() && Character.isLetterOrDigit(text.charAt(i)))){ throw bad(".u or .u\"...\""); }
+      ws();
+      if (i < text.length() && "\"`(".indexOf(text.charAt(i)) >= 0){ sb.append(codePoints(atom())); }
     }
   }
   private String atom(){
@@ -80,9 +79,9 @@ final class Info{
   }
   private String codePoints(String body){
     if (body.isEmpty()){ return ""; }
-    if (!uCodeText.matcher(body).matches()){ throw bad("code points in .u(...), each 1 to 6 uppercase hex digits, separated by single spaces,"); }
+    if (!uCodeText.matcher(body).matches()){ throw bad("code points in .u\"...\", each 1 to 6 uppercase hex digits, separated by single spaces,"); }
     var cps= Stream.of(body.split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
-    if (Arrays.stream(cps).anyMatch(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))){ throw bad("code points in .u(...) of Unicode scalars only (no D800 to DFFF, nothing above 10FFFF)"); }
+    if (Arrays.stream(cps).anyMatch(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))){ throw bad("code points in .u\"...\" of Unicode scalars only (no D800 to DFFF, nothing above 10FFFF)"); }
     return new String(cps,0,cps.length);
   }  private boolean next(char c){
     ws();
