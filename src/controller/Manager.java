@@ -154,7 +154,7 @@ public final class Manager{
   private void register(String given){
     if (given.isBlank()){ tell(Messages.registerNoFolder()); return; }
     Path folder;
-    try{ folder= projectFolder(given,dir); }
+    try{ folder= projectFolder(Info.path(given,new Info.Str(given,Info.noSpan)),dir); }
     catch(UserError e){ tell(e.getMessage()); return; }
     if (!live.containsKey(folder) && !add(folder)){ return; }
     selected= Optional.of(folder);

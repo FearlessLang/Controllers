@@ -63,6 +63,22 @@ public sealed interface Info{
   }
   Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
   private static boolean safe(int c){ return c < 128 && Fs.allowed.indexOf(c) >= 0; }
+  String base16= "Base16:";
+  /// a path as the text of an Info string: the path, or, when it is not Unicode (an unpaired
+  /// surrogate in a Windows name), Base16: then its UTF-16 code units, 4 uppercase hex digits each
+  static String pathText(String path){
+    if (path.codePoints().noneMatch(c->c >= 0xD800 && c <= 0xDFFF)){ return path; }
+    return base16+path.chars().mapToObj("%04X"::formatted).collect(Collectors.joining());
+  }
+  static String path(String source, Str text){
+    var s= text.value();
+    if (!s.startsWith(base16)){ return s; }
+    var hex= s.substring(base16.length());
+    if (!hex.matches("(?:[0-9A-F]{4})+")){ throw err(source,text.span(),"\""+s+"\" is malformed: after \"Base16:\" a path is its UTF-16 code units, each as 4 uppercase hex digits, like \"Base16:0043003A002FD800\"."); }
+    var res= new StringBuilder();
+    for (int i= 0; i < hex.length(); i+= 4){ res.append((char)Integer.parseInt(hex.substring(i,i+4),16)); }
+    return res.toString();
+  }
   static String expr(String s){ return s.codePoints().allMatch(Info::safe) ? strExpr(s) : uExpr(s.codePoints().toArray()); }
   private static String strExpr(String s){
     var parts= List.of(s.split("\n",-1));

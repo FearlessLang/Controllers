@@ -32,7 +32,7 @@ public record Eclipse(Path dir){
     var m= at.matcher(p.failure());
     var problem= m.find() ? List.of(field("file",str(m.group(1))),field("line",str(m.group(2))),field("message",str(p.failure()))) : List.<Field>of();
     return obj(List.of(
-      field("folder",str(p.folder().toString())),
+      field("folder",str(Info.pathText(p.folder().toString()))),
       field("kind",str(p.kind().text)),
       field("running",str(p.running().orElse(""))),
       field("runs",str(""+p.runs())),
@@ -67,7 +67,7 @@ public record Eclipse(Path dir){
     var plugin= JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("eclipsePlugin");
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     Fs.copyFresh(plugin,fearless.resolve("plugins"));
-    Fs.writeUtf8(fearless.resolve("manager.info"),Info.print(obj(List.of(field("manager",str(managerDir.toString())),field("baseCache",str(Deployed.stdLib("baseCache").toString()))))));
+    Fs.writeUtf8(fearless.resolve("manager.info"),Info.print(obj(List.of(field("manager",str(Info.pathText(managerDir.toString()))),field("baseCache",str(Info.pathText(Deployed.stdLib("baseCache").toString())))))));
     return Messages.eclipseConnected(eclipse);
   }
   private static void replace(Path file, String text){

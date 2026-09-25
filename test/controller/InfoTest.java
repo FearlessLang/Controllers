@@ -77,6 +77,20 @@ final class InfoTest{
     assertEquals("\u00e9x",((Info.Str)parse("\"\".u \"E9\"+\"x\".u")).value());
     assertEquals("",((Info.Str)parse("\"\".u\"\"")).value());
   }
+  @Test void aPathThatIsUnicodeIsItsTextAndAnyOtherIsBase16OfItsUnits(){
+    assertEquals("C:/data/caf\u00e9",Info.pathText("C:/data/caf\u00e9"));
+    assertEquals("Base16:0043003A002F0061D800",Info.pathText("C:/a\ud800"));
+    assertEquals("C:/a\ud800",Info.path("",new Info.Str("Base16:0043003A002F0061D800",Info.noSpan)));
+    assertEquals("C:/data",Info.path("",new Info.Str("C:/data",Info.noSpan)));
+    var s= Info.expr(Info.pathText("C:/\u00e9\ud800"));
+    assertEquals("\"Base16:0043003A002F00E9D800\"",s);
+  }
+  @Test void aMalformedBase16PathIsRejected(){
+    var text= "{\"p\": \"Base16:0043d8\"}";
+    var p= ((Info.Obj)parse(text)).field("p").orElseThrow().value();
+    err("""
+      [###]"Base16:0043d8" is malformed: after "Base16:" a path is its UTF-16 code units, each as 4 uppercase hex digits, like "Base16:0043003A002FD800".[###]""",()->Info.path(text,(Info.Str)p));
+  }
   @Test void lowercaseCodePointsAreRejected(){
     err("""
       [###]The code points "e9" of .u"..." are malformed: write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like .u"00E9 0301".[###]""",()->parse("\"\".u\"e9\""));
