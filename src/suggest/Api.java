@@ -1,11 +1,13 @@
 package suggest;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -74,14 +76,37 @@ public final class Api{
     if (str(a.get(0)).equals("x")){ return new Ty(str(a.getLast()), List.of()); }
     return new Ty(str(a.get(2)), a.subList(3, a.size()).stream().map(Api::ty).toList());
   }
+  /// the packages the map directives of the project give the package names written in pkg, from
+  /// the _map.json the compiler writes, {"target":{"in":"out",...},...}; a malformed text is an error
+  public static Map<String,String> packages(String json, String pkg){
+    var j= new Json(json);
+    var all= j.obj(()->j.obj(j::str));
+    j.check(j.i == json.length());
+    return all.getOrDefault(pkg, Map.of());
+  }
   @SuppressWarnings("unchecked") private static List<Object> arr(Object o){ return (List<Object>)o; }
   private static String str(Object o){ return (String)o; }
-  /// nested arrays of strings, without escapes or whitespace, as ApiJson writes them
+  /// nested arrays of strings, without escapes or whitespace, as ApiJson writes them, and objects
+  /// as the _map.json of the compiler has them: a newline after a comma and after the closing brace
   private static final class Json{
     private final String s;
     private int i;
     Json(String s){ this.s= s; }
-    void check(boolean ok){ if (!ok){ throw new IllegalArgumentException("Malformed api json at offset "+i); } }
+    void check(boolean ok){ if (!ok){ throw new IllegalArgumentException("Malformed compiled json at offset "+i); } }
+    <T> Map<String,T> obj(Supplier<T> value){
+      check(s.startsWith("{", i));
+      i+= 1;
+      var res= new LinkedHashMap<String,T>();
+      while (!s.startsWith("}", i)){
+        if (!res.isEmpty()){ check(s.startsWith(",\n", i)); i+= 2; }
+        var k= str();
+        check(s.startsWith(":", i));
+        i+= 1;
+        check(res.put(k, value.get()) == null);
+      }
+      i+= s.startsWith("}\n", i) ? 2 : 1;
+      return res;
+    }
     List<Object> arr(){
       check(s.startsWith("[", i));
       var res= new ArrayList<Object>();

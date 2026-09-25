@@ -1,6 +1,7 @@
 package suggest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static suggest.DocsTest.same;
 
 import java.util.Map;
@@ -55,7 +56,7 @@ final class ResolverTest{
       m(".cmp",bs(),list(c("test.Person"),c("test.Person")),c("base.Bool")),m(".hash",bs(),list(),c("base.Nat")),m(".assertEq",bs(),list(c("test.Person")),c("base.Void"))),
     type("test.Persons",bs(),"[]",m("#",bs(),list(c("base.Nat"),c("base.Str"),c("base.List",c("test.Cat"))),c("test.Person"))),
     type("test.Cats",bs(),"[]",m("#",bs(),list(c("base.Str"),c("base.Nat")),c("test.Cat"))));
-  static final Map<String,String> aliases= Stream.of("Str","Nat","List","Flow","Opt","Opts","OptMatch","F","Block","OrderHash","Bool").collect(Collectors.toMap(n->n,n->"base."+n));
+  static final String head= Stream.of("Str","Nat","List","Flow","Opt","Opts","OptMatch","F","Block","OrderHash","Bool").map(n->"use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
     Cats: { #(name: Str, weight: Nat): Cat -> Cat: { .name: Str -> name; .weight: Nat -> weight; } }
     Persons: { #(age: Nat, name: Str, cats: List[Cat]): Person -> Person: OrderHash[Person] { 'self
@@ -70,9 +71,10 @@ final class ResolverTest{
   static final String nat= ".str + <=> >";
   static final String opt= ".get .match";
   /// the suggestions at the | of the text
-  static Suggestions at(String text){
+  static Suggestions at(String text){ return at(head,Map.of(),text); }
+  static Suggestions at(String head, Map<String,String> packages, String text){
     var pos= text.indexOf('|');
-    return Resolver.of(new Api(Api.parse(api)),"test",aliases,text.substring(0,pos)+text.substring(pos+1)).suggest(pos);
+    return Resolver.of(new Api(Api.parse(api)),"test",packages,head,text.substring(0,pos)+text.substring(pos+1)).suggest(pos);
   }
   static String names(String text){ return at(text).rows().stream().map(Row::name).collect(Collectors.joining(" ")); }
   static String types(String text){ return at(text).types().stream().map(Ty::show).collect(Collectors.joining(" ")); }
@@ -227,7 +229,21 @@ final class ResolverTest{
     same(person,probe("mut Persons#(1, \"a\", ps).|"));
   }
   @Test void theHeadFileGivesTheAliases(){
-    assertEquals(Map.of("List","base.List","S","base.Str"),Resolver.aliases("use base.List as List;\n// use base.Nat as N;\nuse base.Str as S;\nA: {}"));
+    assertEquals(Map.of("List","base.List","S","base.Str"),Resolver.aliases("use base.List as List;\n// use base.Nat as N;\nuse base.Str as S;\nA: {}",Map.of()));
+  }
+  @Test void aMapDirectiveGivesAPackageNameWrittenHereAnotherPackage(){
+    var packages= Map.of("lib","base");
+    assertEquals(Map.of("N","base.Nat","S","other.Str"),Resolver.aliases("use lib.Nat as N;\nuse other.Str as S;",packages));
+    same(nat,at("use lib.Nat as N;",packages,"A: { .foo(n: N) -> n.| }").rows().stream().map(Row::name).collect(Collectors.joining(" ")));
+    same(nat,at("",packages,"A: { .foo(n: lib.Nat) -> n.| }").rows().stream().map(Row::name).collect(Collectors.joining(" ")));
+    same(baseTypes,at("",packages,"A: { .foo -> lib.| }").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
+    same("Opt[E] OptMatch[E,R] Opts",at("",packages,"use lib.Op|").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
+    same(baseTypes,at("",packages,"A: { .foo -> base.| }").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
+  }
+  @Test void theMapOfThePackageIsReadFromTheCompiledMap(){
+    assertEquals(Map.of("lib","base","x","y"),Api.packages("{\"app\":{\"lib\":\"base\",\n\"x\":\"y\"}\n,\n\"other\":{\"a\":\"b\"}\n}\n","app"));
+    assertEquals(Map.of(),Api.packages("{}","app"));
+    assertThrows(IllegalArgumentException.class,()->Api.packages("{\"app\":{\"lib\":\"base\"}","app"));
   }
   @Test void aPackageNameBeforeTheDotSuggestsItsPublicTypes(){
     same(baseTypes,types(file+"base.|"));

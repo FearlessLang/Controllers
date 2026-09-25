@@ -13,12 +13,12 @@ final class ApiTest{
     same("[]",Api.parse("[]").toString());
   }
   @Test void aMalformedTextIsAnError(){
-    same("Malformed api json at offset 0",err(""));
-    same("Malformed api json at offset 1",err("[x]"));
-    same("Malformed api json at offset 4",err("[\"a\"\"b\"]"));
-    same("Malformed api json at offset 2",err("[]]"));
-    same("Malformed api json at offset 4",err("[\"a\""));
-    same("Malformed api json at offset 1",err("[\"a]"));
+    same("Malformed compiled json at offset 0",err(""));
+    same("Malformed compiled json at offset 1",err("[x]"));
+    same("Malformed compiled json at offset 4",err("[\"a\"\"b\"]"));
+    same("Malformed compiled json at offset 2",err("[]]"));
+    same("Malformed compiled json at offset 4",err("[\"a\""));
+    same("Malformed compiled json at offset 1",err("[\"a]"));
   }
   @Test void twoTypesOfTheSameNameAndArityAreAnError(){
     var t= "[\"a.B\",\"imm\",[],[],[],\"this\"]";

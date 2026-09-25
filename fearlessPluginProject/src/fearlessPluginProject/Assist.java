@@ -32,7 +32,8 @@ import suggest.Resolver.Row;
 /// from the text rendering next to the api json. The edited file, src/_pkg/name.fear of a
 /// mirrored project, names the project and the package (a file of no mirrored project, or outside
 /// a package folder, gets nothing); the compiled information is the api json of every package
-/// of the project and of the standard library, read again when its file changes; the aliases are
+/// of the project and of the standard library, read again when its file changes, and the map
+/// directives of the project as the last compile resolved them (_map.json); the aliases are
 /// the use directives of the head file of the package, its only _rank_ file (none when it has
 /// none or several), taken from the editor when that is the file being edited. The generic
 /// editor computes proposals off the UI thread, so the file comes from the document's file buffer.
@@ -51,7 +52,8 @@ public final class Assist implements IContentAssistProcessorExtension{
     var head= file.getName().startsWith("_rank_") ? text : head(project.folder().resolve(pkgDir));
     var base= ManagerLink.baseCache.resolve("base.json");
     var types= Stream.concat(Stream.of(base), jsons(out)).flatMap(p->types(p).stream()).toList();
-    var s= Resolver.of(new Api(types), pkgDir.substring(1), Resolver.aliases(head), text).suggest(offset);
+    var packages= Files.isDirectory(out) ? Api.packages(ManagerLink.read(out.resolve("_map.json")), pkgDir.substring(1)) : Map.<String,String>of();
+    var s= Resolver.of(new Api(types), pkgDir.substring(1), packages, head, text).suggest(offset);
     var typeProposals= s.types().stream().map(t->typeProposal(t, s.from(), offset, docs(txt(out, pkg(t.name())))));
     if (s.rows().isEmpty()){ return typeProposals.toArray(ICompletionProposal[]::new); }
     var docs= docs(txt(out, pkg(s.receiver().name())));
