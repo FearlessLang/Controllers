@@ -22,8 +22,8 @@ final class ManagerFolderTest{
   }
   @Test void aStartLeavesAnAbsolutePathResolvedInItsOwnWorkingFolder(){
     var here= Path.of("").toAbsolutePath();
-    assertEquals(here.resolve("myProject").resolve("hello.fearless").toString(),Main.message(Path.of("myProject","sub","..","hello.fearless").toString()));
-    assertEquals(here.toString(),Main.message("."));
+    assertEquals("Str:"+here.resolve("myProject").resolve("hello.fearless"),Main.message(Path.of("myProject","sub","..","hello.fearless").toString()));
+    assertEquals("Str:"+here,Main.message("."));
     assertEquals("",Main.message());
   }
   @Test void aStartedFileIsTheFolderAround(@TempDir Path dir){

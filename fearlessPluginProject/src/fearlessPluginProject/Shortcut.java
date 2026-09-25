@@ -40,7 +40,7 @@ public final class Shortcut implements ILaunchShortcut{
     var main= offered.size() > 1 ? choose(offered) : Optional.of(offered.isEmpty() ? "" : offered.getFirst());
     if (main.isEmpty()){ return; }
     IResource mapped= main.get().isEmpty() ? project : project.getFolder(FearlessWatcher.srcName).getFile(new Path(p.mains().get(main.get())));
-    try{ DebugUITools.launch(configuration(project.getName(), p.folder(), main.get(), mapped), mode); }
+    try{ DebugUITools.launch(configuration(project.getName(), main.get(), mapped), mode); }
     catch(CoreException e){ throw new IllegalStateException(e); }
   }
   private static Optional<String> choose(List<String> mains){
@@ -53,15 +53,15 @@ public final class Shortcut implements ILaunchShortcut{
   /// The configuration is mapped to the file declaring its main (to the project when none
   /// is known yet): the Run button on a resource relaunches the configurations mapped
   /// inside it, and reaches the shortcut only when there is none.
-  private static ILaunchConfiguration configuration(String alias, java.nio.file.Path folder, String main, IResource mapped) throws CoreException{
+  private static ILaunchConfiguration configuration(String alias, String main, IResource mapped) throws CoreException{
     var manager= DebugPlugin.getDefault().getLaunchManager();
     var type= manager.getLaunchConfigurationType(Launcher.type);
     for (var c : manager.getLaunchConfigurations(type)){
-      var same= c.getAttribute(Launcher.folderAttr, "").equals(folder.toString()) && c.getAttribute(Launcher.mainAttr, "").equals(main);
+      var same= c.getAttribute(Launcher.projectAttr, "").equals(alias) && c.getAttribute(Launcher.mainAttr, "").equals(main);
       if (same){ return c; }
     }
     var fresh= type.newInstance(null, manager.generateLaunchConfigurationName(main.isEmpty() ? alias : alias+" "+main));
-    fresh.setAttribute(Launcher.folderAttr, folder.toString());
+    fresh.setAttribute(Launcher.projectAttr, alias);
     fresh.setAttribute(Launcher.mainAttr, main);
     fresh.setMappedResources(new IResource[]{mapped});
     return fresh.doSave();

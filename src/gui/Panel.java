@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -35,7 +36,6 @@ import controller.Facts;
 import controller.Project;
 import controller.Registry.Kind;
 import fileSupport.LogFiles;
-import realSourceOracle.AutoloadHandler;
 import tools.Fs;
 import tools.OpenPath;
 import utils.Push;
@@ -46,7 +46,6 @@ import utils.Push;
 final class Panel{
   private static final int iconSize= 32;
   private final Window window;
-  private final Path folder;
   final JPanel root= new JPanel(new BorderLayout(8,8));
   final JTextArea output= mono(named(new JTextArea(10,60),"output"));
   private final JScrollPane outputScroll= new JScrollPane(output);
@@ -69,16 +68,15 @@ final class Panel{
   private final JButton deleteLog= small("Delete",this::deleteLog);
   private Object shown= List.of();
   private Project project;
-  Panel(Window window, Path folder){
+  Panel(Window window){
     this.window= window;
-    this.folder= folder;
     output.setEditable(false);
     details.setEditable(false);
     mainsBox.setLayout(new BoxLayout(mainsBox,BoxLayout.Y_AXIS));
     linksBox.setLayout(new BoxLayout(linksBox,BoxLayout.Y_AXIS));
     var pick= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
-    pick.add(named(small("All",()->window.ask("mains",folder,String.join(" ",project.knownMains()))),"all"));
-    pick.add(named(small("None",()->window.ask("mains",folder,"")),"none"));
+    pick.add(named(small("All",()->window.ask("mains",project.alias(),String.join(" ",project.knownMains()))),"all"));
+    pick.add(named(small("None",()->window.ask("mains",project.alias(),"")),"none"));
     mainsPanel.add(pick,BorderLayout.NORTH);
     mainsPanel.add(mainsScroll,BorderLayout.CENTER);
     mainsPanel.setBorder(BorderFactory.createEtchedBorder());
@@ -111,7 +109,7 @@ final class Panel{
     outputPanel.add(outputScroll,BorderLayout.CENTER);
     root.add(outputPanel,BorderLayout.CENTER);
   }
-  private void clearOutput(){ window.ask("clear",folder,""); }
+  private void clearOutput(){ window.ask("clear",project.alias(),""); }
   void append(String text){
     var bar= outputScroll.getVerticalScrollBar();
     var following= bar.getValue()+bar.getVisibleAmount() >= bar.getMaximum()-16;
@@ -121,7 +119,7 @@ final class Panel{
   private void act(){
     information.setOpen(false);
     links.setOpen(false);
-    window.ask(project.action().verb(),folder,"");
+    window.ask(project.action().verb(),project.alias(),"");
   }
   void render(Project p, List<Project> all){
     var next= List.of(p,all.stream().map(Project::entry).toList());
@@ -175,7 +173,7 @@ final class Panel{
     for(var main: known){
       var box= named(new JCheckBox(main,chosen.contains(main)),main);
       box.setEnabled(!p.busy());
-      box.addActionListener(_->window.ask("mains",folder,String.join(" ",box.isSelected() ? Push.of(chosen,main) : chosen.stream().filter(m->!m.equals(main)).toList())));
+      box.addActionListener(_->window.ask("mains",p.alias(),String.join(" ",box.isSelected() ? Push.of(chosen,main) : chosen.stream().filter(m->!m.equals(main)).toList())));
       mainsBox.add(box);
     }
     mainsScroll.setPreferredSize(new Dimension(0,Math.min(3,known.size())*26+8));
@@ -188,7 +186,7 @@ final class Panel{
     kinds.add(kindButton(p,"Become code",Kind.code));
   }
   private JButton kindButton(Project p, String text, Kind target){
-    var res= small(text,()->window.ask("kind",folder,target.text));
+    var res= small(text,()->window.ask("kind",p.alias(),target.text));
     res.setEnabled(!p.busy());
     return res;
   }
@@ -204,27 +202,23 @@ final class Panel{
       .forEach(o->linksBox.add(linkRow(iAmCode ? p : o,iAmCode ? o : p,o.alias())));
   }
   private JPanel linkRow(Project code, Project data, String other){
-    var reads= code.entry().reads().get(data.alias());
-    var edits= code.entry().edits().get(data.alias());
-    var initial= reads != null && !reads.isEmpty() ? reads : edits != null && !edits.isEmpty() ? edits : List.of(AutoloadHandler.capFirst(data.alias()));
-    var read= new JCheckBox("read",reads != null);
-    var write= new JCheckBox("write",edits != null);
-    var field= new JTextField(String.join(" ",initial),14);
-    var canWrite= data.kind() == Kind.dataReadWrite;
-    write.setEnabled(canWrite && reads != null);
-    field.setEnabled(reads != null);
-    Runnable apply= ()->window.ask("link",code.folder(),data.alias()+" "+(!read.isSelected() ? "none" : write.isSelected() ? "write" : "read")+" "+field.getText());
-    read.addActionListener(_->apply.run());
-    write.addActionListener(_->apply.run());
-    field.addFocusListener(new FocusAdapter(){
-      @Override public void focusLost(FocusEvent e){ if (read.isSelected()){ apply.run(); } }
-    });
     var row= new JPanel(new FlowLayout(FlowLayout.LEFT,6,0));
-    row.add(read);
-    if (canWrite || edits != null){ row.add(write); }
     row.add(new JLabel(other));
-    row.add(field);
+    row.add(linkField(code,data,"read",code.entry().reads()));
+    if (data.kind() == Kind.dataReadWrite || code.entry().edits().containsKey(data.alias())){ row.add(linkField(code,data,"write",code.entry().edits())); }
     return row;
+  }
+  private JPanel linkField(Project code, Project data, String how, Map<String,List<String>> links){
+    var was= String.join(" ",links.getOrDefault(data.alias(),List.of()));
+    var field= new JTextField(was,14);
+    field.addActionListener(_->field.transferFocus());
+    field.addFocusListener(new FocusAdapter(){
+      @Override public void focusLost(FocusEvent e){ if (!field.getText().strip().equals(was)){ window.ask("link",code.alias(),data.alias()+" "+how+" "+field.getText()); } }
+    });
+    var res= new JPanel(new FlowLayout(FlowLayout.LEFT,2,0));
+    res.add(new JLabel(how));
+    res.add(field);
+    return res;
   }
   static void openDocs(Path folder){
     var genJava= folder.resolve(Facts.outDir).resolve("gen_java");

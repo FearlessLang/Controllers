@@ -2,21 +2,14 @@ package controller;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import metaParser.Frame;
 import metaParser.Message;
 import metaParser.Span;
 import tools.Fs;
-import userMessages.Report;
 import userMessages.UserError;
 import utils.OneOr;
 import utils.Range;
@@ -32,7 +25,7 @@ public sealed interface Info{
   Span noSpan= new Span(URI.create("info:synthetic"),1,1,1,1);
   static Info parse(String text, URI uri){ return new Parser(text,uri).all(); }
   static UserError err(String source, Span span, String msg){
-    return Report.infoError(Message.of(_->source,List.of(new Frame("",span)),msg));
+    return Messages.infoError(Message.of(_->source,List.of(new Frame("",span)),msg));
   }
   static String print(Info info){
     var sb= new StringBuilder();
@@ -65,17 +58,11 @@ public sealed interface Info{
     }
     sb.append("  ".repeat(indent)).append('}');
   }
-  Pattern unsafeRun= Pattern.compile("[^"+Fs.allowed.chars().mapToObj(c->"\\x{"+Integer.toHexString(c)+"}").collect(Collectors.joining())+"]+");
-  Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
+  private static boolean safe(int c){ return c < 128 && Fs.allowed.indexOf(c) >= 0; }
   private static void quote(String value, StringBuilder sb){
-    var escaped= value.replace("\\","\\\\").replace("\"","\\\"").replace("\n","\\n");
-    sb.append('"').append(unsafeRun.matcher(escaped).replaceAll(Info::codePoints)).append('"');
-  }
-  private static String codePoints(MatchResult run){
-    var hex= run.group().codePoints().mapToObj("%04X"::formatted).collect(Collectors.joining(" "));
-    return Matcher.quoteReplacement("\\u("+hex+")");
-  }
-  final class Parser{
+    assert value.codePoints().allMatch(Info::safe);
+    sb.append('"').append(value.replace("\\","\\\\").replace("\"","\\\"").replace("\n","\\n")).append('"');
+  }  final class Parser{
     private final String text;
     private final URI uri;
     private int i= 0;
@@ -111,33 +98,17 @@ public sealed interface Info{
         sb.append(advance());
       }
     }
-    private String escape(){
+    private char escape(){
       if (!more()){ throw err(here(),"The text ends right after a \\: an escape needs a character after it."); }
       var at= here();
       var c= advance();
       return switch(c){
-        case '"' -> "\"";
-        case '\\' -> "\\";
-        case 'n' -> "\n";
-        case 'u' -> codePoints(at);
-        default -> throw err(from(at),"Unknown escape \\"+c+": only \\\", \\\\, \\n and \\u(...) exist.");
+        case '"' -> '"';
+        case '\\' -> '\\';
+        case 'n' -> '\n';
+        default -> throw err(from(at),"Unknown escape \\"+c+": only \\\", \\\\ and \\n exist.");
       };
-    }
-    private String codePoints(Span at){
-      if (!more() || peek() != '('){ throw err(from(at),"The escape \\u needs its code points in parentheses, like \\u(00E9 0301)."); }
-      advance();
-      var body= new StringBuilder();
-      while(more() && ")\"\n".indexOf(peek()) < 0){ body.append(advance()); }
-      if (!more() || peek() != ')'){ throw err(from(at),"The escape \"\\u("+body+"\" is never closed with a matching )."); }
-      advance();
-      var escape= "\"\\u("+body+")\"";
-      if (!uCodeText.matcher(body).matches()){ throw err(from(at),"The escape "+escape+" is malformed: inside \\u(...) write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like \\u(00E9 0301)."); }
-      var cps= Stream.of(body.toString().split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
-      var bad= Arrays.stream(cps).filter(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)).findFirst();
-      if (bad.isPresent()){ throw err(from(at),"The escape "+escape+" holds "+Integer.toHexString(bad.getAsInt()).toUpperCase()+", which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters."); }
-      return new String(cps,0,cps.length);
-    }
-    private Lst list(){
+    }    private Lst list(){
       var start= here();
       advance();
       var items= new ArrayList<Info>();

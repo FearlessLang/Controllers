@@ -48,8 +48,9 @@ import controller.Manager;
 import controller.Manager.State;
 import controller.Project;
 import controller.Registry;
+import controller.TaggedText;
+import controller.Messages;
 import tools.OpenPath;
-import userMessages.Violation;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
 /// the selected one on the right. It shows the State the Manager hands it and turns every
@@ -101,7 +102,7 @@ public final class Window implements Manager.View{
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
     var result= new AtomicReference<T>();
     try{ SwingUtilities.invokeAndWait(()->result.set(make.get())); }
-    catch(InterruptedException|InvocationTargetException e){ throw Violation.couldNotStartGui(e); }
+    catch(InterruptedException|InvocationTargetException e){ throw Messages.couldNotStartGui(e); }
     return result.get();
   }
   @Override public void show(){
@@ -124,7 +125,7 @@ public final class Window implements Manager.View{
   private boolean onScreen(){ return frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) == 0; }
   //A desktop that refuses to show a window reports it as iconified and never deiconifies it.
   private void checkSurfaced(){
-    if (frame.isVisible() && !surfaced && !onScreen()){ main.fail(Violation.desktopHidesWindow()); }
+    if (frame.isVisible() && !surfaced && !onScreen()){ main.fail(Messages.desktopHidesWindow()); }
   }
   public boolean askForget(){
     return onEdt(()->JOptionPane.showConfirmDialog(frame,"""
@@ -133,9 +134,10 @@ public final class Window implements Manager.View{
       What your desktop already remembers by hand is left exactly as it is:
       this only removes what Fearless itself registered.""","Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);
   }
-  void ask(String verb, Path folder, String arg){ main.manager().ask(verb,folder,arg); }
-  private void select(Path folder){ ask("select",folder,""); }
-  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,f->new Panel(this,f)); }
+  void ask(String verb, String name, String arg){ main.manager().ask(verb,name,arg); }
+  private void select(String name){ ask("select",name,""); }
+  @Override public boolean visible(){ return ticker.isRunning(); }
+  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this)); }
   private void render(State s){
     state= s;
     tiles.render(s);
@@ -146,7 +148,7 @@ public final class Window implements Manager.View{
     fillProjectMenu();
     running.removeAll();
     if (s.running().isEmpty()){ running.add(item("<nothing running>",false,()->{})); }
-    s.projects().stream().filter(Project::busy).forEach(p->running.add(item(p.alias()+" - "+p.job(),true,()->select(p.folder()))));
+    s.projects().stream().filter(Project::busy).forEach(p->running.add(item(p.alias()+" - "+p.job(),true,()->select(p.alias()))));
   }
   private void place(Optional<Panel> next){
     shown= next;
@@ -184,20 +186,20 @@ public final class Window implements Manager.View{
     project.addSeparator();
     var on= state.shown();
     var f= on.map(Project::folder);
-    project.add(item("Clear cache",on.isPresent(),()->ask("clean",f.get(),"")));
+    project.add(item("Clear cache",on.isPresent(),()->ask("clean",on.get().alias(),"")));
     project.add(item("Browse files",on.isPresent(),()->OpenPath.open(f.get())));
     project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(f.get())));
     project.add(item("View base documentation",true,()->OpenPath.open(Deployed.stdLib("baseCache").resolve("base.html"))));
     project.add(item("Error report",on.flatMap(Project::problem).isPresent(),()->showText(frame,on.get().problem().get(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE)));
     project.addSeparator();
-    project.add(item("Forget project",on.isPresent(),()->ask("forget",f.get(),"")));
+    project.add(item("Forget project",on.isPresent(),()->ask("forget",on.get().alias(),"")));
   }
   private void addFolder(){
     var chooser= new JFileChooser();
     chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
     chooser.setDialogTitle("Add a Fearless project folder");
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
-    main.manager().message(chooser.getSelectedFile().toPath().toString());
+    main.manager().message(TaggedText.of(chooser.getSelectedFile().toPath().toString()));
   }
   private TransferHandler dropHandler(){
     return new TransferHandler(){
@@ -209,15 +211,15 @@ public final class Window implements Manager.View{
       @Override public boolean importData(TransferSupport support){
         var paths= Drop.paths(support.getTransferable());
         if (paths.isEmpty()){ return false; }
-        paths.forEach(p->main.manager().message(p.toString()));
+        paths.forEach(p->main.manager().message(TaggedText.of(p.toString())));
         return true;
       }
     };
   }
   private void connectEclipse(){
     var chooser= new JFileChooser();
-    chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-    chooser.setDialogTitle("Select the Eclipse executable");
+    chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+    chooser.setDialogTitle("Select Eclipse: its program, its folder, or the folder it was unzipped into");
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
     main.manager().connect(chooser.getSelectedFile().toPath());
   }

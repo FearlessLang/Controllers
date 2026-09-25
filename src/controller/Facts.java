@@ -18,7 +18,6 @@ import coordinator.Coordinator;
 import fileSupport.LogFiles;
 import realSourceOracle.RealSourceOracleWithZip;
 import tools.Fs;
-import userMessages.Report;
 import userMessages.UserError;
 
 /// What the file system says about a project folder: its authored files, its compiled
@@ -66,13 +65,13 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
       .sorted()
       .toList();
     }});
-    if (pngs.size() > 1){ throw Report.projectIconsMany(dir,pngs); }
+    if (pngs.size() > 1){ throw Messages.projectIconsMany(dir,pngs); }
     if (pngs.isEmpty()){ return Optional.empty(); }
     var png= pngs.getFirst();
     BufferedImage image;
     try{ image= ImageIO.read(png.toFile()); }
-    catch(IOException e){ throw Report.projectIconUnreadable(png); }
-    if (image == null){ throw Report.projectIconUnreadable(png); }
+    catch(IOException e){ throw Messages.projectIconUnreadable(png); }
+    if (image == null){ throw Messages.projectIconUnreadable(png); }
     return Optional.of(new Icon(png,Fs.lastModified(png),image));
   }
   private static List<Path> sources(Path folder){

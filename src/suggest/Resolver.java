@@ -41,8 +41,9 @@ import suggest.Tokens.Tok;
 /// without [..] has no generics. A declaration of this file the last compile does not know has the
 /// methods of its supertypes. A lowercase name right before the dot that names a compiled
 /// package, a qualified type name being typed, or the package of a use directive, also lists the
-/// public types of that package.
-public record Resolver(Api api, String pkg, Map<String,String> aliases, String text, List<Tok> tokens, Group root){
+/// public types of that package. A package name written in this package stands for the package the
+/// map directives of the project give it here, if any.
+public record Resolver(Api api, String pkg, Map<String,String> packages, Map<String,String> aliases, String text, List<Tok> tokens, Group root){
   public record Row(String name, List<Ty> ts, Ty ret){
     public String insert(){ return name.startsWith(".") ? name : " "+name+" "; }
     public String display(){
@@ -59,19 +60,23 @@ public record Resolver(Api api, String pkg, Map<String,String> aliases, String t
   private static final Set<Kind> unclosed= Set.of(Kind.LineComment, Kind.BadUnclosedBlockComment, Kind.BadUStrUnclosed, Kind.BadSStrUnclosed);
   private static final Comparator<Method> order= Comparator.comparing((Method m)->!m.name().startsWith(".")).thenComparing(Method::name).thenComparing(Method::arity);
   private static final Comparator<Ty> byName= Comparator.comparing(Ty::name).thenComparing(t->t.args().size());
-  public static Resolver of(Api api, String pkg, Map<String,String> aliases, String text){
+  public static Resolver of(Api api, String pkg, Map<String,String> packages, String head, String text){
     var tokens= Tokens.tokens(text);
-    return new Resolver(api, pkg, aliases, text, tokens, Tokens.group(tokens));
+    return new Resolver(api, pkg, packages, aliases(head, packages), text, tokens, Tokens.group(tokens));
   }
-  /// the use directives of a package head file, alias to full name
-  public static Map<String,String> aliases(String head){
+  /// the use directives of a package head file, alias to full name, with its package mapped
+  static Map<String,String> aliases(String head, Map<String,String> packages){
     var items= Tokens.group(Tokens.tokens(head)).items;
     var res= new HashMap<String,String>();
     for (int j= 0; j+4 < items.size(); j+= 1){
       var use= word(items.get(j), "use") && Tokens.is(items.get(j+1), Kind.UppercaseId) && word(items.get(j+2), "as") && Tokens.is(items.get(j+3), Kind.UppercaseId) && Tokens.is(items.get(j+4), Kind.SemiColon);
-      if (use){ res.put(Tokens.text(items.get(j+3)), Tokens.text(items.get(j+1))); }
+      if (use){ res.put(Tokens.text(items.get(j+3)), mapped(Tokens.text(items.get(j+1)), packages)); }
     }
     return res;
+  }
+  private static String mapped(String qualified, Map<String,String> packages){
+    var dot= qualified.indexOf('.');
+    return packages.getOrDefault(qualified.substring(0, dot), qualified.substring(0, dot))+qualified.substring(dot);
   }
   private static boolean word(Item it, String w){ return Tokens.is(it, Kind.LowercaseId) && Tokens.text(it).equals(w); }
   /// nothing inside a comment or a string, or while a name is being typed; after a dot or a typed
@@ -105,8 +110,9 @@ public record Resolver(Api api, String pkg, Map<String,String> aliases, String t
     var lower= t.kind() == Kind.LowercaseId && t.end() == from;
     var upper= t.kind() == Kind.UppercaseId && t.start() < from && from < t.end();
     if (!lower && !upper){ return List.of(); }
-    var p= t.text().substring(0, from-t.start())+"."+prefix.substring(1);
-    return api.types(t.text().substring(0, from-t.start())).stream().filter(ty->ty.name().startsWith(p)).sorted(byName).toList();
+    var written= t.text().substring(0, from-t.start());
+    var actual= packages.getOrDefault(written, written);
+    return api.types(actual).stream().filter(ty->ty.name().startsWith(actual+"."+prefix.substring(1))).sorted(byName).toList();
   }
   /// the expression: what follows the last separator
   private static List<Item> segment(List<Item> items){
@@ -311,7 +317,7 @@ public record Resolver(Api api, String pkg, Map<String,String> aliases, String t
     var c= s.charAt(0);
     if (c == '"' || c == '`'){ return "base.Str"; }
     if (Character.isDigit(c) || c == '+' || c == '-'){ return s.indexOf('.') >= 0 ? "base.Float" : Character.isDigit(c) ? "base.Nat" : "base.Int"; }
-    return s.indexOf('.') >= 0 ? s : aliases.getOrDefault(s, pkg+"."+s);
+    return s.indexOf('.') >= 0 ? mapped(s, packages) : aliases.getOrDefault(s, pkg+"."+s);
   }
   /// [RC] C[Ts], read/imm X, [RC] X, a generic being a name in scope
   private Ty parseType(List<Item> items, Map<String,Ty> scope){
