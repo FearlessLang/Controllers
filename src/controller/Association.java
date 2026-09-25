@@ -16,10 +16,7 @@ public final class Association{
   static Path launcher(){
     var app= System.getProperty("jpackage.app-path");
     if (app == null){ throw Violation.mustUseLauncher(); }
-    var res= Path.of(app);
-    var expected= Main.programName()+(JavacTool.winKey.equals(System.getProperty(JavacTool.launcherKey)) ? JavacTool.winKey : "");
-    if (!identity(res).equals(expected)){ throw Violation.associationLauncherMisnamed(res,expected); }
-    return res;
+    return Path.of(app);
   }
   ///The launcher names us: one identity per Fearless, and the manager's own is not the portable one.
   static String identity(Path launcher){
