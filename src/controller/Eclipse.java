@@ -20,7 +20,6 @@ import fileSupport.JUnitReport;
 import tools.Fs;
 import tools.JavacTool;
 import userMessages.Violation;
-import utils.Join;
 
 /// The manager's side of the Eclipse plugin (fearlessPluginProject): the files of dir that
 /// the plugin reads. A file the plugin reads whole is replaced at once, never rewritten in place.
@@ -62,21 +61,14 @@ public record Eclipse(Path dir){
   public String connect(Path chosen, Path managerDir){
     var dir= Files.isDirectory(chosen) ? chosen : chosen.getParent();
     var found= installs(dir);
-    if (found.isEmpty()){ return "Eclipse is not connected: no Eclipse installation, a folder holding the file \".eclipseproduct\", is in\n  "+dir+"\nor in its folders \"eclipse\" or \"Contents/Eclipse\", or in those of a folder of it.\n\nSelect the Eclipse program, the folder holding it, or the folder Eclipse was unzipped into."; }
-    if (found.size() > 1){ return "Eclipse is not connected: more than one Eclipse installation is in\n  "+dir+Join.of(found.stream().map(f->"\n  "+f),"\nThey are:","","")+"\n\nSelect the Eclipse program, or the folder holding it, of the one to connect."; }
+    if (found.isEmpty()){ return Messages.noEclipse(dir); }
+    if (found.size() > 1){ return Messages.severalEclipses(dir,found); }
     var eclipse= found.getFirst();
     var plugin= JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("eclipsePlugin");
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     Fs.copyFresh(plugin,fearless.resolve("plugins"));
     Fs.writeUtf8(fearless.resolve("manager.info"),Info.print(obj(List.of(field("manager",str(managerDir.toString())),field("baseCache",str(Deployed.stdLib("baseCache").toString()))))));
-    return """
-Eclipse is now connected:
-%s
-
-Restart Eclipse: every project this manager knows appears in its Fearless
-perspective. File > New makes a project, Project > Build compiles it, the
-Run button runs it, and the Terminate button of its console stops it.
-""".formatted(eclipse);
+    return Messages.eclipseConnected(eclipse);
   }
   private static void replace(Path file, String text){
     var tmp= file.resolveSibling(file.getFileName()+".tmp");

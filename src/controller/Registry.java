@@ -26,7 +26,6 @@ import controller.Info.Obj.Field;
 import core.TName;
 import fileSupport.StringFiles;
 import userMessages.UserError;
-import userMessages.Violation;
 import utils.Join;
 import utils.OneOr;
 import utils.Push;
@@ -137,7 +136,7 @@ public final class Registry{
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     StringFiles.writeNew(tmp,text,UserError.onFileError());
     try{ Files.move(tmp,file,ATOMIC_MOVE); }
-    catch(IOException e){ throw Violation.couldNotSaveRegisteredFolders(dir,e); }
+    catch(IOException e){ throw Messages.couldNotSaveRegisteredFolders(dir,e); }
   }
   public static List<Entry> fromInfo(String source, Info root){
     if (!(root instanceof Obj top)){

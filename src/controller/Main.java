@@ -53,7 +53,7 @@ public final class Main{
     var exitCode= 0;
     try{ run(message(args)); }
     catch(UserError e){ exitCode= 1; display(e); }
-    catch(VirtualMachineError|LinkageError e){ exitCode= 2; display(Violation.vmOrLinkageFailure(e)); }
+    catch(VirtualMachineError|LinkageError e){ exitCode= 2; display(Messages.vmOrLinkageFailure(e)); }
     catch(Throwable t){ exitCode= 3; display(UserError.crashed(t)); }
     System.exit(exitCode);
   }
@@ -65,12 +65,12 @@ public final class Main{
   private static void run(String message){
     var main= new Main(binDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
     try{ Files.createDirectories(main.msgDir()); }
-    catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir,e); }
+    catch(IOException|UnsupportedOperationException|SecurityException e){ throw Messages.couldNotCreateManagerFolder(main.managerDir,e); }
     leave(main.msgDir(),message);
     var lockFile= main.managerDir.resolve("instance.lock");
     try{ lock= FileChannel.open(lockFile,CREATE,WRITE).tryLock(); }
     catch(OverlappingFileLockException e){ throw Bug.unreachable(); }
-    catch(IOException e){ throw Violation.couldNotUseInstanceLock(lockFile,e); }
+    catch(IOException e){ throw Messages.couldNotUseInstanceLock(lockFile,e); }
     if (lock == null){ return; }
     UserError.becameManagerOwner();
     main.own();
@@ -82,7 +82,7 @@ public final class Main{
     for(var dir= startedFrom; dir != null && dir.getFileName() != null; dir= dir.getParent()){
       if (dir.getFileName().toString().equals(expected)){ return dir; }
     }
-    throw Violation.programFolderNotFound(startedFrom,expected);
+    throw Messages.programFolderNotFound(startedFrom,expected);
   }
   //Write to a .tmp name, then atomically rename it to .msg: the owner drains
   //only *.msg, so it can never observe a half written file.
@@ -91,12 +91,12 @@ public final class Main{
     var tmp= msgDir.resolve(name+".tmp");
     StringFiles.writeNew(tmp,message,UserError.onFileError());
     try{ Files.move(tmp,msgDir.resolve(name+".msg"),ATOMIC_MOVE); }
-    catch(IOException e){ throw Violation.couldNotLeaveStartMessage(msgDir,e); }
+    catch(IOException e){ throw Messages.couldNotLeaveStartMessage(msgDir,e); }
   }
   private void own(){
     WatchService watcher;
     try{ watcher= FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
-    catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(),e); }
+    catch(IOException|UnsupportedOperationException|SecurityException e){ throw Messages.couldNotWatchMessageFolder(msgDir(),e); }
     Thread.setDefaultUncaughtExceptionHandler((_,t)->fail(t instanceof UserError e ? e : Bug.of(t)));
     var window= Window.create(this);
     manager= new Manager(managerDir,new Deployed(),window,this::fail);
@@ -128,13 +128,13 @@ public final class Main{
       catch(InterruptedException e){ throw Bug.of(e); }
       key.pollEvents();
       drain();
-      if (!key.reset()){ fail(Violation.messageFolderNotWatchable(msgDir())); return; }
+      if (!key.reset()){ fail(Messages.messageFolderNotWatchable(msgDir())); return; }
     }
   }
   //Runs once before the watcher thread starts, then only from that thread: never concurrently.
   private void drain(){
     try{ take().forEach(manager::message); }
-    catch(IOException e){ throw Violation.couldNotDrainMessageFolder(msgDir(),e); }
+    catch(IOException e){ throw Messages.couldNotDrainMessageFolder(msgDir(),e); }
   }
   private List<String> take() throws IOException{
     var files= list("*.msg");

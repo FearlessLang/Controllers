@@ -29,7 +29,6 @@ import userMessages.Report;
 import userMessages.UserError;
 import userMessages.Violation;
 import utils.Bug;
-import utils.Join;
 import utils.OneOr;
 
 /// The manager without its window: the registered projects, their jobs, and every request
@@ -113,7 +112,7 @@ public final class Manager{
     registry.reset.forEach(e->{
       Fs.rmTree(e.path().resolve(Facts.outDir));
       scan(e.path());
-      tell("In projects.info the \"kind\" of \""+e.alias()+"\" was missing or not one of the kinds: \""+e.alias()+"\" is now idle, and its compiled cache is deleted.");
+      tell(Messages.kindReset(e.alias()));
     });
     eclipse.publish(Eclipse.state(registry.all().stream().map(this::project).toList()));
   }
@@ -127,14 +126,14 @@ public final class Manager{
     if (message.isEmpty()){ view.show(); return; }
     var lines= List.of(message.split("\n",-1));
     if (lines.size() == 1){ register(lines.getFirst()); return; }
-    if (lines.size() > 3){ tell("The manager was sent a message of "+lines.size()+" lines, but a message is empty, to show the window, or a path, or a request of two or three lines: a verb, then a project name (a path for \"register\"), then for some verbs a third line:\n"+message); return; }
+    if (lines.size() > 3){ tell(Messages.tooManyLines(message)); return; }
     request(lines.get(0),lines.get(1),lines.size() > 2 ? lines.get(2) : "");
   }
   private void request(String verb, String name, String arg){
-    if (!verbs.contains(verb)){ tell("The manager was asked to \""+verb+"\", but that is not a request it knows: the requests are "+Join.of(verbs.stream().map(v->"\""+v+"\""),"",", ","")+"."); return; }
+    if (!verbs.contains(verb)){ tell(Messages.unknownVerb(verb,verbs)); return; }
     if (verb.equals("register")){ register(name); return; }
     var e= registry.named(name);
-    if (e.isEmpty()){ tell("The manager was asked to \""+verb+"\" the project \""+name+"\", but no project is named \""+name+"\"."+Join.of(registry.all().stream().map(o->"\n  "+o.alias()),"\nThe projects are:","","","\nNo project is registered.")); return; }
+    if (e.isEmpty()){ tell(Messages.unknownProject(verb,name,registry.all().stream().map(Entry::alias).toList())); return; }
     var folder= e.get().path();
     if (List.of("select","run","compile","check","terminate","clean").contains(verb)){ selected= Optional.of(folder); }
     switch(verb){
@@ -153,7 +152,7 @@ public final class Manager{
     }
   }
   private void register(String given){
-    if (given.isBlank()){ tell("The manager was asked to register a folder, but the message names no folder."); return; }
+    if (given.isBlank()){ tell(Messages.registerNoFolder()); return; }
     Path folder;
     try{ folder= projectFolder(given,dir); }
     catch(UserError e){ tell(e.getMessage()); return; }
@@ -164,11 +163,11 @@ public final class Manager{
   }
   private boolean add(Path folder){
     var nested= registry.overlapping(folder);
-    if (nested.isPresent()){ tell(Report.folderNestedWithRegistered(folder,nested.get()).getMessage()); return false; }
+    if (nested.isPresent()){ tell(Messages.folderNestedWithRegistered(folder,nested.get()).getMessage()); return false; }
     var wanted= Names.compactName(folder);
     var fresh= Fs.of(()->{ try(var s= Files.list(folder)){ return s.findAny().isEmpty(); } });
     var alias= Names.makeUnique(folder,registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
-    if (!alias.equals(wanted)){ tell(Report.projectNamed(folder,wanted,alias).getMessage()); }
+    if (!alias.equals(wanted)){ tell(Messages.projectNamed(folder,wanted,alias).getMessage()); }
     Fs.rmTree(folder.resolve(Facts.outDir));
     registry.add(alias,folder);
     if (fresh){
@@ -280,7 +279,7 @@ public final class Manager{
   }
   private void kind(Path f, String text){
     var kind= Kind.of(text);
-    if (kind.isEmpty()){ tell("The manager was asked to change the kind of\n"+f+"\nto \""+text+"\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."); return; }
+    if (kind.isEmpty()){ tell(Messages.unknownKind(f,text)); return; }
     if (refused(f,"kind change")){ return; }
     var from= project(f).kind();
     if (from != Kind.idle && kind.get() != Kind.idle && from != kind.get()){ output(f,"--- kind change refused: a project of kind "+from.text+" goes back to idle before becoming "+kind.get().text+" ---\n"); return; }
@@ -289,7 +288,7 @@ public final class Manager{
   }
   private void link(Path f, List<String> words){
     var e= registry.of(f).orElseThrow();
-    if (words.size() < 2 || !List.of("read","write").contains(words.get(1))){ tell("The manager was asked to link \""+e.alias()+"\" with \""+String.join(" ",words)+"\", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link."); return; }
+    if (words.size() < 2 || !List.of("read","write").contains(words.get(1))){ tell(Messages.malformedLink(e.alias(),String.join(" ",words))); return; }
     if (e.kind() != Kind.code){ output(f,"--- link refused: this project is "+e.kind().text+", and only a code project links to data ---\n"); return; }
     var alias= words.get(0);
     var names= words.subList(2,words.size());
@@ -392,8 +391,8 @@ public final class Manager{
     if (!Files.exists(path)){ throw Report.launchPathNotFound(path); }
     var folder= Files.isDirectory(path) ? path : path.getParent();
     var manager= managerDir.toAbsolutePath().normalize();
-    if (folder.getFileName() == null){ throw Report.projectFolderIsRoot(folder); }
-    if (folder.startsWith(manager) || manager.startsWith(folder)){ throw Report.managerFolderNotAProject(path,manager); }
+    if (folder.getFileName() == null){ throw Messages.projectFolderIsRoot(folder); }
+    if (folder.startsWith(manager) || manager.startsWith(folder)){ throw Messages.managerFolderNotAProject(path,manager); }
     return folder;
   }
   static Path path(String given){

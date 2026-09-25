@@ -48,8 +48,8 @@ import controller.Manager;
 import controller.Manager.State;
 import controller.Project;
 import controller.Registry;
+import controller.Messages;
 import tools.OpenPath;
-import userMessages.Violation;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
 /// the selected one on the right. It shows the State the Manager hands it and turns every
@@ -101,7 +101,7 @@ public final class Window implements Manager.View{
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
     var result= new AtomicReference<T>();
     try{ SwingUtilities.invokeAndWait(()->result.set(make.get())); }
-    catch(InterruptedException|InvocationTargetException e){ throw Violation.couldNotStartGui(e); }
+    catch(InterruptedException|InvocationTargetException e){ throw Messages.couldNotStartGui(e); }
     return result.get();
   }
   @Override public void show(){
@@ -124,7 +124,7 @@ public final class Window implements Manager.View{
   private boolean onScreen(){ return frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) == 0; }
   //A desktop that refuses to show a window reports it as iconified and never deiconifies it.
   private void checkSurfaced(){
-    if (frame.isVisible() && !surfaced && !onScreen()){ main.fail(Violation.desktopHidesWindow()); }
+    if (frame.isVisible() && !surfaced && !onScreen()){ main.fail(Messages.desktopHidesWindow()); }
   }
   public boolean askForget(){
     return onEdt(()->JOptionPane.showConfirmDialog(frame,"""

@@ -14,7 +14,6 @@ import metaParser.Frame;
 import metaParser.Message;
 import metaParser.Span;
 import tools.Fs;
-import userMessages.Report;
 import userMessages.UserError;
 import utils.OneOr;
 import utils.Range;
@@ -30,7 +29,7 @@ public sealed interface Info{
   Span noSpan= new Span(URI.create("info:synthetic"),1,1,1,1);
   static Info parse(String text, URI uri){ return new Parser(text,uri).all(); }
   static UserError err(String source, Span span, String msg){
-    return Report.infoError(Message.of(_->source,List.of(new Frame("",span)),msg));
+    return Messages.infoError(Message.of(_->source,List.of(new Frame("",span)),msg));
   }
   static String print(Info info){
     var sb= new StringBuilder();
