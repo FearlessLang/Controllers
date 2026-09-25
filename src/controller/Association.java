@@ -2,7 +2,6 @@ package controller;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import fileAssociations.FileAssociations;
@@ -14,7 +13,14 @@ import userMessages.Violation;
 public final class Association{
   private Association(){}
   static final Predicate<String> belongsToFamily= s->s.contains("earless");
-  static Optional<Path> launcher(){ return ProcessHandle.current().info().command().map(Path::of); }
+  static Path launcher(){
+    var app= System.getProperty("jpackage.app-path");
+    if (app == null){ throw Violation.mustUseLauncher(); }
+    var res= Path.of(app);
+    var expected= Main.programName()+(JavacTool.winKey.equals(System.getProperty(JavacTool.launcherKey)) ? JavacTool.winKey : "");
+    if (!identity(res).equals(expected)){ throw Violation.associationLauncherMisnamed(res,expected); }
+    return res;
+  }
   ///The launcher names us: one identity per Fearless, and the manager's own is not the portable one.
   static String identity(Path launcher){
     var file= launcher.getFileName().toString();
@@ -24,9 +30,7 @@ public final class Association{
   public static Path iconFile(){ return JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("icon.png"); }
   static List<Icon> extensions(Path launcher){ return List.of(new Icon(".fearless",launcher,iconFile())); }
   static void reconcile(Path launcher, List<Icon> extensions){
-    var identity= identity(launcher);
-    if (!belongsToFamily.test(identity)){ return; }
-    FileAssociations.reconcile(identity,belongsToFamily,launcher,extensions,launcher,iconFile(),
+    FileAssociations.reconcile(identity(launcher),belongsToFamily,launcher,extensions,launcher,iconFile(),
       reported->Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations",Association::eradicateAll),
       Violation::associationUserLocked,
       Violation::associationNotOurs,

@@ -53,6 +53,49 @@ final class InfoTest{
   @Test void anUnsafeCharacterIsRejected(){
     err("[###]outside the safe character set of Fearless[###]",()->parse("\"a\tb\""));
   }
+  private static void roundTrip(String value, String printed){
+    var s= new Info.Str(value,Info.noSpan);
+    assertEquals(printed,Info.print(s));
+    assertEquals(value,((Info.Str)parse(printed)).value());
+  }
+  @Test void aCharacterOutsideTheSetRoundTripsAsCodePoints(){
+    roundTrip("C:/data/caf\u00e9/hello","\"C:/data/caf\\u(00E9)/hello\"\n");
+  }
+  @Test void aSupplementaryCharacterIsOneCodePoint(){
+    roundTrip("a\ud83d\ude00b","\"a\\u(1F600)b\"\n");
+  }
+  @Test void aRunOfCharactersOutsideTheSetIsOneEscape(){
+    roundTrip("e\u0301\u00e9\t\ud83d\ude00\"\\\n\u00e9","\"e\\u(0301 00E9 0009 1F600)\\\"\\\\\\n\\u(00E9)\"\n");
+  }
+  @Test void codePointsMayHaveLeadingZeros(){
+    assertEquals("\u00e9\u0301",((Info.Str)parse("\"\\u(00E9 000301)\"")).value());
+  }
+  @Test void lowercaseCodePointsAreRejected(){
+    err("""
+      [###]The escape "\\u(e9)" is malformed: inside \\u(...) write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like \\u(00E9 0301).[###]""",()->parse("\"\\u(e9)\""));
+  }
+  @Test void aCodePointOfSevenDigitsIsRejected(){
+    err("[###]The escape \"\\u(00000E9)\" is malformed[###]",()->parse("\"\\u(00000E9)\""));
+  }
+  @Test void anEmptyEscapeIsRejected(){
+    err("[###]The escape \"\\u()\" is malformed[###]",()->parse("\"\\u()\""));
+  }
+  @Test void twoSpacesAreRejected(){
+    err("[###]The escape \"\\u(E9  301)\" is malformed[###]",()->parse("\"\\u(E9  301)\""));
+  }
+  @Test void aSurrogateIsRejected(){
+    err("""
+      [###]The escape "\\u(E9 D83D)" holds D83D, which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters.[###]""",()->parse("\"\\u(E9 D83D)\""));
+  }
+  @Test void aCodePointAboveTheLastIsRejected(){
+    err("[###]holds 110000, which is not a Unicode scalar[###]",()->parse("\"\\u(110000)\""));
+  }
+  @Test void aMissingOpenParenIsRejected(){
+    err("[###]The escape \\u needs its code points in parentheses, like \\u(00E9 0301).[###]",()->parse("\"\\uE9\""));
+  }
+  @Test void aMissingCloseParenIsRejected(){
+    err("[###]The escape \"\\u(E9\" is never closed with a matching ).[###]",()->parse("\"\\u(E9\""));
+  }
   @Test void trailingJunkIsRejected(){
     err("[###]Unexpected extra text after the end of the value[###]",()->parse("\"a\" \"b\""));
   }

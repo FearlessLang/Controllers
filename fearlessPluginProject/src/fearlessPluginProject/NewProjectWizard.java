@@ -26,10 +26,10 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
   @Override public void init(IWorkbench workbench, IStructuredSelection selection){ setWindowTitle("New Fearless Project"); }
   @Override public void addPages(){ addPage(page); }
   @Override public boolean performFinish(){
-    var folder= Path.of(page.folder.getText().strip());
+    var folder= Path.of(page.folder.getText().strip()).toAbsolutePath();
     try{ Files.createDirectories(folder); }
     catch(IOException e){ throw new UncheckedIOException(e); }
-    ManagerLink.find().orElseThrow().send("select", folder);
+    ManagerLink.send("select", folder);
     return true;
   }
   private static final class Page extends WizardPage{

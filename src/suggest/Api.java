@@ -1,19 +1,18 @@
 package suggest;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /// The compiled information of the packages in scope, read from the api json the compiler
 /// writes for every package (apiJson.ApiJson in Coordinator): each type with its generics,
-/// its supertypes and every method it has, inherited ones included, keyed by name and arity.
-/// Reference capabilities are dropped: a type is nominal, a class C[T1..Tn], a type variable X
-/// or unknown. A method name and arity repeats once per receiver capability; the first is used.
+/// its supertypes and every method it has, inherited ones included. Reference capabilities are
+/// dropped: a type is a class C[T1..Tn] (a qualified name), a type variable X, or unknown.
 public final class Api{
   public record Ty(String name, List<Ty> args){
     public static final Ty unknown= new Ty("?", List.of());
@@ -32,88 +31,72 @@ public final class Api{
       var simple= name.substring(name.indexOf('.')+1);
       return args.isEmpty() ? simple : simple+"["+args.stream().map(Ty::show).collect(Collectors.joining(","))+"]";
     }
-    @Override public String toString(){
-      return args.isEmpty() ? name : name+"["+args.stream().map(Ty::toString).collect(Collectors.joining(","))+"]";
-    }
   }
   public record Method(String name, List<String> bs, List<Ty> ts, Ty ret, boolean abs){
     public int arity(){ return ts.size(); }
     Method subst(Map<String,Ty> sub){ return new Method(name, bs, ts.stream().map(t->t.subst(sub)).toList(), ret.subst(sub), abs); }
   }
   public record Type(String name, List<String> bs, List<Ty> supers, List<Method> ms){
-    Optional<Method> method(String name, int arity){ return ms.stream().filter(m->m.name.equals(name) && m.arity() == arity).findFirst(); }
-    /// the abstract method of that arity an unnamed method implements: the only one but for the taken names
+    Optional<Method> method(String name, int arity){ return ms.stream().filter(m->m.name.equals(name) && m.arity() == arity).reduce((a,b)->{ throw new IllegalArgumentException("Type "+this.name+" has two methods "+a.name+" of "+arity+" parameters"); }); }
+    /// the abstract method of that arity a method without name implements: the only one but for the taken names
     Optional<Method> lambda(int arity, Set<String> taken){
       var names= ms.stream().filter(m->m.abs && m.arity() == arity && !taken.contains(m.name)).map(Method::name).distinct().toList();
       return names.size() == 1 ? method(names.get(0), arity) : Optional.empty();
     }
-    Map<String,Ty> bind(Ty t){
-      assert t.args.size() == bs.size();
-      var res= new HashMap<String,Ty>();
-      for (int j= 0; j < bs.size(); j+= 1){ res.put(bs.get(j), t.args.get(j)); }
-      return res;
-    }
+    Map<String,Ty> bind(Ty t){ return IntStream.range(0, bs.size()).boxed().collect(Collectors.toMap(bs::get, t.args::get)); }
   }
-  private final Map<String,List<Type>> types= new HashMap<>();
-  public Api(List<Type> all){ all.forEach(t->types.computeIfAbsent(t.name, n->new ArrayList<>()).add(t)); }
-  public Optional<Type> entry(Ty t){
-    var res= types.getOrDefault(t.name, List.of()).stream().filter(x->x.bs.size() == t.args.size()).toList();
-    assert res.size() <= 1;
-    return res.stream().findFirst();
+  private final Map<String,Type> types;
+  public Api(List<Type> all){ types= all.stream().collect(Collectors.toMap(t->t.name+"/"+t.bs.size(), Function.identity())); }
+  Optional<Type> entry(Ty t){ return Optional.ofNullable(types.get(t.name+"/"+t.args.size())); }
+  /// the public types of the package, with their generics as type variables
+  List<Ty> types(String pkg){
+    return types.values().stream().filter(t->t.name.startsWith(pkg+".") && !t.name.startsWith(pkg+"._")).map(t->new Ty(t.name, t.bs.stream().map(b->new Ty(b, List.of())).toList())).toList();
   }
-  /// one Ty per declaration of the package, with its generics as type variables
-  public List<Ty> types(String pkg){
-    return types.values().stream().flatMap(List::stream).filter(t->t.name.startsWith(pkg+".")).map(t->new Ty(t.name, t.bs.stream().map(b->new Ty(b, List.of())).toList())).toList();
+  /// [name, rc, [[X, rcs..]..], [[C, ts..]..], methods, self] with a method
+  /// [name, rc, [[X, rcs..]..], [ts..], ret, origin, origin arity, abs|concrete] and a type
+  /// [x, [rc,] X] or [c, rc, C, ts..]; a malformed text is an error
+  public static List<Type> parse(String json){
+    var j= new Json(json);
+    var all= j.arr();
+    j.check(j.i == json.length());
+    return all.stream().map(t->type(arr(t))).toList();
   }
-  /// the arity of a name declared at exactly one arity, else 0
-  int onlyArity(String name){
-    var l= types.getOrDefault(name, List.of());
-    return l.size() == 1 ? l.get(0).bs.size() : 0;
-  }
-  /// one method per name and arity, with the receiver's type arguments substituted
-  public List<Method> methods(Ty t){
-    var e= entry(t);
-    if (e.isEmpty()){ return List.of(); }
-    var sub= e.get().bind(t);
-    var seen= new HashSet<String>();
-    return e.get().ms.stream().filter(m->seen.add(m.name+"/"+m.arity())).map(m->m.subst(sub)).toList();
-  }
-  public static List<Type> parse(String json){ return new Json(json).arr().stream().map(t->type(arr(t))).toList(); }
   private static Type type(List<Object> a){
-    var bs= arr(a.get(2)).stream().map(b->str(arr(b).get(0))).toList();
-    var supers= arr(a.get(3)).stream().map(Api::superTy).toList();
-    var ms= arr(a.get(4)).stream().map(m->method(arr(m))).toList();
-    return new Type(str(a.get(0)), bs, supers, ms);
+    var supers= arr(a.get(3)).stream().map(o->{ var c= arr(o); return new Ty(str(c.get(0)), c.subList(1, c.size()).stream().map(Api::ty).toList()); }).toList();
+    return new Type(str(a.get(0)), bs(a.get(2)), supers, arr(a.get(4)).stream().map(m->method(arr(m))).toList());
   }
-  private static Ty superTy(Object o){
-    var a= arr(o);
-    return new Ty(str(a.get(0)), a.subList(1, a.size()).stream().map(Api::ty).toList());
-  }
+  private static List<String> bs(Object o){ return arr(o).stream().map(b->str(arr(b).get(0))).toList(); }
   private static Method method(List<Object> a){
-    var bs= arr(a.get(2)).stream().map(b->str(arr(b).get(0))).toList();
-    var ts= arr(a.get(3)).stream().map(Api::ty).toList();
-    return new Method(str(a.get(0)), bs, ts, ty(a.get(4)), str(a.get(7)).equals("abs"));
+    return new Method(str(a.get(0)), bs(a.get(2)), arr(a.get(3)).stream().map(Api::ty).toList(), ty(a.get(4)), str(a.get(7)).equals("abs"));
   }
   private static Ty ty(Object o){
     var a= arr(o);
-    if (str(a.get(0)).equals("x")){ return new Ty(str(a.get(a.size()-1)), List.of()); }
+    if (str(a.get(0)).equals("x")){ return new Ty(str(a.getLast()), List.of()); }
     return new Ty(str(a.get(2)), a.subList(3, a.size()).stream().map(Api::ty).toList());
   }
   @SuppressWarnings("unchecked") private static List<Object> arr(Object o){ return (List<Object>)o; }
   private static String str(Object o){ return (String)o; }
-  /// Reads what ApiJson writes: nested arrays of strings, without escapes or whitespace.
+  /// nested arrays of strings, without escapes or whitespace, as ApiJson writes them
   private static final class Json{
     private final String s;
     private int i;
     Json(String s){ this.s= s; }
+    void check(boolean ok){ if (!ok){ throw new IllegalArgumentException("Malformed api json at offset "+i); } }
     List<Object> arr(){
+      check(s.startsWith("[", i));
       var res= new ArrayList<Object>();
-      for (i+= 1; s.charAt(i) != ']'; i+= s.charAt(i) == ',' ? 1 : 0){ res.add(s.charAt(i) == '"' ? str() : arr()); }
       i+= 1;
-      return res;
+      if (s.startsWith("]", i)){ i+= 1; return res; }
+      while (true){
+        res.add(s.startsWith("\"", i) ? str() : arr());
+        if (s.startsWith("]", i)){ i+= 1; return res; }
+        check(s.startsWith(",", i));
+        i+= 1;
+      }
     }
     String str(){
       var j= s.indexOf('"', i+1);
+      check(j > 0);
       var res= s.substring(i+1, j);
       i= j+1;
       return res;

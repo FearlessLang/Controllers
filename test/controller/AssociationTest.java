@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import fileAssociations.Icon;
 import fileAssociations.LinuxAssociations;
 import fileAssociations.WindowsAssociations;
+import tools.JavacTool;
 
 /// Association is a thin adapter over Commons' fileAssociations; these pin both the
 /// adapter's identity/family rules and the desktop-registry text Commons renders.
@@ -39,6 +40,27 @@ final class AssociationTest{
     assertTrue(Association.belongsToFamily.test("fearlessManaged0_001"));
     assertTrue(Association.belongsToFamily.test("FearlessApp_001"));
     assertFalse(Association.belongsToFamily.test("SomeOtherEditor"));
+  }
+  @Test void theLauncherIsTheOneJpackageNamesAndItIsNamedAsThisFearlessNamesItsLaunchers(){
+    Errs.err("Error: Fearless has been started without using its launcher.[###]",Association::launcher);
+    System.setProperty(JavacTool.versionIdKey,"0_001");
+    try{
+      launcher("editor.exe","console","[###]its launcher is not named \"fearlessManaged0_001\"[###]");
+      launcher("fearlessManaged0_001.exe","w","[###]its launcher is not named \"fearlessManaged0_001w\"[###]");
+      launcher("fearlessManaged0_002w.exe","w","[###]its launcher is not named \"fearlessManaged0_001w\"[###]");
+      launcher("fearlessManaged0_001w.exe","w","");
+      launcher(winLauncher.toString(),"console","");
+    }
+    finally{ System.clearProperty(JavacTool.versionIdKey); }
+  }
+  private static void launcher(String app, String kind, String error){
+    System.setProperty("jpackage.app-path",app);
+    System.setProperty(JavacTool.launcherKey,kind);
+    try{
+      if (!error.isEmpty()){ Errs.err(error,Association::launcher); return; }
+      assertEquals(Path.of(app),Association.launcher());
+    }
+    finally{ System.clearProperty("jpackage.app-path"); System.clearProperty(JavacTool.launcherKey); }
   }
   @Test void everyExtensionGetsAKindOfItsOwn(){
     assertEquals("application/x-fearless",LinuxAssociations.typeOf(".fearless"));

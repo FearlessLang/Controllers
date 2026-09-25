@@ -104,19 +104,29 @@ final class RegistryTest{
     new Registry(dir).add("someproject",project);
     assertEquals(List.of(new Entry("someproject",project.toAbsolutePath().normalize(),Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)),new Registry(dir).all());
   }
-  @Test void addingTheSameFolderTwiceRegistersItOnce(@TempDir Path dir){
+  @Test void addingARegisteredFolderOrNameAgainIsABug(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
     r.add("someproject",project);
-    r.add("again",project.resolve("..").resolve("someproject"));
+    assertThrows(AssertionError.class,()->r.add("again",project.resolve("..").resolve("someproject")));
+    assertThrows(AssertionError.class,()->r.add("someproject",folder(dir,"other")));
     assertEquals(1,new Registry(dir).all().size());
+  }
+  @Test void aForgottenFolderForgetsItsTimesToo(@TempDir Path dir){
+    var project= folder(dir,"someproject");
+    var r= new Registry(dir);
+    r.add("someproject",project);
+    r.update(project,e->e.withTimes(111,e.run()));
+    r.remove(project);
+    r.add("someproject",project);
+    assertEquals(-1,r.all().getFirst().compiled());
   }
   @Test void compileRunTimesAndMainsSurviveAReRead(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
     r.add("someproject",project);
-    r.compiled(project,111);
-    r.ran(project,222);
+    r.update(project,e->e.withTimes(111,e.run()));
+    r.update(project,e->e.withTimes(e.compiled(),222));
     r.update(project,e->e.withMains(List.of("hello.Hello1")));
     var reread= new Registry(dir).all().getFirst();
     assertEquals(111,reread.compiled());
@@ -131,7 +141,7 @@ final class RegistryTest{
     r.add("gone",gone);
     r.remove(gone);
     assertEquals(List.of(kept.toAbsolutePath().normalize()),r.all().stream().map(Entry::path).toList());
-    assertFalse(r.has(gone));
+    assertEquals(Optional.empty(),r.of(gone));
   }
   @Test void aFolderInsideOrAroundARegisteredOneIsFound(@TempDir Path dir){
     var project= folder(dir,"someproject");
@@ -161,9 +171,9 @@ final class RegistryTest{
     var r= new Registry(dir);
     r.commit("{\n  \"someproject\": {\"path\": \""+unix(project)+"\", \"kind\": \"code\"}\n}\n");
     assertEquals(Kind.code,r.all().getFirst().kind());
-    var before= r.text();
+    var before= Registry.text(r.all());
     assertThrows(UserError.class,()->r.commit("{\n  \"someproject\": {\"path\": \""+unix(project)+"\", \"kind\": \"nonsense\"}\n}\n"));
-    assertEquals(before,r.text());
+    assertEquals(before,Registry.text(new Registry(dir).all()));
   }
   @Test void setLinksSurvivesAReReadAndKeepsReadsAndEditsIndependent(@TempDir Path dir){
     var code= folder(dir,"mycode");
@@ -193,7 +203,7 @@ final class RegistryTest{
     for (var o: others){ r.add(o.alias(),o.path()); r.update(o.path(),_->o); }
     r.add(e.alias(),e.path());
     r.update(e.path(),_->e);
-    return r.linkProblem(e);
+    return r.linkProblem(e,_->Optional.empty());
   }
   @Test void aNonCodeEntryNeverHasALinkProblem(@TempDir Path dir){
     var e= link("a",readme(dir,"a"),Kind.idle,Map.of("missing",List.of("X")),Map.of());
@@ -218,11 +228,17 @@ final class RegistryTest{
     var code= link("code",readme(dir,"code"),Kind.code,Map.of("other",List.of("Data1")),Map.of());
     assertTrue(linkProblem(dir,code,other).orElseThrow().contains("accepts only \"data:readOnly\" or \"data:readWrite\""));
   }
-  @Test void readingFromAStructurallyInvalidDataProjectIsADeadLink(@TempDir Path dir){
-    var pub= dir.resolve("pub");
-    Fs.writeUtf8(pub.resolve("Bad Name.txt"),"hi\n");
-    var pubEntry= link("pub",pub,Kind.dataReadOnly,Map.of(),Map.of());
+  @Test void readingFromAnInvalidDataProjectIsADeadLink(@TempDir Path dir){
+    var pub= link("pub",readme(dir,"pub"),Kind.dataReadOnly,Map.of(),Map.of());
     var code= link("code",readme(dir,"code"),Kind.code,Map.of("pub",List.of("Data1")),Map.of());
-    assertTrue(linkProblem(dir,code,pubEntry).orElseThrow().contains("which is itself invalid"));
+    linkProblem(dir,code,pub);
+    assertEquals(Optional.of("\"reads\" refers to \"pub\", which is itself invalid:\nbroken"),new Registry(dir).linkProblem(code,p->Optional.of("broken").filter(_->p.equals(pub.path()))));
+  }
+  @Test void anEditThatWouldWriteAnInvalidFileIsRefusedAndChangesNothing(@TempDir Path dir){
+    var project= folder(dir,"someproject");
+    var r= new Registry(dir);
+    r.add("someproject",project);
+    err("[###]\"hello\" in \"mains\" is not a Fearless main name[###]",()->r.update(project,e->e.withMains(List.of("hello"))));
+    assertEquals(List.of(),r.all().getFirst().mains());
   }
 }
