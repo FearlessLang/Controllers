@@ -29,27 +29,36 @@ final class Sni{
   private static final String watcher= "org.kde.StatusNotifierWatcher";
   private static final String serviceUnknown= "org.freedesktop.DBus.Error.ServiceUnknown";
   static final List<String> props= List.of("Category","Id","Title","Status","IconPixmap","ToolTip","ItemIsMenu","Menu");
+  static final String menu= "/MenuBar";
+  static final List<List<String>> items= List.of(
+    List.of("0","children-display","submenu"),
+    List.of("1","label","Show manager"),
+    List.of("2","type","separator"),
+    List.of("3","label","Quit manager"));
   private final SocketChannel channel;
   private final Runnable activate;
+  private final Runnable quit;
   private final BufferedImage icon;
   private int serial;
   record Msg(int type, int serial, int replySerial, String[] fields, Reader body){
+    String path(){ return fields[1]; }
     String member(){ return fields[3]; }
     String error(){ return fields[4]; }
     String sender(){ return fields[7]; }
     String signature(){ return fields[8] == null ? "" : fields[8]; }
   }
-  static void install(Runnable activate, Image image){
+  static void install(Runnable activate, Runnable quit, Image image){
     var icon= new BufferedImage(64,64,BufferedImage.TYPE_INT_ARGB);
     var g= icon.createGraphics();
     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);
     g.drawImage(image,0,0,64,64,null);
     g.dispose();
-    var sni= new Sni(activate,icon);
+    var sni= new Sni(activate,quit,icon);
     Thread.startVirtualThread(sni::serve);
   }
-  private Sni(Runnable activate, BufferedImage icon){
+  private Sni(Runnable activate, Runnable quit, BufferedImage icon){
     this.activate= activate;
+    this.quit= quit;
     this.icon= icon;
     var address= System.getenv("DBUS_SESSION_BUS_ADDRESS");
     var path= Pattern.compile("unix:path=([^,;]+)").matcher(address == null ? "" : address);
@@ -88,12 +97,22 @@ final class Sni{
     if (m.type() == 4){ if (m.member().equals("NameOwnerChanged")){ ownerChanged(m); } return; }
     if (m.type() != 1){ return; }
     switch(m.member()){
-      case "GetAll" -> reply(m,"a{sv}",all(icon));
+      case "GetAll" -> reply(m,"a{sv}",m.path().equals(menu) ? menuAll() : all(icon));
+      case "GetLayout" -> reply(m,"u(ia{sv}av)",layout());
+      case "GetGroupProperties" -> reply(m,"a(ia{sv})",groupProperties());
+      case "Event" -> event(m);
       case "Get" -> get(m);
       case "Activate","SecondaryActivate","ContextMenu" -> { activate.run(); reply(m,"",new Writer()); }
       case "Scroll" -> reply(m,"",new Writer());
       default -> error(m,"org.freedesktop.DBus.Error.UnknownMethod","Fearless offers no method "+m.member());
     }
+  }
+  private void event(Msg m) throws IOException{
+    var id= m.body().u32();
+    var clicked= m.body().str().equals("clicked");
+    reply(m,"",new Writer());
+    if (clicked && id == 1){ activate.run(); }
+    if (clicked && id == 3){ quit.run(); }
   }
   private void ownerChanged(Msg m) throws IOException{
     m.body().str();
@@ -123,13 +142,49 @@ final class Sni{
       case "Id" -> w.sig("s").str("fearless-manager");
       case "Title" -> w.sig("s").str("Fearless Manager");
       case "Status" -> w.sig("s").str("Active");
-      case "Menu" -> w.sig("o").str("/NO_DBUSMENU");
+      case "Menu" -> w.sig("o").str(menu);
       case "ItemIsMenu" -> w.sig("b").u32(0);
       case "IconPixmap" -> pixmaps(w.sig("a(iiay)"),icon);
       case "ToolTip" -> { pixmaps(w.sig("(sa(iiay)ss)").pad(8).str("")); w.str("Fearless Manager").str(""); }
       default -> { return false; }
     }
     return true;
+  }
+  static Writer menuAll(){
+    var w= new Writer();
+    int at= w.lenAt();
+    w.pad(8);
+    int start= w.pos;
+    w.pad(8).str("Version").sig("u").u32(3);
+    w.patch(at,w.pos-start);
+    return w;
+  }
+  static Writer layout(){
+    var w= new Writer().u32(1);
+    item(w.pad(8),items.getFirst());
+    int at= w.lenAt();
+    int start= w.pos;
+    items.stream().skip(1).forEach(i->item(w.sig("(ia{sv}av)").pad(8),i).u32(0));
+    w.patch(at,w.pos-start);
+    return w;
+  }
+  static Writer groupProperties(){
+    var w= new Writer();
+    int at= w.lenAt();
+    w.pad(8);
+    int start= w.pos;
+    items.forEach(i->item(w.pad(8),i));
+    w.patch(at,w.pos-start);
+    return w;
+  }
+  private static Writer item(Writer w, List<String> item){
+    w.u32(Integer.parseInt(item.get(0)));
+    int at= w.lenAt();
+    w.pad(8);
+    int start= w.pos;
+    w.pad(8).str(item.get(1)).sig("s").str(item.get(2));
+    w.patch(at,w.pos-start);
+    return w;
   }
   private static void pixmaps(Writer w, BufferedImage... images){
     int at= w.lenAt();

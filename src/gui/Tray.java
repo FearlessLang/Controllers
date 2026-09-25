@@ -19,7 +19,7 @@ import tools.Fs;
 public final class Tray{
   private Tray(){}
   public static void install(Window window, Main main){
-    if (Fs.isLinux()){ Sni.install(window::show,Icons.app()); return; }
+    if (Fs.isLinux()){ Sni.install(window::show,main::quit,Icons.app()); return; }
     if (!SystemTray.isSupported()){ throw Messages.noSystemTray(); }
     var show= new MenuItem("Show manager");
     show.addActionListener(_->window.show());
