@@ -69,10 +69,61 @@ final class SniTest{
     assertEquals("fearless-manager",seen.get("Id"));
     assertEquals("Fearless Manager",seen.get("Title"));
     assertEquals("Active",seen.get("Status"));
-    assertEquals("/NO_DBUSMENU",seen.get("Menu"));
+    assertEquals("/MenuBar",seen.get("Menu"));
     assertEquals("0",seen.get("ItemIsMenu"));
     assertEquals("[2x2:80ff0010 00000000 00000000 ff00ff00]",seen.get("IconPixmap"));
     assertEquals("[]Fearless Manager|",seen.get("ToolTip"));
+  }
+  @Test void theMenuLayoutIsTheRootHoldingShowSeparatorQuit(){
+    var w= Sni.layout();
+    var r= new Reader(w.bytes(),0,false);
+    assertEquals(1,r.u32());
+    r.pad(8);
+    assertEquals("0{children-display=submenu}",item(r));
+    int len= r.u32();
+    int end= r.pos+len;
+    var kids= new StringBuilder();
+    while (r.pos < end){
+      assertEquals("(ia{sv}av)",r.sig());
+      r.pad(8);
+      kids.append(item(r)).append(r.u32()).append(';');
+    }
+    assertEquals(w.pos,r.pos);
+    assertEquals("1{label=Show manager}0;2{type=separator}0;3{label=Quit manager}0;",kids.toString());
+  }
+  @Test void groupPropertiesListEveryItem(){
+    var w= Sni.groupProperties();
+    var r= new Reader(w.bytes(),0,false);
+    int len= r.u32();
+    r.pad(8);
+    assertEquals(w.pos-8,len);
+    var seen= new StringBuilder();
+    while (r.pos < w.pos){ r.pad(8); seen.append(item(r)).append(';'); }
+    assertEquals("0{children-display=submenu};1{label=Show manager};2{type=separator};3{label=Quit manager};",seen.toString());
+  }
+  @Test void theMenuObjectHasVersionThree(){
+    var w= Sni.menuAll();
+    var r= new Reader(w.bytes(),0,false);
+    assertEquals(w.pos-8,r.u32());
+    r.pad(8);
+    assertEquals("Version",r.str());
+    assertEquals("u",r.sig());
+    assertEquals(3,r.u32());
+    assertEquals(w.pos,r.pos);
+  }
+  private static String item(Reader r){
+    var id= r.u32();
+    int len= r.u32();
+    r.pad(8);
+    int end= r.pos+len;
+    var sb= new StringBuilder().append(id).append('{');
+    while (r.pos < end){
+      r.pad(8);
+      var key= r.str();
+      assertEquals("s",r.sig());
+      sb.append(key).append('=').append(r.str());
+    }
+    return sb.append('}').toString();
   }
   private static String pixmaps(Reader r){
     int len= r.u32();

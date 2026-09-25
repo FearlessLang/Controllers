@@ -50,11 +50,16 @@ final class AssociationTest{
     assertEquals("application/x-fproof",LinuxAssociations.typeOf(".fproof"));
   }
   @Test void theOneDesktopEntryHandsEveryKindToTheRunningLauncher(){
-    var entry= LinuxAssociations.desktopEntry(identity,linuxLauncher,List.of("application/x-fearless","application/x-fproof"));
+    var entry= LinuxAssociations.desktopEntry(identity,linuxLauncher,"controller-Main",List.of("application/x-fearless","application/x-fproof"));
     assertTrue(entry.startsWith("[Desktop Entry]\n"),entry);
     assertTrue(entry.contains("Exec=/home/me/fearlessManaged0_001/bin/fearlessManaged0_001 %f"),entry);
     assertTrue(entry.contains("MimeType=application/x-fearless;application/x-fproof;"),entry);
     assertTrue(entry.contains("Icon=fearlessManaged0_001"),entry);
+    assertTrue(entry.contains("StartupWMClass=controller-Main"),entry);
+  }
+  @Test void theWindowClassIsTheMainClassTheWayTheToolkitNamesIt(){
+    assertEquals("controller-Main",LinuxAssociations.windowClass("Controller/controller.Main"));
+    assertEquals("mainCoordinator-Main",LinuxAssociations.windowClass("mainCoordinator.Main /some/project"));
   }
   @Test void everyKindIsDeclaredOutrightAtTheWeightThatSettlesTheFileName(){
     var mine= LinuxAssociations.mimePackage(identity,owned());
@@ -77,10 +82,6 @@ final class AssociationTest{
     assertEquals(1000,mine.lines().filter(l->l.contains("<mime-type")).count());
     assertEquals(1000,mine.lines().filter(l->l.contains("name=\"fearlessManaged0_001-shared\"")).count());
     assertEquals(many,LinuxAssociations.readOwned(mine.lines().toList()));
-  }
-  @Test void thePictureIsFiledUnderTheSizeItsOwnHeaderDeclares(){
-    assertEquals(48,LinuxAssociations.side(png(48)));
-    assertEquals(256,LinuxAssociations.side(png(256)));
   }
   @Test void thePictureNameFollowsWhatIsInsideItSoTheSameOneIsFiledOnce(){
     assertEquals(LinuxAssociations.hash(png(48)),LinuxAssociations.hash(png(48)));

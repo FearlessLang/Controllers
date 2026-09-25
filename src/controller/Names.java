@@ -62,10 +62,9 @@ public final class Names{
   private static void nameAs(Path folder, String name){
     assert isName(name);
     var target= folder.resolve(name+ext);
-    if (Files.exists(target)){ return; }
     var all= markers(folder);
-    if (all.isEmpty()){ Fs.writeUtf8(target,MakeDemo.markerContent); return; }
-    Fs.ofV(()->Files.move(all.getFirst(),target));
+    if (!Files.exists(target) && !all.isEmpty()){ Fs.ofV(()->Files.move(all.getFirst(),target)); }
+    if (!Files.exists(target) || Fs.of(()->Files.size(target)) == 0){ Fs.writeUtf8(target,MakeDemo.markerContent); }
   }
   private static List<Path> markers(Path folder){
     if (!Files.isDirectory(folder)){ return List.of(); }

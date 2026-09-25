@@ -80,6 +80,18 @@ final class NamesTest{
     assertFalse(Files.exists(project.resolve("start.fearless")));
     assertEquals("kept\n",Fs.readUtf8(project.resolve("someproject.fearless")));
   }
+  @Test void anEmptyFearlessFileIsGivenTheMarkerText(@TempDir Path dir){
+    var project= folder(dir,"someproject");
+    Fs.writeUtf8(project.resolve("someproject.fearless"),"");
+    assertEquals("someproject",Names.makeUnique(project,Set.of("other")));
+    assertEquals(mainCoordinator.MakeDemo.markerContent,Fs.readUtf8(project.resolve("someproject.fearless")));
+  }
+  @Test void anEmptyFearlessFileIsRenamedAndGivenTheMarkerText(@TempDir Path dir){
+    var project= folder(dir,"someProject");
+    Fs.writeUtf8(project.resolve("start.fearless"),"");
+    assertEquals("someproject",Names.makeUnique(project,Set.of("start")));
+    assertEquals(mainCoordinator.MakeDemo.markerContent,Fs.readUtf8(project.resolve("someproject.fearless")));
+  }
   @Test void markerProblemIsEmptyWhenTheMarkerMatchesTheAlias(@TempDir Path dir){
     var project= folder(dir,"someProject");
     Fs.writeUtf8(project.resolve("my_game.fearless"),"");
