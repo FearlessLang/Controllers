@@ -20,7 +20,7 @@ import org.osgi.framework.FrameworkUtil;
 /// the compiled standard library. In the eclipse folder of the manager folder, state.info holds
 /// every registered project by name, the folder named like a project holds its console.txt and,
 /// once it ran, its report.xml, and console.txt holds the manager's own notes.
-/// A message is a verb, a newline, a project folder, a newline, then a third line some verbs
+/// A message is a verb, a newline, a project name (a folder for register), a newline, then a third line some verbs
 /// use; the manager applies *.msg files, so a message is written as .tmp and renamed into place.
 public final class ManagerLink{
   public record Project(Path folder, String kind, String running, int runs, String lastRun, int exit, Map<String,String> mains, Map<String,String> problem){}
@@ -44,13 +44,13 @@ public final class ManagerLink{
     Info.obj(o).forEach((k,v)->res.put(k, (String)v));
     return res;
   }
-  static void send(String verb, Path folder){ send(verb, folder, ""); }
-  static void send(String verb, Path folder, String third){
-    var name= "%020d-%s".formatted(System.currentTimeMillis(), UUID.randomUUID());
+  static void send(String verb, String name){ send(verb, name, ""); }
+  static void send(String verb, String name, String third){
+    var file= "%020d-%s".formatted(System.currentTimeMillis(), UUID.randomUUID());
     var messages= manager.resolve("messages");
     try{
-      Files.writeString(messages.resolve(name+".tmp"), verb+"\n"+folder+"\n"+third);
-      Files.move(messages.resolve(name+".tmp"), messages.resolve(name+".msg"), StandardCopyOption.ATOMIC_MOVE);
+      Files.writeString(messages.resolve(file+".tmp"), verb+"\n"+name+"\n"+third);
+      Files.move(messages.resolve(file+".tmp"), messages.resolve(file+".msg"), StandardCopyOption.ATOMIC_MOVE);
     }
     catch(IOException e){ throw new UncheckedIOException(e); }
   }

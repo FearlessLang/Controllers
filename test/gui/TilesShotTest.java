@@ -44,8 +44,8 @@ final class TilesShotTest{
     onEdt(()->{ tiles.render(ten(dir)); tiles.sort.setSelectedItem(Tiles.Sort.Modified); return null; });
     assertTrue(colours(shoot(tiles,760,420)) > 40);
   }
-  @Test void clickingATileAsksToSelectItsFolder(@TempDir Path dir){
-    var picked= new ArrayList<Path>();
+  @Test void clickingATileAsksToSelectItsProject(@TempDir Path dir){
+    var picked= new ArrayList<String>();
     var tiles= onEdt(()->new Tiles(picked::add));
     onEdt(()->{ tiles.render(ten(dir)); return null; });
     shoot(tiles,760,420);
@@ -54,7 +54,7 @@ final class TilesShotTest{
       tiles.list.dispatchEvent(new MouseEvent(tiles.list,MouseEvent.MOUSE_CLICKED,0,0,at.x+5,at.y+5,1,false));
       return null;
     });
-    assertEquals(List.of(onEdt(()->tiles.list.getModel().getElementAt(2).folder())),picked);
+    assertEquals(List.of(onEdt(()->tiles.list.getModel().getElementAt(2).alias())),picked);
   }
   private static BufferedImage shoot(JComponent c, int w, int h){
     return onEdt(()->{

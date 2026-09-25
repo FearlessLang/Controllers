@@ -1,5 +1,6 @@
 package controller;
 
+import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Files;
@@ -79,6 +80,43 @@ Error 7 WellFormedness
   }
   @Test void aFailedCompileWithNoSourcePositionIsNoProblem(){
     assertEquals("",problem("The fearless project folder contains no *.fear files\n"));
+  }
+  private static Path eclipseAt(Path folder){
+    Fs.writeUtf8(folder.resolve(".eclipseproduct"),"name=Eclipse Platform\n");
+    Fs.writeUtf8(folder.resolve("eclipse.exe"),"");
+    return folder;
+  }
+  @Test void anEclipseIsFoundFromItsProgramItsFolderOrTheFolderItWasUnzippedInto(@TempDir Path dir){
+    var eclipse= eclipseAt(dir.resolve("eclipse-java-2025-12-R-win32-x86_64").resolve("eclipse"));
+    var unzipped= eclipse.getParent();
+    assertEquals(List.of(eclipse),Eclipse.installs(eclipse));
+    assertEquals(List.of(eclipse),Eclipse.installs(unzipped));
+    assertEquals(List.of(eclipse),Eclipse.installs(dir));
+    var mac= eclipseAt(dir.resolve("Eclipse.app").resolve("Contents").resolve("Eclipse"));
+    assertEquals(List.of(mac),Eclipse.installs(dir.resolve("Eclipse.app")));
+    assertEquals(List.of(mac,eclipse),Eclipse.installs(dir));
+    Fs.ensureDir(dir.resolve("none").resolve("inner"));
+    assertEquals(List.of(),Eclipse.installs(dir.resolve("none")));
+  }
+  @Test void connectingNamesWhatIsWrongWithTheChoice(@TempDir Path dir){
+    var eclipse= new Eclipse(dir.resolve("eclipse"));
+    Fs.ensureDir(dir.resolve("empty"));
+    same("""
+      Eclipse is not connected: no Eclipse installation, a folder holding the file ".eclipseproduct", is in
+        [###]empty
+      or in its folders "eclipse" or "Contents/Eclipse", or in those of a folder of it.
+
+      Select the Eclipse program, the folder holding it, or the folder Eclipse was unzipped into.""",eclipse.connect(dir.resolve("empty"),dir));
+    eclipseAt(dir.resolve("two").resolve("a").resolve("eclipse"));
+    eclipseAt(dir.resolve("two").resolve("b").resolve("eclipse"));
+    same("""
+      Eclipse is not connected: more than one Eclipse installation is in
+        [###]two
+      They are:
+        [###]a[###]eclipse
+        [###]b[###]eclipse
+
+      Select the Eclipse program, or the folder holding it, of the one to connect.""",eclipse.connect(dir.resolve("two"),dir));
   }
   @Test void theStateIsReplacedWhole(@TempDir Path dir){
     var eclipse= new Eclipse(dir);

@@ -7,9 +7,11 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import controller.Info.Obj;
 import controller.Info.Obj.Field;
@@ -17,8 +19,8 @@ import controller.Info.Str;
 import fileSupport.JUnitReport;
 import tools.Fs;
 import tools.JavacTool;
-import userMessages.Report;
 import userMessages.Violation;
+import utils.Join;
 
 /// The manager's side of the Eclipse plugin (fearlessPluginProject): the files of dir that
 /// the plugin reads. A file the plugin reads whole is replaced at once, never rewritten in place.
@@ -53,9 +55,16 @@ public record Eclipse(Path dir){
     Fs.ensureDir(file.getParent());
     Fs.ofV(()->Files.writeString(file,text,CREATE,APPEND));
   }
+  static List<Path> installs(Path dir){
+    var bases= Stream.concat(Stream.of(dir),Fs.of(()->{ try(var s= Files.list(dir)){ return s.filter(Files::isDirectory).sorted(Comparator.comparing(p->p.getFileName().toString())).toList(); } }).stream());
+    return bases.flatMap(b->Stream.of(b,b.resolve("eclipse"),b.resolve("Contents").resolve("Eclipse"))).filter(d->Files.isRegularFile(d.resolve(".eclipseproduct"))).distinct().toList();
+  }
   public String connect(Path chosen, Path managerDir){
-    var eclipse= chosen.getParent();
-    if (!Files.isRegularFile(eclipse.resolve(".eclipseproduct"))){ throw Report.notAnEclipseInstall(eclipse); }
+    var dir= Files.isDirectory(chosen) ? chosen : chosen.getParent();
+    var found= installs(dir);
+    if (found.isEmpty()){ return "Eclipse is not connected: no Eclipse installation, a folder holding the file \".eclipseproduct\", is in\n  "+dir+"\nor in its folders \"eclipse\" or \"Contents/Eclipse\", or in those of a folder of it.\n\nSelect the Eclipse program, the folder holding it, or the folder Eclipse was unzipped into."; }
+    if (found.size() > 1){ return "Eclipse is not connected: more than one Eclipse installation is in\n  "+dir+Join.of(found.stream().map(f->"\n  "+f),"\nThey are:","","")+"\n\nSelect the Eclipse program, or the folder holding it, of the one to connect."; }
+    var eclipse= found.getFirst();
     var plugin= JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("eclipsePlugin");
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     Fs.copyFresh(plugin,fearless.resolve("plugins"));

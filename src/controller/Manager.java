@@ -29,6 +29,7 @@ import userMessages.Report;
 import userMessages.UserError;
 import userMessages.Violation;
 import utils.Bug;
+import utils.Join;
 import utils.OneOr;
 
 /// The manager without its window: the registered projects, their jobs, and every request
@@ -41,6 +42,7 @@ public final class Manager{
     void output(Path folder, String text);
     void note(String text);
     void clear(Path folder);
+    boolean visible();
   }
   public interface Tools{
     ChildJvm compile(Path folder, Consumer<String> out);
@@ -92,9 +94,9 @@ public final class Manager{
   public State state(){ return state; }
   public void start(){ core.scheduleWithFixedDelay(()->step(this::rotate),3,3,TimeUnit.SECONDS); }
   public void message(String text){ post(()->apply(text)); }
-  public void ask(String verb, Path folder, String arg){ post(()->request(verb,folder,arg)); }
+  public void ask(String verb, String name, String arg){ post(()->request(verb,name,arg)); }
   public void commit(String text, Runnable done){ post(()->commitNow(text,done)); }
-  public void connect(Path eclipseExe){ post(()->connectNow(eclipseExe)); }
+  public void connect(Path chosen){ post(()->connectNow(chosen)); }
   void settle(){
     try{ core.submit(()->{}).get(); }
     catch(InterruptedException|ExecutionException e){ throw Bug.of(e); }
@@ -108,6 +110,11 @@ public final class Manager{
   private void load(){
     Fs.writeUtf8(eclipse.notes(),"");
     registry.all().forEach(this::open);
+    registry.reset.forEach(e->{
+      Fs.rmTree(e.path().resolve(Facts.outDir));
+      scan(e.path());
+      tell("In projects.info the \"kind\" of \""+e.alias()+"\" was missing or not one of the kinds: \""+e.alias()+"\" is now idle, and its compiled cache is deleted.");
+    });
     eclipse.publish(Eclipse.state(registry.all().stream().map(this::project).toList()));
   }
   private void open(Entry e){
@@ -115,37 +122,40 @@ public final class Manager{
     Fs.writeUtf8(eclipse.console(e.alias()),"");
     scan(e.path());
   }
+  private static final List<String> verbs= List.of("register","select","run","compile","check","terminate","clean","kind","forget","mains","link","clear");
   private void apply(String message){
     if (message.isEmpty()){ view.show(); return; }
     var lines= List.of(message.split("\n",-1));
-    var at= lines.size() > 1 ? lines.get(1) : lines.getFirst();
-    var verb= lines.size() > 1 ? lines.getFirst() : "select";
-    if (at.isBlank()){ tell("The manager was asked to \""+verb+"\" a project, but the message names no folder: a message is empty, to show the window, or a path, or a request: a verb, then a folder, then for some verbs a third line."); return; }
-    Path folder;
-    try{ folder= path(at); }
-    catch(UserError e){ tell(e.getMessage()); return; }
-    request(verb,folder,lines.size() > 2 ? lines.get(2) : "");
+    if (lines.size() == 1){ register(lines.getFirst()); return; }
+    if (lines.size() > 3){ tell("The manager was sent a message of "+lines.size()+" lines, but a message is empty, to show the window, or a path, or a request of two or three lines: a verb, then a project name (a path for \"register\"), then for some verbs a third line:\n"+message); return; }
+    request(lines.get(0),lines.get(1),lines.size() > 2 ? lines.get(2) : "");
   }
-  private void request(String verb, Path folder, String arg){
-    if (verb.equals("select")){ select(folder); return; }
-    if (!live.containsKey(folder)){ tell(Report.notRegistered(verb,folder).getMessage()); return; }
-    if (List.of("run","compile","terminate","clean").contains(verb)){ selected= Optional.of(folder); }
+  private void request(String verb, String name, String arg){
+    if (!verbs.contains(verb)){ tell("The manager was asked to \""+verb+"\", but that is not a request it knows: the requests are "+Join.of(verbs.stream().map(v->"\""+v+"\""),"",", ","")+"."); return; }
+    if (verb.equals("register")){ register(name); return; }
+    var e= registry.named(name);
+    if (e.isEmpty()){ tell("The manager was asked to \""+verb+"\" the project \""+name+"\", but no project is named \""+name+"\"."+Join.of(registry.all().stream().map(o->"\n  "+o.alias()),"\nThe projects are:","","","\nNo project is registered.")); return; }
+    var folder= e.get().path();
+    if (List.of("select","run","compile","check","terminate","clean").contains(verb)){ selected= Optional.of(folder); }
     switch(verb){
-      case "run" -> job(folder,"run",true,arg.isEmpty() ? Optional.empty() : Optional.of(arg));
-      case "compile" -> job(folder,"compile",false,Optional.empty());
+      case "select" -> { scan(folder); view.show(); }
+      case "run" -> job(folder,true,arg.isEmpty() ? Optional.empty() : Optional.of(arg));
+      case "compile" -> job(folder,false,Optional.empty());
+      case "check" -> check(folder);
       case "terminate" -> terminate(folder);
       case "clean" -> clean(folder);
       case "kind" -> kind(folder,arg);
       case "forget" -> { drop(folder); registry.remove(folder); }
-      case "mains" -> edit(folder,e->e.withMains(words(arg)));
+      case "mains" -> edit(folder,o->o.withMains(words(arg)));
       case "link" -> link(folder,words(arg));
       case "clear" -> { Fs.writeUtf8(console(folder),""); view.clear(folder); }
-      default -> tell("The manager was asked to \""+verb+"\" a project, but \""+verb+"\" is not a request it knows: the requests are \"select\", \"run\", \"compile\", \"terminate\", \"clean\", \"kind\", \"forget\", \"mains\", \"link\" and \"clear\".");
+      default -> throw Bug.unreachable();
     }
   }
-  private void select(Path given){
+  private void register(String given){
+    if (given.isBlank()){ tell("The manager was asked to register a folder, but the message names no folder."); return; }
     Path folder;
-    try{ folder= live.containsKey(given) ? given : projectFolder(given.toString(),dir); }
+    try{ folder= projectFolder(given,dir); }
     catch(UserError e){ tell(e.getMessage()); return; }
     if (!live.containsKey(folder) && !add(folder)){ return; }
     selected= Optional.of(folder);
@@ -168,15 +178,16 @@ public final class Manager{
     open(registry.of(folder).orElseThrow());
     return true;
   }
-  private void job(Path f, String request, boolean run, Optional<String> named){
+  private void job(Path f, boolean run, Optional<String> named){
+    var request= run ? "run" : "compile";
     if (refused(f,request)){ return; }
     scan(f);
     var p= project(f);
-    if (p.kind() != Kind.code){ output(f,p.problem().map(s->s.stripTrailing()+"\n").orElse("--- ok: no problem found ---\n")); return; }
+    if (p.kind() != Kind.code){ output(f,"--- "+request+" refused: this project is "+p.kind().text+", and only a code project "+(run ? "runs" : "compiles")+" ---\n"); return; }
+    if (p.linkProblem().isPresent()){ output(f,p.linkProblem().get().stripTrailing()+"\n"); return; }
     var l= live.get(f);
     l.terminated= false;
     if (!p.needsCompiling()){ l.todo= run ? chosen(f,named) : List.of(); next(f); return; }
-    if (p.linkProblem().isPresent()){ output(f,p.linkProblem().get().stripTrailing()+"\n"); return; }
     l.thenRun= run;
     l.named= named;
     registry.update(f,e->e.withTimes(System.currentTimeMillis(),e.run()));
@@ -190,6 +201,11 @@ public final class Manager{
     if (p.mains().isEmpty()){ return nothing(f,"this project needs compiling"); }
     if (all.isEmpty()){ return nothing(f,"this project has no main"); }
     if (named.isPresent() && !all.contains(named.get())){ return nothing(f,named.get()+" is not one of the mains "+all); }
+    var stale= all.size() == 1 ? List.<String>of() : p.entry().mains().stream().filter(m->!all.contains(m)).toList();
+    if (named.isEmpty() && !stale.isEmpty()){
+      forgetStale(f);
+      return nothing(f,"the selected "+stale+" are not mains of this project; they are removed from the selected mains");
+    }
     var chosen= named.map(List::of).orElseGet(p::selectedMains);
     if (chosen.isEmpty()){ return nothing(f,"none of "+all+" is selected"); }
     return chosen;
@@ -231,6 +247,7 @@ public final class Manager{
       l.failure= ec == 0 ? "" : l.compiled.toString();
       output(f,"--- compile "+(ec == 0 ? "done" : "failed with "+ec)+" ---\n");
       scan(f);
+      if (l.mains.isPresent()){ forgetStale(f); }
       l.todo= ec == 0 && l.thenRun && !l.terminated ? chosen(f,l.named) : List.of();
       next(f);
       return;
@@ -248,6 +265,14 @@ public final class Manager{
     output(f,"--- terminating "+l.job+" ---\n");
     l.child.kill();
   }
+  private void forgetStale(Path f){
+    var known= project(f).knownMains();
+    registry.update(f,e->e.withMains(e.mains().stream().filter(known::contains).toList()));
+  }
+  private void check(Path f){
+    scan(f);
+    output(f,project(f).problem().map(s->s.stripTrailing()+"\n").orElse("--- ok: no problem found ---\n"));
+  }
   private void clean(Path f){
     if (refused(f,"clear cache")){ return; }
     Fs.rmTree(f.resolve(Facts.outDir));
@@ -263,14 +288,16 @@ public final class Manager{
     scan(f);
   }
   private void link(Path f, List<String> words){
-    if (words.size() < 2 || !List.of("none","read","write").contains(words.get(1))){ tell("The manager was asked to link\n"+f+"\nwith \""+String.join(" ",words)+"\", but a link is a project name, then \"none\", \"read\" or \"write\", then the type names."); return; }
+    var e= registry.of(f).orElseThrow();
+    if (words.size() < 2 || !List.of("read","write").contains(words.get(1))){ tell("The manager was asked to link \""+e.alias()+"\" with \""+String.join(" ",words)+"\", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link."); return; }
+    if (e.kind() != Kind.code){ output(f,"--- link refused: this project is "+e.kind().text+", and only a code project links to data ---\n"); return; }
     var alias= words.get(0);
     var names= words.subList(2,words.size());
-    edit(f,e->e.withLinks(with(e.reads(),alias,!words.get(1).equals("none"),names),with(e.edits(),alias,words.get(1).equals("write"),names)));
+    edit(f,o->words.get(1).equals("write") ? o.withLinks(o.reads(),with(o.edits(),alias,names)) : o.withLinks(with(o.reads(),alias,names),o.edits()));
   }
-  private static Map<String,List<String>> with(Map<String,List<String>> map, String key, boolean present, List<String> names){
+  private static Map<String,List<String>> with(Map<String,List<String>> map, String key, List<String> names){
     var out= new LinkedHashMap<>(map);
-    if (present){ out.put(key,names); } else { out.remove(key); }
+    if (names.isEmpty()){ out.remove(key); } else { out.put(key,names); }
     return out;
   }
   private static List<String> words(String text){ return text.isBlank() ? List.of() : List.of(text.strip().split(" +")); }
@@ -289,10 +316,7 @@ public final class Manager{
     registry.all().forEach(e->scan(e.path()));
     done.run();
   }
-  private void connectNow(Path eclipseExe){
-    try{ tell(eclipse.connect(eclipseExe,dir)); }
-    catch(UserError e){ tell(e.getMessage()); }
-  }
+  private void connectNow(Path chosen){ tell(eclipse.connect(chosen,dir)); }
   private void drop(Path f){
     var l= live.remove(f);
     if (l.child != null){ l.terminated= true; l.child.kill(); }
@@ -323,6 +347,7 @@ public final class Manager{
     l.facts= fresh.outOfDate(error);
   }
   private void rotate(){
+    if (!view.visible()){ return; }
     selected.ifPresent(this::scan);
     var all= registry.all();
     if (all.isEmpty()){ return; }
@@ -372,6 +397,7 @@ public final class Manager{
     return folder;
   }
   static Path path(String given){
+    if (given.isBlank()){ throw Violation.badLaunchArg(given,false); }
     try{ return Path.of(given).toAbsolutePath().normalize(); }
     catch(InvalidPathException e){ throw Violation.badLaunchArg(given,false); }
   }

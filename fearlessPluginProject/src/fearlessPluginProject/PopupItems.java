@@ -35,10 +35,10 @@ public final class PopupItems extends CompoundContributionItem{
     res.add(action("Documentation", ()->docs(p.folder())));
     res.add(new Separator());
     var kinds= p.kind().equals("idle") ? List.of(List.of("Become data", "data:readOnly"), List.of("Become editable data", "data:readWrite"), List.of("Become code", "code")) : List.of(List.of("Back to idle", "idle"));
-    kinds.forEach(k->res.add(action(k.get(0), ()->ManagerLink.send("kind", p.folder(), k.get(1)))));
+    kinds.forEach(k->res.add(action(k.get(0), ()->ManagerLink.send("kind", alias, k.get(1)))));
     res.add(new Separator());
-    res.add(action("Show in manager", ()->ManagerLink.send("select", p.folder())));
-    res.add(action("Forget project", ()->ManagerLink.send("forget", p.folder())));
+    res.add(action("Show in manager", ()->ManagerLink.send("select", alias)));
+    res.add(action("Forget project", ()->ManagerLink.send("forget", alias)));
     return res.toArray(IContributionItem[]::new);
   }
   private static IContributionItem action(String text, Runnable run){

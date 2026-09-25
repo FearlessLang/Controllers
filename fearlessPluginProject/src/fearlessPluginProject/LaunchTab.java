@@ -15,17 +15,17 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
-/// The Run Configurations page of a Fearless configuration: the project folder and the
+/// The Run Configurations page of a Fearless configuration: the project name and the
 /// main, or no main for the mains selected in the manager.
 public final class LaunchTab extends AbstractLaunchConfigurationTabGroup{
   @Override public void createTabs(ILaunchConfigurationDialog dialog, String mode){ setTabs(new ILaunchConfigurationTab[]{new Main(), new CommonTab()}); }
   private static final class Main extends AbstractLaunchConfigurationTab{
-    private Text folder;
+    private Text project;
     private Text main;
     @Override public void createControl(Composite parent){
       var root= new Composite(parent, SWT.NONE);
       root.setLayout(new GridLayout(2, false));
-      folder= field(root, "Project folder:");
+      project= field(root, "Project:");
       main= field(root, "Main (none: the mains selected in the manager):");
       setControl(root);
     }
@@ -39,13 +39,13 @@ public final class LaunchTab extends AbstractLaunchConfigurationTabGroup{
     @Override public void setDefaults(ILaunchConfigurationWorkingCopy configuration){}
     @Override public void initializeFrom(ILaunchConfiguration configuration){
       try{
-        folder.setText(configuration.getAttribute(Launcher.folderAttr, ""));
+        project.setText(configuration.getAttribute(Launcher.projectAttr, ""));
         main.setText(configuration.getAttribute(Launcher.mainAttr, ""));
       }
       catch(CoreException e){ throw new IllegalStateException(e); }
     }
     @Override public void performApply(ILaunchConfigurationWorkingCopy configuration){
-      configuration.setAttribute(Launcher.folderAttr, folder.getText());
+      configuration.setAttribute(Launcher.projectAttr, project.getText());
       configuration.setAttribute(Launcher.mainAttr, main.getText());
     }
     @Override public String getName(){ return "Fearless"; }

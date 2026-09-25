@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -70,6 +71,7 @@ final class ManagerTest{
     @Override public void note(String text){ notes.add(text); }
     final List<Path> cleared= new ArrayList<>();
     @Override public void clear(Path folder){ cleared.add(folder); }
+    @Override public boolean visible(){ return true; }
   }
   private final List<RuntimeException> failures= Collections.synchronizedList(new ArrayList<>());
   private final View view= new View();
@@ -133,18 +135,27 @@ final class ManagerTest{
     assertEquals(Optional.of(hello),m.state().selected());
     assertEquals(1,view.shown);
   }
-  @Test void aFileSelectsTheFolderItIsIn(@TempDir Path dir){
+  @Test void aFileRegistersTheFolderItIsInAndRegisteringAgainSelects(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
     Fs.writeUtf8(hello.resolve("hello.fearless"),"");
-    send(m,"select",hello.resolve("hello.fearless").toString());
+    send(m,"register",hello.resolve("hello.fearless").toString());
     assertEquals(List.of("hello "+hello),listed(dir));
+    send(m,other.toString());
+    assertEquals(Optional.of(other),m.state().selected());
+    send(m,hello.toString());
+    assertEquals(List.of("hello "+hello,"other "+other),listed(dir));
+    assertEquals(Optional.of(hello),m.state().selected());
+    send(m,"select","other");
+    assertEquals(Optional.of(other),m.state().selected());
+    assertEquals(List.of(),view.notes);
   }
   @Test void aRunMessageCompilesThenRunsTheOnlyMain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"run",hello.toString());
+    send(m,"run","hello");
     idle(m);
     same("""
       --- compiling hello ---
@@ -163,10 +174,10 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"compile",hello.toString());
+    send(m,"compile","hello");
     idle(m);
     var once= eclipse(dir,"hello","console.txt");
-    send(m,"compile",hello.toString());
+    send(m,"compile","hello");
     idle(m);
     assertEquals(once,eclipse(dir,"hello","console.txt"));
     assertEquals(Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear")),project(m,hello).mains());
@@ -175,15 +186,15 @@ final class ManagerTest{
     var m= manager(dir,"hello.Slow");
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"run",hello.toString());
+    send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     assertEquals(Optional.of("hello.Slow"),project(m,hello).running());
     same("[###]\"running\": \"hello.Slow\"[###]",eclipse(dir,"state.info"));
-    send(m,"run",hello.toString());
-    send(m,"compile",hello.toString());
-    send(m,"clean",hello.toString());
-    send(m,"kind",hello.toString(),"idle");
-    send(m,"terminate",hello.toString());
+    send(m,"run","hello");
+    send(m,"compile","hello");
+    send(m,"clean","hello");
+    send(m,"kind","hello","idle");
+    send(m,"terminate","hello");
     idle(m);
     same("""
       --- compiling hello ---
@@ -204,10 +215,10 @@ final class ManagerTest{
     var m= manager(dir,"hello.Slow","hello.Two");
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"mains",hello.toString(),"hello.Two hello.Slow");
-    send(m,"run",hello.toString());
+    send(m,"mains","hello","hello.Two hello.Slow");
+    send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
-    send(m,"terminate",hello.toString());
+    send(m,"terminate","hello");
     idle(m);
     assertFalse(eclipse(dir,"hello","console.txt").contains("hello.Two"));
   }
@@ -215,12 +226,12 @@ final class ManagerTest{
     var m= manager(dir,"hello.One","hello.Two","hello.Three");
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"run",hello.toString());
+    send(m,"run","hello");
     idle(m);
     assertTrue(eclipse(dir,"hello","console.txt").endsWith("--- nothing to run: none of [hello.One, hello.Two, hello.Three] is selected ---\n"));
-    send(m,"mains",hello.toString(),"hello.Three hello.One");
-    send(m,"clear",hello.toString());
-    send(m,"run",hello.toString());
+    send(m,"mains","hello","hello.Three hello.One");
+    send(m,"clear","hello");
+    send(m,"run","hello");
     idle(m);
     same("""
       --- running hello.One ---
@@ -237,11 +248,11 @@ final class ManagerTest{
     var m= manager(dir,"hello.One","hello.Two");
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"compile",hello.toString());
+    send(m,"compile","hello");
     idle(m);
-    send(m,"clear",hello.toString());
-    send(m,"run",hello.toString(),"hello.Nope");
-    send(m,"run",hello.toString(),"hello.Two");
+    send(m,"clear","hello");
+    send(m,"run","hello","hello.Nope");
+    send(m,"run","hello","hello.Two");
     idle(m);
     same("""
       --- nothing to run: hello.Nope is not one of the mains [hello.One, hello.Two] ---
@@ -254,39 +265,42 @@ final class ManagerTest{
     var m= manager(dir,"hello.Slow");
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"run",hello.toString());
+    send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
-    send(m,"forget",hello.toString());
+    send(m,"forget","hello");
     assertEquals(List.of(),listed(dir));
     assertEquals(Optional.empty(),m.state().selected());
-    send(m,"run",hello.toString());
-    assertTrue(view.notes.getLast().startsWith("Fearless was asked to \"run\" a folder it does not keep track of:"));
+    send(m,"run","hello");
+    assertEquals("The manager was asked to \"run\" the project \"hello\", but no project is named \"hello\".\nNo project is registered.",view.notes.getLast());
     assertTrue(Files.isRegularFile(hello.resolve("hello.fearless")));
   }
-  @Test void onlySelectRegistersAFolder(@TempDir Path dir){
+  @Test void aRequestNamesARegisteredProject(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");
+    send(m,hello.toString());
+    send(m,"compile","other");
     send(m,"compile",hello.toString());
-    assertEquals(List.of(),listed(dir));
-    same("""
-      Fearless was asked to "compile" a folder it does not keep track of:
-      [###]hello
-      Only "select" adds a folder to the projects Fearless keeps track of; every
-      other request applies to a folder Fearless already keeps track of.
-      """,view.notes.getFirst());
-    assertEquals(view.notes.getFirst().stripTrailing()+"\n",eclipse(dir,"console.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
+    assertEquals("""
+      The manager was asked to "compile" the project "other", but no project is named "other".
+      The projects are:
+        hello""",view.notes.getFirst());
+    assertTrue(view.notes.get(1).startsWith("The manager was asked to \"compile\" the project \""+hello+"\", but no project is named"));
+    assertEquals(view.notes.getFirst()+"\n"+view.notes.get(1)+"\n",eclipse(dir,"console.txt"));
   }
   @Test void aRequestTheManagerDoesNotKnowIsRefused(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"build",hello.toString());
-    send(m,"kind",hello.toString(),"library");
-    send(m,"link",hello.toString(),"data sometimes");
-    assertEquals(3,view.notes.size());
-    assertTrue(view.notes.get(0).startsWith("The manager was asked to \"build\" a project, but \"build\" is not a request it knows"));
+    send(m,"build","hello");
+    send(m,"kind","hello","library");
+    send(m,"link","hello","data sometimes");
+    send(m,"a","b","c","d");
+    assertEquals(4,view.notes.size());
+    assertTrue(view.notes.get(0).startsWith("The manager was asked to \"build\", but that is not a request it knows: the requests are \"register\", \"select\""));
     assertTrue(view.notes.get(1).endsWith("to \"library\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."));
-    assertTrue(view.notes.get(2).endsWith("with \"data sometimes\", but a link is a project name, then \"none\", \"read\" or \"write\", then the type names."));
+    assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.",view.notes.get(2));
+    assertTrue(view.notes.get(3).startsWith("The manager was sent a message of 4 lines"));
   }
   @Test void aFolderInsideARegisteredOneIsRefused(@TempDir Path dir){
     var m= manager(dir);
@@ -301,21 +315,25 @@ final class ManagerTest{
     var data= data(dir);
     send(m,data.toString());
     assertEquals(Kind.idle,project(m,data).kind());
-    send(m,"kind",data.toString(),"data:readOnly");
-    send(m,"kind",data.toString(),"code");
+    send(m,"kind","data","data:readOnly");
+    send(m,"kind","data","code");
     assertEquals(Kind.dataReadOnly,project(m,data).kind());
     assertEquals("--- kind change refused: a project of kind data:readOnly goes back to idle before becoming code ---\n",eclipse(dir,"data","console.txt"));
-    send(m,"kind",data.toString(),"idle");
+    send(m,"kind","data","idle");
     assertEquals(Kind.idle,project(m,data).kind());
   }
-  @Test void compilingAProjectThatIsNotCodeChecksIt(@TempDir Path dir){
+  @Test void onlyACodeProjectCompilesAndRunsAndAnyProjectIsChecked(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m,data.toString());
-    send(m,"compile",data.toString());
+    send(m,"compile","data");
+    send(m,"run","data");
+    send(m,"check","data");
     Fs.writeUtf8(data.resolve("Bad Name.txt"),"");
-    send(m,"compile",data.toString());
+    send(m,"check","data");
     same("""
+      --- compile refused: this project is idle, and only a code project compiles ---
+      --- run refused: this project is idle, and only a code project runs ---
       --- ok: no problem found ---
       [###]Bad Name.txt[###]
       """,eclipse(dir,"data","console.txt"));
@@ -327,19 +345,26 @@ final class ManagerTest{
     var data= data(dir);
     send(m,hello.toString());
     send(m,data.toString());
-    send(m,"kind",data.toString(),"data:readWrite");
-    send(m,"link",hello.toString(),"data write Data Pub");
+    send(m,"kind","data","data:readWrite");
+    send(m,"link","hello","data write Data");
+    send(m,"link","hello","data read Pub");
     var entry= project(m,hello).entry();
-    assertEquals(List.of(Map.of("data",List.of("Data","Pub")),Map.of("data",List.of("Data","Pub"))),List.of(entry.reads(),entry.edits()));
+    assertEquals(List.of(Map.of("data",List.of("Pub")),Map.of("data",List.of("Data"))),List.of(entry.reads(),entry.edits()));
     assertEquals(Optional.empty(),project(m,hello).problem());
-    send(m,"link",hello.toString(),"data read lower");
+    send(m,"link","hello","data read lower");
     same("[###]\"lower\" in \"reads\".\"data\" is not a Fearless type name[###]",view.notes.getLast());
+    send(m,"link","hello","data read Data");
+    same("[###]\"Data\" is in both \"reads\".\"data\" and \"edits\".\"data\"[###]",view.notes.getLast());
     assertEquals(entry,project(m,hello).entry());
-    send(m,"kind",data.toString(),"idle");
+    send(m,"link","data","hello read Hello");
+    assertEquals("--- link refused: this project is data:readWrite, and only a code project links to data ---\n",eclipse(dir,"data","console.txt"));
+    send(m,"kind","data","idle");
     assertEquals(Project.State.codeInvalid,project(m,hello).state());
-    send(m,"compile",hello.toString());
+    send(m,"compile","hello");
     assertEquals("\"reads\" refers to \"data\", but the kind of \"data\" is \"idle\"; \"reads\" accepts only \"data:readOnly\" or \"data:readWrite\".\n",eclipse(dir,"hello","console.txt"));
-    send(m,"link",hello.toString(),"data none");
+    send(m,"link","hello","data read");
+    send(m,"link","hello","data write");
+    assertEquals(List.of(Map.of(),Map.of()),List.of(project(m,hello).entry().reads(),project(m,hello).entry().edits()));
     assertEquals(Project.State.codeNoCache,project(m,hello).state());
   }
   @Test void theMetadataIsCommittedWholeOrNotAtAll(@TempDir Path dir){
@@ -364,15 +389,14 @@ final class ManagerTest{
     var data= data(dir);
     send(m,data.toString());
     Fs.rmTree(data);
-    send(m,"select",data.toString());
+    send(m,"select","data");
     assertEquals(Optional.of(data),m.state().selected());
     assertEquals(List.of(),view.notes);
-    send(m,"compile",data.toString());
+    send(m,"check","data");
     assertTrue(eclipse(dir,"data","console.txt").startsWith("The folder of this project does not exist:"));
-    send(m,"forget",data.toString());
+    send(m,"forget","data");
     assertEquals(List.of(),listed(dir));
-    m.ask("select",data,"");
-    m.settle();
+    send(m,"register",data.toString());
     assertTrue(view.notes.getLast().startsWith("Nothing exists at the given path."));
     assertEquals(List.of(),listed(dir));
   }
@@ -380,29 +404,58 @@ final class ManagerTest{
     var m= manager(dir);
     var data= data(dir);
     send(m,data.toString());
-    send(m,"compile",data.toString());
-    m.commit("{\"other\": {\"path\": \""+data.toString().replace('\\','/')+"\"}}",()->{});
+    send(m,"compile","data");
+    m.commit("{\"other\": {\"path\": \""+data.toString().replace('\\','/')+"\", \"kind\": \"idle\"}}",()->{});
     m.settle();
-    assertEquals("--- ok: no problem found ---\n",eclipse(dir,"other","console.txt"));
+    assertEquals("--- compile refused: this project is idle, and only a code project compiles ---\n",eclipse(dir,"other","console.txt"));
   }
-  @Test void aRequestNamingNoFolderIsRefused(@TempDir Path dir){
+  @Test void aRequestNamingNoProjectOrFolderIsRefused(@TempDir Path dir){
     var m= manager(dir);
     send(m,"run","");
     send(m,"  ");
-    send(m,"select","");
+    send(m,"register","");
     assertEquals(0,view.shown);
-    assertEquals(3,view.notes.size());
-    same("""
-      The manager was asked to "run" a project, but the message names no folder: a message is empty, to show the window, or a path, or a request: a verb, then a folder, then for some verbs a third line.
-      """,view.notes.getFirst()+"\n");
-    assertTrue(view.notes.get(1).startsWith("The manager was asked to \"select\" a project, but the message names no folder"));
-    assertTrue(view.notes.get(2).startsWith("The manager was asked to \"select\" a project, but the message names no folder"));
+    assertEquals(List.of(
+      "The manager was asked to \"run\" the project \"\", but no project is named \"\".\nNo project is registered.",
+      "The manager was asked to register a folder, but the message names no folder.",
+      "The manager was asked to register a folder, but the message names no folder."),view.notes);
+  }
+  @Test void aMissingOrUnknownKindMakesTheProjectIdleAndClearsItsCache(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,hello.toString());
+    send(m,"compile","hello");
+    idle(m);
+    var info= dir.resolve("manager").resolve("projects.info");
+    Fs.writeUtf8(info,Fs.readUtf8(info).replace("\"kind\": \"code\"","\"kind\": \"library\""));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(Kind.idle,project(again,hello).kind());
+    assertFalse(Files.exists(hello.resolve(Facts.outDir)));
+    assertEquals("In projects.info the \"kind\" of \"hello\" was missing or not one of the kinds: \"hello\" is now idle, and its compiled cache is deleted.",view.notes.getLast());
+    same("[###]\"kind\": \"idle\"[###]",Fs.readUtf8(info));
+  }
+  @Test void compilingForgetsSelectedMainsThatAreGoneAndRunningRefusesThem(@TempDir Path dir){
+    var mains= new ArrayList<>(List.of("hello.One","hello.Two"));
+    var m= manager(dir,_->Optional.of(mains.stream().collect(Collectors.toMap(k->k,_->"_hello/_rank_app.fear"))));
+    var hello= folder(dir,"hello");
+    send(m,hello.toString());
+    send(m,"mains","hello","hello.One hello.Old hello.Two");
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("hello.One","hello.Two"),project(m,hello).entry().mains());
+    send(m,"mains","hello","hello.Old hello.Two");
+    send(m,"clear","hello");
+    send(m,"run","hello");
+    idle(m);
+    assertEquals("--- nothing to run: the selected [hello.Old] are not mains of this project; they are removed from the selected mains ---\n",eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of("hello.Two"),project(m,hello).entry().mains());
   }
   @Test void mainsThatCanNotBeReadMakeTheProjectInvalidAndOutOfDate(@TempDir Path dir){
     var m= manager(dir,_->{ throw Report.launchPathNotFound(dir.resolve("gone")); });
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"compile",hello.toString());
+    send(m,"compile","hello");
     idle(m);
     var p= project(m,hello);
     assertEquals(Project.State.codeInvalid,p.state());
@@ -413,7 +466,7 @@ final class ManagerTest{
     var m= manager(dir,_->Optional.empty());
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"compile",hello.toString());
+    send(m,"compile","hello");
     idle(m);
     var p= project(m,hello);
     assertEquals(Project.State.codeOutdated,p.state());
@@ -429,7 +482,7 @@ final class ManagerTest{
     });
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"compile",hello.toString());
+    send(m,"compile","hello");
     idle(m);
     var p= project(m,hello);
     assertEquals(2,reads.size());
@@ -440,7 +493,7 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= folder(dir,"hello");
     send(m,hello.toString());
-    send(m,"run",hello.toString());
+    send(m,"run","hello");
     idle(m);
     var again= manager(dir,"hello.Hello");
     again.settle();
@@ -453,7 +506,7 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= folder(folder(dir,"caf\u00e9 \ud83d\ude00"),"hello");
     send(m,hello.toString());
-    send(m,"run",hello.toString());
+    send(m,"run","hello");
     idle(m);
     assertEquals(List.of("hello "+hello),listed(dir));
     same("[###]caf\\u(00E9) \\u(1F600)[###]",eclipse(dir,"state.info"));
