@@ -49,7 +49,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   public record Action(String text, String verb, boolean enabled){}
   public Action action(){
     if (busy()){ return new Action("Terminate","terminate",true); }
-    if (kind() != Kind.code){ return new Action("Check","compile",true); }
+    if (kind() != Kind.code){ return new Action("Check","check",true); }
     if (needsCompiling()){ return new Action("Compile","compile",true); }
     return new Action(knownMains().size() > 1 ? "Run selected" : "Run","run",!selectedMains().isEmpty());
   }

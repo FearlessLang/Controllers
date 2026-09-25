@@ -6,7 +6,6 @@ import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,7 @@ public final class Tiles extends JPanel{
   private final Timer spinner= new Timer(80,_->list.repaint());
   private State state= new State(List.of(),Optional.empty());
   private Map<Project,Image> images= Map.of();
-  public Tiles(Consumer<Path> onSelect){
+  public Tiles(Consumer<String> onSelect){
     super(new BorderLayout());
     list.setName("tiles");
     list.setLayoutOrientation(JList.HORIZONTAL_WRAP);
@@ -56,7 +55,7 @@ public final class Tiles extends JPanel{
     list.addMouseListener(new MouseAdapter(){
       @Override public void mouseClicked(MouseEvent e){
         var i= list.locationToIndex(e.getPoint());
-        if (i >= 0 && list.getCellBounds(i,i).contains(e.getPoint())){ onSelect.accept(list.getModel().getElementAt(i).folder()); }
+        if (i >= 0 && list.getCellBounds(i,i).contains(e.getPoint())){ onSelect.accept(list.getModel().getElementAt(i).alias()); }
       }
     });
     sort.setName("sort");

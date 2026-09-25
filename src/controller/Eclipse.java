@@ -7,9 +7,11 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import controller.Info.Obj;
 import controller.Info.Obj.Field;
@@ -17,7 +19,6 @@ import controller.Info.Str;
 import fileSupport.JUnitReport;
 import tools.Fs;
 import tools.JavacTool;
-import userMessages.Report;
 import userMessages.Violation;
 
 /// The manager's side of the Eclipse plugin (fearlessPluginProject): the files of dir that
@@ -29,9 +30,9 @@ public record Eclipse(Path dir){
   public static String state(List<Project> projects){ return Info.print(obj(projects.stream().map(p->new Field(p.alias(),Info.noSpan,project(p))).toList())); }
   private static Obj project(Project p){
     var m= at.matcher(p.failure());
-    var problem= m.find() ? List.of(field("file",str(m.group(1))),field("line",str(m.group(2))),field("message",str(p.failure()))) : List.<Field>of();
+    var problem= m.find() ? List.of(field("file",str(m.group(1))),field("line",str(m.group(2))),field("message",str(TaggedText.of(p.failure())))) : List.<Field>of();
     return obj(List.of(
-      field("folder",str(p.folder().toString())),
+      field("folder",str(TaggedText.of(p.folder().toString()))),
       field("kind",str(p.kind().text)),
       field("running",str(p.running().orElse(""))),
       field("runs",str(""+p.runs())),
@@ -53,21 +54,21 @@ public record Eclipse(Path dir){
     Fs.ensureDir(file.getParent());
     Fs.ofV(()->Files.writeString(file,text,CREATE,APPEND));
   }
+  static List<Path> installs(Path dir){
+    var bases= Stream.concat(Stream.of(dir),Fs.of(()->{ try(var s= Files.list(dir)){ return s.filter(Files::isDirectory).sorted(Comparator.comparing(p->p.getFileName().toString())).toList(); } }).stream());
+    return bases.flatMap(b->Stream.of(b,b.resolve("eclipse"),b.resolve("Contents").resolve("Eclipse"))).filter(d->Files.isRegularFile(d.resolve(".eclipseproduct"))).distinct().toList();
+  }
   public String connect(Path chosen, Path managerDir){
-    var eclipse= chosen.getParent();
-    if (!Files.isRegularFile(eclipse.resolve(".eclipseproduct"))){ throw Report.notAnEclipseInstall(eclipse); }
+    var dir= Files.isDirectory(chosen) ? chosen : chosen.getParent();
+    var found= installs(dir);
+    if (found.isEmpty()){ return Messages.noEclipse(dir); }
+    if (found.size() > 1){ return Messages.severalEclipses(dir,found); }
+    var eclipse= found.getFirst();
     var plugin= JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("eclipsePlugin");
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     Fs.copyFresh(plugin,fearless.resolve("plugins"));
-    Fs.writeUtf8(fearless.resolve("manager.info"),Info.print(obj(List.of(field("manager",str(managerDir.toString())),field("baseCache",str(Deployed.stdLib("baseCache").toString()))))));
-    return """
-Eclipse is now connected:
-%s
-
-Restart Eclipse: every project this manager knows appears in its Fearless
-perspective. File > New makes a project, Project > Build compiles it, the
-Run button runs it, and the Terminate button of its console stops it.
-""".formatted(eclipse);
+    Fs.writeUtf8(fearless.resolve("manager.info"),Info.print(obj(List.of(field("manager",str(TaggedText.of(managerDir.toString()))),field("baseCache",str(TaggedText.of(Deployed.stdLib("baseCache").toString())))))));
+    return Messages.eclipseConnected(eclipse);
   }
   private static void replace(Path file, String text){
     var tmp= file.resolveSibling(file.getFileName()+".tmp");

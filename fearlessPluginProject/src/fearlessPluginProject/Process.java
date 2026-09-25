@@ -1,7 +1,6 @@
 package fearlessPluginProject;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,20 +28,20 @@ public final class Process extends PlatformObject implements IProcess{
   static final String type= "fearless";
   static final String aliasAttr= "fearlessPluginProject.alias";
   private final ILaunch launch;
-  private final Path folder;
+  private final String alias;
   private final String label;
   private final Map<String,String> attributes= new HashMap<>();
   private final Stream out= new Stream();
   private int exit;
   private boolean terminated;
-  private Process(ILaunch launch, Path folder, String label){
+  private Process(ILaunch launch, String alias, String label){
     this.launch= launch;
-    this.folder= folder;
+    this.alias= alias;
     this.label= label;
   }
-  static Process start(String alias, Path folder, String main){
+  static Process start(String alias, String main){
     var launch= new Launch(null, ILaunchManager.RUN_MODE, null);
-    var res= new Process(launch, folder, alias+" - "+main);
+    var res= new Process(launch, alias, alias+" - "+main);
     res.setAttribute(ATTR_PROCESS_TYPE, type);
     res.setAttribute(aliasAttr, alias);
     launch.addProcess(res);
@@ -59,7 +58,7 @@ public final class Process extends PlatformObject implements IProcess{
   private void fire(int kind){ DebugPlugin.getDefault().fireDebugEventSet(new DebugEvent[]{new DebugEvent(this, kind)}); }
   @Override public boolean canTerminate(){ return !terminated; }
   @Override public boolean isTerminated(){ return terminated; }
-  @Override public void terminate(){ ManagerLink.send("terminate", folder); }
+  @Override public void terminate(){ ManagerLink.send("terminate", alias); }
   @Override public String getLabel(){ return label; }
   @Override public ILaunch getLaunch(){ return launch; }
   @Override public IStreamsProxy getStreamsProxy(){ return out; }

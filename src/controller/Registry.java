@@ -3,7 +3,6 @@ package controller;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -26,7 +25,6 @@ import controller.Info.Obj.Field;
 import core.TName;
 import fileSupport.StringFiles;
 import userMessages.UserError;
-import userMessages.Violation;
 import utils.Join;
 import utils.OneOr;
 import utils.Push;
@@ -53,15 +51,34 @@ public final class Registry{
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
   private static final String typeShape= "a Fearless type name: after any leading underscores, it starts with an uppercase letter";
   private final Path dir;
-  private List<Entry> all;
+  private List<Entry> all= List.of();
+  public final List<Entry> reset;
   public Registry(Path dir){
     this.dir= dir;
-    all= Files.exists(infoFile()) ? withTimes(entries(read(infoFile()))) : List.of();
+    if (!Files.exists(infoFile())){ reset= List.of(); return; }
+    var text= read(infoFile());
+    var root= Info.parse(text,infoFile().toUri());
+    var bad= badKinds(root);
+    all= withTimes(fromInfo(text,bad.isEmpty() ? root : idle((Obj)root,bad)));
+    reset= all.stream().filter(e->bad.contains(e.alias())).toList();
+    if (!reset.isEmpty()){ save(all); }
+  }
+  private static List<String> badKinds(Info root){
+    if (!(root instanceof Obj top)){ return List.of(); }
+    return top.fields().stream().filter(f->f.value() instanceof Obj o && o.field("kind").map(Field::value).filter(v->v instanceof Info.Str s && Kind.of(s.value()).isPresent()).isEmpty()).map(Field::key).toList();
+  }
+  private static Obj idle(Obj top, List<String> bad){
+    return new Obj(top.fields().stream().map(f->bad.contains(f.key()) ? new Field(f.key(),f.keySpan(),idle((Obj)f.value())) : f).toList(),top.span());
+  }
+  private static Obj idle(Obj project){
+    var kind= new Field("kind",Info.noSpan,new Info.Str(Kind.idle.text,Info.noSpan));
+    return new Obj(Push.of(project.fields().stream().filter(f->!f.key().equals("kind")).toList(),kind),project.span());
   }
   private Path infoFile(){ return dir.resolve("projects.info"); }
   private Path activityFile(){ return dir.resolve("activity.txt"); }
   public List<Entry> all(){ return all; }
   public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all.stream().filter(e->e.path().equals(folder))); }
+  public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all.stream().filter(e->e.alias().equals(alias))); }
   public Optional<Path> overlapping(Path folder){
     return all.stream().map(Entry::path).filter(o->!o.equals(folder) && (folder.startsWith(o) || o.startsWith(folder))).findFirst();
   }
@@ -105,20 +122,20 @@ public final class Registry{
     var text= text(entries);
     this.entries(text);
     writeText(infoFile(),text);
-    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+e.path().toUri()),"","\n","\n",""));
+    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+TaggedText.of(e.path().toString())),"","\n","\n",""));
     all= entries;
   }
   private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
   private List<Entry> withTimes(List<Entry> entries){
     if (!Files.exists(activityFile())){ return entries; }
-    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->Path.of(URI.create(p[2])),p->p));
+    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->Path.of(TaggedText.read(p[2],Messages::infoError)),p->p));
     return entries.stream().map(e->Optional.ofNullable(times.get(e.path())).map(t->e.withTimes(Long.parseLong(t[0]),Long.parseLong(t[1]))).orElse(e)).toList();
   }
   private void writeText(Path file, String text){
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     StringFiles.writeNew(tmp,text,UserError.onFileError());
     try{ Files.move(tmp,file,ATOMIC_MOVE); }
-    catch(IOException e){ throw Violation.couldNotSaveRegisteredFolders(dir,e); }
+    catch(IOException e){ throw Messages.couldNotSaveRegisteredFolders(dir,e); }
   }
   public static List<Entry> fromInfo(String source, Info root){
     if (!(root instanceof Obj top)){
@@ -148,11 +165,20 @@ public final class Registry{
       if (!keys.contains(f.key())){ throw Info.err(source,f.keySpan(),"Unknown project attribute \""+f.key()+"\": the attributes of a project are "+Join.of(keys.stream().map(k->"\""+k+"\""),"",", ","")+"."); }
     }
     var mains= names(source,obj,"mains","\"mains\"",Registry::isMainName,mainShape);
-    return new Entry(field.key(),pathOf(source,field.key(),obj),kindOf(source,obj),mains,aliasMap(source,obj,"reads"),aliasMap(source,obj,"edits"),-1,-1);
+    var reads= aliasMap(source,obj,"reads");
+    var edits= aliasMap(source,obj,"edits");
+    for (var link: edits.entrySet()){
+      var both= link.getValue().stream().filter(reads.getOrDefault(link.getKey(),List.of())::contains).findFirst();
+      if (both.isEmpty()){ continue; }
+      var names= (Info.Lst)((Obj)obj.field("edits").orElseThrow().value()).field(link.getKey()).orElseThrow().value();
+      var span= OneOr.of("type name "+both.get(),names.items().stream().filter(i->((Info.Str)i).value().equals(both.get()))).span();
+      throw Info.err(source,span,"\""+both.get()+"\" is in both \"reads\".\""+link.getKey()+"\" and \"edits\".\""+link.getKey()+"\": a type name in \"edits\" also reads, so it is not repeated in \"reads\"; a type name in \"reads\" only reads.");
+    }
+    return new Entry(field.key(),pathOf(source,field.key(),obj),kindOf(source,field.key(),obj),mains,reads,edits,-1,-1);
   }
   private static Path pathOf(String source, String alias, Obj obj){
     var field= obj.field("path").orElseThrow(()->Info.err(source,obj.span(),"Project \""+alias+"\" is missing its \"path\": the absolute path of the project folder."));
-    var s= str(source,field.value(),"\"path\"");
+    var s= TaggedText.read(str(source,field.value(),"\"path\""),m->Info.err(source,field.value().span(),m));
     if (s.isEmpty()){ throw Info.err(source,field.value().span(),"\"path\" cannot be empty: it is the absolute path of the project folder."); }
     Path path;
     try{ path= Path.of(s); }
@@ -160,11 +186,10 @@ public final class Registry{
     if (!path.isAbsolute()){ throw Info.err(source,field.value().span(),"\"path\" must be an absolute path, not \""+s+"\"."); }
     return path.normalize();
   }
-  private static Kind kindOf(String source, Obj obj){
-    var field= obj.field("kind");
-    if (field.isEmpty()){ return Kind.idle; }
-    var s= str(source,field.get().value(),"\"kind\"");
-    return Kind.of(s).orElseThrow(()->Info.err(source,field.get().value().span(),"\"kind\" must be one of "+kinds+", not \""+s+"\"."));
+  private static Kind kindOf(String source, String alias, Obj obj){
+    var field= obj.field("kind").orElseThrow(()->Info.err(source,obj.span(),"Project \""+alias+"\" is missing its \"kind\": one of "+kinds+"."));
+    var s= str(source,field.value(),"\"kind\"");
+    return Kind.of(s).orElseThrow(()->Info.err(source,field.value().span(),"\"kind\" must be one of "+kinds+", not \""+s+"\"."));
   }
   private static String str(String source, Info value, String label){
     if (!(value instanceof Info.Str s)){ throw Info.err(source,value.span(),label+" must be a string \"...\"."); }
@@ -191,7 +216,10 @@ public final class Registry{
     var out= new LinkedHashMap<String,List<String>>();
     for (var f: o.fields()){
       if (!Names.isName(f.key())){ throw Info.err(source,f.keySpan(),"\""+f.key()+"\" in \""+key+"\" is not a valid project name."); }
-      out.put(f.key(),names(source,o,f.key(),"\""+key+"\".\""+f.key()+"\"",TName::isTypeName,typeShape));
+      var label= "\""+key+"\".\""+f.key()+"\"";
+      var names= names(source,o,f.key(),label,TName::isTypeName,typeShape);
+      if (names.isEmpty()){ throw Info.err(source,f.value().span(),label+" names no type: a link names the one or more type names the code uses for \""+f.key()+"\"."); }
+      out.put(f.key(),names);
     }
     return Collections.unmodifiableMap(out);
   }
@@ -204,7 +232,7 @@ public final class Registry{
   }
   private static Info entryToInfo(Entry e){
     var fields= new ArrayList<Field>();
-    fields.add(new Field("path",Info.noSpan,new Info.Str(e.path().toString().replace('\\','/'),Info.noSpan)));
+    fields.add(new Field("path",Info.noSpan,new Info.Str(TaggedText.of(e.path().toString().replace('\\','/')),Info.noSpan)));
     fields.add(new Field("kind",Info.noSpan,new Info.Str(e.kind().text,Info.noSpan)));
     if (!e.mains().isEmpty()){ fields.add(new Field("mains",Info.noSpan,strList(e.mains()))); }
     if (!e.reads().isEmpty()){ fields.add(new Field("reads",Info.noSpan,aliasMap(e.reads()))); }

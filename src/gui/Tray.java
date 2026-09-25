@@ -9,8 +9,8 @@ import java.beans.PropertyChangeListener;
 import java.util.Arrays;
 
 import controller.Main;
+import controller.Messages;
 import tools.Fs;
-import userMessages.Violation;
 
 /// The icon is the way back to a closed window, so no tray support (some desktops), a
 /// failure while adding the icon, or the desktop later taking the icon away, stops the manager.
@@ -20,7 +20,7 @@ public final class Tray{
   private Tray(){}
   public static void install(Window window, Main main){
     if (Fs.isLinux()){ Sni.install(window::show,Icons.app()); return; }
-    if (!SystemTray.isSupported()){ throw Violation.noSystemTray(); }
+    if (!SystemTray.isSupported()){ throw Messages.noSystemTray(); }
     var show= new MenuItem("Show manager");
     show.addActionListener(_->window.show());
     var quit= new MenuItem("Quit manager");
@@ -34,8 +34,8 @@ public final class Tray{
     icon.addActionListener(_->window.show());
     var tray= SystemTray.getSystemTray();
     try{ tray.add(icon); }
-    catch(AWTException e){ throw Violation.couldNotAddTrayIcon(e); }
-    PropertyChangeListener gone= _->{ if (!SystemTray.isSupported() || !Arrays.asList(tray.getTrayIcons()).contains(icon)){ main.fail(Violation.trayIconRemoved()); } };
+    catch(AWTException e){ throw Messages.couldNotAddTrayIcon(e); }
+    PropertyChangeListener gone= _->{ if (!SystemTray.isSupported() || !Arrays.asList(tray.getTrayIcons()).contains(icon)){ main.fail(Messages.trayIconRemoved()); } };
     tray.addPropertyChangeListener("systemTray",gone);
     tray.addPropertyChangeListener("trayIcons",gone);
   }

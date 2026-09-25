@@ -1,5 +1,6 @@
 package controller;
 
+import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.file.Files;
@@ -35,7 +36,11 @@ Error 7 WellFormedness
   private static String problem(String failure){
     var o= (Info.Obj)Info.parse(Eclipse.state(List.of(project("a",Kind.code,Optional.empty(),"",0,"",failure))),Path.of("state.info").toUri());
     var p= (Info.Obj)((Info.Obj)o.field("a").orElseThrow().value()).field("problem").orElseThrow().value();
-    return String.join("|",p.fields().stream().map(f->f.key()+"="+((Info.Str)f.value()).value()).toList());
+    return String.join("|",p.fields().stream().map(f->f.key()+"="+message(f)).toList());
+  }
+  private static String message(Info.Obj.Field f){
+    var s= ((Info.Str)f.value()).value();
+    return f.key().equals("message") ? TaggedText.read(s,Messages::infoError) : s;
   }
   @Test void theStateHoldsEveryProjectByNameWithItsFolderKindRunsMainsAndProblem(){
     var hello= project("hello",Kind.code,Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear")),"hello.Hello",3,"hello.Hello","");
@@ -43,7 +48,7 @@ Error 7 WellFormedness
     assertEquals("""
       {
         "hello": {
-          "folder": "%s",
+          "folder": "Str:%s",
           "kind": "code",
           "running": "hello.Hello",
           "runs": "3",
@@ -55,7 +60,7 @@ Error 7 WellFormedness
           "problem": {}
         },
         "data": {
-          "folder": "%s",
+          "folder": "Str:%s",
           "kind": "data:readOnly",
           "running": "",
           "runs": "0",
@@ -79,6 +84,43 @@ Error 7 WellFormedness
   }
   @Test void aFailedCompileWithNoSourcePositionIsNoProblem(){
     assertEquals("",problem("The fearless project folder contains no *.fear files\n"));
+  }
+  private static Path eclipseAt(Path folder){
+    Fs.writeUtf8(folder.resolve(".eclipseproduct"),"name=Eclipse Platform\n");
+    Fs.writeUtf8(folder.resolve("eclipse.exe"),"");
+    return folder;
+  }
+  @Test void anEclipseIsFoundFromItsProgramItsFolderOrTheFolderItWasUnzippedInto(@TempDir Path dir){
+    var eclipse= eclipseAt(dir.resolve("eclipse-java-2025-12-R-win32-x86_64").resolve("eclipse"));
+    var unzipped= eclipse.getParent();
+    assertEquals(List.of(eclipse),Eclipse.installs(eclipse));
+    assertEquals(List.of(eclipse),Eclipse.installs(unzipped));
+    assertEquals(List.of(eclipse),Eclipse.installs(dir));
+    var mac= eclipseAt(dir.resolve("Eclipse.app").resolve("Contents").resolve("Eclipse"));
+    assertEquals(List.of(mac),Eclipse.installs(dir.resolve("Eclipse.app")));
+    assertEquals(List.of(mac,eclipse),Eclipse.installs(dir));
+    Fs.ensureDir(dir.resolve("none").resolve("inner"));
+    assertEquals(List.of(),Eclipse.installs(dir.resolve("none")));
+  }
+  @Test void connectingNamesWhatIsWrongWithTheChoice(@TempDir Path dir){
+    var eclipse= new Eclipse(dir.resolve("eclipse"));
+    Fs.ensureDir(dir.resolve("empty"));
+    same("""
+      Eclipse is not connected: no Eclipse installation, a folder holding the file ".eclipseproduct", is in
+        [###]empty
+      or in its folders "eclipse" or "Contents/Eclipse", or in those of a folder of it.
+
+      Select the Eclipse program, the folder holding it, or the folder Eclipse was unzipped into.""",eclipse.connect(dir.resolve("empty"),dir));
+    eclipseAt(dir.resolve("two").resolve("a").resolve("eclipse"));
+    eclipseAt(dir.resolve("two").resolve("b").resolve("eclipse"));
+    same("""
+      Eclipse is not connected: more than one Eclipse installation is in
+        [###]two
+      They are:
+        [###]a[###]eclipse
+        [###]b[###]eclipse
+
+      Select the Eclipse program, or the folder holding it, of the one to connect.""",eclipse.connect(dir.resolve("two"),dir));
   }
   @Test void theStateIsReplacedWhole(@TempDir Path dir){
     var eclipse= new Eclipse(dir);

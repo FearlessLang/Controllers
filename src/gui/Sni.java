@@ -17,7 +17,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import userMessages.Violation;
+import controller.Messages;
 
 /// The manager's icon on a Linux desktop: a StatusNotifierItem served on the session bus.
 /// The desktop's watcher (org.kde.StatusNotifierWatcher) reads the item's properties and
@@ -53,7 +53,7 @@ final class Sni{
     this.icon= icon;
     var address= System.getenv("DBUS_SESSION_BUS_ADDRESS");
     var path= Pattern.compile("unix:path=([^,;]+)").matcher(address == null ? "" : address);
-    if (!path.find()){ throw Violation.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS is "+address)); }
+    if (!path.find()){ throw Messages.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS is "+address)); }
     try{
       channel= SocketChannel.open(StandardProtocolFamily.UNIX);
       channel.connect(UnixDomainSocketAddress.of(path.group(1)));
@@ -66,21 +66,21 @@ final class Sni{
       await(call(bus,"/org/freedesktop/DBus",bus,"AddMatch","s",new Writer().str("type='signal',sender='"+bus+"',member='NameOwnerChanged',arg0='"+watcher+"'")));
       register();
     }
-    catch(IOException e){ throw Violation.couldNotAddTrayIcon(e); }
+    catch(IOException e){ throw Messages.couldNotAddTrayIcon(e); }
   }
   private void register() throws IOException{
     await(call(watcher,"/StatusNotifierWatcher",watcher,"RegisterStatusNotifierItem","s",new Writer().str("/StatusNotifierItem")));
   }
   private void serve(){
     try{ for(;;){ handle(next()); } }
-    catch(IOException e){ throw Violation.trayIconRemoved(); }
+    catch(IOException e){ throw Messages.trayIconRemoved(); }
   }
   private Msg await(int serial) throws IOException{
     for(;;){
       var m= next();
       if (m.replySerial() != serial){ handle(m); continue; }
       if (m.type() == 2){ return m; }
-      if (m.error().equals(serviceUnknown)){ throw Violation.noSystemTray(); }
+      if (m.error().equals(serviceUnknown)){ throw Messages.noSystemTray(); }
       throw new IOException(m.error()+(m.signature().startsWith("s") ? ": "+m.body().str() : ""));
     }
   }
@@ -98,7 +98,7 @@ final class Sni{
   private void ownerChanged(Msg m) throws IOException{
     m.body().str();
     m.body().str();
-    if (m.body().str().isEmpty()){ throw Violation.trayIconRemoved(); }
+    if (m.body().str().isEmpty()){ throw Messages.trayIconRemoved(); }
     register();
   }
   private void get(Msg m) throws IOException{
