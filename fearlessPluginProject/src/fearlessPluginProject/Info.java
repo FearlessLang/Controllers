@@ -8,7 +8,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /// Reads the Info files the manager writes (controller.Info in Controllers): objects {...} of
-/// strings "..." (escapes \" \\ \n \\u(...)) and objects; an object becomes a Map in field order.
+/// strings and objects; an object becomes a Map in field order. A key is "..."; a string is written
+/// as Fearless writes one: "..." and `...` joined by +, | and ^, parentheses, .u and .u("...").
 /// Anything else is an error naming the file and the offset.
 final class Info{
   private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
@@ -29,14 +30,15 @@ final class Info{
   @SuppressWarnings("unchecked") static Map<String,Object> obj(Object value){ return (Map<String,Object>)value; }
   private Object value(){
     ws();
-    return text.charAt(i) == '"' ? str() : obj();
+    return text.charAt(i) == '{' ? obj() : text();
   }
   private Map<String,Object> obj(){
     var res= new LinkedHashMap<String,Object>();
     expect('{');
     if (next('}')){ return res; }
     do{
-      var key= str();
+      ws();
+      var key= literal();
       expect(':');
       if (res.put(key, value()) != null){ throw bad("a key other than \""+key+"\""); }
     }
@@ -44,27 +46,45 @@ final class Info{
     expect('}');
     return res;
   }
-  private String str(){
-    expect('"');
-    var sb= new StringBuilder();
-    for (var c= text.charAt(i++); c != '"'; c= text.charAt(i++)){
-      sb.append(c == '\\' ? escape(text.charAt(i++)) : String.valueOf(c));
+  private String text(){
+    var sb= new StringBuilder(atom());
+    while(true){
+      ws();
+      if (i == text.length()){ return sb.toString(); }
+      var c= text.charAt(i);
+      if (c == '+'){ i+= 1; sb.append(atom()); continue; }
+      if (c == '|' || c == '^'){ i+= 1; sb.append(c == '|' ? "\n" : "\""); ws(); if (i < text.length() && "\"`(".indexOf(text.charAt(i)) >= 0){ sb.append(atom()); } continue; }
+      if (c != '.'){ return sb.toString(); }
+      i+= 1;
+      if (text.charAt(i++) != 'u' || (i < text.length() && Character.isLetterOrDigit(text.charAt(i)))){ throw bad(".u or .u(...)"); }
+      if (!next('(')){ continue; }
+      sb.append(codePoints(text()));
+      expect(')');
     }
-    return sb.toString();
   }
-  private String escape(char c){
-    if (c == 'n'){ return "\n"; }
-    if (c == '"' || c == '\\'){ return String.valueOf(c); }
-    if (c != 'u' || text.charAt(i++) != '('){ throw bad("an escape \\n, \\\", \\\\ or \\u(...)"); }
-    var end= text.indexOf(')',i);
-    var body= end < 0 ? "" : text.substring(i,end);
-    if (!uCodeText.matcher(body).matches()){ throw bad("a \\u(...) of code points, each 1 to 6 uppercase hex digits, separated by single spaces,"); }
-    var cps= Stream.of(body.split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
-    if (Arrays.stream(cps).anyMatch(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))){ throw bad("a \\u(...) of Unicode scalars only (no D800 to DFFF, nothing above 10FFFF)"); }
+  private String atom(){
+    ws();
+    if (!next('(')){ return literal(); }
+    var res= text();
+    expect(')');
+    return res;
+  }
+  private String literal(){
+    var close= text.charAt(i++);
+    if (close != '"' && close != '`'){ throw bad("a string \"...\", `...` or (...)"); }
+    var end= text.indexOf(close, i);
+    if (end < 0 || text.substring(i, end).indexOf('\n') >= 0){ throw bad("a string closed on its line"); }
+    var res= text.substring(i, end);
     i= end+1;
-    return new String(cps,0,cps.length);
+    return res;
   }
-  private boolean next(char c){
+  private String codePoints(String body){
+    if (body.isEmpty()){ return ""; }
+    if (!uCodeText.matcher(body).matches()){ throw bad("code points in .u(...), each 1 to 6 uppercase hex digits, separated by single spaces,"); }
+    var cps= Stream.of(body.split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
+    if (Arrays.stream(cps).anyMatch(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))){ throw bad("code points in .u(...) of Unicode scalars only (no D800 to DFFF, nothing above 10FFFF)"); }
+    return new String(cps,0,cps.length);
+  }  private boolean next(char c){
     ws();
     if (text.charAt(i) != c){ return false; }
     i+= 1;

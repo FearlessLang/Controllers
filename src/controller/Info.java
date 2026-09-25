@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,7 +39,7 @@ public sealed interface Info{
   }
   private static void write(Info info, int indent, StringBuilder sb){
     switch(info){
-      case Str s -> quote(s.value(),sb);
+      case Str s -> sb.append(expr(s.value()));
       case Lst l -> { sb.append('['); join(l.items(),sb); sb.append(']'); }
       case Obj o -> writeObj(o,indent,sb);
     }
@@ -57,23 +55,62 @@ public sealed interface Info{
     sb.append("{\n");
     for (int i : Range.of(o.fields())){
       var f= o.fields().get(i);
-      sb.append("  ".repeat(indent+1));
-      quote(f.key(),sb);
-      sb.append(": ");
+      assert f.key().codePoints().allMatch(c->safe(c) && c != '"' && c != '\n');
+      sb.append("  ".repeat(indent+1)).append('"').append(f.key()).append("\": ");
       write(f.value(),indent+1,sb);
       sb.append(i+1 < o.fields().size() ? ",\n" : "\n");
     }
     sb.append("  ".repeat(indent)).append('}');
   }
-  Pattern unsafeRun= Pattern.compile("[^"+Fs.allowed.chars().mapToObj(c->"\\x{"+Integer.toHexString(c)+"}").collect(Collectors.joining())+"]+");
   Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
-  private static void quote(String value, StringBuilder sb){
-    var escaped= value.replace("\\","\\\\").replace("\"","\\\"").replace("\n","\\n");
-    sb.append('"').append(unsafeRun.matcher(escaped).replaceAll(Info::codePoints)).append('"');
+  private static boolean safe(int c){ return c < 128 && Fs.allowed.indexOf(c) >= 0; }
+  static String expr(String s){ return s.codePoints().allMatch(Info::safe) ? strExpr(s) : uExpr(s.codePoints().toArray()); }
+  private static String strExpr(String s){
+    var parts= List.of(s.split("\n",-1));
+    var res= new StringBuilder(lineExpr(parts.getFirst()));
+    for (var part: parts.subList(1,parts.size())){
+      if (!part.isEmpty()){ res.append(" | ").append(lineExpr(part)); continue; }
+      if (res.charAt(res.length()-1) == '|'){ res.append(' '); }
+      res.append('|');
+    }
+    return res.toString();
   }
-  private static String codePoints(MatchResult run){
-    var hex= run.group().codePoints().mapToObj("%04X"::formatted).collect(Collectors.joining(" "));
-    return Matcher.quoteReplacement("\\u("+hex+")");
+  private static String lineExpr(String s){
+    if (s.indexOf('"') < 0){ return "\""+s+"\""; }
+    if (s.indexOf('`') < 0){ return "`"+s+"`"; }
+    return String.join("+",delimiterRuns(s).stream().map(Info::lineExpr).toList());
+  }
+  private static List<String> delimiterRuns(String s){
+    var res= new ArrayList<String>();
+    var start= 0;
+    char seen= 0;
+    for (int i : Range.of(0,s.length())){
+      var c= s.charAt(i);
+      if (c != '"' && c != '`'){ continue; }
+      if (seen == 0){ seen= c; continue; }
+      if (seen == c){ continue; }
+      res.add(s.substring(start,i));
+      start= i;
+      seen= c;
+    }
+    if (start < s.length()){ res.add(s.substring(start)); }
+    return res;
+  }
+  private static String uExpr(int[] cps){
+    var terms= new ArrayList<String>();
+    for (int i= 0; i < cps.length; ){
+      var safe= safe(cps[i]);
+      var j= i+1;
+      while (j < cps.length && safe(cps[j]) == safe){ j++; }
+      var part= Arrays.copyOfRange(cps,i,j);
+      terms.add(safe ? receiver(strExpr(new String(part,0,part.length)))+".u" : "\"\".u("+strExpr(Arrays.stream(part).mapToObj("%04X"::formatted).collect(Collectors.joining(" ")))+")");
+      i= j;
+    }
+    return terms.size() == 1 ? terms.getFirst() : String.join(" + ",terms.stream().map(t->"("+t+")").toList());
+  }
+  private static String receiver(String e){
+    var oneLiteral= e.length() >= 2 && (e.charAt(0) == '"' || e.charAt(0) == '`') && e.charAt(e.length()-1) == e.charAt(0);
+    return oneLiteral ? e : "("+e+")";
   }
   final class Parser{
     private final String text;
@@ -92,52 +129,78 @@ public sealed interface Info{
       ws();
       if (!more()){ throw err(here(),"The text ends here, but a value (a string \"...\", a list [...] or an object {...}) was expected."); }
       return switch(peek()){
-        case '"' -> str();
+        case '"', '`', '(' -> text();
         case '[' -> list();
         case '{' -> obj();
         default -> throw err(here(),"Expected a string \"...\", a list [...] or an object {...} here.");
       };
     }
-    private Str str(){
+    private Str text(){
       var start= here();
+      var sb= new StringBuilder(atom());
+      while(true){
+        ws();
+        if (!more()){ break; }
+        var c= peek();
+        if (c == '+'){ advance(); sb.append(atom()); continue; }
+        if (c == '|' || c == '^'){ advance(); sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
+        if (c != '.'){ break; }
+        u(sb);
+      }
+      return new Str(sb.toString(),from(start));
+    }
+    private boolean atomNext(){
+      ws();
+      return more() && "\"`(".indexOf(peek()) >= 0;
+    }
+    private String atom(){
+      ws();
+      if (!more()){ throw err(here(),"The text ends here, but a string \"...\", `...` or (...) was expected."); }
+      if (peek() != '('){ return literal().value(); }
+      advance();
+      var res= text().value();
+      ws();
+      if (!more() || peek() != ')'){ throw err(here(),"Expected ')' here, to close the parenthesis."); }
+      advance();
+      return res;
+    }
+    private Str literal(){
+      var start= here();
+      var close= peek();
+      if (close != '"' && close != '`'){ throw err(here(),"Expected a string \"...\", `...` or (...) here."); }
       advance();
       var sb= new StringBuilder();
       while(true){
-        if (!more()){ throw err(from(start),"This string is never closed with a matching \"."); }
+        if (!more()){ throw err(from(start),"This string is never closed with a matching "+close+"."); }
         var c= peek();
-        if (c == '"'){ var end= here(); advance(); return new Str(sb.toString(),between(start,end)); }
-        if (c == '\n'){ throw err(here(),"A string cannot contain a raw newline; write \\n instead."); }
-        if (c == '\\'){ advance(); sb.append(escape()); continue; }
+        if (c == close){ var end= here(); advance(); return new Str(sb.toString(),between(start,end)); }
+        if (c == '\n'){ throw err(here(),"A string cannot hold a raw newline: \"a\" | \"b\" is \"a\", a newline, then \"b\"."); }
         sb.append(advance());
       }
     }
-    private String escape(){
-      if (!more()){ throw err(here(),"The text ends right after a \\: an escape needs a character after it."); }
+    private void u(StringBuilder sb){
       var at= here();
-      var c= advance();
-      return switch(c){
-        case '"' -> "\"";
-        case '\\' -> "\\";
-        case 'n' -> "\n";
-        case 'u' -> codePoints(at);
-        default -> throw err(from(at),"Unknown escape \\"+c+": only \\\", \\\\, \\n and \\u(...) exist.");
-      };
+      advance();
+      var named= more() && peek() == 'u' && (i+1 == text.length() || !Character.isLetterOrDigit(text.charAt(i+1)));
+      if (!named){ throw err(from(at),"After a string, only .u and .u(\"...\") are allowed: .u makes it a UStr, .u(\"E9 301\") adds the characters with those code points."); }
+      advance();
+      if (!more() || peek() != '('){ return; }
+      advance();
+      var hex= text();
+      ws();
+      if (!more() || peek() != ')'){ throw err(here(),"Expected ')' here, to close .u(...)."); }
+      advance();
+      sb.append(codePoints(hex));
     }
-    private String codePoints(Span at){
-      if (!more() || peek() != '('){ throw err(from(at),"The escape \\u needs its code points in parentheses, like \\u(00E9 0301)."); }
-      advance();
-      var body= new StringBuilder();
-      while(more() && ")\"\n".indexOf(peek()) < 0){ body.append(advance()); }
-      if (!more() || peek() != ')'){ throw err(from(at),"The escape \"\\u("+body+"\" is never closed with a matching )."); }
-      advance();
-      var escape= "\"\\u("+body+")\"";
-      if (!uCodeText.matcher(body).matches()){ throw err(from(at),"The escape "+escape+" is malformed: inside \\u(...) write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like \\u(00E9 0301)."); }
-      var cps= Stream.of(body.toString().split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
+    private String codePoints(Str hex){
+      var body= hex.value();
+      if (body.isEmpty()){ return ""; }
+      if (!uCodeText.matcher(body).matches()){ throw err(hex.span(),"The code points \""+body+"\" of .u(...) are malformed: write one or more code points, each as 1 to 6 uppercase hex digits, separated by single spaces, like .u(\"00E9 0301\")."); }
+      var cps= Stream.of(body.split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
       var bad= Arrays.stream(cps).filter(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)).findFirst();
-      if (bad.isPresent()){ throw err(from(at),"The escape "+escape+" holds "+Integer.toHexString(bad.getAsInt()).toUpperCase()+", which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters."); }
+      if (bad.isPresent()){ throw err(hex.span(),"The code points \""+body+"\" of .u(...) hold "+Integer.toHexString(bad.getAsInt()).toUpperCase()+", which is not a Unicode scalar: code points from D800 to DFFF (surrogates) and above 10FFFF are not characters."); }
       return new String(cps,0,cps.length);
-    }
-    private Lst list(){
+    }    private Lst list(){
       var start= here();
       advance();
       var items= new ArrayList<Info>();
@@ -166,7 +229,7 @@ public sealed interface Info{
         if (!more()){ throw err(from(start),"This object is never closed with a matching }."); }
         if (peek() == '}' && fields.isEmpty()){ break; }
         if (peek() != '"'){ throw err(here(),"Expected a quoted key \"...\" here."); }
-        var key= str();
+        var key= literal();
         if (!seen.add(key.value())){ throw err(key.span(),"Duplicate key \""+key.value()+"\": this object already has this key."); }
         ws();
         if (!more() || peek() != ':'){ throw err(here(),"Expected ':' after the key \""+key.value()+"\"."); }

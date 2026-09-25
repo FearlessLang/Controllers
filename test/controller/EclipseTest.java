@@ -66,7 +66,7 @@ Error 7 WellFormedness
           "problem": {}
         }
       }
-      """.stripIndent().formatted(hello.folder().toString().replace("\\","\\\\"),data.folder().toString().replace("\\","\\\\")),Eclipse.state(List.of(hello,data)));
+      """.stripIndent().formatted(hello.folder(),data.folder()),Eclipse.state(List.of(hello,data)));
   }
   @Test void compilingIsNotARunningMain(){
     assertEquals(true,Eclipse.state(List.of(project("a",Kind.code,Optional.empty(),Project.compiling,0,"",""))).contains("\"running\": \"\","));

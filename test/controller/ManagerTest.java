@@ -509,9 +509,9 @@ final class ManagerTest{
     send(m,"run","hello");
     idle(m);
     assertEquals(List.of("hello "+hello),listed(dir));
-    same("[###]caf\\u(00E9) \\u(1F600)[###]",eclipse(dir,"state.info"));
+    same("[###]caf\".u) + (\"\".u(\"00E9\")) + (\" \".u) + (\"\".u(\"1F600\")) + (\"[###]hello\".u)[###]",eclipse(dir,"state.info"));
     same("[###]ran hello.Hello[###]",eclipse(dir,"hello","console.txt"));
-    same("[###]\"path\": \"[###]/caf\\u(00E9) \\u(1F600)/hello\"[###]",Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
+    same("[###]\"path\": ([###]/caf\".u) + (\"\".u(\"00E9\")) + (\" \".u) + (\"\".u(\"1F600\")) + (\"/hello\".u),[###]",Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
     var again= manager(dir,"hello.Hello");
     again.settle();
     assertEquals(Project.State.codeCompiled,project(again,hello).state());
