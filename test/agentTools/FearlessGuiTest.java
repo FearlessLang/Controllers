@@ -82,6 +82,15 @@ final class FearlessGuiTest{
     click(corner);
     ends("Corner ran");
   }
+  /// Action 3: carry the window by the left end of its title bar to the right edge of the screen, which would leave only a sliver of it on the screen.
+  /// Action 4: look at the window: it came back until at least a third of the screen, or all of it when it is narrower, is on the screen.
+  @Test void aWindowCarriedOffTheScreenComesBack() throws InterruptedException{
+    start();
+    pilot.drag(content.x+10,titleBar,desk.getWidth()-1,titleBar);
+    Pilot.pause(1000);
+    var shown= find(window);
+    assertTrue(shown.width>=Math.min(desk.getWidth()/3,content.width)-10,()->shown+" "+content);
+  }
   /// Action 3: click Grow at its left edge and keep still: the label beside it grows under the pointer.
   @Test void hoverFollowsANeighbourGrowingUnderAStillPointer() throws InterruptedException{
     start();
@@ -119,14 +128,14 @@ final class FearlessGuiTest{
     click(shift);
     ends("Shift ran");
   }
-  /// Action 3: click Twice: its first action makes the band around it paint an error, its second waits half a second and takes the error away, so the error shows only if a frame lands between the two actions of one click.
-  @Test void theActionsOfOneClickShowTogether() throws InterruptedException{
+  /// Action 3: click Twice: it was given two actions, and the first one ends the program with an error if it ever runs, since the second replaced it.
+  @Test void aSecondActionReplacesTheFirst() throws InterruptedException{
     start();
     click(twice);
     ends("Twice ran");
   }
-  /// Action 3: click box P: its first press handler makes the band around it paint an error, its second waits half a second and takes the error away, so the error shows only if a frame lands between the two handlers of one press.
-  @Test void theHandlersOfOnePressShowTogether() throws InterruptedException{
+  /// Action 3: click box P: it was given two pressed handlers, and the first one ends the program with an error if it ever runs, since the second replaced it.
+  @Test void aSecondPressedHandlerReplacesTheFirst() throws InterruptedException{
     start();
     click(boxP);
     ends("pressed box P");
