@@ -33,7 +33,7 @@ final class FearlessGuiTest{
     : ResolveResource.portableFolderOut.resolve(app).resolve("bin").resolve(app);
   private static final Path project= ResolveResource.integrationTests.resolve("testGuiPilot");
   private static final int window= 0xFAECD6, swapKeys= 0x60C8FA, fix= 0xFA965A, corner= 0xAA6EF0, swapContent= 0xF05AAA,
-    grow= 0x78DC78, clear= 0x5A82FA, replace= 0xFADC3C, nudge= 0x3CD2C8, painted= 0xE6E63C, foreground= 0x145AC8;
+    grow= 0x78DC78, clear= 0x5A82FA, replace= 0xFADC3C, nudge= 0x3CD2C8, shift= 0x8C643C, painted= 0xE6E63C, foreground= 0x145AC8;
   private final Pilot pilot= new Pilot();
   private final Path out= Fs.of(()->Files.createTempFile("testGuiPilot",".txt"));
   private Process run;
@@ -101,6 +101,12 @@ final class FearlessGuiTest{
     click(swapContent);
     ends("hover: new content");
   }
+  /// Action 3: click Shift and keep still: its task clears the pane around Shift, adds a box that would be under the pointer, waits half a second, and adds a second box that shifts the first one away from the pointer. The pointer is only ever over a box in a layout the task never finished, so no box is entered.
+  @Test void hoverSeesOnlyTheLayoutOfAFinishedTask() throws InterruptedException{
+    start();
+    click(shift);
+    ends("Shift ran");
+  }
   /// Action 3: look at the middle of the small yellow pane: its painter draws there without choosing a colour, so in the pane's foreground.
   @Test void aPanePainterStartsWithTheForeground() throws InterruptedException{
     start();
@@ -142,7 +148,7 @@ final class FearlessGuiTest{
     Pilot.pause(1000);
     pilot.chord(KeyEvent.VK_ESCAPE);
     assertTrue(run.waitFor(1,TimeUnit.MINUTES));
-    Err.strCmp(expected+"\nmut Pilot.accept(_) error line: 24 in file _pilot/_rank_app.fear",Fs.readUtf8(out));
+    Err.strCmp(expected+"\nmut Pilot.accept(_) error line: 29 in file _pilot/_rank_app.fear",Fs.readUtf8(out));
   }
   @AfterEach void stop(){
     run.descendants().forEach(ProcessHandle::destroyForcibly);
