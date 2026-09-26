@@ -34,7 +34,7 @@ final class FearlessGuiTest{
   private static final Path project= ResolveResource.integrationTests.resolve("testGuiPilot");
   private static final int window= 0xFAECD6, swapKeys= 0x60C8FA, fix= 0xFA965A, corner= 0xAA6EF0, swapContent= 0xF05AAA,
     grow= 0x78DC78, clear= 0x5A82FA, replace= 0xFADC3C, nudge= 0x3CD2C8, shift= 0x8C643C, painted= 0xE6E63C, foreground= 0x145AC8,
-    twice= 0xDC50DC, boxP= 0x64A03C, boxQ= 0x3C3CB4, boxR= 0xB43C3C;
+    twice= 0xDC50DC, boxP= 0x64A03C, boxQ= 0x3C3CB4, boxR= 0xB43C3C, moved= 0xC87828, movedRect= 0x28C878;
   private final Pilot pilot= new Pilot();
   private final Path out= Fs.of(()->Files.createTempFile("testGuiPilot",".txt"));
   private Process run;
@@ -143,6 +143,13 @@ final class FearlessGuiTest{
     start();
     var at= find(painted);
     assertEquals(Integer.toHexString(foreground),Integer.toHexString(pilot.shot().getRGB((int)at.getCenterX(),(int)at.getCenterY())&0xffffff));
+    ends("nothing seen");
+  }
+  /// Action 3: look at the middle of the small orange pane: its painter moves the position of its graphics to there in one statement, and draws a green rectangle through the same graphics in the next one.
+  @Test void aPositionMovesTheGraphicsItIsCalledOn() throws InterruptedException{
+    start();
+    var at= find(moved);
+    assertEquals(Integer.toHexString(movedRect),Integer.toHexString(pilot.shot().getRGB((int)at.getCenterX(),(int)at.getCenterY())&0xffffff));
     ends("nothing seen");
   }
   private void start(){
