@@ -7,6 +7,7 @@ import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import utils.Bug;
@@ -26,6 +27,7 @@ public final class Pilot{
   public static final Set<Button> left= Set.of(Button.left);
   private final Robot robot= robot();
   private Set<Button> down= none;
+  private List<Integer> held= List.of();
   private static Robot robot(){
     try{ return new Robot(); }
     catch(AWTException e){ throw Bug.of(e); }
@@ -53,6 +55,14 @@ public final class Pilot{
   }
   /// Takes hold at x0,y0, carries to x1,y1, and waits there before letting go: what is dropped lands on whatever is under the pointer, and that has to be given its moment to see the pointer arrive.
   public void drag(int x0, int y0, int x1, int y1){ glide(x0,y0,none,x0,y0,left); glide(x0,y0,left,x1,y1,left); glide(x1,y1,left,x1,y1,none); }
+  /// Holds exactly the java.awt.event.KeyEvent codes given, as glide holds buttons: the keys no longer given go up, the new ones go down in order, and they stay down through whatever the pointer does next.
+  public void keys(int... codes){
+    var want= Arrays.stream(codes).boxed().toList();
+    held.stream().filter(k->!want.contains(k)).forEach(robot::keyRelease);
+    want.stream().filter(k->!held.contains(k)).forEach(robot::keyPress);
+    held= want;
+    pause(200);
+  }
   /// Presses the java.awt.event.KeyEvent codes in order and releases them in reverse.
   public void chord(int... codes){
     for (int c: codes){ robot.keyPress(c); }
