@@ -33,7 +33,8 @@ final class FearlessGuiTest{
     : ResolveResource.portableFolderOut.resolve(app).resolve("bin").resolve(app);
   private static final Path project= ResolveResource.integrationTests.resolve("testGuiPilot");
   private static final int window= 0xFAECD6, swapKeys= 0x60C8FA, fix= 0xFA965A, corner= 0xAA6EF0, swapContent= 0xF05AAA,
-    grow= 0x78DC78, clear= 0x5A82FA, replace= 0xFADC3C, nudge= 0x3CD2C8, shift= 0x8C643C, painted= 0xE6E63C, foreground= 0x145AC8;
+    grow= 0x78DC78, clear= 0x5A82FA, replace= 0xFADC3C, nudge= 0x3CD2C8, shift= 0x8C643C, painted= 0xE6E63C, foreground= 0x145AC8,
+    twice= 0xDC50DC, boxP= 0x64A03C, boxQ= 0x3C3CB4, boxR= 0xB43C3C;
   private final Pilot pilot= new Pilot();
   private final Path out= Fs.of(()->Files.createTempFile("testGuiPilot",".txt"));
   private Process run;
@@ -53,6 +54,16 @@ final class FearlessGuiTest{
     click(swapKeys);
     letGo();
     ends("SPACE pressed 2, released 2");
+  }
+  /// Action 3: hold Q and W down.
+  /// Action 4: click Swap keys, which replaces the key map while Q and W are down: the old map lets both go at once. Letting the first go makes the band around Twice paint an error; letting the second go waits half a second and takes the error away, so the error shows only if a frame lands between the two.
+  /// Action 5: let Q and W go two seconds later.
+  @Test void theKeysLetGoByAKeyMapSwapShowTogether() throws InterruptedException{
+    start();
+    pilot.keys(KeyEvent.VK_Q,KeyEvent.VK_W);
+    click(swapKeys);
+    letGo();
+    ends("Q and W released");
   }
   /// Action 3: carry the window by its title bar until its bottom right corner is near the screen's.
   /// Action 4: click Fix, which asks for half the screen as the window size: the program never placed the window, so where the person put it is no reason to fail.
@@ -106,6 +117,26 @@ final class FearlessGuiTest{
     start();
     click(shift);
     ends("Shift ran");
+  }
+  /// Action 3: click Twice: its first action makes the band around it paint an error, its second waits half a second and takes the error away, so the error shows only if a frame lands between the two actions of one click.
+  @Test void theActionsOfOneClickShowTogether() throws InterruptedException{
+    start();
+    click(twice);
+    ends("Twice ran");
+  }
+  /// Action 3: click box P: its first press handler makes the band around it paint an error, its second waits half a second and takes the error away, so the error shows only if a frame lands between the two handlers of one press.
+  @Test void theHandlersOfOnePressShowTogether() throws InterruptedException{
+    start();
+    click(boxP);
+    ends("pressed box P");
+  }
+  /// Action 3: glide from the middle of box Q to the middle of box R beside it: leaving Q makes the band around them paint an error, entering R waits half a second and takes the error away, so the error shows only if a frame lands between leaving one and entering the other.
+  @Test void leavingAndEnteringShowTogether() throws InterruptedException{
+    start();
+    var q= find(boxQ);
+    var r= find(boxR);
+    pilot.glide((int)q.getCenterX(),(int)q.getCenterY(),Pilot.none,(int)r.getCenterX(),(int)r.getCenterY(),Pilot.none);
+    ends("hover: box R");
   }
   /// Action 3: look at the middle of the small yellow pane: its painter draws there without choosing a colour, so in the pane's foreground.
   @Test void aPanePainterStartsWithTheForeground() throws InterruptedException{
