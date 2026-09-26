@@ -34,7 +34,8 @@ final class FearlessGuiTest{
   private static final Path project= ResolveResource.integrationTests.resolve("testGuiPilot");
   private static final int window= 0xFAECD6, swapKeys= 0x60C8FA, fix= 0xFA965A, corner= 0xAA6EF0, swapContent= 0xF05AAA,
     grow= 0x78DC78, clear= 0x5A82FA, replace= 0xFADC3C, nudge= 0x3CD2C8, shift= 0x8C643C, painted= 0xE6E63C, foreground= 0x145AC8,
-    twice= 0xDC50DC, boxP= 0x64A03C, boxQ= 0x3C3CB4, boxR= 0xB43C3C, moved= 0xC87828, movedRect= 0x28C878;
+    twice= 0xDC50DC, boxP= 0x64A03C, boxQ= 0x3C3CB4, boxR= 0xB43C3C, moved= 0xC87828, movedRect= 0x28C878,
+    boxS= 0x5A3C8C, labelS= 0xFAB4C8;
   private final Pilot pilot= new Pilot();
   private final Path out= Fs.of(()->Files.createTempFile("testGuiPilot",".txt"));
   private Process run;
@@ -81,6 +82,15 @@ final class FearlessGuiTest{
     click(corner);
     ends("Corner ran");
   }
+  /// Action 3: carry the window by the left end of its title bar to the right edge of the screen, which would leave only a sliver of it on the screen.
+  /// Action 4: look at the window: it came back until at least a third of the screen, or all of it when it is narrower, is on the screen.
+  @Test void aWindowCarriedOffTheScreenComesBack() throws InterruptedException{
+    start();
+    pilot.drag(content.x+10,titleBar,desk.getWidth()-1,titleBar);
+    Pilot.pause(1000);
+    var shown= find(window);
+    assertTrue(shown.width>=Math.min(desk.getWidth()/3,content.width)-10,()->shown+" "+content);
+  }
   /// Action 3: click Grow at its left edge and keep still: the label beside it grows under the pointer.
   @Test void hoverFollowsANeighbourGrowingUnderAStillPointer() throws InterruptedException{
     start();
@@ -118,14 +128,14 @@ final class FearlessGuiTest{
     click(shift);
     ends("Shift ran");
   }
-  /// Action 3: click Twice: its first action makes the band around it paint an error, its second waits half a second and takes the error away, so the error shows only if a frame lands between the two actions of one click.
-  @Test void theActionsOfOneClickShowTogether() throws InterruptedException{
+  /// Action 3: click Twice: it was given two actions, and the first one ends the program with an error if it ever runs, since the second replaced it.
+  @Test void aSecondActionReplacesTheFirst() throws InterruptedException{
     start();
     click(twice);
     ends("Twice ran");
   }
-  /// Action 3: click box P: its first press handler makes the band around it paint an error, its second waits half a second and takes the error away, so the error shows only if a frame lands between the two handlers of one press.
-  @Test void theHandlersOfOnePressShowTogether() throws InterruptedException{
+  /// Action 3: click box P: it was given two pressed handlers, and the first one ends the program with an error if it ever runs, since the second replaced it.
+  @Test void aSecondPressedHandlerReplacesTheFirst() throws InterruptedException{
     start();
     click(boxP);
     ends("pressed box P");
@@ -151,6 +161,21 @@ final class FearlessGuiTest{
     var at= find(moved);
     assertEquals(Integer.toHexString(movedRect),Integer.toHexString(pilot.shot().getRGB((int)at.getCenterX(),(int)at.getCenterY())&0xffffff));
     ends("nothing seen");
+  }
+  /// Action 3: press box S and keep holding it: its press handler makes the label beside it longer, and the whole longer label shows while the button is still held.
+  /// Action 4: let go: the label keeps the width it showed while held.
+  @Test void aLabelChangedByAPressShowsWhileTheButtonIsHeld() throws InterruptedException{
+    start();
+    var before= find(labelS).width;
+    var at= find(boxS);
+    pilot.glide((int)at.getCenterX(),(int)at.getCenterY(),Pilot.none,(int)at.getCenterX(),(int)at.getCenterY(),Pilot.left);
+    Pilot.pause(1000);
+    var held= find(labelS).width;
+    pilot.glide((int)at.getCenterX(),(int)at.getCenterY(),Pilot.left,(int)at.getCenterX(),(int)at.getCenterY(),Pilot.none);
+    Pilot.pause(1000);
+    assertTrue(held>before,()->before+" "+held);
+    assertEquals(find(labelS).width,held);
+    ends("pressed box S");
   }
   private void start(){
     desk= pilot.shot();
@@ -186,7 +211,7 @@ final class FearlessGuiTest{
     Pilot.pause(1000);
     pilot.chord(KeyEvent.VK_ESCAPE);
     assertTrue(run.waitFor(1,TimeUnit.MINUTES));
-    Err.strCmp(expected+"\nmut Pilot.accept(_) error line: 29 in file _pilot/_rank_app.fear",Fs.readUtf8(out));
+    Err.strCmp(expected+"\nmut Pilot.accept(_) error line: 30 in file _pilot/_rank_app.fear",Fs.readUtf8(out));
   }
   @AfterEach void stop(){
     run.descendants().forEach(ProcessHandle::destroyForcibly);
