@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import fileAssociations.Icon;
 import fileAssociations.LinuxAssociations;
 import fileAssociations.WindowsAssociations;
+import utils.OneOr;
 
 /// Association is a thin adapter over Commons' fileAssociations; these pin both the
 /// adapter's identity/family rules and the desktop-registry text Commons renders.
@@ -52,10 +53,23 @@ final class AssociationTest{
   @Test void theOneDesktopEntryHandsEveryKindToTheRunningLauncher(){
     var entry= LinuxAssociations.desktopEntry(identity,linuxLauncher,"controller-Main",List.of("application/x-fearless","application/x-fproof"));
     assertTrue(entry.startsWith("[Desktop Entry]\n"),entry);
-    assertTrue(entry.contains("Exec=/home/me/fearlessManaged0_001/bin/fearlessManaged0_001 %f"),entry);
+    assertTrue(entry.contains("Exec=\"/home/me/fearlessManaged0_001/bin/fearlessManaged0_001\" %f"),entry);
     assertTrue(entry.contains("MimeType=application/x-fearless;application/x-fproof;"),entry);
     assertTrue(entry.contains("Icon=fearlessManaged0_001"),entry);
     assertTrue(entry.contains("StartupWMClass=controller-Main"),entry);
+  }
+  private static String exec(String launcher){
+    var entry= LinuxAssociations.desktopEntry(identity,launcher,"controller-Main",List.of("application/x-fearless"));
+    return OneOr.of("one Exec line",entry.lines().filter(l->l.startsWith("Exec=")));
+  }
+  @Test void theLauncherIsOneArgumentEvenWithSpaces(){
+    assertEquals("Exec=\"/opt/my apps/fearless/bin/fearless\" %f",exec("/opt/my apps/fearless/bin/fearless"));
+  }
+  @Test void aPercentInTheLauncherIsNotAFieldCode(){
+    assertEquals("Exec=\"/opt/100%%/fearless/bin/fearless\" %f",exec("/opt/100%/fearless/bin/fearless"));
+  }
+  @Test void aDollarInTheLauncherIsEscapedForBothTheQuoteAndTheString(){
+    assertEquals("Exec=\"/opt/\\\\$apps/fearless/bin/fearless\" %f",exec("/opt/$apps/fearless/bin/fearless"));
   }
   @Test void theWindowClassIsTheMainClassTheWayTheToolkitNamesIt(){
     assertEquals("controller-Main",LinuxAssociations.windowClass("Controller/controller.Main"));
