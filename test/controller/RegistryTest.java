@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ import userMessages.UserError;
 final class RegistryTest{
   private static final URI uri= URI.create("test:projects.info");
   private static final String root= Path.of("").toAbsolutePath().getRoot().toString().replace('\\','/');
-  private static List<Entry> parse(String text){ return Registry.fromInfo(text,Info.parse(text,uri)); }
+  private static List<Entry> parse(String text){ return Registry.fromInfo(text,Info.parse(text,uri),Registry::real); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -94,6 +95,13 @@ final class RegistryTest{
   @Test void identicalOrNestedPathsAreRejected(){
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]",()->parse("{\"a\":{\"path\":\"Str:"+root+"same\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"same\",\"kind\":\"idle\"}}"));
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]",()->parse("{\"a\":{\"path\":\"Str:"+root+"parent\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"parent/child\",\"kind\":\"idle\"}}"));
+  }
+  @Test void aLinkNamesTheFolderItLinksTo(@TempDir Path dir){
+    Assumptions.assumeFalse(Fs.isWindows());
+    var real= Registry.real(folder(dir,"real"));
+    var link= Fs.of(()->Files.createSymbolicLink(dir.resolve("link"),real));
+    err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]",()->parse("{\"a\":{\"path\":\"Str:"+unix(real)+"\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}"));
+    assertEquals(real,parse("{\"a\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}").getFirst().path());
   }
   @Test void toInfoThenFromInfoRoundTripsAnEntry(){
     var e= new Entry("someproject",Path.of(root+"abs/someproject"),Kind.code,List.of("some.Main1"),Map.of("publicfiles",List.of("Data1")),Map.of(),999,999);

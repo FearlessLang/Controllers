@@ -22,9 +22,8 @@ public final class Names{
   public static final String ext= ".fearless";
   private static final Path anyRoot= Path.of("").toAbsolutePath();
   public static String compactName(Path folder){
-    var f= folder.toAbsolutePath().normalize();
-    var all= markers(f);
-    return all.size() == 1 ? stem(all.getFirst()) : f.getFileName().toString();
+    var all= markers(folder);
+    return all.size() == 1 ? stem(all.getFirst()) : folder.getFileName().toString();
   }
   public static String pkgName(String alias){
     var s= alias.replaceFirst("^_+","");

@@ -60,7 +60,7 @@ public final class Registry{
     var text= read(infoFile());
     var root= Info.parse(text,infoFile().toUri());
     var bad= badKinds(root);
-    all= withTimes(fromInfo(text,bad.isEmpty() ? root : idle((Obj)root,bad)));
+    all= withTimes(fromInfo(text,bad.isEmpty() ? root : idle((Obj)root,bad),Registry::real));
     reset= all.stream().filter(e->bad.contains(e.alias())).toList();
     if (!reset.isEmpty()){ save(all); }
   }
@@ -75,6 +75,10 @@ public final class Registry{
     var kind= new Field("kind",Info.noSpan,new Info.Str(Kind.idle.text,Info.noSpan));
     return new Obj(Push.of(project.fields().stream().filter(f->!f.key().equals("kind")).toList(),kind),project.span());
   }
+  public static Path real(Path folder){
+    try{ return folder.toRealPath(); }
+    catch(IOException e){ return folder; }
+  }
   private Path infoFile(){ return dir.resolve("projects.info"); }
   private Path activityFile(){ return dir.resolve("activity.txt"); }
   public List<Entry> all(){ return all; }
@@ -84,7 +88,7 @@ public final class Registry{
     return all.stream().map(Entry::path).filter(o->!o.equals(folder) && (folder.startsWith(o) || o.startsWith(folder))).findFirst();
   }
   public void add(String alias, Path folder){
-    assert folder.equals(folder.toAbsolutePath().normalize());
+    assert folder.isAbsolute() && folder.equals(real(folder));
     assert all.stream().noneMatch(e->e.path().equals(folder) || e.alias().equals(alias));
     assert overlapping(folder).isEmpty();
     save(Push.of(all,new Entry(alias,folder,Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)));
@@ -94,7 +98,7 @@ public final class Registry{
     assert of(folder).isPresent();
     save(all.stream().map(e->e.path().equals(folder) ? op.apply(e) : e).toList());
   }
-  public void commit(String text){ save(entries(text).stream().map(e->of(e.path()).map(o->e.withTimes(o.compiled(),o.run())).orElse(e)).toList()); }
+  public void commit(String text){ save(entries(text,Registry::real).stream().map(e->of(e.path()).map(o->e.withTimes(o.compiled(),o.run())).orElse(e)).toList()); }
   public static String text(List<Entry> entries){ return Info.print(toInfo(entries)); }
   /// Why the links of a code project are broken, if they are; invalid says why a project is invalid.
   public Optional<String> linkProblem(Entry e, Function<Path,Optional<String>> invalid){
@@ -118,10 +122,10 @@ public final class Registry{
     }
     return Optional.empty();
   }
-  private List<Entry> entries(String text){ return fromInfo(text,Info.parse(text,infoFile().toUri())); }
+  private List<Entry> entries(String text, UnaryOperator<Path> identity){ return fromInfo(text,Info.parse(text,infoFile().toUri()),identity); }
   private void save(List<Entry> entries){
     var text= text(entries);
-    var back= this.entries(text);
+    var back= entries(text,p->p);
     assert back.equals(entries.stream().map(e->e.withTimes(-1,-1)).toList());
     writeText(infoFile(),text);
     writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+TaggedText.line(e.path().toString())),"","\n","\n",""));
@@ -139,7 +143,7 @@ public final class Registry{
     try{ Files.move(tmp,file,ATOMIC_MOVE); }
     catch(IOException e){ throw Messages.couldNotSaveRegisteredFolders(dir,e); }
   }
-  public static List<Entry> fromInfo(String source, Info root){
+  public static List<Entry> fromInfo(String source, Info root, UnaryOperator<Path> identity){
     if (!(root instanceof Obj top)){
       throw Info.err(source,root.span(),"The whole file must be an object {...} mapping each project name to the metadata of that project.");
     }
@@ -148,7 +152,7 @@ public final class Registry{
       if (!Names.isName(field.key())){
         throw Info.err(source,field.keySpan(),"\""+field.key()+"\" is not a valid project name: a project name uses only lowercase letters, digits and underscores, and starts with a letter or an underscore.");
       }
-      entries.add(entryOf(source,field));
+      entries.add(entryOf(source,field,identity));
     }
     for (var a: entries){
       for (var b: entries.subList(entries.indexOf(a)+1,entries.size())){
@@ -159,7 +163,7 @@ public final class Registry{
     }
     return entries;
   }
-  private static Entry entryOf(String source, Field field){
+  private static Entry entryOf(String source, Field field, UnaryOperator<Path> identity){
     if (!(field.value() instanceof Obj obj)){
       throw Info.err(source,field.value().span(),"The metadata of \""+field.key()+"\" must be an object {...}.");
     }
@@ -176,7 +180,7 @@ public final class Registry{
       var span= OneOr.of("type name "+both.get(),names.items().stream().filter(i->((Info.Str)i).value().equals(both.get()))).span();
       throw Info.err(source,span,"\""+both.get()+"\" is in both \"reads\".\""+link.getKey()+"\" and \"edits\".\""+link.getKey()+"\": a type name in \"edits\" also reads, so it is not repeated in \"reads\"; a type name in \"reads\" only reads.");
     }
-    return new Entry(field.key(),pathOf(source,field.key(),obj),kindOf(source,field.key(),obj),mains,reads,edits,-1,-1);
+    return new Entry(field.key(),identity.apply(pathOf(source,field.key(),obj)),kindOf(source,field.key(),obj),mains,reads,edits,-1,-1);
   }
   private static Path pathOf(String source, String alias, Obj obj){
     var field= obj.field("path").orElseThrow(()->Info.err(source,obj.span(),"Project \""+alias+"\" is missing its \"path\": the absolute path of the project folder."));

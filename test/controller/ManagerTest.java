@@ -322,6 +322,23 @@ final class ManagerTest{
     assertEquals(1,view.notes.size());
     assertEquals(List.of("hello "+hello),listed(dir));
   }
+  @Test void aLinkToARegisteredFolderOnlySelectsItAndALinkIntoOneIsRefused(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir);
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    var link= Fs.of(()->Files.createSymbolicLink(dir.resolve("link"),hello));
+    var inner= Fs.of(()->Files.createSymbolicLink(dir.resolve("inner"),folder(hello,"inner")));
+    send(m,TaggedText.of(link.toString()));
+    assertEquals(Optional.of(hello),m.state().selected());
+    send(m,TaggedText.of(inner.toString()));
+    assertEquals(List.of("hello "+hello,"other "+other),listed(dir));
+    assertTrue(Files.isRegularFile(hello.resolve("hello.fearless")));
+    assertEquals(1,view.notes.size());
+    same("[###]Fearless is already keeping track of:\n[###]hello\nOne of the two is inside the other.[###]",view.notes.getFirst());
+  }
   @Test void kindsChangeFromIdleAndBackToIdleOnly(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);

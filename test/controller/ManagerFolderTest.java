@@ -3,8 +3,10 @@ package controller;
 import static controller.Errs.err;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -64,6 +66,12 @@ final class ManagerFolderTest{
   }
   @Test void aFolderHoldingTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     err("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(dir.toString(),folder(dir,"manager")));
+  }
+  @Test void aLinkToTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
+    Assumptions.assumeFalse(Fs.isWindows());
+    var managerDir= folder(dir,"manager");
+    var link= Fs.of(()->Files.createSymbolicLink(dir.resolve("link"),managerDir));
+    err("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(link.toString(),managerDir));
   }
   @Test void theRootOfADriveIsNotAProject(@TempDir Path dir){
     err("""

@@ -417,8 +417,8 @@ public final class Manager{
   static Path projectFolder(String given, Path managerDir){
     var path= path(given);
     if (!Files.exists(path)){ throw Report.launchPathNotFound(path); }
-    var folder= Files.isDirectory(path) ? path : path.getParent();
-    var manager= managerDir.toAbsolutePath().normalize();
+    var folder= Registry.real(Files.isDirectory(path) ? path : path.getParent());
+    var manager= Registry.real(managerDir);
     if (folder.getFileName() == null){ throw Messages.projectFolderIsRoot(folder); }
     if (folder.startsWith(manager) || manager.startsWith(folder)){ throw Messages.managerFolderNotAProject(path,manager); }
     return folder;
