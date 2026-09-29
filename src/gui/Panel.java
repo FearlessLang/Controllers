@@ -5,6 +5,7 @@ import static gui.Window.named;
 import static gui.Window.small;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -13,7 +14,6 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
@@ -58,7 +58,7 @@ final class Panel{
   private final JPanel linksBox= new JPanel();
   private final Collapsible links= new Collapsible("Links",new JScrollPane(linksBox),false);
   private final Collapsible information= new Collapsible("Information",new JScrollPane(details),true);
-  private final JButton openDocs= small("Open docs",()->openDocs(this.project.folder()));
+  private final JButton openDocs= small("Open docs",()->openDocs(root,this.project.folder()));
   private final JButton action= named(new JButton("Compile"),"action");
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
@@ -150,16 +150,17 @@ final class Panel{
   }
   private void viewLog(){
     var sel= logList.getSelectedValue();
-    Window.showText(root,Fs.readUtf8(sel.path()),sel.path().getFileName().toString(),JOptionPane.PLAIN_MESSAGE);
+    Window.onFiles(root,"The log is not shown",()->Window.showText(root,Fs.readUtf8(sel.path()),sel.path().getFileName().toString(),JOptionPane.PLAIN_MESSAGE));
   }
-  private void copyLog(){
-    var selection= new StringSelection(Fs.readUtf8(logList.getSelectedValue().path()));
+  private void copyLog(){ Window.onFiles(root,"The log is not copied",()->copy(Fs.readUtf8(logList.getSelectedValue().path()))); }
+  private static void copy(String text){
+    var selection= new StringSelection(text);
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection,selection);
   }
   private void deleteLog(){
     var sel= logList.getSelectedValue();
     if (JOptionPane.showConfirmDialog(root,"Delete "+sel.path().getFileName()+"?","Fearless",JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION){ return; }
-    Fs.rmTree(sel.path());
+    Window.onFiles(root,"The log is not deleted",()->Fs.rmTree(sel.path()));
   }
   //For a code project: what it can run. Unknown until compiled, a single main needs
   //no choice, and several mains are picked one by one or with All and None.
@@ -220,9 +221,6 @@ final class Panel{
     res.add(field);
     return res;
   }
-  static void openDocs(Path folder){
-    var genJava= folder.resolve(Facts.outDir).resolve("gen_java");
-    if (!Files.isDirectory(genJava)){ return; }
-    Fs.walk(genJava,s->s.filter(p->p.toString().endsWith(".html")).toList()).forEach(OpenPath::open);
-  }
+  static void openDocs(Component parent, Path folder){ Window.onFiles(parent,"The documentation is not opened",()->docs(folder).forEach(OpenPath::open)); }
+  private static List<Path> docs(Path folder){ return Fs.walk(folder.resolve(Facts.outDir).resolve("gen_java"),s->s.filter(p->p.toString().endsWith(".html")).toList()); }
 }

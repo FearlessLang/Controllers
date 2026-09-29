@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -99,9 +101,11 @@ final class ManagerTest{
     m.settle();
   }
   private static void until(Manager m, Predicate<State> done){
+    var end= System.nanoTime()+Duration.ofSeconds(30).toNanos();
     while(true){
       m.settle();
       if (done.test(m.state())){ return; }
+      assertTrue(System.nanoTime() < end);
       try{ Thread.sleep(20); }
       catch(InterruptedException e){ throw new AssertionError(e); }
     }
@@ -407,6 +411,53 @@ final class ManagerTest{
     send(m,"register",TaggedText.of(data.toString()));
     assertTrue(view.notes.getLast().startsWith("Nothing exists at the given path."));
     assertEquals(List.of(),listed(dir));
+  }
+  private static void mode(Path p, String mode){ Fs.ofV(()->Files.setPosixFilePermissions(p,PosixFilePermissions.fromString(mode))); }
+  @Test void foldersTheManagerCanNotReadOrChangeAreRefusedOrInvalidNeverFatal(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir);
+    var closed= folder(dir,"closed");
+    var readOnly= folder(dir,"readOnly");
+    var cached= data(dir);
+    var partly= folder(dir,"partly");
+    var hidden= folder(partly,"hidden");
+    var cache= folder(cached,Facts.outDir);
+    Fs.writeUtf8(cache.resolve("a.built"),"");
+    mode(closed,"---------");
+    Assumptions.assumeFalse(Files.isReadable(closed));
+    mode(readOnly,"r-xr-xr-x");
+    mode(cache,"r-xr-xr-x");
+    mode(hidden,"---------");
+    send(m,TaggedText.of(closed.toString()));
+    send(m,TaggedText.of(readOnly.toString()));
+    send(m,TaggedText.of(cached.toString()));
+    send(m,TaggedText.of(partly.toString()));
+    m.connect(closed);
+    m.settle();
+    same("""
+      The manager was asked to register
+      [###]closed
+      but could not read or change it: access denied: [###]closed
+      Give Fearless access to the folder, then register it again.""",view.notes.get(0));
+    same("[###]readOnly\nbut could not read or change it: access denied: [###]readOnly[###]",view.notes.get(1));
+    same("[###]data\nbut could not read or change it: access denied: [###]a.built[###]",view.notes.get(2));
+    same("Eclipse is not connected: access denied: [###]closed",view.notes.get(3));
+    assertEquals(List.of("partly "+partly),listed(dir));
+    same("""
+      The folder of this project can not be read:
+      [###]partly
+      access denied: [###]hidden
+      Give Fearless access to it, or forget this project.""",project(m,partly).problem().orElseThrow());
+    var again= manager(dir);
+    again.settle();
+    assertEquals(Project.State.dataInvalid,project(again,partly).state());
+    mode(cache,"rwxr-xr-x");
+    send(again,TaggedText.of(cached.toString()));
+    Fs.writeUtf8(cache.resolve("a.built"),"");
+    mode(cache,"r-xr-xr-x");
+    send(again,"clean","data");
+    same("--- clear cache failed: access denied: [###]a.built ---\n",eclipse(dir,"data","console.txt"));
+    List.of(closed,readOnly,cache,hidden).forEach(p->mode(p,"rwxr-xr-x"));
   }
   @Test void renamingAProjectKeepsItsConsole(@TempDir Path dir){
     var m= manager(dir);

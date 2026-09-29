@@ -4,8 +4,11 @@ import static userMessages.UserError.path;
 import static userMessages.Violation.freshCopyThenReport;
 import static userMessages.Violation.reported;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 import userMessages.UserError;
 import utils.Join;
@@ -104,8 +107,14 @@ public final class Messages{
       """.formatted(path(icon.toString())));
   }
   public static UserError infoError(String rendered){ return new UserError(rendered); }
-  public static String kindReset(String alias){
-    return "In projects.info the \"kind\" of \""+alias+"\" was missing or not one of the kinds: \""+alias+"\" is now idle, and its compiled cache is deleted.";
+  public static String kindReset(String alias, Optional<String> cacheKept){
+    return "In projects.info the \"kind\" of \""+alias+"\" was missing or not one of the kinds: \""+alias+"\" is now idle, and its compiled cache is "+cacheKept.map(w->"not deleted: "+w).orElse("deleted")+".";
+  }
+  public static String fileFailure(IOException e){
+    return e.getClass().getSimpleName().replaceFirst("Exception$","").replaceAll("(?<=[a-z])(?=[A-Z])"," ").toLowerCase(Locale.ROOT)+": "+e.getMessage();
+  }
+  public static String registerRefused(Path folder, IOException e){
+    return "The manager was asked to register\n"+folder+"\nbut could not read or change it: "+fileFailure(e)+"\nGive Fearless access to the folder, then register it again.";
   }
   public static String tooManyLines(String message){
     return "The manager was sent a message of "+message.split("\n",-1).length+" lines, but a message is empty, to show the window, or a path, or a request of two or three lines: a verb, then a project name (a path for \"register\"), then for some verbs a third line:\n"+message;
@@ -129,6 +138,7 @@ public final class Messages{
   public static String severalEclipses(Path dir, List<Path> found){
     return "Eclipse is not connected: more than one Eclipse installation is in\n  "+dir+Join.of(found.stream().map(f->"\n  "+f),"\nThey are:","","")+"\n\nSelect the Eclipse program, or the folder holding it, of the one to connect.";
   }
+  public static String eclipseNotConnected(IOException e){ return "Eclipse is not connected: "+fileFailure(e); }
   public static String eclipseConnected(Path eclipse){
     return """
       Eclipse is now connected:

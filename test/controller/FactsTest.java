@@ -4,23 +4,29 @@ import static controller.Errs.err;
 import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import javax.imageio.ImageIO;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import controller.Registry.Kind;
 import fileSupport.LogFiles;
 import tools.Fs;
+import utils.Range;
 
 final class FactsTest{
   static Path project(Path dir, String name){
@@ -147,6 +153,31 @@ final class FactsTest{
       The folder of this project does not exist:
       [###]gone
       Restore it, or forget this project.""",Facts.of(dir.resolve("gone"),"gone",Kind.code).problem().orElseThrow());
+  }
+  @Test void aFolderDeletedWhileItIsCheckedIsMissing(@TempDir Path dir){
+    assertTimeoutPreemptively(Duration.ofSeconds(60),()->{
+      for (var i: Range.of(0,20)){
+        var project= project(dir,"p"+i);
+        IntStream.range(0,300).forEach(j->Fs.writeUtf8(project.resolve("_hello").resolve("f"+j+".fear"),""));
+        var gone= Thread.startVirtualThread(()->Fs.rmTree(project));
+        Facts.of(project,"p"+i,Kind.code);
+        gone.join();
+        same("The folder of this project does not exist:[###]",Facts.of(project,"p"+i,Kind.code).problem().orElseThrow());
+      }
+    });
+  }
+  @Test void anUnreadableFolderIsAProblemNotACrash(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var project= project(dir,"someProject");
+    var hidden= project.resolve("_hello");
+    Fs.ofV(()->Files.setPosixFilePermissions(hidden,PosixFilePermissions.fromString("---------")));
+    Assumptions.assumeFalse(Files.isReadable(hidden));
+    same("""
+      The folder of this project can not be read:
+      [###]someProject
+      access denied: [###]_hello
+      Give Fearless access to it, or forget this project.""",Facts.of(project,"someproject",Kind.code).problem().orElseThrow());
+    Fs.ofV(()->Files.setPosixFilePermissions(hidden,PosixFilePermissions.fromString("rwxr-xr-x")));
   }
   @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
     var project= project(dir,"someProject");

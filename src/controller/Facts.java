@@ -30,15 +30,14 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     @Override public int hashCode(){ return file.hashCode(); }
   }
   public static Facts of(Path folder, String alias, Kind kind){
-    if (!Files.isDirectory(folder)){
-      return new Facts(0,0,-1,List.of(),false,false,Optional.empty(),List.of(),Optional.of("The folder of this project does not exist:\n"+folder+"\nRestore it, or forget this project."));
-    }
-    UserError.root= folder;
     while(true){
+      if (!Files.isDirectory(folder)){ return invalid("The folder of this project does not exist:\n"+folder+"\nRestore it, or forget this project."); }
+      UserError.root= folder;
       try{ return read(folder,alias,kind); }
-      catch(UncheckedIOException e){ if (!(e.getCause() instanceof NoSuchFileException)){ throw e; } }
+      catch(UncheckedIOException e){ if (!(e.getCause() instanceof NoSuchFileException)){ return invalid("The folder of this project can not be read:\n"+folder+"\n"+Messages.fileFailure(e.getCause())+"\nGive Fearless access to it, or forget this project."); } }
     }
   }
+  private static Facts invalid(String problem){ return new Facts(0,0,-1,List.of(),false,false,Optional.empty(),List.of(),Optional.of(problem)); }
   private static Facts read(Path folder, String alias, Kind kind){
     var src= sources(folder);
     Map<String,Boolean> built= Map.of();

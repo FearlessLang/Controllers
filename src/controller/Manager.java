@@ -1,5 +1,7 @@
 package controller;
 
+import java.io.UncheckedIOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -15,6 +17,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -97,8 +100,8 @@ public final class Manager{
   public void commit(String text, Runnable done){ post(()->commitNow(text,done)); }
   public void connect(Path chosen){ post(()->connectNow(chosen)); }
   void settle(){
-    try{ core.submit(()->{}).get(); }
-    catch(InterruptedException|ExecutionException e){ throw Bug.of(e); }
+    try{ core.submit(()->{}).get(1,TimeUnit.MINUTES); }
+    catch(InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
   }
   private void post(Runnable r){ core.execute(()->step(r)); }
   private void step(Runnable r){
@@ -110,9 +113,9 @@ public final class Manager{
     Fs.writeUtf8(eclipse.notes(),"");
     registry.all().forEach(this::open);
     registry.reset.forEach(e->{
-      Fs.rmTree(e.path().resolve(Facts.outDir));
+      var kept= uncache(e.path());
       scan(e.path());
-      tell(Messages.kindReset(e.alias()));
+      tell(Messages.kindReset(e.alias(),kept));
     });
     eclipse.publish(Eclipse.state(registry.all().stream().map(this::project).toList()));
   }
@@ -164,16 +167,20 @@ public final class Manager{
   private boolean add(Path folder){
     var nested= registry.overlapping(folder);
     if (nested.isPresent()){ tell(Messages.folderNestedWithRegistered(folder,nested.get()).getMessage()); return false; }
-    var wanted= Names.compactName(folder);
-    var fresh= Fs.of(()->{ try(var s= Files.list(folder)){ return s.findAny().isEmpty(); } });
-    var alias= Names.makeUnique(folder,registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
-    if (!alias.equals(wanted)){ tell(Messages.projectNamed(folder,wanted,alias).getMessage()); }
-    Fs.rmTree(folder.resolve(Facts.outDir));
-    registry.add(alias,folder);
-    if (fresh){
-      registry.update(folder,e->e.withKind(Kind.code));
-      MakeDemo.hello(folder,Names.pkgName(alias),AutoloadHandler.capFirst(alias));
+    String wanted;
+    boolean fresh;
+    String alias;
+    try{
+      wanted= Names.compactName(folder);
+      fresh= Fs.of(()->{ try(var s= Files.list(folder)){ return s.findAny().isEmpty(); } });
+      alias= Names.makeUnique(folder,registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
+      Fs.rmTree(folder.resolve(Facts.outDir));
+      if (fresh){ MakeDemo.hello(folder,Names.pkgName(alias),AutoloadHandler.capFirst(alias)); }
     }
+    catch(UncheckedIOException e){ tell(Messages.registerRefused(folder,e.getCause())); return false; }
+    if (!alias.equals(wanted)){ tell(Messages.projectNamed(folder,wanted,alias).getMessage()); }
+    registry.add(alias,folder);
+    if (fresh){ registry.update(folder,e->e.withKind(Kind.code)); }
     open(registry.of(folder).orElseThrow());
     return true;
   }
@@ -219,10 +226,21 @@ public final class Manager{
     l.lastRun= main;
     registry.update(f,e->e.withTimes(e.compiled(),System.currentTimeMillis()));
     output(f,"--- running "+main+" ---\n");
-    start(f,main,tools.run(f,main,out(f)));
+    ChildJvm child;
+    try{ child= tools.run(f,main,out(f)); }
+    catch(UncheckedIOException e){ output(f,"--- "+main+" did not start: "+Messages.fileFailure(e.getCause())+" ---\n"); l.todo= List.of(); scan(f); return; }
+    start(f,main,child);
     var alias= alias(f);
     var since= l.since;
-    l.reporting= core.scheduleAtFixedRate(()->step(()->eclipse.report(alias,f,main,since)),2,2,TimeUnit.SECONDS);
+    l.reporting= core.scheduleAtFixedRate(()->step(()->report(f,l,alias,main,since)),2,2,TimeUnit.SECONDS);
+  }
+  private void report(Path f, Live l, String alias, String main, Instant since){
+    try{ eclipse.report(alias,f,main,since); }
+    catch(UncheckedIOException e){
+      if (!(e.getCause() instanceof FileSystemException x) || !Path.of(x.getFile()).startsWith(f)){ throw e; }
+      l.reporting.cancel(false);
+      output(f,"--- the report of "+main+" stops: "+Messages.fileFailure(x)+" ---\n");
+    }
   }
   private void start(Path f, String what, ChildJvm child){
     var l= live.get(f);
@@ -252,7 +270,7 @@ public final class Manager{
       return;
     }
     l.reporting.cancel(false);
-    eclipse.report(alias(f),f,what,l.since);
+    report(f,l,alias(f),what,l.since);
     l.exit= ec;
     output(f,"--- "+what+" exited with "+ec+" after "+Duration.between(l.since,Instant.now()).toSeconds()+"s ---\n");
     next(f);
@@ -274,8 +292,12 @@ public final class Manager{
   }
   private void clean(Path f){
     if (refused(f,"clear cache")){ return; }
-    Fs.rmTree(f.resolve(Facts.outDir));
+    uncache(f).ifPresent(w->output(f,"--- clear cache failed: "+w+" ---\n"));
     scan(f);
+  }
+  private static Optional<String> uncache(Path f){
+    try{ Fs.rmTree(f.resolve(Facts.outDir)); return Optional.empty(); }
+    catch(UncheckedIOException e){ return Optional.of(Messages.fileFailure(e.getCause())); }
   }
   private void kind(Path f, String text){
     var kind= Kind.of(text);
@@ -315,7 +337,12 @@ public final class Manager{
     registry.all().forEach(e->scan(e.path()));
     done.run();
   }
-  private void connectNow(Path chosen){ tell(eclipse.connect(chosen,dir)); }
+  private void connectNow(Path chosen){
+    String said;
+    try{ said= eclipse.connect(chosen,dir); }
+    catch(UncheckedIOException e){ said= Messages.eclipseNotConnected(e.getCause()); }
+    tell(said);
+  }
   private void drop(Path f){
     var l= live.remove(f);
     if (l.child != null){ l.terminated= true; l.child.kill(); }
@@ -340,6 +367,7 @@ public final class Manager{
     Optional<String> error= Optional.empty();
     try{ l.mains= tools.mains(f); }
     catch(UserError err){ error= Optional.of(err.getMessage()); }
+    catch(UncheckedIOException err){ error= Optional.of(Messages.fileFailure(err.getCause())); }
     if (l.mains.isPresent()){ return; }
     l.facts= null;
     if (!Facts.of(f,e.alias(),e.kind()).equals(fresh)){ scan(f); return; }

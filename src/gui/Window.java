@@ -11,6 +11,7 @@ import java.awt.Insets;
 import java.awt.Taskbar;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -188,7 +189,7 @@ public final class Window implements Manager.View{
     var f= on.map(Project::folder);
     project.add(item("Clear cache",on.isPresent(),()->ask("clean",on.get().alias(),"")));
     project.add(item("Browse files",on.isPresent(),()->OpenPath.open(f.get())));
-    project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(f.get())));
+    project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(frame,f.get())));
     project.add(item("View base documentation",true,()->OpenPath.open(Deployed.stdLib("baseCache").resolve("base.html"))));
     project.add(item("Error report",on.flatMap(Project::problem).isPresent(),()->showText(frame,on.get().problem().get(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE)));
     project.addSeparator();
@@ -256,6 +257,10 @@ public final class Window implements Manager.View{
     res.setMargin(new Insets(0,6,0,6));
     res.addActionListener(_->action.run());
     return res;
+  }
+  static void onFiles(Component parent, String refused, Runnable r){
+    try{ r.run(); }
+    catch(UncheckedIOException e){ JOptionPane.showMessageDialog(parent,refused+": "+Messages.fileFailure(e.getCause()),"Fearless",JOptionPane.ERROR_MESSAGE); }
   }
   static void showText(Component parent, String text, String title, int kind){
     var area= mono(new JTextArea(text,24,90));
