@@ -25,6 +25,7 @@ public final class Messages{
     coordination information into files.
     """;
   }
+  public static String quoted(List<String> texts){ return Join.of(texts.stream().map(t->"\""+t+"\""),"",", ",""); }
   private static String blockingPrograms(){ return """
     Programs that may use or block this folder include security software
     (antivirus, ransomware protection, endpoint protection), backup tools,
@@ -123,7 +124,7 @@ public final class Messages{
     return "The manager was sent a message of "+message.split("\n",-1).length+" lines, but a message is empty, to show the window, or a path, or a request of two or three lines: a verb, then a project name (a path for \"register\"), then for some verbs a third line:\n"+message;
   }
   public static String unknownVerb(String verb, List<String> verbs){
-    return "The manager was asked to "+disp(verb)+", but that is not a request it knows: the requests are "+Join.of(verbs.stream().map(v->"\""+v+"\""),"",", ","")+".";
+    return "The manager was asked to "+disp(verb)+", but that is not a request it knows: the requests are "+quoted(verbs)+".";
   }
   public static String unknownProject(String verb, String name, List<String> names){
     return "The manager was asked to "+disp(verb)+" the project "+disp(name)+", but no project is named "+disp(name)+"."+Join.of(names.stream().map(n->"\n  "+n),"\nThe projects are:","","","\nNo project is registered.");
@@ -141,7 +142,7 @@ public final class Messages{
     return "The manager was asked to link \""+alias+"\" with "+disp(link)+", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.";
   }
   public static String thirdLineRefused(String verb, String name, String third, List<String> takers){
-    return "The manager was asked to "+disp(verb)+" "+disp(name)+" with the third line "+disp(third)+", but only the requests "+Join.of(takers.stream().map(v->"\""+v+"\""),"",", ","")+" take a third line.";
+    return "The manager was asked to "+disp(verb)+" "+disp(name)+" with the third line "+disp(third)+", but only the requests "+quoted(takers)+" take a third line.";
   }
   public static String dropRefused(String item, String why){ return "The manager was asked to register "+disp(item)+", dropped on its window, but "+why+"."; }
   public static String dropUnreadable(Exception e){ return "The manager was asked to register what was dropped on its window, but the desktop did not hand it over: "+e.getMessage(); }

@@ -179,7 +179,7 @@ public sealed interface Info{
     private Span here(){ return new Span(uri,line,col,line,col); }
     private Span from(Span start){ return between(start,here()); }
     private Span between(Span start, Span end){
-      return new Span(uri,start.startLine(),start.startCol(),end.startLine(),Math.max(end.startCol(),start.startCol()));
+      return new Span(uri,start.startLine(),start.startCol(),end.startLine(),end.startCol());
     }
     private UserError err(Span span, String msg){ return Info.err(text,span,msg); }
   }

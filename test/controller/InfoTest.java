@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import metaParser.Span;
+
 final class InfoTest{
   private static final URI uri= URI.create("test:projects.info");
   private static Info parse(String text){ return Info.parse(text,uri); }
@@ -73,6 +75,10 @@ final class InfoTest{
   @Test void valuesNestAtMost100Deep(){
     assertEquals("["+"[".repeat(99)+"]".repeat(99)+"]\n",Info.print(parse("[".repeat(100)+"]".repeat(100))));
     err("[###]Lists and objects nest at most 100 deep, and this value is inside 100 of them.[###]",()->parse("[".repeat(100_000)));
+  }
+  @Test void anObjectOverSeveralLinesSpansToItsClosingBrace(){
+    var obj= (Info.Obj)parse("{\"somekey\": {\"b\": \"1\",\n\"c\": \"2\"}}");
+    assertEquals(new Span(uri,1,13,2,9),obj.field("somekey").orElseThrow().value().span());
   }
   @Test void anUnclosedListIsReported(){
     err("[###]never closed with a matching ].[###]",()->parse("[\"a\""));

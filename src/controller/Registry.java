@@ -203,7 +203,7 @@ public final class Registry{
       throw Info.err(source,field.value().span(),"The metadata of \""+field.key()+"\" must be an object {...}.");
     }
     for (var f: obj.fields()){
-      if (!keys.contains(f.key())){ throw Info.err(source,f.keySpan(),"Unknown project attribute \""+f.key()+"\": the attributes of a project are "+Join.of(keys.stream().map(k->"\""+k+"\""),"",", ","")+"."); }
+      if (!keys.contains(f.key())){ throw Info.err(source,f.keySpan(),"Unknown project attribute \""+f.key()+"\": the attributes of a project are "+Messages.quoted(keys)+"."); }
     }
     var mains= names(source,obj,"mains","\"mains\"",Registry::isMainName,mainShape);
     var reads= aliasMap(source,obj,"reads");

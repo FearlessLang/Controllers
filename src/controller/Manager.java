@@ -241,14 +241,14 @@ public final class Manager{
     if (p.mains().isEmpty() && p.problem().isPresent()){ output(f,p.problem().get().stripTrailing()+"\n"); return List.of(); }
     if (p.mains().isEmpty()){ return nothing(f,"this project needs compiling"); }
     if (all.isEmpty()){ return nothing(f,"this project has no main"); }
-    if (named.isPresent() && !all.contains(named.get())){ return nothing(f,named.get()+" is not one of the mains "+all); }
+    if (named.isPresent() && !all.contains(named.get())){ return nothing(f,UserError.disp(named.get())+" is not one of the mains "+Messages.quoted(all)); }
     var stale= all.size() == 1 ? List.<String>of() : p.entry().mains().stream().filter(m->!all.contains(m)).toList();
     if (named.isEmpty() && !stale.isEmpty()){
       forgetStale(f);
-      return nothing(f,"the selected "+stale+" are not mains of this project; they are removed from the selected mains");
+      return nothing(f,"the selected "+Messages.quoted(stale)+" are not mains of this project; they are removed from the selected mains");
     }
     var chosen= named.map(List::of).orElseGet(p::selectedMains);
-    if (chosen.isEmpty()){ return nothing(f,"none of "+all+" is selected"); }
+    if (chosen.isEmpty()){ return nothing(f,"none of "+Messages.quoted(all)+" is selected"); }
     return chosen;
   }
   private List<String> nothing(Path f, String why){ output(f,"--- nothing to run: "+why+" ---\n"); return List.of(); }
@@ -406,9 +406,8 @@ public final class Manager{
     try{ l.mains= tools.mains(f); }
     catch(UserError err){ error= Optional.of(err.getMessage()); }
     catch(UncheckedIOException err){ error= Optional.of(Messages.fileFailure(err.getCause())); }
-    if (l.mains.isPresent()){ return; }
     if (!Facts.of(f,e.alias(),e.kind()).equals(fresh)){ scan(f); return; }
-    l.facts= fresh.outOfDate(error);
+    if (l.mains.isEmpty()){ l.facts= fresh.outOfDate(error); }
   }
   private void rotate(){
     if (!view.visible()){ return; }

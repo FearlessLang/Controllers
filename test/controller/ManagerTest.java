@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -269,7 +270,7 @@ final class ManagerTest{
     send(m,TaggedText.of(hello.toString()));
     send(m,"run","hello");
     idle(m);
-    assertTrue(eclipse(dir,"hello","console.txt").endsWith("--- nothing to run: none of [hello.One, hello.Two, hello.Three] is selected ---\n"));
+    same("[###]--- nothing to run: none of \"hello.One\", \"hello.Two\", \"hello.Three\" is selected ---\n",eclipse(dir,"hello","console.txt"));
     send(m,"mains","hello","hello.Three hello.One");
     send(m,"clear","hello");
     send(m,"run","hello");
@@ -296,7 +297,7 @@ final class ManagerTest{
     send(m,"run","hello","hello.Two");
     idle(m);
     same("""
-      --- nothing to run: hello.Nope is not one of the mains [hello.One, hello.Two] ---
+      --- nothing to run: "hello.Nope" is not one of the mains "hello.One", "hello.Two" ---
       --- running hello.Two ---
       ran hello.Two
       --- hello.Two exited with 0 after [###]s ---
@@ -664,7 +665,7 @@ final class ManagerTest{
     send(m,"clear","hello");
     send(m,"run","hello");
     idle(m);
-    assertEquals("--- nothing to run: the selected [hello.Old] are not mains of this project; they are removed from the selected mains ---\n",eclipse(dir,"hello","console.txt"));
+    same("--- nothing to run: the selected \"hello.Old\" are not mains of this project; they are removed from the selected mains ---\n",eclipse(dir,"hello","console.txt"));
     assertEquals(List.of("hello.Two"),project(m,hello).entry().mains());
   }
   @Test void mainsThatCanNotBeReadMakeTheProjectInvalidAndOutOfDateAndAreNotReadAgainWhileNothingChanges(@TempDir Path dir){
@@ -742,6 +743,26 @@ final class ManagerTest{
     assertEquals(2,reads.size());
     assertEquals(Project.State.codeCompiled,p.state());
     assertEquals(List.of("hello.Hello"),p.knownMains());
+  }
+  @Test void aProjectChangedWhileItsMainsAreReadSuccessfullyIsCheckedAgainWhileTheWindowIsHidden(@TempDir Path dir){
+    var reads= new ArrayList<Path>();
+    var m= manager(dir,f->{
+      reads.add(f);
+      var src= f.resolve("_hello").resolve("_rank_app.fear");
+      Fs.writeUtf8(src,Fs.readUtf8(src)+"//saved\n");
+      Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(System.currentTimeMillis()+60_000)));
+      return Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear"));
+    });
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    view.visible= false;
+    send(m,"compile","hello");
+    idle(m);
+    var p= project(m,hello);
+    assertEquals(List.of(hello),reads);
+    assertEquals(Project.State.codeOutdated,p.state());
+    assertEquals(Optional.empty(),p.mains());
+    same("[###]\"mains\": {}[###]",eclipse(dir,"state.info"));
   }
   @Test void aNewManagerRemembersTheProjectsAndStartsWithEmptyConsoles(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
