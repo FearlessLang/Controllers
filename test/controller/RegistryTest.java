@@ -186,6 +186,26 @@ final class RegistryTest{
     r.update(line,e->e.withTimes(333,444));
     assertEquals(r.all(),registry(dir).all());
   }
+  private static void activity(Path dir, String text, String expected){
+    Fs.writeUtf8(dir.resolve("manager").resolve("activity.txt"),text);
+    err("In "+dir.resolve("manager").resolve("activity.txt")+", line 2:\n"+expected,()->registry(dir));
+  }
+  @Test void eachMalformedLineOfActivityTxtIsAFatalErrorNamingTheLine(@TempDir Path dir){
+    var r= registry(dir);
+    r.add("someproject",folder(dir,"someproject"),Kind.idle);
+    var project= r.all().getFirst().path();
+    var line= "1 2 "+TaggedText.line(project.toString())+"\n";
+    var shape= " is malformed: a line is the time of the last compile, a space, the time of the last run, a space, then the project folder as a tagged text; a time is -1 for never, else the milliseconds since 1970, in at most 18 digits.";
+    activity(dir,line+"1 2\n","\"1 2\""+shape);
+    activity(dir,line+"1 x Str:/a\n","\"1 x Str:/a\""+shape);
+    activity(dir,line+"1 1234567890123456789 Str:/a\n","\"1 1234567890123456789 Str:/a\""+shape);
+    activity(dir,line+"\n","\"\""+shape);
+    activity(dir,line+"1 2 /a\n","\"/a\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.");
+    activity(dir,line+"1 2 "+TaggedText.of("/a\u0000b")+"\n","\"/a\" [Null 0x00] \"b\" is not a path this system accepts: [###].");
+    activity(dir,line+line,"The project folder\n"+project+"\nis also on line 1: a project folder is on one line only.");
+    Fs.writeUtf8(dir.resolve("manager").resolve("activity.txt"),line);
+    assertEquals(List.of(1L,2L),List.of(registry(dir).all().getFirst().compiled(),registry(dir).all().getFirst().run()));
+  }
   @Test void changingTheLinksKeepsTheirOrderInTheFile(@TempDir Path dir){
     var code= folder(dir,"code");
     var r= registry(dir);

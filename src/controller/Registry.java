@@ -9,6 +9,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -18,18 +19,21 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import controller.Info.Obj;
 import controller.Info.Obj.Field;
 import core.TName;
 import fileSupport.StringFiles;
+import metaParser.Message;
 import metaParser.Span;
 import userMessages.UserError;
 import utils.Join;
 import utils.OneOr;
 import utils.Push;
+import utils.Range;
 
 /// The registered projects: read once from `projects.info` and `activity.txt`, then kept
 /// in memory and written back whole on every change.
@@ -51,6 +55,7 @@ public final class Registry{
   }
   @SuppressWarnings("serial")
   public static final class Refused extends RuntimeException{ Refused(String message){ super(message); } }
+  private static final Pattern activityLine= Pattern.compile("(-1|\\d{1,18}) (-1|\\d{1,18}) (.*)");
   private static final List<String> keys= List.of("path","kind","mains","reads","edits");
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
@@ -151,9 +156,22 @@ public final class Registry{
   private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
   private List<Entry> withTimes(List<Entry> entries){
     if (!Files.exists(activityFile())){ return entries; }
-    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->Path.of(TaggedText.read(p[2],m->Messages.infoError("In "+activityFile()+":\n"+m))),p->p));
-    return entries.stream().map(e->Optional.ofNullable(times.get(e.path())).map(t->e.withTimes(Long.parseLong(t[0]),Long.parseLong(t[1]))).orElse(e)).toList();
+    var lines= read(activityFile()).lines().toList();
+    var times= new HashMap<Path,Matcher>();
+    for (int i : Range.of(lines)){
+      var m= activityLine.matcher(lines.get(i));
+      if (!m.matches()){ throw activityError(i,Message.displayString(lines.get(i))+" is malformed: a line is the time of the last compile, a space, the time of the last run, a space, then the project folder as a tagged text; a time is -1 for never, else the milliseconds since 1970, in at most 18 digits."); }
+      var folder= activityFolder(TaggedText.read(m.group(3),why->activityError(i,why)),i);
+      var first= times.put(folder,m);
+      if (first != null){ throw activityError(i,"The project folder\n"+folder+"\nis also on line "+(lines.indexOf(first.group())+1)+": a project folder is on one line only."); }
+    }
+    return entries.stream().map(e->Optional.ofNullable(times.get(e.path())).map(m->e.withTimes(Long.parseLong(m.group(1)),Long.parseLong(m.group(2)))).orElse(e)).toList();
   }
+  private Path activityFolder(String given, int line){
+    try{ return Path.of(given); }
+    catch(InvalidPathException e){ throw activityError(line,Message.displayString(given)+" is not a path this system accepts: "+e.getReason()+"."); }
+  }
+  private UserError activityError(int line, String why){ return Messages.infoError("In "+activityFile()+", line "+(line+1)+":\n"+why); }
   private void writeText(Path file, String text){
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,file,ATOMIC_MOVE); }

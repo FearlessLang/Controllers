@@ -166,6 +166,16 @@ final class FactsTest{
       }
     });
   }
+  //Files older than 1970 and no cache: the built check reads the missing .built file on every try
+  @Test void aFileMissingOnEveryTryIsAProblemNotAHang(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    Fs.ofV(()->Files.setLastModifiedTime(project.resolve("_hello").resolve("_rank_app.fear"),FileTime.fromMillis(-5000)));
+    same("""
+      The folder of this project can not be read:
+      [###]someProject
+      no such file: [###]hello.built
+      Give Fearless access to it, or forget this project.""",assertTimeoutPreemptively(Duration.ofSeconds(60),()->Facts.of(project,"someproject",Kind.code)).problem().orElseThrow());
+  }
   @Test void anUnreadableFolderIsAProblemNotACrash(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var project= project(dir,"someProject");

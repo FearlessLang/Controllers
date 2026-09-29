@@ -52,6 +52,14 @@ final class TaggedTextTest{
     err("[###]the end of the text was expected at offset 3[###]",()->read("UStr:\"a\".size"));
     err("[###]the closing \" was expected[###]",()->read("UStr:\"a"));
   }
+  @Test void aCharacterOutsideTheSetAfterStrOrUStrIsRejected(){
+    err("\"Str:/tmp/caf\" [U+00E9] is malformed: after \"Str:\" every character is in the Fearless character set, but [U+00E9] is not.",()->read("Str:/tmp/caf\u00e9"));
+    err("[###] is malformed: after \"UStr:\" every character is in the Fearless character set, but [U+00E9] is not.",()->read("UStr:\"caf\u00e9\".u"));
+  }
+  @Test void parenthesesInUStrNestAtMost100Deep(){
+    assertEquals("a",read("UStr:"+"(".repeat(100)+"\"a\""+")".repeat(100)));
+    err("A \"UStr:\" text is malformed: its parentheses nest at most 100 deep, and the one at offset 100 after \"UStr:\" is deeper.",()->read("UStr:"+"(".repeat(100_000)));
+  }
   @Test void aMalformedBase16IsRejected(){
     err("\"Base16:4\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.",()->read("Base16:4"));
     err("[###]each as 2 uppercase hex digits.",()->read("Base16:4a00"));

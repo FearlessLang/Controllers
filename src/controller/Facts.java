@@ -29,12 +29,15 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     @Override public boolean equals(Object o){ return o instanceof Icon i && file.equals(i.file) && stamp == i.stamp; }
     @Override public int hashCode(){ return file.hashCode(); }
   }
-  public static Facts of(Path folder, String alias, Kind kind){
-    while(true){
-      if (!Files.isDirectory(folder)){ return invalid("The folder of this project does not exist:\n"+folder+"\nRestore it, or forget this project."); }
-      UserError.root= folder;
-      try{ return read(folder,alias,kind); }
-      catch(UncheckedIOException e){ if (!(e.getCause() instanceof NoSuchFileException)){ return invalid("The folder of this project can not be read:\n"+folder+"\n"+Messages.fileFailure(e.getCause())+"\nGive Fearless access to it, or forget this project."); } }
+  static final int retries= 10;
+  public static Facts of(Path folder, String alias, Kind kind){ return of(folder,alias,kind,retries); }
+  private static Facts of(Path folder, String alias, Kind kind, int retries){
+    if (!Files.isDirectory(folder)){ return invalid("The folder of this project does not exist:\n"+folder+"\nRestore it, or forget this project."); }
+    UserError.root= folder;
+    try{ return read(folder,alias,kind); }
+    catch(UncheckedIOException e){
+      if (retries > 0 && e.getCause() instanceof NoSuchFileException){ return of(folder,alias,kind,retries-1); }
+      return invalid("The folder of this project can not be read:\n"+folder+"\n"+Messages.fileFailure(e.getCause())+"\nGive Fearless access to it, or forget this project.");
     }
   }
   private static Facts invalid(String problem){ return new Facts(0,0,-1,List.of(),false,false,Optional.empty(),List.of(),Optional.of(problem)); }

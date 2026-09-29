@@ -70,6 +70,10 @@ final class InfoTest{
   @Test void anUnclosedObjectIsReported(){
     err("[###]never closed with a matching }.[###]",()->parse("{\"a\":\"1\""));
   }
+  @Test void valuesNestAtMost100Deep(){
+    assertEquals("["+"[".repeat(99)+"]".repeat(99)+"]\n",Info.print(parse("[".repeat(100)+"]".repeat(100))));
+    err("[###]Lists and objects nest at most 100 deep, and this value is inside 100 of them.[###]",()->parse("[".repeat(100_000)));
+  }
   @Test void anUnclosedListIsReported(){
     err("[###]never closed with a matching ].[###]",()->parse("[\"a\""));
   }

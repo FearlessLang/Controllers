@@ -630,7 +630,7 @@ final class ManagerTest{
     Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
     send(m,"register",dir.toString());
-    send(m,"Str:a\u0000b");
+    send(m,TaggedText.of("a\u0000b"));
     assertEquals(List.of(
       "The manager was asked to register a folder, but the path in the message is not a tagged text: \""+dir+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
       "The manager was asked to register \"a\" [Null 0x00] \"b\", but that is not a path this system accepts: Nul character not allowed."),view.notes);

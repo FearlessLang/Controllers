@@ -67,6 +67,7 @@ public sealed interface Info{
     private int i= 0;
     private int line= 1;
     private int col= 1;
+    private int depth= 0;
     private Parser(String text, URI uri){ this.text= text; this.uri= uri; }
     private Info all(){
       var v= value();
@@ -77,12 +78,16 @@ public sealed interface Info{
     private Info value(){
       ws();
       if (!more()){ throw err(here(),"The text ends here, but a value (a string \"...\", a list [...] or an object {...}) was expected."); }
-      return switch(peek()){
+      if (depth == 100){ throw err(here(),"Lists and objects nest at most 100 deep, and this value is inside 100 of them."); }
+      depth+= 1;
+      var res= switch(peek()){
         case '"' -> str();
         case '[' -> list();
         case '{' -> obj();
         default -> throw err(here(),"Expected a string \"...\", a list [...] or an object {...} here.");
       };
+      depth-= 1;
+      return res;
     }
     private Str str(){
       var start= here();
