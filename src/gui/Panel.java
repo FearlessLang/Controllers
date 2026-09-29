@@ -176,7 +176,7 @@ final class Panel{
     mainsPanel.setVisible(p.kind() == Kind.code);
     var known= p.knownMains();
     pick.setVisible(known.size() > 1);
-    if (p.mains().isEmpty()){ mainsBox.add(new JLabel("<needs compiling>")); return; }
+    if (p.mains().isEmpty()){ mainsBox.add(new JLabel(p.problem().isPresent() ? "<invalid: see Error report>" : "<needs compiling>")); return; }
     if (known.size() == 1){ mainsBox.add(new JLabel(known.getFirst())); return; }
     for(var main: known){
       var box= named(new JCheckBox(main,p.selectedMains().contains(main)),main);

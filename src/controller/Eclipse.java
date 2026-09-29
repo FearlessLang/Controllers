@@ -4,12 +4,15 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -17,6 +20,7 @@ import controller.Info.Obj;
 import controller.Info.Obj.Field;
 import controller.Info.Str;
 import fileSupport.JUnitReport;
+import fileSupport.LogFiles;
 import tools.Fs;
 import tools.JavacTool;
 import userMessages.Violation;
@@ -45,11 +49,14 @@ public record Eclipse(Path dir){
   private static Field field(String key, Info value){ return new Field(key,Info.noSpan,value); }
   private static Str str(String value){ return new Str(value,Info.noSpan); }
   public void publish(String state){ replace(dir.resolve("state.info"),state); }
-  public void report(String alias, Path folder, String main, Instant since){
-    var next= dir.resolve(alias).resolve("next");
-    JUnitReport.write(next,folder,main,since);
-    if (Files.exists(JUnitReport.file(next))){ Fs.ofV(()->Files.move(JUnitReport.file(next),JUnitReport.file(dir.resolve(alias)),ATOMIC_MOVE)); }
+  /// The JUnit report of main, when the newest unit test log of folder was written since main started.
+  public static Optional<String> report(Path folder, String main, Instant since){
+    while(true){
+      try{ return LogFiles.list(folder).stream().filter(e->e.path().getFileName().toString().startsWith("unit_test_log")).findFirst().filter(e->e.when().isAfter(since)).map(_->JUnitReport.document(JUnitReport.suite(main,folder))); }
+      catch(UncheckedIOException e){ if (!(e.getCause() instanceof NoSuchFileException)){ throw e; } }
+    }
   }
+  public void report(String alias, String report){ replace(dir.resolve(alias).resolve("report.xml"),report); }
   public static void append(Path file, String text){
     Fs.ensureDir(file.getParent());
     Fs.ofV(()->Files.writeString(file,text,CREATE,APPEND));

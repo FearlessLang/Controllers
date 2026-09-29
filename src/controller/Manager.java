@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
-import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
@@ -27,6 +26,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -234,14 +234,14 @@ public final class Manager{
     if (!p.needsCompiling()){ l.todo= run ? chosen(f,named) : List.of(); next(f); return; }
     l.thenRun= run;
     l.named= named;
-    registry.update(f,e->e.withTimes(System.currentTimeMillis(),e.run()));
-    output(f,"--- compiling "+f.getFileName()+" ---\n");
     l.compiled.setLength(0);
-    start(f,Project.compiling,tools.compile(f,out(f)));
+    output(f,"--- compiling "+f.getFileName()+" ---\n");
+    if (start(f,Project.compiling,()->tools.compile(f,out(f)))){ registry.update(f,e->e.withTimes(System.currentTimeMillis(),e.run())); }
   }
   private List<String> chosen(Path f, Optional<String> named){
     var p= project(f);
     var all= p.knownMains();
+    if (p.mains().isEmpty() && p.problem().isPresent()){ output(f,p.problem().get().stripTrailing()+"\n"); return List.of(); }
     if (p.mains().isEmpty()){ return nothing(f,"this project needs compiling"); }
     if (all.isEmpty()){ return nothing(f,"this project has no main"); }
     if (named.isPresent() && !all.contains(named.get())){ return nothing(f,named.get()+" is not one of the mains "+all); }
@@ -260,32 +260,39 @@ public final class Manager{
     if (l.terminated || l.todo.isEmpty()){ scan(f); return; }
     var main= l.todo.getFirst();
     l.todo= l.todo.subList(1,l.todo.size());
+    output(f,"--- running "+main+" ---\n");
+    if (!start(f,main,()->tools.run(f,main,out(f)))){ return; }
     l.runs+= 1;
     l.lastRun= main;
+    l.exit= -1;
     registry.update(f,e->e.withTimes(e.compiled(),System.currentTimeMillis()));
-    output(f,"--- running "+main+" ---\n");
-    ChildJvm child;
-    try{ child= tools.run(f,main,out(f)); }
-    catch(UncheckedIOException e){ output(f,"--- "+main+" did not start: "+Messages.fileFailure(e.getCause())+" ---\n"); l.todo= List.of(); scan(f); return; }
-    start(f,main,child);
-    var alias= alias(f);
-    var since= l.since;
-    l.reporting= core.scheduleAtFixedRate(()->step(()->report(f,l,alias,main,since)),2,2,TimeUnit.SECONDS);
+    l.reporting= core.scheduleAtFixedRate(()->step(()->report(f,l)),2,2,TimeUnit.SECONDS);
   }
-  private void report(Path f, Live l, String alias, String main, Instant since){
-    try{ eclipse.report(alias,f,main,since); }
+  private void report(Path f, Live l){
+    Optional<String> report;
+    try{ report= Eclipse.report(f,l.job,l.since); }
     catch(UncheckedIOException e){
-      if (!(e.getCause() instanceof FileSystemException x) || !Path.of(x.getFile()).startsWith(f)){ throw e; }
       l.reporting.cancel(false);
-      output(f,"--- the report of "+main+" stops: "+Messages.fileFailure(x)+" ---\n");
+      output(f,"--- the report of "+l.job+" stops: "+Messages.fileFailure(e.getCause())+" ---\n");
+      return;
     }
+    report.ifPresent(r->eclipse.report(alias(f),r));
   }
-  private void start(Path f, String what, ChildJvm child){
+  private boolean start(Path f, String what, Supplier<ChildJvm> jvm){
     var l= live.get(f);
+    ChildJvm child;
+    try{ child= jvm.get(); }
+    catch(UncheckedIOException e){
+      output(f,"--- "+(what.equals(Project.compiling) ? "compile" : what)+" did not start: "+Messages.fileFailure(e.getCause())+" ---\n");
+      l.todo= List.of();
+      scan(f);
+      return false;
+    }
     l.job= what;
     l.since= Instant.now();
     l.child= child;
     Thread.startVirtualThread(()->await(f,l,child));
+    return true;
   }
   private void await(Path f, Live l, ChildJvm child){
     int ec;
@@ -296,6 +303,7 @@ public final class Manager{
   private void exited(Path f, Live l, ChildJvm child, int ec){
     if (live.get(f) != l || l.child != child){ return; }
     var what= l.job;
+    if (!what.equals(Project.compiling) && !l.reporting.isCancelled()){ l.reporting.cancel(false); report(f,l); }
     l.child= null;
     l.job= "";
     if (what.equals(Project.compiling)){
@@ -307,8 +315,6 @@ public final class Manager{
       next(f);
       return;
     }
-    l.reporting.cancel(false);
-    report(f,l,alias(f),what,l.since);
     l.exit= ec;
     output(f,"--- "+what+" exited with "+ec+" after "+Duration.between(l.since,Instant.now()).toSeconds()+"s ---\n");
     next(f);

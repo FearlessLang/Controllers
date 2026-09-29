@@ -33,16 +33,16 @@ import utils.OneOr;
 /// The windows are only ever carried, and never against an edge of the screen: a window let go at an edge is how a desk is asked to fill half the screen, and the desk then offers to fill the other half with something else, which is a conversation this test has no business starting. They are never resized either, which matters more: the program that shows folders opens its next window at the size the last one was left, so a test that resizes a window leaves the run after it aiming at a window that is no longer the shape it was measured on.
 final class DesktopDragTest{
   private static final int[] onLinux= {
-    1852,892,
-    637,304,179,304,
-    883,304,
-    1852,660,
-    637,304,1079,304,
-    33,129,
-    575,560,
-    340,377,1520,700,
-    956,304,
-    1856,304};
+    1822,784,
+    1596,842,700,842,
+    1404,843,
+    1822,546,
+    1596,842,2600,842,
+    32,128,
+    2000,640,
+    862,916,3000,1100,
+    1479,843,
+    3379,843};
   private static final int[] onWindows= {
     36,28,
     300,14,300,300,

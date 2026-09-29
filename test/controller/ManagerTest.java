@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -53,10 +55,14 @@ final class ManagerTest{
   }
   record Fake(Function<Path,Optional<Map<String,String>>> read) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
+      if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       FactsTest.cache(folder,"hello",FactsTest.after(folder));
       return jvm(out,"compiled","0","0");
     }
     @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
+      var log= folder.resolve(".out").resolve("logs").resolve("unit_test_log$21000101_000000_000Z.log");
+      if (main.endsWith("Slow")){ Fs.writeUtf8(log,"<testcase classname=\"a\" name=\"b\" file=\"f\" line=\"1\"></testcase>\n"); }
+      if (main.endsWith("Garbled")){ Fs.ensureDir(log.getParent()); Fs.ofV(()->Files.write(log,new byte[]{(byte)0xFF,'\n'})); }
       return jvm(out,"ran "+main,"0",main.endsWith("Slow") ? "60000" : "0");
     }
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
@@ -609,12 +615,47 @@ final class ManagerTest{
     var m= manager(dir,_->{ throw Report.launchPathNotFound(dir.resolve("gone")); });
     var hello= folder(dir,"hello");
     send(m,TaggedText.of(hello.toString()));
-    send(m,"compile","hello");
+    send(m,"run","hello");
     idle(m);
     var p= project(m,hello);
+    var error= Report.launchPathNotFound(dir.resolve("gone")).getMessage();
     assertEquals(Project.State.codeInvalid,p.state());
     assertTrue(p.needsCompiling());
-    assertEquals(Report.launchPathNotFound(dir.resolve("gone")).getMessage(),p.problem().orElseThrow());
+    assertEquals(error,p.problem().orElseThrow());
+    assertEquals("--- compiling hello ---\ncompiled\n--- compile done ---\n"+error.stripTrailing()+"\n",eclipse(dir,"hello","console.txt"));
+  }
+  @Test void aCompileWhoseJvmDoesNotStartIsShownOnItsProject(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var noJvm= folder(dir,"nojvm");
+    send(m,TaggedText.of(noJvm.toString()));
+    send(m,"run","nojvm");
+    assertEquals("--- compiling nojvm ---\n--- compile did not start: io: Cannot run program \"java\": error=2, No such file or directory ---\n",eclipse(dir,"nojvm","console.txt"));
+    var p= project(m,noJvm);
+    assertEquals(List.of(Project.State.codeNoCache,-1L),List.of(p.state(),p.entry().compiled()));
+  }
+  @Test void aRunReportsUnderTheNameItsProjectHasNow(@TempDir Path dir){
+    var m= manager(dir,"hello.Slow");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,"run","hello");
+    until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
+    m.commit("{\"other\": {\"path\": \"Str:"+hello.toString().replace('\\','/')+"\", \"kind\": \"code\"}}",()->{});
+    m.settle();
+    var old= dir.resolve("manager").resolve("eclipse").resolve("hello").resolve("report.xml");
+    Fs.ofV(()->Files.deleteIfExists(old));
+    until(m,_->Files.exists(dir.resolve("manager").resolve("eclipse").resolve("other").resolve("report.xml")));
+    send(m,"terminate","other");
+    idle(m);
+    same("[###]<testsuite name=\"hello.Slow\" tests=\"1\" failures=\"0\" errors=\"0\">\n<testcase classname=\"a\"[###]",eclipse(dir,"other","report.xml"));
+    assertFalse(Files.exists(old));
+  }
+  @Test void aLogTheReportCanNotReadStopsTheReportOnly(@TempDir Path dir){
+    var m= manager(dir,"hello.Garbled");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,"run","hello");
+    idle(m);
+    same("[###]ran hello.Garbled\n--- the report of hello.Garbled stops: malformed input: [###] ---\n--- hello.Garbled exited with 0 after [###]s ---\n",eclipse(dir,"hello","console.txt"));
   }
   @Test void mainsTheCompilerWouldCompileMakeTheProjectOutOfDate(@TempDir Path dir){
     var m= manager(dir,_->Optional.empty());
