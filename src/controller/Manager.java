@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
 import mainCoordinator.MakeDemo;
-import realSourceOracle.AutoloadHandler;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.Report;
@@ -215,7 +214,7 @@ public final class Manager{
       Fs.rmTree(folder.resolve(Facts.outDir));
       fresh= Fs.of(()->{ try(var s= Files.list(folder)){ return s.findAny().isEmpty(); } });
       alias= Names.makeUnique(folder,registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
-      if (fresh){ MakeDemo.hello(folder,Names.pkgName(alias),AutoloadHandler.capFirst(alias)); }
+      if (fresh){ MakeDemo.hello(folder,Names.pkgName(alias),"Hello"); }
     }
     catch(UncheckedIOException e){ tell(Messages.registerRefused(folder,e.getCause())); return false; }
     if (!alias.equals(wanted)){ tell(Messages.projectNamed(folder,wanted,alias).getMessage()); }

@@ -46,17 +46,21 @@ public final class Names{
     return Optional.of("The marker file \""+alias+ext+"\" is missing from\n"+folder+"\nRestore it, or forget and re-add this project folder.");
   }
   public static String makeUnique(Path folder, Set<String> taken){
-    var name= compactName(folder);
-    var chosen= isName(name) && !taken.contains(name) ? name : free(folder,folder.getFileName().toString(),taken);
+    var all= markers(folder);
+    var marked= all.size() == 1 ? stem(all.getFirst()) : "";
+    var chosen= isName(marked) && !taken.contains(marked) ? marked : free(folder,folder.getFileName().toString(),taken);
     nameAs(folder,chosen);
     return chosen;
   }
   public static String free(Path folder, String wanted, Set<String> taken){
-    var base= wanted.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]+","_");
+    var lower= wanted.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]+","_");
+    var base= lower.substring(0,Math.min(lower.length(),64));
     var name= isName(base) ? base : "p"+base;
-    return IntStream.iterate(1,i->i+1).mapToObj(i->i == 1 ? name : name+i).filter(n->isFree(folder,n,taken)).findFirst().orElseThrow();
+    return IntStream.iterate(1,i->i+1).mapToObj(i->i == 1 ? name : name+i).filter(n->isName(n) && isFree(folder,n,taken)).findFirst().orElseThrow();
   }
-  private static boolean isFree(Path folder, String name, Set<String> taken){ return !taken.contains(name) && !hasMarker(folder,name); }
+  private static boolean isFree(Path folder, String name, Set<String> taken){
+    return !taken.contains(name) && Fs.of(()->{ try(var s= Files.list(folder)){ return s.noneMatch(p->p.getFileName().toString().equalsIgnoreCase(name+ext)); } });
+  }
   private static boolean hasMarker(Path folder, String name){ return Files.exists(folder.resolve(name+ext)); }
   private static void nameAs(Path folder, String name){
     assert isName(name);

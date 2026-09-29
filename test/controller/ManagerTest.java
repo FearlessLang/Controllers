@@ -166,6 +166,15 @@ final class ManagerTest{
     assertTrue(Files.isRegularFile(hello.resolve("_hello").resolve("_rank_app.fear")));
     assertEquals(Kind.code,project(m,hello).kind());
   }
+  @Test void aSecondFolderNamedComIsNamedWithTheFirstValidFreeName(@TempDir Path dir){
+    var m= manager(dir);
+    var first= folder(dir.resolve("a"),"com");
+    var second= folder(dir.resolve("b"),"com");
+    send(m,TaggedText.of(first.toString()));
+    send(m,TaggedText.of(second.toString()));
+    assertEquals(List.of("com "+first,"com10 "+second),listed(dir));
+    same("[###]\nHello: Main { sys -> sys.out.println(\"Hello World!\") }\n",Fs.readUtf8(second.resolve("_com10").resolve("_rank_app.fear")));
+  }
   @Test void aFileRegistersTheFolderItIsInAndRegisteringAgainSelects(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");

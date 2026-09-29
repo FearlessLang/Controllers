@@ -55,8 +55,9 @@ public final class Messages{
       You started Fearless on:
       %s
       A project name uses only lowercase letters, digits and underscores,
-      starts with a letter or an underscore, and is not the name of another
-      project Fearless keeps track of.
+      starts with a letter or an underscore, is not a name the file system
+      reserves ("con", "prn", "aux", "nul", "com1" to "com9", "lpt1" to "lpt9"),
+      and is not the name of another project Fearless keeps track of.
 
       The marker file "%s%s" in that folder holds the name: rename it to change the name.
       """.formatted(alias,wanted,path(folder.toString()),alias,".fearless"));

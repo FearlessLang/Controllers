@@ -6,12 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import core.TName;
 import tools.Fs;
 
 final class NamesTest{
@@ -106,6 +109,24 @@ final class NamesTest{
     Fs.writeUtf8(project.resolve("my_game.fearless"),"");
     Fs.writeUtf8(project.resolve("other.fearless"),"");
     assertTrue(Names.markerProblem(project,"my_game").orElseThrow().contains("More than one"));
+  }
+  @Test void everyChosenNameIsAValidFreeNameWithAValidPackageName(@TempDir Path dir){
+    var taken= new HashSet<String>();
+    var names= List.of("com","lpt","con","aux","a".repeat(250),"---","1abc","_","base","rank","caf\u00e9","\u65e5\u672c","\u00c4rger","Com");
+    for (var i= 0; i < 12; i++){
+      for (var n: names){
+        var chosen= Names.makeUnique(folder(dir.resolve(i+"_"+names.indexOf(n)),n),Set.copyOf(taken));
+        assertTrue(Names.isName(chosen),chosen);
+        assertTrue(taken.add(chosen),chosen);
+        assertTrue(TName.isPkgName(Names.pkgName(chosen)),chosen);
+      }
+    }
+  }
+  @Test void aMarkerDifferingOnlyInCaseIsNotTakenAsTheChosenName(@TempDir Path dir){
+    var project= folder(dir,"hello");
+    Fs.writeUtf8(project.resolve("Hello.fearless"),"kept\n");
+    assertEquals("hello2",Names.makeUnique(project,Set.of()));
+    assertEquals("kept\n",Fs.readUtf8(project.resolve("hello2.fearless")));
   }
   @Test void pkgNameIsTheAliasMadeAcceptable(){
     assertEquals("eclipseexample",Names.pkgName("eclipseexample"));
