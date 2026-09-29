@@ -143,7 +143,7 @@ public final class Registry{
   private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
   private List<Entry> withTimes(List<Entry> entries){
     if (!Files.exists(activityFile())){ return entries; }
-    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->Path.of(TaggedText.read(p[2],Messages::infoError)),p->p));
+    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->Path.of(TaggedText.read(p[2],m->Messages.infoError("In "+activityFile()+":\n"+m))),p->p));
     return entries.stream().map(e->Optional.ofNullable(times.get(e.path())).map(t->e.withTimes(Long.parseLong(t[0]),Long.parseLong(t[1]))).orElse(e)).toList();
   }
   private void writeText(Path file, String text){

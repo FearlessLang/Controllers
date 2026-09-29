@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import tools.Fs;
-import userMessages.UserError;
 import utils.Bug;
 import utils.Range;
 
@@ -31,7 +30,7 @@ public final class TaggedText{
     if (text.codePoints().noneMatch(TaggedText::surrogate)){ return "UStr:"+uStr(text.codePoints().toArray()); }
     return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes(text));
   }
-  static String read(String text, Function<String,UserError> bad){
+  static String read(String text, Function<String,? extends RuntimeException> bad){
     if (text.startsWith("Str:")){ return text.substring("Str:".length()); }
     if (text.startsWith("UStr:")){ return new Reader(text.substring("UStr:".length()),bad).all(); }
     if (!text.startsWith("Base16:")){ throw bad.apply("\""+text+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way."); }
@@ -53,7 +52,7 @@ public final class TaggedText{
     for (int i : Range.of(0,path.length())){ res[2*i]= (byte)path.charAt(i); res[2*i+1]= (byte)(path.charAt(i) >> 8); }
     return res;
   }
-  private static String path(byte[] bytes, String text, Function<String,UserError> bad){
+  private static String path(byte[] bytes, String text, Function<String,? extends RuntimeException> bad){
     if (Fs.isWindows()){
       if (bytes.length % 2 != 0){ throw bad.apply("\""+text+"\" is malformed: a Windows name is 16 bit units, so its bytes are an even number."); }
       var res= new StringBuilder();
@@ -119,15 +118,15 @@ public final class TaggedText{
   /// closing one), parentheses, .u, and .u"..." adding the characters with those code points.
   private static final class Reader{
     private final String s;
-    private final Function<String,UserError> bad;
+    private final Function<String,? extends RuntimeException> bad;
     private int i;
-    Reader(String s, Function<String,UserError> bad){ this.s= s; this.bad= bad; }
+    Reader(String s, Function<String,? extends RuntimeException> bad){ this.s= s; this.bad= bad; }
     String all(){
       var res= expr();
       if (i != s.length()){ throw fail("the end of the text"); }
       return res;
     }
-    private UserError fail(String expected){ return bad.apply("\"UStr:"+s+"\" is malformed: "+expected+" was expected at offset "+i+" after \"UStr:\"."); }
+    private RuntimeException fail(String expected){ return bad.apply("\"UStr:"+s+"\" is malformed: "+expected+" was expected at offset "+i+" after \"UStr:\"."); }
     private String expr(){
       var sb= new StringBuilder(atom());
       while(true){

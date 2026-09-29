@@ -11,6 +11,7 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
@@ -58,7 +59,12 @@ public final class Main{
   //argument; the window and a register message register it.
   static String message(String... args){
     if (args.length > 1){ throw Messages.tooManyArguments(List.of(args)); }
-    return args.length == 0 ? "" : TaggedText.line(Manager.path(args[0]).toString());
+    return args.length == 0 ? "" : TaggedText.line(path(args[0]).toString());
+  }
+  private static Path path(String given){
+    if (given.isBlank()){ throw Violation.badLaunchArg(given,false); }
+    try{ return Path.of(given).toAbsolutePath().normalize(); }
+    catch(InvalidPathException e){ throw Violation.badLaunchArg(given,false); }
   }
   private static void display(UserError e){
     try{ e.display(); }

@@ -33,11 +33,11 @@ public final class Messages{
   }
 
   //-- what the user asked the manager, and it cannot accept; a String is a note, shown and not thrown
-  public static UserError folderNestedWithRegistered(Path folder, Path registered){
-    return new UserError("""
+  public static String folderNestedWithRegistered(Path folder, Path registered){
+    return """
       Fearless cannot keep track of this project folder.
 
-      You started Fearless on:
+      The manager was asked to register:
       %s
       Fearless is already keeping track of:
       %s
@@ -45,14 +45,14 @@ public final class Messages{
       that do not overlap, so that every file belongs to exactly one project.
 
       Use the folder Fearless already keeps track of, or make Fearless forget that
-      folder first, and then start Fearless on this one.
-      """.formatted(path(folder.toString()),path(registered.toString())));
+      folder first, and then register this one again.
+      """.formatted(path(folder.toString()),path(registered.toString()));
   }
-  public static UserError projectNamed(Path folder, String wanted, String alias){
-    return new UserError("""
+  public static String projectNamed(Path folder, String wanted, String alias){
+    return """
       Fearless keeps track of this project folder as "%s", not as "%s".
 
-      You started Fearless on:
+      The manager registered:
       %s
       A project name uses only lowercase letters, digits and underscores,
       starts with a letter or an underscore, is not a name the file system
@@ -60,29 +60,29 @@ public final class Messages{
       and is not the name of another project Fearless keeps track of.
 
       The marker file "%s%s" in that folder holds the name: rename it to change the name.
-      """.formatted(alias,wanted,path(folder.toString()),alias,".fearless"));
+      """.formatted(alias,wanted,path(folder.toString()),alias,".fearless");
   }
-  public static UserError managerFolderNotAProject(Path given, Path managerDir){
-    return new UserError("""
+  public static String managerFolderNotAProject(Path given, Path managerDir){
+    return """
       Fearless cannot keep track of this folder as a project.
 
-      You started Fearless on:
+      The manager was asked to register:
       %s
       The manager folder of this Fearless is:
       %s
       The manager folder holds what Fearless remembers about your projects: it is
       never part of a project, and no project is inside it.
-      """.formatted(path(given.toString()),path(managerDir.toString())));
+      """.formatted(path(given.toString()),path(managerDir.toString()));
   }
-  public static UserError projectFolderIsRoot(Path root){
-    return new UserError("""
+  public static String projectFolderIsRoot(Path root){
+    return """
       Fearless cannot keep track of the root of a drive or of the file system as a
       project.
 
-      You started Fearless on:
+      The manager was asked to register:
       %s
-      Put the project in a folder inside it, and start Fearless on that folder.
-      """.formatted(path(root.toString())));
+      Put the project in a folder inside it, and register that folder.
+      """.formatted(path(root.toString()));
   }
   public static UserError projectIconsMany(Path dir, List<Path> found){
     return new UserError("""
@@ -130,6 +130,9 @@ public final class Messages{
   public static String unreadableMessage(Path file){ return "The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\nThe bytes of\n"+file+"\ndo not form valid UTF-8 text."; }
   public static String metadataChanged(){ return "The project metadata is not committed: projects.info changed while it was edited.\nClose the editor, and choose Edit project metadata again to edit what projects.info holds now."; }
   public static String registerNoFolder(){ return "The manager was asked to register a folder, but the message names no folder."; }
+  public static String registerNotTagged(String why){ return "The manager was asked to register a folder, but the path in the message is not a tagged text: "+why; }
+  public static String registerNotAPath(String given, String why){ return "The manager was asked to register "+disp(given)+", but that is not a path this system accepts: "+why+"."; }
+  public static String registerNothing(Path path){ return "The manager was asked to register\n"+path+"\nbut nothing exists there: register an existing folder, or a file inside one."; }
   public static String unknownKind(Path folder, String text){
     return "The manager was asked to change the kind of\n"+folder+"\nto "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".";
   }
@@ -214,6 +217,17 @@ public final class Messages{
       desktop took it away: its system tray went away or rejected the icon.
       Restore the system tray of this desktop, then start Fearless again.
       """);
+  }
+  public static UserError trayConnectionLost(Throwable cause){
+    return new UserError("""
+      The desktop stopped talking to the Fearless icon in the system tray.
+
+      The tray icon is how a closed manager window is brought back, and the
+      connection to the system tray of this desktop failed.
+
+      %s
+      Restore the system tray of this desktop, then start Fearless again.
+      """.formatted(reported(cause)), cause);
   }
   public static UserError couldNotAddTrayIcon(Throwable cause){
     return new UserError("""

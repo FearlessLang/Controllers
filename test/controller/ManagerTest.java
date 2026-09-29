@@ -508,7 +508,7 @@ final class ManagerTest{
     send(m,"forget","data");
     assertEquals(List.of(),listed(dir));
     send(m,"register",TaggedText.of(data.toString()));
-    assertTrue(view.notes.getLast().startsWith("Nothing exists at the given path."));
+    same("The manager was asked to register\n"+data+"\nbut nothing exists there: register an existing folder, or a file inside one.",view.notes.getLast());
     assertEquals(List.of(),listed(dir));
   }
   private static void mode(Path p, String mode){ Fs.ofV(()->Files.setPosixFilePermissions(p,PosixFilePermissions.fromString(mode))); }
@@ -605,11 +605,23 @@ final class ManagerTest{
     send(m,"run","");
     send(m,"  ");
     send(m,"register","");
+    send(m,"register","Str: ");
     assertEquals(0,view.shown);
     assertEquals(List.of(
       "The manager was asked to \"run\" the project \"\", but no project is named \"\".\nNo project is registered.",
       "The manager was asked to register a folder, but the message names no folder.",
+      "The manager was asked to register a folder, but the message names no folder.",
       "The manager was asked to register a folder, but the message names no folder."),view.notes);
+  }
+  @Test void aRegisterWhosePathIsNotATaggedTextOrNotAPathIsRefused(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir);
+    send(m,"register",dir.toString());
+    send(m,"Str:a\u0000b");
+    assertEquals(List.of(
+      "The manager was asked to register a folder, but the path in the message is not a tagged text: \""+dir+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
+      "The manager was asked to register \"a\" [Null 0x00] \"b\", but that is not a path this system accepts: Nul character not allowed."),view.notes);
+    assertEquals(List.of(),listed(dir));
   }
   @Test void aMissingOrUnknownKindMakesTheProjectIdleAndClearsItsCache(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");

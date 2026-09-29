@@ -62,7 +62,7 @@ final class Sni{
     this.icon= icon;
     var address= System.getenv("DBUS_SESSION_BUS_ADDRESS");
     var path= Pattern.compile("unix:path=([^,;]+)").matcher(address == null ? "" : address);
-    if (!path.find()){ throw Messages.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS is "+address)); }
+    if (!path.find()){ throw Messages.couldNotAddTrayIcon(new IOException(address == null ? "DBUS_SESSION_BUS_ADDRESS is not set" : "DBUS_SESSION_BUS_ADDRESS \""+address+"\" names no \"unix:path=\" socket")); }
     try{
       channel= SocketChannel.open(StandardProtocolFamily.UNIX);
       channel.connect(UnixDomainSocketAddress.of(path.group(1)));
@@ -82,7 +82,7 @@ final class Sni{
   }
   private void serve(){
     try{ for(;;){ handle(next()); } }
-    catch(IOException e){ throw Messages.trayIconRemoved(); }
+    catch(IOException e){ throw Messages.trayConnectionLost(e); }
   }
   private Msg await(int serial) throws IOException{
     for(;;){

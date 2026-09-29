@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
@@ -54,6 +55,8 @@ import controller.TaggedText;
 import controller.Messages;
 import tools.Fs;
 import tools.OpenPath;
+import userMessages.UserError;
+import utils.Bug;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
 /// the selected one on the right. It shows the State the Manager hands it and turns every
@@ -101,11 +104,16 @@ public final class Window implements Manager.View{
     tick();
   }
   public static Window create(Main main){ return onEdt(()->new Window(main)); }
-  private static <T> T onEdt(Supplier<T> make){
+  static <T> T onEdt(Supplier<T> make){
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
     var result= new AtomicReference<T>();
     try{ SwingUtilities.invokeAndWait(()->result.set(make.get())); }
-    catch(InterruptedException|InvocationTargetException e){ throw Messages.couldNotStartGui(e); }
+    catch(InterruptedException e){ throw Bug.of(e); }
+    catch(InvocationTargetException e){
+      if (e.getCause() instanceof UserError u){ throw u; }
+      if (e.getCause() instanceof VirtualMachineError || e.getCause() instanceof LinkageError){ throw (Error)e.getCause(); }
+      throw Messages.couldNotStartGui(e.getCause());
+    }
     return result.get();
   }
   @Override public void show(){
@@ -138,9 +146,10 @@ public final class Window implements Manager.View{
       this only removes what Fearless itself registered.""","Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);
   }
   private void ask(String verb, String name, String arg){ main.manager().ask(verb,name,arg); }
+  private void refuse(String text){ main.manager().refuse(text); }
   private void select(String name){ ask("select",name,""); }
   @Override public boolean visible(){ return ticker.isRunning(); }
-  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::ask)); }
+  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::ask,this::refuse)); }
   private void render(State s){
     state= s;
     tiles.render(s);
@@ -190,9 +199,9 @@ public final class Window implements Manager.View{
     var on= state.shown();
     var f= on.map(Project::folder);
     project.add(item("Clear cache",on.isPresent(),()->ask("clean",on.get().alias(),"")));
-    project.add(item("Browse files",on.isPresent(),()->open(frame,f.get())));
-    project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(frame,f.get())));
-    project.add(item("View base documentation",true,()->open(frame,Deployed.stdLib("baseCache").resolve("base.html"))));
+    project.add(item("Browse files",on.isPresent(),()->open(this::refuse,f.get())));
+    project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(this::refuse,f.get())));
+    project.add(item("View base documentation",true,()->open(this::refuse,Deployed.stdLib("baseCache").resolve("base.html"))));
     project.add(item("Error report",on.flatMap(Project::problem).isPresent(),()->showText(frame,on.get().problem().get(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE)));
     project.addSeparator();
     project.add(item("Forget project",on.isPresent(),()->ask("forget",on.get().alias(),"")));
@@ -260,13 +269,13 @@ public final class Window implements Manager.View{
     res.addActionListener(_->action.run());
     return res;
   }
-  static void onFiles(Component parent, String refused, Runnable r){
+  static void onFiles(Consumer<String> refuse, String refused, Runnable r){
     try{ r.run(); }
-    catch(UncheckedIOException e){ JOptionPane.showMessageDialog(parent,refused+": "+Messages.fileFailure(e.getCause()),"Fearless",JOptionPane.ERROR_MESSAGE); }
+    catch(UncheckedIOException e){ refuse.accept(refused+": "+Messages.fileFailure(e.getCause())); }
   }
-  static void open(Component parent, Path path){
-    if (!Files.exists(path)){ JOptionPane.showMessageDialog(parent,"Nothing is opened: nothing exists at\n"+path,"Fearless",JOptionPane.ERROR_MESSAGE); return; }
-    OpenPath.open(path);
+  static void open(Consumer<String> refuse, Path path){
+    if (!Files.exists(path)){ refuse.accept("Nothing is opened: nothing exists at\n"+path); return; }
+    onFiles(refuse,"Nothing is opened",()->OpenPath.open(path));
   }
   static void showText(Component parent, String text, String title, int kind){
     var area= mono(new JTextArea(text,24,90));

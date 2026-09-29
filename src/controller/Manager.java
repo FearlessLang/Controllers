@@ -36,9 +36,7 @@ import controller.Registry.Kind;
 import mainCoordinator.MakeDemo;
 import tools.ChildJvm;
 import tools.Fs;
-import userMessages.Report;
 import userMessages.UserError;
-import userMessages.Violation;
 import utils.Bug;
 import utils.OneOr;
 
@@ -196,8 +194,8 @@ public final class Manager{
   private void register(String given){
     if (given.isBlank()){ tell(Messages.registerNoFolder()); return; }
     Path folder;
-    try{ folder= projectFolder(TaggedText.read(given,Messages::infoError),dir); }
-    catch(UserError e){ tell(e.getMessage()); return; }
+    try{ folder= projectFolder(TaggedText.read(given,m->new Registry.Refused(Messages.registerNotTagged(m))),dir); }
+    catch(Registry.Refused e){ tell(e.getMessage()); return; }
     if (!live.containsKey(folder) && !add(folder)){ return; }
     selected= Optional.of(folder);
     scan(folder);
@@ -205,7 +203,7 @@ public final class Manager{
   }
   private boolean add(Path folder){
     var nested= registry.overlapping(folder);
-    if (nested.isPresent()){ tell(Messages.folderNestedWithRegistered(folder,nested.get()).getMessage()); return false; }
+    if (nested.isPresent()){ tell(Messages.folderNestedWithRegistered(folder,nested.get())); return false; }
     String wanted;
     boolean fresh;
     String alias;
@@ -217,7 +215,7 @@ public final class Manager{
       if (fresh){ MakeDemo.hello(folder,Names.pkgName(alias),"Hello"); }
     }
     catch(UncheckedIOException e){ tell(Messages.registerRefused(folder,e.getCause())); return false; }
-    if (!alias.equals(wanted)){ tell(Messages.projectNamed(folder,wanted,alias).getMessage()); }
+    if (!alias.equals(wanted)){ tell(Messages.projectNamed(folder,wanted,alias)); }
     registry.add(alias,folder,fresh ? Kind.code : Kind.idle);
     open(registry.of(folder).orElseThrow());
     return true;
@@ -459,17 +457,15 @@ public final class Manager{
     output(f,text);
   }
   static Path projectFolder(String given, Path managerDir){
-    var path= path(given);
-    if (!Files.exists(path)){ throw Report.launchPathNotFound(path); }
+    if (given.isBlank()){ throw new Registry.Refused(Messages.registerNoFolder()); }
+    Path path;
+    try{ path= Path.of(given).toAbsolutePath().normalize(); }
+    catch(InvalidPathException e){ throw new Registry.Refused(Messages.registerNotAPath(given,e.getReason())); }
+    if (!Files.exists(path)){ throw new Registry.Refused(Messages.registerNothing(path)); }
     var folder= Registry.real(Files.isDirectory(path) ? path : path.getParent());
     var manager= Registry.real(managerDir);
-    if (folder.getFileName() == null){ throw Messages.projectFolderIsRoot(folder); }
-    if (folder.startsWith(manager) || manager.startsWith(folder)){ throw Messages.managerFolderNotAProject(path,manager); }
+    if (folder.getFileName() == null){ throw new Registry.Refused(Messages.projectFolderIsRoot(folder)); }
+    if (folder.startsWith(manager) || manager.startsWith(folder)){ throw new Registry.Refused(Messages.managerFolderNotAProject(path,manager)); }
     return folder;
-  }
-  static Path path(String given){
-    if (given.isBlank()){ throw Violation.badLaunchArg(given,false); }
-    try{ return Path.of(given).toAbsolutePath().normalize(); }
-    catch(InvalidPathException e){ throw Violation.badLaunchArg(given,false); }
   }
 }

@@ -36,7 +36,7 @@ import utils.ThrowingConsumer;
 /// A Project rendered into a Panel, its controls used on the EDT, and the requests they make read back as messages: verb, name, argument.
 final class PanelTest{
   private final List<String> asked= new ArrayList<>();
-  private final Panel panel= onEdt(()->new Panel((v,n,a)->asked.add(v+"\n"+n+"\n"+a)));
+  private final Panel panel= onEdt(()->new Panel((v,n,a)->asked.add(v+"\n"+n+"\n"+a),asked::add));
   private static Project project(String alias, Kind kind, Optional<List<String>> known, List<String> chosen, Map<String,List<String>> reads, boolean upToDate, String job, long run){
     var entry= new Entry(alias,Path.of(alias).toAbsolutePath(),kind,chosen,reads,Map.of(),-1,run);
     var facts= new Facts(1,1,0,List.of("hello"),true,upToDate,Optional.empty(),List.of(),Optional.empty());

@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
@@ -50,6 +51,7 @@ final class Panel{
   private record Link(JTextField field, String was){ boolean typed(){ return !field.getText().strip().equals(was); } }
   private static final int iconSize= 32;
   private final Requests requests;
+  private final Consumer<String> refuse;
   final JPanel root= new JPanel(new BorderLayout(8,8));
   final JTextArea output= mono(named(new JTextArea(10,60),"output"));
   private final JScrollPane outputScroll= new JScrollPane(output);
@@ -63,7 +65,7 @@ final class Panel{
   private final JPanel linksBox= new JPanel();
   private final Collapsible links= new Collapsible("Links",new JScrollPane(linksBox),false);
   private final Collapsible information= new Collapsible("Information",new JScrollPane(details),true);
-  private final JButton openDocs= small("Open docs",()->openDocs(root,this.project.folder()));
+  private final JButton openDocs= small("Open docs",this::openDocs);
   private final JButton action= named(new JButton("Compile"),"action");
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
@@ -74,8 +76,9 @@ final class Panel{
   private Object shown= List.of();
   private HashMap<String,Link> linkFields= new HashMap<>();
   private Project project;
-  Panel(Requests requests){
+  Panel(Requests requests, Consumer<String> refuse){
     this.requests= requests;
+    this.refuse= refuse;
     output.setEditable(false);
     details.setEditable(false);
     mainsBox.setLayout(new BoxLayout(mainsBox,BoxLayout.Y_AXIS));
@@ -114,6 +117,7 @@ final class Panel{
     outputPanel.add(outputScroll,BorderLayout.CENTER);
     root.add(outputPanel,BorderLayout.CENTER);
   }
+  private void openDocs(){ openDocs(refuse,project.folder()); }
   private void clearOutput(){ requests.ask("clear",project.alias(),""); }
   void append(String text){
     var bar= outputScroll.getVerticalScrollBar();
@@ -157,9 +161,9 @@ final class Panel{
   }
   private void viewLog(){
     var sel= logList.getSelectedValue();
-    Window.onFiles(root,"The log is not shown",()->Window.showText(root,Fs.readUtf8(sel.path()),sel.path().getFileName().toString(),JOptionPane.PLAIN_MESSAGE));
+    Window.onFiles(refuse,"The log is not shown",()->Window.showText(root,Fs.readUtf8(sel.path()),sel.path().getFileName().toString(),JOptionPane.PLAIN_MESSAGE));
   }
-  private void copyLog(){ Window.onFiles(root,"The log is not copied",()->copy(Fs.readUtf8(logList.getSelectedValue().path()))); }
+  private void copyLog(){ Window.onFiles(refuse,"The log is not copied",()->copy(Fs.readUtf8(logList.getSelectedValue().path()))); }
   private static void copy(String text){
     var selection= new StringSelection(text);
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection,selection);
@@ -167,7 +171,7 @@ final class Panel{
   private void deleteLog(){
     var sel= logList.getSelectedValue();
     if (JOptionPane.showConfirmDialog(root,"Delete "+sel.path().getFileName()+"?","Fearless",JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION){ return; }
-    Window.onFiles(root,"The log is not deleted",()->Fs.rmTree(sel.path()));
+    Window.onFiles(refuse,"The log is not deleted",()->Fs.rmTree(sel.path()));
   }
   //For a code project: what it can run. Unknown until compiled, a single main needs
   //no choice, and several mains are picked one by one or with All and None.
@@ -241,10 +245,10 @@ final class Panel{
     res.add(field);
     return res;
   }
-  static void openDocs(Component parent, Path folder){ Window.onFiles(parent,"The documentation is not opened",()->openAll(parent,folder.resolve(Facts.outDir).resolve("gen_java"))); }
-  private static void openAll(Component parent, Path gen){
+  static void openDocs(Consumer<String> refuse, Path folder){ Window.onFiles(refuse,"The documentation is not opened",()->openAll(refuse,folder.resolve(Facts.outDir).resolve("gen_java"))); }
+  private static void openAll(Consumer<String> refuse, Path gen){
     var docs= Fs.walk(gen,s->s.filter(p->p.toString().endsWith(".html")).toList());
-    if (docs.isEmpty()){ JOptionPane.showMessageDialog(parent,"The documentation is not opened: no .html file is in\n"+gen,"Fearless",JOptionPane.ERROR_MESSAGE); return; }
+    if (docs.isEmpty()){ refuse.accept("The documentation is not opened: no .html file is in\n"+gen); return; }
     docs.forEach(OpenPath::open);
   }
 }
