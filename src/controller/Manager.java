@@ -1,7 +1,11 @@
 package controller;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -29,7 +33,6 @@ import java.util.stream.Stream;
 
 import controller.Registry.Entry;
 import controller.Registry.Kind;
-import fileSupport.StringFiles;
 import mainCoordinator.MakeDemo;
 import realSourceOracle.AutoloadHandler;
 import tools.ChildJvm;
@@ -113,8 +116,8 @@ public final class Manager{
     files.sort(Comparator.comparing(f->f.getFileName().toString()));
     for(var file: files){
       Runnable r;
-      try{ var text= StringFiles.read(file,UserError.onFileError()); r= ()->apply(text); }
-      catch(UserError e){ r= ()->tell(Messages.unreadableMessage(e)); }
+      try{ var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(); r= ()->apply(text); }
+      catch(CharacterCodingException e){ r= ()->tell(Messages.unreadableMessage(file)); }
       Files.deleteIfExists(file);
       post(r);
     }
@@ -215,8 +218,7 @@ public final class Manager{
     }
     catch(UncheckedIOException e){ tell(Messages.registerRefused(folder,e.getCause())); return false; }
     if (!alias.equals(wanted)){ tell(Messages.projectNamed(folder,wanted,alias).getMessage()); }
-    registry.add(alias,folder);
-    if (fresh){ registry.update(folder,e->e.withKind(Kind.code)); }
+    registry.add(alias,folder,fresh ? Kind.code : Kind.idle);
     open(registry.of(folder).orElseThrow());
     return true;
   }
@@ -360,12 +362,12 @@ public final class Manager{
   private static List<String> words(String text){ return Stream.of(text.split(" +")).filter(w->!w.isEmpty()).toList(); }
   private void edit(Path f, UnaryOperator<Entry> op){
     try{ registry.update(f,op); }
-    catch(UserError e){ tell(e.getMessage()); }
+    catch(Registry.Refused e){ tell(e.getMessage()); }
   }
   private void commitNow(String text, Runnable done){
     var old= registry.all();
     try{ registry.commit(text); }
-    catch(UserError e){ tell(e.getMessage()); return; }
+    catch(Registry.Refused e){ tell(e.getMessage()); return; }
     var renamed= old.stream().filter(o->registry.of(o.path()).filter(e->!e.alias().equals(o.alias())).isPresent()).collect(Collectors.toMap(Entry::path,o->Fs.readUtf8(eclipse.console(o.alias()))));
     renamed.forEach((f,shown)->Fs.writeUtf8(console(f),shown));
     live.keySet().stream().filter(f->registry.of(f).isEmpty()).toList().forEach(this::drop);

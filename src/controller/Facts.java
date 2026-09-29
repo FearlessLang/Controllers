@@ -41,14 +41,15 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
   private static Facts read(Path folder, String alias, Kind kind){
     var src= sources(folder);
     Map<String,Boolean> built= Map.of();
-    Optional<Icon> icon= Optional.empty();
     Optional<String> problem;
     try{
       if (kind == Kind.code){ built= Coordinator.pkgsBuilt(folder); } else { new RealSourceOracleWithZip(folder); }
-      icon= icon(folder);
       problem= Names.markerProblem(folder,alias);
     }
     catch(UserError e){ problem= Optional.of(e.getMessage()); }
+    Optional<Icon> icon= Optional.empty();
+    try{ icon= icon(folder); }
+    catch(UserError e){ if (problem.isEmpty()){ problem= Optional.of(e.getMessage()); } }
     var upToDate= !built.isEmpty() && !built.containsValue(false);
     var modified= src.stream().mapToLong(Fs::lastModified).max().orElse(-1);
     var bytes= src.stream().mapToLong(p->Fs.of(()->Files.size(p))).sum();

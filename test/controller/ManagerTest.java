@@ -519,6 +519,41 @@ final class ManagerTest{
     same("--- clear cache failed: access denied: [###]a.built ---\n",eclipse(dir,"data","console.txt"));
     List.of(closed,readOnly,cache,hidden).forEach(p->mode(p,"rwxr-xr-x"));
   }
+  @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir);
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    var managerDir= dir.resolve("manager");
+    var files= List.of(managerDir.resolve("projects.info"),managerDir.resolve("activity.txt"));
+    var before= files.stream().map(Fs::readUtf8).toList();
+    send(m,"link","hello","data read lower");
+    same("[###]\"lower\" in \"reads\".\"data\" is not a Fearless type name[###]",view.notes.getLast());
+    assertEquals(before,files.stream().map(Fs::readUtf8).toList());
+    mode(managerDir,"r-xr-xr-x");
+    Assumptions.assumeFalse(Files.isWritable(managerDir));
+    send(m,"mains","hello","hello.One");
+    send(m,"kind","hello","idle");
+    m.commit("{}",()->{});
+    m.settle();
+    mode(managerDir,"rwxr-xr-x");
+    assertEquals(3,failures.size());
+    failures.forEach(f->same("Fearless could not save what it remembers about your project folders.[###]",f.getMessage()));
+    failures.clear();
+    assertEquals(1,view.notes.size());
+    assertEquals(List.of("hello "+hello),listed(dir));
+    assertEquals(List.of(Kind.code,List.of()),List.of(project(m,hello).kind(),project(m,hello).entry().mains()));
+  }
+  @Test void aMessageFileTheManagerCanNotReadIsFatal(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir);
+    var msg= folder(dir.resolve("manager"),"messages").resolve("1.msg");
+    Fs.writeUtf8(msg,"");
+    mode(msg,"---------");
+    Assumptions.assumeFalse(Files.isReadable(msg));
+    Errs.err("Fearless could not list its manager folder, or could not read or\nremove a message file in it.[###]1.msg[###]",m::drain);
+    mode(msg,"rw-r--r--");
+  }
   @Test void renamingAProjectKeepsItsConsole(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);

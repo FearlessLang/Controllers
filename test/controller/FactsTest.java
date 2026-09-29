@@ -228,6 +228,16 @@ final class FactsTest{
     assertTrue(facts.upToDate());
     assertTrue(facts.problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }
+  @Test void aProjectWithBrokenNamesKeepsItsIcon(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    Fs.writeUtf8(project.resolve("_hello").resolve("Bad.fear"),"");
+    var png= project.resolve(".config").resolve("icon").resolve("a.png");
+    Fs.ensureDir(png.getParent());
+    Fs.ofV(()->ImageIO.write(new BufferedImage(4,4,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
+    var facts= Facts.of(project,"someproject",Kind.code);
+    assertTrue(facts.problem().orElseThrow().contains("Bad.fear"));
+    assertEquals(png,facts.icon().orElseThrow().file());
+  }
   @Test void aDataFolderStillRejectsUnsafeNames(@TempDir Path dir){
     var project= dir.resolve("publicFiles");
     Fs.writeUtf8(project.resolve("Bad Name.txt"),"hi\n");

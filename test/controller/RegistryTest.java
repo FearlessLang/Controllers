@@ -1,6 +1,7 @@
 package controller;
 
 import static controller.Errs.err;
+import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -20,7 +21,6 @@ import org.junit.jupiter.api.io.TempDir;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
 import tools.Fs;
-import userMessages.UserError;
 
 final class RegistryTest{
   private static final URI uri= URI.create("test:projects.info");
@@ -113,30 +113,30 @@ final class RegistryTest{
   @Test void noFileYetIsNoRegisteredFolder(@TempDir Path dir){ assertEquals(List.of(),new Registry(dir).all()); }
   @Test void addedFolderIsIdleWithNoTimesAndNoLinks(@TempDir Path dir){
     var project= folder(dir,"someproject");
-    new Registry(dir).add("someproject",project);
+    new Registry(dir).add("someproject",project,Kind.idle);
     assertEquals(List.of(new Entry("someproject",project.toAbsolutePath().normalize(),Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)),new Registry(dir).all());
   }
   @Test void addingARegisteredFolderOrNameAgainIsABug(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
-    r.add("someproject",project);
-    assertThrows(AssertionError.class,()->r.add("again",project.resolve("..").resolve("someproject")));
-    assertThrows(AssertionError.class,()->r.add("someproject",folder(dir,"other")));
+    r.add("someproject",project,Kind.idle);
+    assertThrows(AssertionError.class,()->r.add("again",project.resolve("..").resolve("someproject"),Kind.idle));
+    assertThrows(AssertionError.class,()->r.add("someproject",folder(dir,"other"),Kind.idle));
     assertEquals(1,new Registry(dir).all().size());
   }
   @Test void aForgottenFolderForgetsItsTimesToo(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
-    r.add("someproject",project);
+    r.add("someproject",project,Kind.idle);
     r.update(project,e->e.withTimes(111,e.run()));
     r.remove(project);
-    r.add("someproject",project);
+    r.add("someproject",project,Kind.idle);
     assertEquals(-1,r.all().getFirst().compiled());
   }
   @Test void compileRunTimesAndMainsSurviveAReRead(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
-    r.add("someproject",project);
+    r.add("someproject",project,Kind.idle);
     r.update(project,e->e.withTimes(111,e.run()));
     r.update(project,e->e.withTimes(e.compiled(),222));
     r.update(project,e->e.withMains(List.of("hello.Hello1")));
@@ -149,8 +149,8 @@ final class RegistryTest{
     var kept= folder(dir,"kept");
     var gone= folder(dir,"gone");
     var r= new Registry(dir);
-    r.add("kept",kept);
-    r.add("gone",gone);
+    r.add("kept",kept,Kind.idle);
+    r.add("gone",gone,Kind.idle);
     r.remove(gone);
     assertEquals(List.of(kept.toAbsolutePath().normalize()),r.all().stream().map(Entry::path).toList());
     assertEquals(Optional.empty(),r.of(gone));
@@ -158,7 +158,7 @@ final class RegistryTest{
   @Test void aFolderInsideOrAroundARegisteredOneIsFound(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
-    r.add("someproject",project);
+    r.add("someproject",project,Kind.idle);
     assertEquals(project,r.overlapping(project.resolve("inside")).orElseThrow());
     assertEquals(project,r.overlapping(dir).orElseThrow());
     assertEquals(Optional.empty(),r.overlapping(folder(dir,"otherproject")));
@@ -166,12 +166,12 @@ final class RegistryTest{
   }
   @Test void aSiblingNamedLikeAPrefixIsNotNested(@TempDir Path dir){
     var r= new Registry(dir);
-    r.add("some",folder(dir,"some"));
+    r.add("some",folder(dir,"some"),Kind.idle);
     assertEquals(Optional.empty(),r.overlapping(folder(dir,"someproject")));
   }
   @Test void awkwardFolderNamesSurviveAReRead(@TempDir Path dir){
     var project= folder(dir,"a name with spaces");
-    new Registry(dir).add("spacey",project);
+    new Registry(dir).add("spacey",project,Kind.idle);
     assertEquals(project.toAbsolutePath().normalize(),new Registry(dir).all().getFirst().path());
   }
   @Test void aFolderNamedWithABackslashOrANewlineSurvivesAReReadWithItsTimes(@TempDir Path dir){
@@ -179,8 +179,8 @@ final class RegistryTest{
     var slash= folder(dir,"a\\b");
     var line= folder(dir,"c\nd");
     var r= new Registry(dir);
-    r.add("slash",slash);
-    r.add("line",line);
+    r.add("slash",slash,Kind.idle);
+    r.add("line",line,Kind.idle);
     r.update(slash,e->e.withTimes(111,222));
     r.update(line,e->e.withTimes(333,444));
     assertEquals(r.all(),new Registry(dir).all());
@@ -218,7 +218,7 @@ final class RegistryTest{
     r.commit("{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"code\"}\n}\n");
     assertEquals(Kind.code,r.all().getFirst().kind());
     var before= Registry.text(r.all());
-    assertThrows(UserError.class,()->r.commit("{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"nonsense\"}\n}\n"));
+    assertThrows(Registry.Refused.class,()->r.commit("{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"nonsense\"}\n}\n"));
     assertEquals(before,Registry.text(new Registry(dir).all()));
   }
   @Test void aTypeNameIsInReadsOrInEditsNotInBoth(){
@@ -234,8 +234,8 @@ final class RegistryTest{
     var code= folder(dir,"mycode");
     var pub= folder(dir,"pub");
     var r= new Registry(dir);
-    r.add("mycode",code);
-    r.add("pub",pub);
+    r.add("mycode",code,Kind.idle);
+    r.add("pub",pub,Kind.idle);
     r.update(code,e->e.withKind(Kind.code));
     r.update(pub,e->e.withKind(Kind.dataReadWrite));
     r.update(code,e->e.withLinks(Map.of("pub",List.of("Data2","Data3")),Map.of("pub",List.of("Data1"))));
@@ -255,8 +255,8 @@ final class RegistryTest{
   }
   private Optional<String> linkProblem(Path dir, Entry e, Entry... others){
     var r= new Registry(dir);
-    for (var o: others){ r.add(o.alias(),o.path()); r.update(o.path(),_->o); }
-    r.add(e.alias(),e.path());
+    for (var o: others){ r.add(o.alias(),o.path(),Kind.idle); r.update(o.path(),_->o); }
+    r.add(e.alias(),e.path(),Kind.idle);
     r.update(e.path(),_->e);
     return r.linkProblem(e,_->Optional.empty());
   }
@@ -292,8 +292,8 @@ final class RegistryTest{
   @Test void anEditThatWouldWriteAnInvalidFileIsRefusedAndChangesNothing(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
-    r.add("someproject",project);
-    err("[###]\"hello\" in \"mains\" is not a Fearless main name[###]",()->r.update(project,e->e.withMains(List.of("hello"))));
+    r.add("someproject",project,Kind.idle);
+    same("[###]\"hello\" in \"mains\" is not a Fearless main name[###]",assertThrows(Registry.Refused.class,()->r.update(project,e->e.withMains(List.of("hello")))).getMessage());
     assertEquals(List.of(),r.all().getFirst().mains());
   }
 }

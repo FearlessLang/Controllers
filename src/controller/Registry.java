@@ -1,6 +1,7 @@
 package controller;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,6 +48,8 @@ public final class Registry{
     public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias,path,kind,mains,r,e,compiled,run); }
     public Entry withTimes(long c, long r){ return new Entry(alias,path,kind,mains,reads,edits,c,r); }
   }
+  @SuppressWarnings("serial")
+  public static final class Refused extends RuntimeException{ Refused(String message){ super(message); } }
   private static final List<String> keys= List.of("path","kind","mains","reads","edits");
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
@@ -87,11 +90,11 @@ public final class Registry{
   public Optional<Path> overlapping(Path folder){
     return all.stream().map(Entry::path).filter(o->!o.equals(folder) && (folder.startsWith(o) || o.startsWith(folder))).findFirst();
   }
-  public void add(String alias, Path folder){
+  public void add(String alias, Path folder, Kind kind){
     assert folder.isAbsolute() && folder.equals(real(folder));
     assert all.stream().noneMatch(e->e.path().equals(folder) || e.alias().equals(alias));
     assert overlapping(folder).isEmpty();
-    save(Push.of(all,new Entry(alias,folder,Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)));
+    save(Push.of(all,new Entry(alias,folder,kind,List.of(),Map.of(),Map.of(),-1,-1)));
   }
   public void remove(Path folder){ save(all.stream().filter(e->!e.path().equals(folder)).toList()); }
   public void update(Path folder, UnaryOperator<Entry> op){
@@ -122,13 +125,16 @@ public final class Registry{
     }
     return Optional.empty();
   }
-  private List<Entry> entries(String text, UnaryOperator<Path> identity){ return fromInfo(text,Info.parse(text,infoFile().toUri()),identity); }
+  private List<Entry> entries(String text, UnaryOperator<Path> identity){
+    try{ return fromInfo(text,Info.parse(text,infoFile().toUri()),identity); }
+    catch(UserError e){ throw new Refused(e.getMessage()); }
+  }
   private void save(List<Entry> entries){
     var text= text(entries);
     var back= entries(text,p->p);
     assert back.equals(entries.stream().map(e->e.withTimes(-1,-1)).toList());
-    writeText(infoFile(),text);
     writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+TaggedText.line(e.path().toString())),"","\n","\n",""));
+    writeText(infoFile(),text);
     all= entries;
   }
   private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
@@ -139,8 +145,7 @@ public final class Registry{
   }
   private void writeText(Path file, String text){
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
-    StringFiles.writeNew(tmp,text,UserError.onFileError());
-    try{ Files.move(tmp,file,ATOMIC_MOVE); }
+    try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,file,ATOMIC_MOVE); }
     catch(IOException e){ throw Messages.couldNotSaveRegisteredFolders(dir,e); }
   }
   public static List<Entry> fromInfo(String source, Info root, UnaryOperator<Path> identity){

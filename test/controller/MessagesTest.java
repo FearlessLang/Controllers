@@ -192,8 +192,8 @@ for it.""", Messages.messageFolderNotWatchable(msgDir).getMessage());
     var msgDir= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager");
     var cause= new IOException("The system cannot find the file specified");
     same("""
-Fearless could not list its manager folder, or could not remove a
-message file from it.
+Fearless could not list its manager folder, or could not read or
+remove a message file in it.
 
 The manager folder is:
   C:\\Users\\ada\\AppData\\Local\\Fearless\\manager
