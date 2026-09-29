@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,8 +64,8 @@ public record Eclipse(Path dir){
     Fs.ofV(()->Files.writeString(file,text,CREATE,APPEND));
   }
   static List<Path> installs(Path dir){
-    var bases= Stream.concat(Stream.of(dir),list(dir).stream().filter(Files::isDirectory).sorted(Comparator.comparing(p->p.getFileName().toString())));
-    return bases.flatMap(b->Stream.of(b,b.resolve("eclipse"),b.resolve("Contents").resolve("Eclipse"))).filter(d->Files.isRegularFile(d.resolve(".eclipseproduct"))).distinct().toList();
+    var bases= Stream.concat(Stream.of(dir),Names.list(dir).stream().filter(Files::isDirectory));
+    return bases.flatMap(b->Stream.of(Optional.of(b),Names.folder(b,"eclipse"),Names.folder(b,"Contents").flatMap(c->Names.folder(c,"Eclipse"))).flatMap(Optional::stream)).filter(d->Names.child(d,".eclipseproduct").filter(Files::isRegularFile).isPresent()).distinct().toList();
   }
   public String connect(Path chosen, Path managerDir){
     var dir= Files.isDirectory(chosen) ? chosen : chosen.getParent();
@@ -77,13 +76,12 @@ public record Eclipse(Path dir){
     var plugin= JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("eclipsePlugin");
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     var plugins= fearless.resolve("plugins");
-    var names= list(plugin).stream().map(Path::getFileName).toList();
+    var names= Names.list(plugin).stream().map(Path::getFileName).toList();
     names.forEach(n->replace(plugins.resolve(n),Fs.of(()->Files.readAllBytes(plugin.resolve(n)))));
-    list(plugins).stream().filter(p->!names.contains(p.getFileName())).forEach(Fs::rmTree);
+    Names.list(plugins).stream().filter(p->!names.contains(p.getFileName())).forEach(Fs::rmTree);
     replace(fearless.resolve("manager.info"),Info.print(obj(List.of(field("manager",str(TaggedText.of(managerDir.toString()))),field("baseCache",str(TaggedText.of(Deployed.stdLib("baseCache").toString())))))).getBytes(UTF_8));
     return Messages.eclipseConnected(eclipse);
   }
-  private static List<Path> list(Path dir){ return Fs.of(()->{ try(var s= Files.list(dir)){ return s.toList(); } }); }
   private static void replace(Path file, byte[] content){
     var tmp= file.resolveSibling(file.getFileName()+".tmp");
     Fs.ensureDir(file.getParent());

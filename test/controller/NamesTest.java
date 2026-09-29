@@ -1,5 +1,6 @@
 package controller;
 
+import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -122,11 +123,14 @@ final class NamesTest{
       }
     }
   }
-  @Test void aMarkerDifferingOnlyInCaseIsNotTakenAsTheChosenName(@TempDir Path dir){
+  @Test void aMarkerDifferingOnlyInCaseIsMissingAndRegisteringRenamesIt(@TempDir Path dir){
     var project= folder(dir,"hello");
     Fs.writeUtf8(project.resolve("Hello.fearless"),"kept\n");
-    assertEquals("hello2",Names.makeUnique(project,Set.of()));
-    assertEquals("kept\n",Fs.readUtf8(project.resolve("hello2.fearless")));
+    same("The marker file \"hello.fearless\" is missing from[###]",Names.markerProblem(project,"hello").orElseThrow());
+    assertEquals("hello",Names.makeUnique(project,Set.of()));
+    assertEquals(List.of(project.resolve("hello.fearless")),Names.list(project));
+    assertEquals("kept\n",Fs.readUtf8(project.resolve("hello.fearless")));
+    assertEquals(Optional.empty(),Names.markerProblem(project,"hello"));
   }
   @Test void pkgNameIsTheAliasMadeAcceptable(){
     assertEquals("eclipseexample",Names.pkgName("eclipseexample"));

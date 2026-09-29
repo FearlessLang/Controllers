@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.imageio.ImageIO;
 
@@ -30,6 +31,7 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     @Override public int hashCode(){ return file.hashCode(); }
   }
   static final int retries= 10;
+  private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
   public static Facts of(Path folder, String alias, Kind kind){ return of(folder,alias,kind,retries); }
   private static Facts of(Path folder, String alias, Kind kind, int retries){
     if (!Files.isDirectory(folder)){ return invalid("The folder of this project does not exist:\n"+folder+"\nRestore it, or forget this project."); }
@@ -60,26 +62,25 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
   }
   Facts outOfDate(Optional<String> error){ return new Facts(files,bytes,modified,pkgs,hasCache,false,icon,logs,problem.or(()->error)); }
   static Optional<Icon> icon(Path folder){
-    var dir= folder.resolve(".config").resolve("icon");
-    if (!Files.isDirectory(dir)){ return Optional.empty(); }
-    var pngs= Fs.of(()->{ try(var s= Files.list(dir)){ return s
-      .filter(Files::isRegularFile)
-      .filter(p->p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png"))
-      .sorted()
-      .toList();
-    }});
-    if (pngs.size() > 1){ throw Messages.projectIconsMany(dir,pngs); }
+    var dir= Names.folder(folder,".config").flatMap(c->Names.folder(c,"icon"));
+    if (dir.isEmpty()){ return Optional.empty(); }
+    var pngs= Names.list(dir.get()).stream().filter(p->p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png") && Files.isRegularFile(p)).toList();
+    if (pngs.size() > 1){ throw Messages.projectIconsMany(dir.get(),pngs); }
     if (pngs.isEmpty()){ return Optional.empty(); }
     var png= pngs.getFirst();
+    var stamp= Fs.lastModified(png);
+    var known= decoded.get(png);
+    if (known != null && known.stamp() == stamp){ return Optional.of(known); }
     BufferedImage image;
     try{ image= ImageIO.read(png.toFile()); }
     catch(IOException e){ throw Messages.projectIconUnreadable(png); }
     if (image == null){ throw Messages.projectIconUnreadable(png); }
-    return Optional.of(new Icon(png,Fs.lastModified(png),image));
+    var res= new Icon(png,stamp,image);
+    decoded.put(png,res);
+    return Optional.of(res);
   }
   private static List<Path> sources(Path folder){
-    var cache= folder.resolve(outDir);
-    var written= folder.resolve(LogFiles.runDir);
-    return Fs.walk(folder,s->s.filter(p->!p.startsWith(cache) && !p.startsWith(written)).filter(Files::isRegularFile).toList());
+    var written= List.of(outDir,LogFiles.runDir);
+    return Fs.walk(folder,s->s.filter(p->!written.contains(folder.relativize(p).getName(0).toString())).filter(Files::isRegularFile).toList());
   }
 }

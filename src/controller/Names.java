@@ -3,10 +3,12 @@ package controller;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 import core.TName;
@@ -15,6 +17,7 @@ import realSourceOracle.BuildWithZip;
 import realSourceOracle.PathEntry;
 import tools.Fs;
 import userMessages.UserError;
+import utils.OneOr;
 
 /// A project is named by the stem of the one `.fearless` marker file in its folder.
 public final class Names{
@@ -42,7 +45,7 @@ public final class Names{
     if (all.size() > 1){
       return Optional.of("More than one .fearless marker file was found in\n"+folder+"\nA project folder holds exactly one, and its name is the project name: keep only \""+alias+ext+"\".");
     }
-    if (hasMarker(folder,alias)){ return Optional.empty(); }
+    if (all.size() == 1 && stem(all.getFirst()).equals(alias)){ return Optional.empty(); }
     return Optional.of("The marker file \""+alias+ext+"\" is missing from\n"+folder+"\nRestore it, or forget and re-add this project folder.");
   }
   public static String makeUnique(Path folder, Set<String> taken){
@@ -59,24 +62,25 @@ public final class Names{
     return IntStream.iterate(1,i->i+1).mapToObj(i->i == 1 ? name : name+i).filter(n->isName(n) && isFree(folder,n,taken)).findFirst().orElseThrow();
   }
   private static boolean isFree(Path folder, String name, Set<String> taken){
-    return !taken.contains(name) && Fs.of(()->{ try(var s= Files.list(folder)){ return s.noneMatch(p->p.getFileName().toString().equalsIgnoreCase(name+ext)); } });
+    var moved= markers(folder).stream().limit(1).toList();
+    return !taken.contains(name) && list(folder).stream().filter(p->!moved.contains(p)).noneMatch(p->p.getFileName().toString().equalsIgnoreCase(name+ext));
   }
-  private static boolean hasMarker(Path folder, String name){ return Files.exists(folder.resolve(name+ext)); }
   private static void nameAs(Path folder, String name){
     assert isName(name);
     var target= folder.resolve(name+ext);
     var all= markers(folder);
-    if (!Files.exists(target) && !all.isEmpty()){ Fs.ofV(()->Files.move(all.getFirst(),target)); }
-    if (!Files.exists(target) || Fs.of(()->Files.size(target)) == 0){ Fs.writeUtf8(target,MakeDemo.markerContent); }
+    if (!all.isEmpty() && !all.getFirst().getFileName().toString().equals(name+ext)){
+      var tmp= folder.resolve(UUID.randomUUID()+".tmp");
+      Fs.ofV(()->{ Files.move(all.getFirst(),tmp); Files.move(tmp,target); });
+    }
+    if (all.isEmpty() || Fs.of(()->Files.size(target)) == 0){ Fs.writeUtf8(target,MakeDemo.markerContent); }
   }
+  static List<Path> list(Path dir){ return Fs.of(()->{ try(var s= Files.list(dir)){ return s.sorted(Comparator.comparing(p->p.getFileName().toString())).toList(); } }); }
+  static Optional<Path> child(Path dir, String name){ return OneOr.opt(name,list(dir).stream().filter(p->p.getFileName().toString().equals(name))); }
+  static Optional<Path> folder(Path dir, String name){ return child(dir,name).filter(Files::isDirectory); }
   private static List<Path> markers(Path folder){
     if (!Files.isDirectory(folder)){ return List.of(); }
-    return Fs.of(()->{ try(var s= Files.list(folder)){ return s
-      .filter(Files::isRegularFile)
-      .filter(p->p.getFileName().toString().endsWith(ext))
-      .sorted()
-      .toList();
-    }});
+    return list(folder).stream().filter(p->p.getFileName().toString().endsWith(ext) && Files.isRegularFile(p)).toList();
   }
   private static String stem(Path file){
     var name= file.getFileName().toString();

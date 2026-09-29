@@ -4,6 +4,7 @@ import static controller.Errs.err;
 import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -196,7 +197,11 @@ final class FactsTest{
     Fs.ofV(()->ImageIO.write(new BufferedImage(4,4,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
     var first= Facts.of(project,"someproject",Kind.code);
     assertEquals(first,Facts.of(project,"someproject",Kind.code));
+    assertSame(first.icon().orElseThrow().image(),Facts.of(project,"someproject",Kind.code).icon().orElseThrow().image());
     assertEquals(4,first.icon().orElseThrow().image().getWidth());
+    Fs.ofV(()->ImageIO.write(new BufferedImage(6,6,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
+    Fs.ofV(()->Files.setLastModifiedTime(png,FileTime.fromMillis(Fs.lastModified(png)+1000)));
+    assertEquals(6,Facts.of(project,"someproject",Kind.code).icon().orElseThrow().image().getWidth());
   }
   @Test void twoIconsAreAProjectProblem(@TempDir Path dir){
     var project= project(dir,"someProject");
