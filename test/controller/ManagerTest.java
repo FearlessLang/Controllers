@@ -314,6 +314,41 @@ final class ManagerTest{
     assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.",view.notes.get(2));
     assertTrue(view.notes.get(3).startsWith("The manager was sent a message of 4 lines"));
   }
+  @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(data(dir).toString()));
+    send(m,"kind","data","data:readOnly");
+    var info= dir.resolve("manager").resolve("projects.info");
+    var before= Fs.readUtf8(info);
+    send(m,"mains","hello","hello.One\thello.Two");
+    send(m,"mains","hello","hello.One\r");
+    send(m,"link","hello","data read \u00c4rger");
+    assertEquals(before,Fs.readUtf8(info));
+    assertEquals(List.of(),project(m,hello).entry().mains());
+    assertEquals(Map.of(),project(m,hello).entry().reads());
+    assertEquals(3,view.notes.size());
+    same("In file: [###]projects.info\n\n005|     \"mains\": [\"hello.One    hello.Two\"]\n   |                         ^^^^\n[###]The character [Tab 0x09] is outside the safe character set of Fearless[###]",view.notes.get(0));
+    same("[###]The character [###] 0x0D] is outside the safe character set of Fearless[###]",view.notes.get(1));
+    same("[###]\"data\": [\"?rger\"][###]The character [U+00C4] is outside the safe character set of Fearless[###]",view.notes.get(2));
+  }
+  @Test void aMessageFileThatIsNotUtf8IsRefusedAndRemovedAndTheNextStartDrainsNothing(@TempDir Path dir){
+    var m= manager(dir);
+    var messages= folder(dir.resolve("manager"),"messages");
+    Fs.ofV(()->Files.write(messages.resolve("1.msg"),new byte[]{'r','u','n','\n',(byte)0xFF}));
+    Fs.writeUtf8(messages.resolve("2.msg"),"");
+    m.drain();
+    m.settle();
+    same("The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\n[###]1.msg[###]not form valid UTF-8 text[###]",view.notes.getFirst());
+    assertEquals(1,view.notes.size());
+    assertEquals(1,view.shown);
+    assertEquals(List.of(),Fs.of(()->{ try(var s= Files.list(messages)){ return s.toList(); } }));
+    var again= manager(dir);
+    again.drain();
+    again.settle();
+    assertEquals(1,view.notes.size());
+  }
   @Test void aFolderInsideARegisteredOneIsRefused(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");

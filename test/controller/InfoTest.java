@@ -2,7 +2,6 @@ package controller;
 
 import static controller.Errs.err;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
@@ -29,8 +28,8 @@ final class InfoTest{
     assertEquals("\"UStr:\\\"C:/caf\\\".u\\\"00E9\\\"\"\n",Info.print(s));
     assertEquals("C:/caf\u00e9",TaggedText.read(((Info.Str)parse(Info.print(s))).value(),Messages::infoError));
   }
-  @Test void printingACharacterOutsideTheSetIsABug(){
-    assertThrows(AssertionError.class,()->Info.print(new Info.Str("caf\u00e9",Info.noSpan)));
+  @Test void aPrintedCharacterOutsideTheSetIsPointedAtWhenParsedBack(){
+    err("[###]\n001| \"caf?\"\n   |     ^\n[###]The character [U+00E9] is outside the safe character set of Fearless[###]",()->parse(Info.print(new Info.Str("caf\u00e9",Info.noSpan))));
   }
   @Test void nestedListsAndObjectsParse(){
     var obj= (Info.Obj)parse("{\"a\":[\"x\",\"y\"],\"b\":{}}");

@@ -1,12 +1,16 @@
 package controller;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,9 +25,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import controller.Registry.Entry;
 import controller.Registry.Kind;
+import fileSupport.StringFiles;
 import mainCoordinator.MakeDemo;
 import realSourceOracle.AutoloadHandler;
 import tools.ChildJvm;
@@ -96,6 +102,33 @@ public final class Manager{
   public State state(){ return state; }
   public void start(){ core.scheduleWithFixedDelay(()->step(this::rotate),3,3,TimeUnit.SECONDS); }
   public void message(String text){ post(()->apply(text)); }
+  //Runs once before the watcher thread starts, then only from that thread: never concurrently.
+  public void drain(){
+    var msgDir= dir.resolve("messages");
+    try{ take(msgDir); }
+    catch(IOException e){ throw Messages.couldNotDrainMessageFolder(msgDir,e); }
+  }
+  private void take(Path msgDir) throws IOException{
+    var files= list(msgDir,"*.msg");
+    files.sort(Comparator.comparing(f->f.getFileName().toString()));
+    for(var file: files){
+      Runnable r;
+      try{ var text= StringFiles.read(file,UserError.onFileError()); r= ()->apply(text); }
+      catch(UserError e){ r= ()->tell(Messages.unreadableMessage(e)); }
+      Files.deleteIfExists(file);
+      post(r);
+    }
+    var old= Instant.now().minusSeconds(60);
+    for(var file: list(msgDir,"*.tmp")){
+      try{ if (Files.getLastModifiedTime(file).toInstant().isBefore(old)){ Files.deleteIfExists(file); } }
+      catch(NoSuchFileException e){}
+    }
+  }
+  private static List<Path> list(Path msgDir, String glob) throws IOException{
+    var files= new ArrayList<Path>();
+    try(var stream= Files.newDirectoryStream(msgDir,glob)){ stream.forEach(files::add); }
+    return files;
+  }
   public void ask(String verb, String name, String arg){ post(()->request(verb,name,arg)); }
   public void commit(String text, Runnable done){ post(()->commitNow(text,done)); }
   public void connect(Path chosen){ post(()->connectNow(chosen)); }
@@ -321,7 +354,7 @@ public final class Manager{
     if (names.isEmpty()){ out.remove(key); } else { out.put(key,names); }
     return out;
   }
-  private static List<String> words(String text){ return text.isBlank() ? List.of() : List.of(text.strip().split(" +")); }
+  private static List<String> words(String text){ return Stream.of(text.split(" +")).filter(w->!w.isEmpty()).toList(); }
   private void edit(Path f, UnaryOperator<Entry> op){
     try{ registry.update(f,op); }
     catch(UserError e){ tell(e.getMessage()); }

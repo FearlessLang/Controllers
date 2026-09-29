@@ -11,13 +11,9 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -107,7 +103,7 @@ public final class Main{
     Violation.running(()->manager.state().running());
     Tray.install(window,this);
     window.show();
-    drain();
+    manager.drain();
     Thread.startVirtualThread(()->watch(watcher));
     manager.start();
     if (!Fs.isMac()){ var l= Association.launcher(); Association.reconcile(l,Association.extensions(l)); }
@@ -130,33 +126,8 @@ public final class Main{
       try{ key= watcher.take(); }
       catch(InterruptedException e){ throw Bug.of(e); }
       key.pollEvents();
-      drain();
+      manager.drain();
       if (!key.reset()){ fail(Messages.messageFolderNotWatchable(msgDir())); return; }
     }
-  }
-  //Runs once before the watcher thread starts, then only from that thread: never concurrently.
-  private void drain(){
-    try{ take().forEach(manager::message); }
-    catch(IOException e){ throw Messages.couldNotDrainMessageFolder(msgDir(),e); }
-  }
-  private List<String> take() throws IOException{
-    var files= list("*.msg");
-    files.sort(Comparator.comparing(f->f.getFileName().toString()));
-    var messages= new ArrayList<String>();
-    for(var file: files){
-      messages.add(StringFiles.read(file,UserError.onFileError()));
-      Files.deleteIfExists(file);
-    }
-    var old= Instant.now().minusSeconds(60);
-    for(var file: list("*.tmp")){
-      try{ if (Files.getLastModifiedTime(file).toInstant().isBefore(old)){ Files.deleteIfExists(file); } }
-      catch(NoSuchFileException e){}
-    }
-    return messages;
-  }
-  private List<Path> list(String glob) throws IOException{
-    var files= new ArrayList<Path>();
-    try(var stream= Files.newDirectoryStream(msgDir(),glob)){ stream.forEach(files::add); }
-    return files;
   }
 }

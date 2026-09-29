@@ -1,5 +1,6 @@
 package controller;
 
+import static userMessages.UserError.disp;
 import static userMessages.UserError.path;
 import static userMessages.Violation.freshCopyThenReport;
 import static userMessages.Violation.reported;
@@ -120,17 +121,18 @@ public final class Messages{
     return "The manager was sent a message of "+message.split("\n",-1).length+" lines, but a message is empty, to show the window, or a path, or a request of two or three lines: a verb, then a project name (a path for \"register\"), then for some verbs a third line:\n"+message;
   }
   public static String unknownVerb(String verb, List<String> verbs){
-    return "The manager was asked to \""+verb+"\", but that is not a request it knows: the requests are "+Join.of(verbs.stream().map(v->"\""+v+"\""),"",", ","")+".";
+    return "The manager was asked to "+disp(verb)+", but that is not a request it knows: the requests are "+Join.of(verbs.stream().map(v->"\""+v+"\""),"",", ","")+".";
   }
   public static String unknownProject(String verb, String name, List<String> names){
-    return "The manager was asked to \""+verb+"\" the project \""+name+"\", but no project is named \""+name+"\"."+Join.of(names.stream().map(n->"\n  "+n),"\nThe projects are:","","","\nNo project is registered.");
+    return "The manager was asked to "+disp(verb)+" the project "+disp(name)+", but no project is named "+disp(name)+"."+Join.of(names.stream().map(n->"\n  "+n),"\nThe projects are:","","","\nNo project is registered.");
   }
+  public static String unreadableMessage(UserError e){ return "The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\n"+e.getMessage(); }
   public static String registerNoFolder(){ return "The manager was asked to register a folder, but the message names no folder."; }
   public static String unknownKind(Path folder, String text){
-    return "The manager was asked to change the kind of\n"+folder+"\nto \""+text+"\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".";
+    return "The manager was asked to change the kind of\n"+folder+"\nto "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".";
   }
   public static String malformedLink(String alias, String link){
-    return "The manager was asked to link \""+alias+"\" with \""+link+"\", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.";
+    return "The manager was asked to link \""+alias+"\" with "+disp(link)+", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.";
   }
   public static String noEclipse(Path dir){
     return "Eclipse is not connected: no Eclipse installation, a folder holding the file \".eclipseproduct\", is in\n  "+dir+"\nor in its folders \"eclipse\" or \"Contents/Eclipse\", or in those of a folder of it.\n\nSelect the Eclipse program, the folder holding it, or the folder Eclipse was unzipped into.";

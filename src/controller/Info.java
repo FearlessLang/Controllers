@@ -58,11 +58,10 @@ public sealed interface Info{
     }
     sb.append("  ".repeat(indent)).append('}');
   }
-  private static boolean safe(int c){ return c < 128 && Fs.allowed.indexOf(c) >= 0; }
   private static void quote(String value, StringBuilder sb){
-    assert value.codePoints().allMatch(Info::safe);
     sb.append('"').append(value.replace("\\","\\\\").replace("\"","\\\"").replace("\n","\\n")).append('"');
-  }  final class Parser{
+  }
+  final class Parser{
     private final String text;
     private final URI uri;
     private int i= 0;
@@ -108,7 +107,8 @@ public sealed interface Info{
         case 'n' -> '\n';
         default -> throw err(from(at),"Unknown escape \\"+c+": only \\\", \\\\ and \\n exist.");
       };
-    }    private Lst list(){
+    }
+    private Lst list(){
       var start= here();
       advance();
       var items= new ArrayList<Info>();
