@@ -106,6 +106,10 @@ final class ManagerTest{
     m.message(String.join("\n",lines));
     m.settle();
   }
+  private static void commit(Manager m, String text, Runnable done){
+    m.commit(Registry.text(m.state().projects().stream().map(Project::entry).toList()),text,done);
+    m.settle();
+  }
   private static void until(Manager m, Predicate<State> done){
     var end= System.nanoTime()+Duration.ofSeconds(30).toNanos();
     while(true){
@@ -152,6 +156,15 @@ final class ManagerTest{
     assertEquals(Project.State.codeNoCache,p.state());
     assertEquals(Optional.of(hello),m.state().selected());
     assertEquals(1,view.shown);
+  }
+  @Test void aFolderHoldingOnlyItsCompiledCacheIsEmptiedThenMadeAHelloWorldCodeProject(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= folder(dir,"hello");
+    Fs.writeUtf8(hello.resolve(Facts.outDir).resolve("hello.built"),"");
+    send(m,TaggedText.of(hello.toString()));
+    assertFalse(Files.exists(hello.resolve(Facts.outDir)));
+    assertTrue(Files.isRegularFile(hello.resolve("_hello").resolve("_rank_app.fear")));
+    assertEquals(Kind.code,project(m,hello).kind());
   }
   @Test void aFileRegistersTheFolderItIsInAndRegisteringAgainSelects(@TempDir Path dir){
     var m= manager(dir);
@@ -450,17 +463,28 @@ final class ManagerTest{
     var data= data(dir);
     send(m,TaggedText.of(data.toString()));
     var done= new ArrayList<String>();
-    m.commit("{\"data\": {\"path\": \"Str:nowhere\"}}",()->done.add("bad"));
-    m.settle();
+    commit(m,"{\"data\": {\"path\": \"Str:nowhere\"}}",()->done.add("bad"));
     assertEquals(List.of(),done);
     same("[###]\"path\" must be an absolute path[###]",view.notes.getLast());
-    m.commit(Registry.text(List.of(project(m,data).entry().withKind(Kind.dataReadWrite))),()->done.add("good"));
-    m.settle();
+    commit(m,Registry.text(List.of(project(m,data).entry().withKind(Kind.dataReadWrite))),()->done.add("good"));
     assertEquals(List.of("good"),done);
     assertEquals(Kind.dataReadWrite,project(m,data).kind());
-    m.commit("{}",()->done.add("empty"));
-    m.settle();
+    commit(m,"{}",()->done.add("empty"));
     assertEquals(List.of(),listed(dir));
+  }
+  @Test void metadataThatChangedWhileEditedIsNotCommitted(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    send(m,TaggedText.of(data.toString()));
+    var base= Registry.text(m.state().projects().stream().map(Project::entry).toList());
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    var done= new ArrayList<String>();
+    m.commit(base,base,()->done.add("stale"));
+    m.settle();
+    assertEquals(List.of(),done);
+    assertEquals(List.of("data "+data,"hello "+hello),listed(dir));
+    assertEquals(Messages.metadataChanged(),view.notes.getLast());
   }
   @Test void aProjectWhoseFolderIsGoneIsInvalidAndCanBeForgotten(@TempDir Path dir){
     var m= manager(dir);
@@ -540,8 +564,7 @@ final class ManagerTest{
     Assumptions.assumeFalse(Files.isWritable(managerDir));
     send(m,"mains","hello","hello.One");
     send(m,"kind","hello","idle");
-    m.commit("{}",()->{});
-    m.settle();
+    commit(m,"{}",()->{});
     mode(managerDir,"rwxr-xr-x");
     assertEquals(3,failures.size());
     failures.forEach(f->same("Fearless could not save what it remembers about your project folders.[###]",f.getMessage()));
@@ -565,8 +588,7 @@ final class ManagerTest{
     var data= data(dir);
     send(m,TaggedText.of(data.toString()));
     send(m,"compile","data");
-    m.commit("{\"other\": {\"path\": \"Str:"+data.toString().replace('\\','/')+"\", \"kind\": \"idle\"}}",()->{});
-    m.settle();
+    commit(m,"{\"other\": {\"path\": \"Str:"+data.toString().replace('\\','/')+"\", \"kind\": \"idle\"}}",()->{});
     assertEquals("--- compile refused: this project is idle, and only a code project compiles ---\n",eclipse(dir,"other","console.txt"));
   }
   @Test void aRequestNamingNoProjectOrFolderIsRefused(@TempDir Path dir){
@@ -611,18 +633,22 @@ final class ManagerTest{
     assertEquals("--- nothing to run: the selected [hello.Old] are not mains of this project; they are removed from the selected mains ---\n",eclipse(dir,"hello","console.txt"));
     assertEquals(List.of("hello.Two"),project(m,hello).entry().mains());
   }
-  @Test void mainsThatCanNotBeReadMakeTheProjectInvalidAndOutOfDate(@TempDir Path dir){
-    var m= manager(dir,_->{ throw Report.launchPathNotFound(dir.resolve("gone")); });
+  @Test void mainsThatCanNotBeReadMakeTheProjectInvalidAndOutOfDateAndAreNotReadAgainWhileNothingChanges(@TempDir Path dir){
+    var reads= new ArrayList<Path>();
+    var m= manager(dir,f->{ reads.add(f); throw Report.launchPathNotFound(dir.resolve("gone")); });
     var hello= folder(dir,"hello");
     send(m,TaggedText.of(hello.toString()));
     send(m,"run","hello");
     idle(m);
+    send(m,"select","hello");
+    send(m,"check","hello");
+    assertEquals(List.of(hello),reads);
     var p= project(m,hello);
     var error= Report.launchPathNotFound(dir.resolve("gone")).getMessage();
     assertEquals(Project.State.codeInvalid,p.state());
     assertTrue(p.needsCompiling());
     assertEquals(error,p.problem().orElseThrow());
-    assertEquals("--- compiling hello ---\ncompiled\n--- compile done ---\n"+error.stripTrailing()+"\n",eclipse(dir,"hello","console.txt"));
+    assertEquals("--- compiling hello ---\ncompiled\n--- compile done ---\n"+error.stripTrailing()+"\n"+error.stripTrailing()+"\n",eclipse(dir,"hello","console.txt"));
   }
   @Test void aCompileWhoseJvmDoesNotStartIsShownOnItsProject(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
@@ -639,8 +665,7 @@ final class ManagerTest{
     send(m,TaggedText.of(hello.toString()));
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
-    m.commit("{\"other\": {\"path\": \"Str:"+hello.toString().replace('\\','/')+"\", \"kind\": \"code\"}}",()->{});
-    m.settle();
+    commit(m,"{\"other\": {\"path\": \"Str:"+hello.toString().replace('\\','/')+"\", \"kind\": \"code\"}}",()->{});
     var old= dir.resolve("manager").resolve("eclipse").resolve("hello").resolve("report.xml");
     Fs.ofV(()->Files.deleteIfExists(old));
     until(m,_->Files.exists(dir.resolve("manager").resolve("eclipse").resolve("other").resolve("report.xml")));

@@ -66,6 +66,7 @@ public final class Manager{
     public List<String> running(){ return projects.stream().filter(Project::busy).map(p->p.alias()+" - "+p.job()).toList(); }
   }
   private static final class Live{
+    Facts scanned;
     Facts facts;
     Optional<Map<String,String>> mains= Optional.empty();
     String job= "";
@@ -133,7 +134,7 @@ public final class Manager{
     return files;
   }
   public void ask(String verb, String name, String arg){ post(()->request(verb,name,arg)); }
-  public void commit(String text, Runnable done){ post(()->commitNow(text,done)); }
+  public void commit(String base, String text, Runnable done){ post(()->commitNow(base,text,done)); }
   public void connect(Path chosen){ post(()->connectNow(chosen)); }
   public void refuse(String text){ post(()->tell(text)); }
   void settle(){
@@ -211,9 +212,9 @@ public final class Manager{
     String alias;
     try{
       wanted= Names.compactName(folder);
+      Fs.rmTree(folder.resolve(Facts.outDir));
       fresh= Fs.of(()->{ try(var s= Files.list(folder)){ return s.findAny().isEmpty(); } });
       alias= Names.makeUnique(folder,registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
-      Fs.rmTree(folder.resolve(Facts.outDir));
       if (fresh){ MakeDemo.hello(folder,Names.pkgName(alias),AutoloadHandler.capFirst(alias)); }
     }
     catch(UncheckedIOException e){ tell(Messages.registerRefused(folder,e.getCause())); return false; }
@@ -370,9 +371,9 @@ public final class Manager{
     try{ registry.update(f,op); }
     catch(Registry.Refused e){ tell(e.getMessage()); }
   }
-  private void commitNow(String text, Runnable done){
+  private void commitNow(String base, String text, Runnable done){
     var old= registry.all();
-    try{ registry.commit(text); }
+    try{ registry.commit(base,text); }
     catch(Registry.Refused e){ tell(e.getMessage()); return; }
     var renamed= old.stream().filter(o->registry.of(o.path()).filter(e->!e.alias().equals(o.alias())).isPresent()).collect(Collectors.toMap(Entry::path,o->Fs.readUtf8(eclipse.console(o.alias()))));
     renamed.forEach((f,shown)->Fs.writeUtf8(console(f),shown));
@@ -404,7 +405,8 @@ public final class Manager{
     if (!l.job.isEmpty()){ return; }
     var e= registry.of(f).orElseThrow();
     var fresh= Facts.of(f,e.alias(),e.kind());
-    if (fresh.equals(l.facts)){ return; }
+    if (fresh.equals(l.scanned)){ return; }
+    l.scanned= fresh;
     l.facts= fresh;
     l.mains= Optional.empty();
     if (e.kind() != Kind.code || !fresh.upToDate()){ return; }
@@ -413,7 +415,6 @@ public final class Manager{
     catch(UserError err){ error= Optional.of(err.getMessage()); }
     catch(UncheckedIOException err){ error= Optional.of(Messages.fileFailure(err.getCause())); }
     if (l.mains.isPresent()){ return; }
-    l.facts= null;
     if (!Facts.of(f,e.alias(),e.kind()).equals(fresh)){ scan(f); return; }
     l.facts= fresh.outOfDate(error);
   }

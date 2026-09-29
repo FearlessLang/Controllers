@@ -188,7 +188,7 @@ final class RegistryTest{
   @Test void changingTheLinksKeepsTheirOrderInTheFile(@TempDir Path dir){
     var code= folder(dir,"code");
     var r= new Registry(dir);
-    r.commit("{\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"reads\": {\"zeta\": [\"Z\"], \"alpha\": [\"A\"], \"mid\": [\"M\"], \"beta\": [\"B\"]}}}");
+    r.commit(Registry.text(r.all()),"{\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"reads\": {\"zeta\": [\"Z\"], \"alpha\": [\"A\"], \"mid\": [\"M\"], \"beta\": [\"B\"]}}}");
     r.update(code,e->e.withLinks(e.reads(),Map.of("zeta",List.of("W"))));
     assertEquals("""
       {
@@ -215,10 +215,10 @@ final class RegistryTest{
   @Test void commitWritesAValidatedFileAndRejectsLeavingDiskUnchanged(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= new Registry(dir);
-    r.commit("{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"code\"}\n}\n");
+    r.commit(Registry.text(r.all()),"{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"code\"}\n}\n");
     assertEquals(Kind.code,r.all().getFirst().kind());
     var before= Registry.text(r.all());
-    assertThrows(Registry.Refused.class,()->r.commit("{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"nonsense\"}\n}\n"));
+    assertThrows(Registry.Refused.class,()->r.commit(Registry.text(r.all()),"{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"nonsense\"}\n}\n"));
     assertEquals(before,Registry.text(new Registry(dir).all()));
   }
   @Test void aTypeNameIsInReadsOrInEditsNotInBoth(){

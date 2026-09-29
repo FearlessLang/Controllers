@@ -101,7 +101,10 @@ public final class Registry{
     assert of(folder).isPresent();
     save(all.stream().map(e->e.path().equals(folder) ? op.apply(e) : e).toList());
   }
-  public void commit(String text){ save(entries(text,Registry::real).stream().map(e->of(e.path()).map(o->e.withTimes(o.compiled(),o.run())).orElse(e)).toList()); }
+  public void commit(String base, String text){
+    if (!text(all).equals(base)){ throw new Refused(Messages.metadataChanged()); }
+    save(entries(text,Registry::real).stream().map(e->of(e.path()).map(o->e.withTimes(o.compiled(),o.run())).orElse(e)).toList());
+  }
   public static String text(List<Entry> entries){ return Info.print(toInfo(entries)); }
   /// Why the links of a code project are broken, if they are; invalid says why a project is invalid.
   public Optional<String> linkProblem(Entry e, Function<Path,Optional<String>> invalid){

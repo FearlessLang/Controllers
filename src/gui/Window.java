@@ -226,11 +226,12 @@ public final class Window implements Manager.View{
     main.manager().connect(chooser.getSelectedFile().toPath());
   }
   private void editMetadata(){
-    var area= mono(new JTextArea(Registry.text(state.projects().stream().map(Project::entry).toList()),30,100));
+    var base= Registry.text(state.projects().stream().map(Project::entry).toList());
+    var area= mono(new JTextArea(base,30,100));
     var dialog= new JDialog(frame,"Edit project metadata",true);
     var commit= new JButton("Commit");
     var close= new JButton("Close");
-    commit.addActionListener(_->main.manager().commit(area.getText(),()->SwingUtilities.invokeLater(dialog::dispose)));
+    commit.addActionListener(_->main.manager().commit(base,area.getText(),()->SwingUtilities.invokeLater(dialog::dispose)));
     close.addActionListener(_->dialog.dispose());
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(commit);

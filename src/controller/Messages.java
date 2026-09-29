@@ -127,6 +127,7 @@ public final class Messages{
     return "The manager was asked to "+disp(verb)+" the project "+disp(name)+", but no project is named "+disp(name)+"."+Join.of(names.stream().map(n->"\n  "+n),"\nThe projects are:","","","\nNo project is registered.");
   }
   public static String unreadableMessage(Path file){ return "The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\nThe bytes of\n"+file+"\ndo not form valid UTF-8 text."; }
+  public static String metadataChanged(){ return "The project metadata is not committed: projects.info changed while it was edited.\nClose the editor, and choose Edit project metadata again to edit what projects.info holds now."; }
   public static String registerNoFolder(){ return "The manager was asked to register a folder, but the message names no folder."; }
   public static String unknownKind(Path folder, String text){
     return "The manager was asked to change the kind of\n"+folder+"\nto "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".";
