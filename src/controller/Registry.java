@@ -25,6 +25,7 @@ import controller.Info.Obj;
 import controller.Info.Obj.Field;
 import core.TName;
 import fileSupport.StringFiles;
+import metaParser.Span;
 import userMessages.UserError;
 import utils.Join;
 import utils.OneOr;
@@ -63,7 +64,7 @@ public final class Registry{
     var text= read(infoFile());
     var root= Info.parse(text,infoFile().toUri());
     var bad= badKinds(root);
-    all= withTimes(fromInfo(text,bad.isEmpty() ? root : idle((Obj)root,bad),Registry::real));
+    all= withTimes(fromInfo(text,bad.isEmpty() ? root : idle((Obj)root,bad),Registry::real,dir));
     reset= all.stream().filter(e->bad.contains(e.alias())).toList();
     if (!reset.isEmpty()){ save(all); }
   }
@@ -82,13 +83,20 @@ public final class Registry{
     try{ return folder.toRealPath(); }
     catch(IOException e){ return folder; }
   }
+  static Path placed(Path folder, Path managerDir, Function<String,RuntimeException> err){
+    var manager= real(managerDir);
+    if (folder.getFileName() == null){ throw err.apply(Messages.projectFolderIsRoot(folder)); }
+    if (overlap(folder,manager)){ throw err.apply(Messages.managerFolderNotAProject(folder,manager)); }
+    return folder;
+  }
+  private static boolean overlap(Path a, Path b){ return a.startsWith(b) || b.startsWith(a); }
   private Path infoFile(){ return dir.resolve("projects.info"); }
   private Path activityFile(){ return dir.resolve("activity.txt"); }
   public List<Entry> all(){ return all; }
   public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all.stream().filter(e->e.path().equals(folder))); }
   public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all.stream().filter(e->e.alias().equals(alias))); }
   public Optional<Path> overlapping(Path folder){
-    return all.stream().map(Entry::path).filter(o->!o.equals(folder) && (folder.startsWith(o) || o.startsWith(folder))).findFirst();
+    return all.stream().map(Entry::path).filter(o->!o.equals(folder) && overlap(folder,o)).findFirst();
   }
   public void add(String alias, Path folder, Kind kind){
     assert folder.isAbsolute() && folder.equals(real(folder));
@@ -129,7 +137,7 @@ public final class Registry{
     return Optional.empty();
   }
   private List<Entry> entries(String text, UnaryOperator<Path> identity){
-    try{ return fromInfo(text,Info.parse(text,infoFile().toUri()),identity); }
+    try{ return fromInfo(text,Info.parse(text,infoFile().toUri()),identity,dir); }
     catch(UserError e){ throw new Refused(e.getMessage()); }
   }
   private void save(List<Entry> entries){
@@ -151,7 +159,7 @@ public final class Registry{
     try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,file,ATOMIC_MOVE); }
     catch(IOException e){ throw Messages.couldNotSaveRegisteredFolders(dir,e); }
   }
-  public static List<Entry> fromInfo(String source, Info root, UnaryOperator<Path> identity){
+  public static List<Entry> fromInfo(String source, Info root, UnaryOperator<Path> identity, Path managerDir){
     if (!(root instanceof Obj top)){
       throw Info.err(source,root.span(),"The whole file must be an object {...} mapping each project name to the metadata of that project.");
     }
@@ -161,16 +169,17 @@ public final class Registry{
         throw Info.err(source,field.keySpan(),"\""+field.key()+"\" is not a valid project name: a project name uses only lowercase letters, digits and underscores, starts with a letter or an underscore, and is not a name the file system reserves (\"con\", \"prn\", \"aux\", \"nul\", \"com1\" to \"com9\", \"lpt1\" to \"lpt9\").");
       }
       entries.add(entryOf(source,field,identity));
+      placed(entries.getLast().path(),managerDir,m->Info.err(source,pathSpan(top,field.key()),m));
     }
     for (var a: entries){
       for (var b: entries.subList(entries.indexOf(a)+1,entries.size())){
-        if (!a.path().equals(b.path()) && !a.path().startsWith(b.path()) && !b.path().startsWith(a.path())){ continue; }
-        var span= ((Obj)top.field(b.alias()).orElseThrow().value()).field("path").orElseThrow().value().span();
-        throw Info.err(source,span,"\""+b.alias()+"\" has the same path as \""+a.alias()+"\", or one is inside the other; every file belongs to exactly one project.");
+        if (!overlap(a.path(),b.path())){ continue; }
+        throw Info.err(source,pathSpan(top,b.alias()),"\""+b.alias()+"\" has the same path as \""+a.alias()+"\", or one is inside the other; every file belongs to exactly one project.");
       }
     }
     return entries;
   }
+  private static Span pathSpan(Obj top, String alias){ return ((Obj)top.field(alias).orElseThrow().value()).field("path").orElseThrow().value().span(); }
   private static Entry entryOf(String source, Field field, UnaryOperator<Path> identity){
     if (!(field.value() instanceof Obj obj)){
       throw Info.err(source,field.value().span(),"The metadata of \""+field.key()+"\" must be an object {...}.");

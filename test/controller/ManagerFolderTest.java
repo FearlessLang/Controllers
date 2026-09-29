@@ -59,7 +59,7 @@ final class ManagerFolderTest{
     refused("""
       Fearless cannot keep track of this folder as a project.
 
-      The manager was asked to register:
+      The folder is:
       [###]manager
       The manager folder of this Fearless is:
       [###]manager
@@ -95,9 +95,10 @@ final class ManagerFolderTest{
       Fearless cannot keep track of the root of a drive or of the file system as a
       project.
 
-      The manager was asked to register:
+      The folder is:
       [###]
-      Put the project in a folder inside it, and register that folder.
+      Put the project in a folder inside it, and make that folder the project
+      folder.
       """,()->Manager.projectFolder(dir.getRoot().toString(),folder(dir,"manager")));
   }
 }

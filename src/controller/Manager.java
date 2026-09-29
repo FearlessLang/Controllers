@@ -457,10 +457,6 @@ public final class Manager{
     try{ path= Path.of(given).toAbsolutePath().normalize(); }
     catch(InvalidPathException e){ throw new Registry.Refused(Messages.registerNotAPath(given,e.getReason())); }
     if (!Files.exists(path)){ throw new Registry.Refused(Messages.registerNothing(path)); }
-    var folder= Registry.real(Files.isDirectory(path) ? path : path.getParent());
-    var manager= Registry.real(managerDir);
-    if (folder.getFileName() == null){ throw new Registry.Refused(Messages.projectFolderIsRoot(folder)); }
-    if (folder.startsWith(manager) || manager.startsWith(folder)){ throw new Registry.Refused(Messages.managerFolderNotAProject(path,manager)); }
-    return folder;
+    return Registry.placed(Registry.real(Files.isDirectory(path) ? path : path.getParent()),managerDir,Registry.Refused::new);
   }
 }

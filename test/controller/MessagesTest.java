@@ -258,7 +258,7 @@ The marker file "hello2.fearless" in that folder holds the name: rename it to ch
     same("""
 Fearless cannot keep track of this folder as a project.
 
-The manager was asked to register:
+The folder is:
   C:\\Users\\ada\\fearless0_007\\messages
 The manager folder of this Fearless is:
   C:\\Users\\ada\\fearless0_007
@@ -271,9 +271,10 @@ never part of a project, and no project is inside it.
 Fearless cannot keep track of the root of a drive or of the file system as a
 project.
 
-The manager was asked to register:
+The folder is:
   C:\\
-Put the project in a folder inside it, and register that folder.
+Put the project in a folder inside it, and make that folder the project
+folder.
 """, Messages.projectFolderIsRoot(Path.of("C:\\")));
   }
   @Test void trayConnectionLost(){

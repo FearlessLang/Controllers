@@ -62,26 +62,27 @@ public final class Messages{
       The marker file "%s%s" in that folder holds the name: rename it to change the name.
       """.formatted(alias,wanted,path(folder.toString()),alias,".fearless");
   }
-  public static String managerFolderNotAProject(Path given, Path managerDir){
+  public static String managerFolderNotAProject(Path folder, Path managerDir){
     return """
       Fearless cannot keep track of this folder as a project.
 
-      The manager was asked to register:
+      The folder is:
       %s
       The manager folder of this Fearless is:
       %s
       The manager folder holds what Fearless remembers about your projects: it is
       never part of a project, and no project is inside it.
-      """.formatted(path(given.toString()),path(managerDir.toString()));
+      """.formatted(path(folder.toString()),path(managerDir.toString()));
   }
   public static String projectFolderIsRoot(Path root){
     return """
       Fearless cannot keep track of the root of a drive or of the file system as a
       project.
 
-      The manager was asked to register:
+      The folder is:
       %s
-      Put the project in a folder inside it, and register that folder.
+      Put the project in a folder inside it, and make that folder the project
+      folder.
       """.formatted(path(root.toString()));
   }
   public static UserError projectIconsMany(Path dir, List<Path> found){
