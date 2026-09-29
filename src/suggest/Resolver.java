@@ -56,8 +56,8 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   public record Suggestions(int from, Ty receiver, List<Row> rows, List<Ty> types){}
   private record Bound(Method m, HashMap<String,Ty> sub){}
   private static final Kind[] separators= {Kind.SemiColon, Kind.Comma, Kind.Arrow, Kind.Colon, Kind.SQuote};
-  private static final Set<Kind> quoted= Set.of(Kind.LineComment, Kind.BlockComment, Kind.BadUnclosedBlockComment, Kind.UStr, Kind.SStr, Kind.BadUStrUnclosed, Kind.BadSStrUnclosed);
-  private static final Set<Kind> unclosed= Set.of(Kind.LineComment, Kind.BadUnclosedBlockComment, Kind.BadUStrUnclosed, Kind.BadSStrUnclosed);
+  private static final Set<Kind> silent= Set.of(Kind.LineComment, Kind.BlockComment, Kind.BadUnclosedBlockComment, Kind.UStr, Kind.SStr, Kind.BadUStrUnclosed, Kind.BadSStrUnclosed, Kind.CCurlyId);
+  private static final Set<Kind> growing= Set.of(Kind.LineComment, Kind.BadUnclosedBlockComment, Kind.BadUStrUnclosed, Kind.BadSStrUnclosed, Kind.CCurlyId);
   private static final Comparator<Method> order= Comparator.comparing((Method m)->!m.name().startsWith(".")).thenComparing(Method::name).thenComparing(Method::arity);
   private static final Comparator<Ty> byName= Comparator.comparing(Ty::name).thenComparing(t->t.args().size());
   public static Resolver of(Api api, String pkg, Map<String,String> packages, String head, String text){
@@ -85,7 +85,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   /// method name the methods matching it; anywhere else the methods of the expression before the
   /// cursor, inserted with their dot
   public Suggestions suggest(int pos){
-    var inside= tokens.stream().anyMatch(t->quoted.contains(t.kind()) && t.start() < pos && (pos < t.end() || pos == t.end() && unclosed.contains(t.kind())));
+    var inside= tokens.stream().anyMatch(t->silent.contains(t.kind()) && t.start() < pos && (pos < t.end() || pos == t.end() && growing.contains(t.kind())));
     if (inside){ return new Suggestions(pos, Ty.unknown, List.of(), List.of()); }
     var g= Tokens.innermost(root, pos);
     var items= new ArrayList<>(g.items.stream().filter(it->it.start() < pos).toList());
@@ -132,7 +132,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   private void enter(Group g, int pos, HashMap<String,Ty> scope){
     var t= literal(g, scope);
     Chain.selfName(g).or(()->g.parent == root ? Optional.of("this") : Optional.empty()).ifPresent(x->scope.put(x, t));
-    var m= Chain.methodsOf(g).stream().filter(x->x.start() <= pos && pos <= x.end()).findFirst();
+    var m= Chain.methodsOf(g).stream().filter(x->x.start() < pos && pos <= x.end()).findFirst();
     if (m.isEmpty()){ return; }
     m.get().xs().forEach(x->scope.put(x, new Ty(x, List.of())));
     var e= entry(t);

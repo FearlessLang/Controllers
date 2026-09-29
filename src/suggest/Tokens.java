@@ -83,13 +83,12 @@ final class Tokens{
     var g= cur;
     while (g.parent != null && g.open != open){ g= g.parent; }
     if (g.parent == null){ return cur; }
-    for (var h= cur; h != g; h= h.parent){ h.end= closer.start; }
-    g.end= closer.end;
+    for (var h= cur; h != g.parent; h= h.parent){ h.end= closer.start; }
     return g.parent;
   }
   static Group innermost(Group g, int pos){
     for (var it : g.items){
-      if (it instanceof Group c && c.start < pos && pos < c.end){ return innermost(c, pos); }
+      if (it instanceof Group c && c.start < pos && pos <= c.end){ return innermost(c, pos); }
     }
     return g;
   }

@@ -229,6 +229,13 @@ final class ResolverTest{
     same("",probe("{ x -> x }.|"));
     same("",probe("|"));
   }
+  @Test void theCursorIsInsideABracketFromRightAfterItsOpenerToRightBeforeItsCloserHoweverItIsClosed(){
+    same(person,probe("ps.flow.map({x -> x.|)"));
+    same(person,probe("ps.flow.map{x -> x.|}"));
+    same("",probe("ps.get(|0)"));
+    same(person,names("Person: OrderHash[Person] { .foo -> this.| }Person"));
+    same("",names("Person: OrderHash[Person] { .foo -> this.name }Pe|rson"));
+  }
   @Test void aNameUsedInsideItsOwnThunkIsUnknown(){
     same("",probe("Block#.let x = {x.|"));
     same("",probe("Block#.let x = {ps.get 0} .let y = {y.age.|"));
