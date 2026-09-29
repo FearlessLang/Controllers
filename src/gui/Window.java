@@ -199,7 +199,7 @@ public final class Window implements Manager.View{
     chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
     chooser.setDialogTitle("Add a Fearless project folder");
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
-    main.manager().message(TaggedText.of(chooser.getSelectedFile().toPath().toString()));
+    main.manager().message(TaggedText.line(chooser.getSelectedFile().toPath().toString()));
   }
   private TransferHandler dropHandler(){
     return new TransferHandler(){
@@ -211,7 +211,7 @@ public final class Window implements Manager.View{
       @Override public boolean importData(TransferSupport support){
         var paths= Drop.paths(support.getTransferable());
         if (paths.isEmpty()){ return false; }
-        paths.forEach(p->main.manager().message(TaggedText.of(p.toString())));
+        paths.forEach(p->main.manager().message(TaggedText.line(p.toString())));
         return true;
       }
     };

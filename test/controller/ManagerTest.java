@@ -123,6 +123,13 @@ final class ManagerTest{
     assertEquals(1,view.shown);
     assertEquals(List.of(),listed(dir));
   }
+  @Test void aFolderNamedWithANewlineIsRegisteredByItsMessage(@TempDir Path dir){
+    Assumptions.assumeFalse(Fs.isWindows());
+    var m= manager(dir);
+    var odd= folder(dir,"a\nb");
+    send(m,Main.message(odd.toString()));
+    assertEquals(List.of("a_b "+odd),listed(dir));
+  }
   @Test void selectingAnEmptyFolderMakesItAHelloWorldCodeProject(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");

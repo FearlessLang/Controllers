@@ -41,9 +41,10 @@ public final class Registry{
   }
   public record Entry(String alias, Path path, Kind kind, List<String> mains,
       Map<String,List<String>> reads, Map<String,List<String>> edits, long compiled, long run){
+    public Entry{ mains= List.copyOf(mains); reads= Collections.unmodifiableMap(new LinkedHashMap<>(reads)); edits= Collections.unmodifiableMap(new LinkedHashMap<>(edits)); }
     public Entry withKind(Kind k){ return new Entry(alias,path,k,mains,reads,edits,compiled,run); }
-    public Entry withMains(List<String> m){ return new Entry(alias,path,kind,List.copyOf(m),reads,edits,compiled,run); }
-    public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias,path,kind,mains,Map.copyOf(r),Map.copyOf(e),compiled,run); }
+    public Entry withMains(List<String> m){ return new Entry(alias,path,kind,m,reads,edits,compiled,run); }
+    public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias,path,kind,mains,r,e,compiled,run); }
     public Entry withTimes(long c, long r){ return new Entry(alias,path,kind,mains,reads,edits,c,r); }
   }
   private static final List<String> keys= List.of("path","kind","mains","reads","edits");
@@ -120,9 +121,10 @@ public final class Registry{
   private List<Entry> entries(String text){ return fromInfo(text,Info.parse(text,infoFile().toUri())); }
   private void save(List<Entry> entries){
     var text= text(entries);
-    this.entries(text);
+    var back= this.entries(text);
+    assert back.equals(entries.stream().map(e->e.withTimes(-1,-1)).toList());
     writeText(infoFile(),text);
-    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+TaggedText.of(e.path().toString())),"","\n","\n",""));
+    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+TaggedText.line(e.path().toString())),"","\n","\n",""));
     all= entries;
   }
   private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
@@ -221,7 +223,7 @@ public final class Registry{
       if (names.isEmpty()){ throw Info.err(source,f.value().span(),label+" names no type: a link names the one or more type names the code uses for \""+f.key()+"\"."); }
       out.put(f.key(),names);
     }
-    return Collections.unmodifiableMap(out);
+    return out;
   }
   private static boolean isMainName(String s){
     var dot= s.indexOf('.');
@@ -232,7 +234,7 @@ public final class Registry{
   }
   private static Info entryToInfo(Entry e){
     var fields= new ArrayList<Field>();
-    fields.add(new Field("path",Info.noSpan,new Info.Str(TaggedText.of(e.path().toString().replace('\\','/')),Info.noSpan)));
+    fields.add(new Field("path",Info.noSpan,new Info.Str(TaggedText.of(e.path().toString().replace(e.path().getFileSystem().getSeparator(),"/")),Info.noSpan)));
     fields.add(new Field("kind",Info.noSpan,new Info.Str(e.kind().text,Info.noSpan)));
     if (!e.mains().isEmpty()){ fields.add(new Field("mains",Info.noSpan,strList(e.mains()))); }
     if (!e.reads().isEmpty()){ fields.add(new Field("reads",Info.noSpan,aliasMap(e.reads()))); }

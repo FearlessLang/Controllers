@@ -19,6 +19,11 @@ final class TaggedTextTest{
     roundTrip("a \"b\"\n","Str:a \"b\"\n");
     roundTrip("","Str:");
   }
+  @Test void aTextOnOneLineHoldingANewlineIsNotStr(){
+    assertEquals("Str:C:\\data",TaggedText.line("C:\\data"));
+    assertEquals("UStr:(\"a\" | \"b\").u",TaggedText.line("a\nb"));
+    assertEquals("a\nb",read(TaggedText.line("a\nb")));
+  }
   @Test void aUnicodeTextIsUStrAsUStrEscapePrintsIt(){
     roundTrip("\u00e9","UStr:\"\".u\"00E9\"");
     roundTrip("C:/data/caf\u00e9/hello","UStr:\"C:/data/caf\".u\"00E9\"+(\"/hello\".u)");

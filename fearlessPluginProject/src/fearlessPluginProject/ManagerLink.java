@@ -51,7 +51,7 @@ public final class ManagerLink{
     for (int i= 0; i < path.length(); i++){ bytes[2*i]= (byte)path.charAt(i); bytes[2*i+1]= (byte)(path.charAt(i) >> 8); }
     return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes);
   }
-  private static final String allowed= "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-*/=<>,.;:()[]{}`'\"!?@#$%^&_|~\\ \n";
+  private static final String allowed= "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-*/=<>,.;:()[]{}`'\"!?@#$%^&_|~\\ ";
   private static Path path(Object text){ return Path.of(Info.tagged(text)); }  private static Map<String,String> problem(Map<String,String> p){
     if (p.isEmpty()){ return p; }
     return Map.of("file", p.get("file"), "line", p.get("line"), "message", Info.tagged(p.get("message")));

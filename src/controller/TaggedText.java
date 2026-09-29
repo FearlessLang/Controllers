@@ -25,8 +25,9 @@ import utils.Range;
 public final class TaggedText{
   private TaggedText(){}
   private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
-  public static String of(String text){
-    if (text.codePoints().allMatch(TaggedText::safe)){ return "Str:"+text; }
+  public static String of(String text){ return text.codePoints().allMatch(TaggedText::safe) ? "Str:"+text : notStr(text); }
+  public static String line(String text){ return text.indexOf('\n') < 0 ? of(text) : notStr(text); }
+  private static String notStr(String text){
     if (text.codePoints().noneMatch(TaggedText::surrogate)){ return "UStr:"+uStr(text.codePoints().toArray()); }
     return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes(text));
   }
@@ -111,7 +112,7 @@ public final class TaggedText{
     return i;
   }
   private static String receiver(String e){
-    var oneLiteral= e.length() >= 2 && (e.charAt(0) == '"' || e.charAt(0) == '`') && e.charAt(e.length()-1) == e.charAt(0);
+    var oneLiteral= e.length() >= 2 && (e.charAt(0) == '"' || e.charAt(0) == '`') && e.indexOf(e.charAt(0),1) == e.length()-1;
     return oneLiteral ? e : "("+e+")";
   }
   /// A Fearless string expression: "..." and `...` joined by +, | and ^ (between two strings, or

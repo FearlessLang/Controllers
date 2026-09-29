@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -164,6 +165,40 @@ final class RegistryTest{
     var project= folder(dir,"a name with spaces");
     new Registry(dir).add("spacey",project);
     assertEquals(project.toAbsolutePath().normalize(),new Registry(dir).all().getFirst().path());
+  }
+  @Test void aFolderNamedWithABackslashOrANewlineSurvivesAReReadWithItsTimes(@TempDir Path dir){
+    Assumptions.assumeFalse(Fs.isWindows());
+    var slash= folder(dir,"a\\b");
+    var line= folder(dir,"c\nd");
+    var r= new Registry(dir);
+    r.add("slash",slash);
+    r.add("line",line);
+    r.update(slash,e->e.withTimes(111,222));
+    r.update(line,e->e.withTimes(333,444));
+    assertEquals(r.all(),new Registry(dir).all());
+  }
+  @Test void changingTheLinksKeepsTheirOrderInTheFile(@TempDir Path dir){
+    var code= folder(dir,"code");
+    var r= new Registry(dir);
+    r.commit("{\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"reads\": {\"zeta\": [\"Z\"], \"alpha\": [\"A\"], \"mid\": [\"M\"], \"beta\": [\"B\"]}}}");
+    r.update(code,e->e.withLinks(e.reads(),Map.of("zeta",List.of("W"))));
+    assertEquals("""
+      {
+        "code": {
+          "path": "Str:%s",
+          "kind": "code",
+          "reads": {
+            "zeta": ["Z"],
+            "alpha": ["A"],
+            "mid": ["M"],
+            "beta": ["B"]
+          },
+          "edits": {
+            "zeta": ["W"]
+          }
+        }
+      }
+      """.formatted(unix(code)),Fs.readUtf8(dir.resolve("projects.info")));
   }
   @Test void aCorruptedFileRefusesToLoadWithARichError(@TempDir Path dir){
     Fs.writeUtf8(dir.resolve("projects.info"),"not info at all");

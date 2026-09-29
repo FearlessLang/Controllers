@@ -60,7 +60,7 @@ public final class Main{
   //TO TEST: on Windows the launcher hands Java a '?' in place of an unpaired surrogate of the
   //argument, so a folder whose name holds one is refused as a broken path when given as the
   //argument; the window and a register message register it.
-  static String message(String... args){ return args.length == 0 ? "" : TaggedText.of(Manager.path(args[0]).toString()); }
+  static String message(String... args){ return args.length == 0 ? "" : TaggedText.line(Manager.path(args[0]).toString()); }
   private static void display(UserError e){
     try{ e.display(); }
     catch(InterruptedException ie){ e.displayStderr(ie); }
