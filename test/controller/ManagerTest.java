@@ -80,9 +80,10 @@ final class ManagerTest{
     @Override public void note(String text){ notes.add(text); }
     final List<Path> cleared= new ArrayList<>();
     @Override public void clear(Path folder){ cleared.add(folder); }
-    @Override public boolean visible(){ return true; }
+    boolean visible= true;
+    @Override public boolean visible(){ return visible; }
   }
-  private final List<RuntimeException> failures= Collections.synchronizedList(new ArrayList<>());
+  private final List<Throwable> failures= Collections.synchronizedList(new ArrayList<>());
   private final View view= new View();
   @AfterEach void nothingFailed(){ assertEquals(List.of(),failures); }
   private Manager manager(Path dir, String... mains){
@@ -510,6 +511,18 @@ final class ManagerTest{
     send(m,"register",TaggedText.of(data.toString()));
     same("The manager was asked to register\n"+data+"\nbut nothing exists there: register an existing folder, or a file inside one.",view.notes.getLast());
     assertEquals(List.of(),listed(dir));
+  }
+  @Test void everyRequestNamingAProjectChecksItWhileTheWindowIsHidden(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    send(m,TaggedText.of(data.toString()));
+    view.visible= false;
+    for (var request: List.of(List.of("mains","data",""),List.of("link","data","other read Other"),List.of("clear","data"),List.of("terminate","data"))){
+      var valid= Files.exists(data);
+      if (valid){ Fs.rmTree(data); } else { data(dir); Fs.writeUtf8(data.resolve("data.fearless"),""); }
+      send(m,request.toArray(String[]::new));
+      assertEquals(valid ? Project.State.dataInvalid : Project.State.idle,project(m,data).state());
+    }
   }
   private static void mode(Path p, String mode){ Fs.ofV(()->Files.setPosixFilePermissions(p,PosixFilePermissions.fromString(mode))); }
   @Test void foldersTheManagerCanNotReadOrChangeAreRefusedOrInvalidNeverFatal(@TempDir Path dir){

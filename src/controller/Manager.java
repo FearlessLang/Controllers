@@ -85,13 +85,13 @@ public final class Manager{
   public final Eclipse eclipse;
   private final Tools tools;
   private final View view;
-  private final Consumer<RuntimeException> fail;
+  private final Consumer<Throwable> fail;
   private final Registry registry;
   private final Map<Path,Live> live= new HashMap<>();
   private Optional<Path> selected= Optional.empty();
   private int turn;
   private volatile State state= new State(List.of(),Optional.empty());
-  public Manager(Path dir, Tools tools, View view, Consumer<RuntimeException> fail){
+  public Manager(Path dir, Tools tools, View view, Consumer<Throwable> fail){
     this.dir= dir;
     this.tools= tools;
     this.view= view;
@@ -141,8 +141,7 @@ public final class Manager{
   private void post(Runnable r){ core.execute(()->step(r)); }
   private void step(Runnable r){
     try{ r.run(); publish(); }
-    catch(UserError e){ fail.accept(e); }
-    catch(Throwable t){ fail.accept(Bug.of(t)); }
+    catch(Throwable t){ fail.accept(t); }
   }
   private void load(){
     Fs.writeUtf8(eclipse.notes(),"");
@@ -175,12 +174,13 @@ public final class Manager{
     var e= registry.named(name);
     if (e.isEmpty()){ tell(Messages.unknownProject(verb,name,registry.all().stream().map(Entry::alias).toList())); return; }
     var folder= e.get().path();
+    scan(folder);
     if (List.of("select","run","compile","check","terminate","clean").contains(verb)){ selected= Optional.of(folder); }
     switch(verb){
-      case "select" -> { scan(folder); view.show(); }
+      case "select" -> view.show();
       case "run" -> job(folder,true,arg.isEmpty() ? Optional.empty() : Optional.of(arg));
       case "compile" -> job(folder,false,Optional.empty());
-      case "check" -> check(folder);
+      case "check" -> output(folder,project(folder).problem().map(s->s.stripTrailing()+"\n").orElse("--- ok: no problem found ---\n"));
       case "terminate" -> terminate(folder);
       case "clean" -> clean(folder);
       case "kind" -> kind(folder,arg);
@@ -223,7 +223,6 @@ public final class Manager{
   private void job(Path f, boolean run, Optional<String> named){
     var request= run ? "run" : "compile";
     if (refused(f,request)){ return; }
-    scan(f);
     var p= project(f);
     if (p.kind() != Kind.code){ output(f,"--- "+request+" refused: this project is "+p.kind().text+", and only a code project "+(run ? "runs" : "compiles")+" ---\n"); return; }
     if (p.linkProblem().isPresent()){ output(f,p.linkProblem().get().stripTrailing()+"\n"); return; }
@@ -327,10 +326,6 @@ public final class Manager{
   private void forgetStale(Path f){
     var known= project(f).knownMains();
     registry.update(f,e->e.withMains(e.mains().stream().filter(known::contains).toList()));
-  }
-  private void check(Path f){
-    scan(f);
-    output(f,project(f).problem().map(s->s.stripTrailing()+"\n").orElse("--- ok: no problem found ---\n"));
   }
   private void clean(Path f){
     if (refused(f,"clear cache")){ return; }

@@ -40,7 +40,7 @@ public final class Main{
   private static FileLock lock;
   private final Path managerDir;
   private final CountDownLatch done= new CountDownLatch(1);
-  private final AtomicReference<RuntimeException> failure= new AtomicReference<>();
+  private final AtomicReference<Throwable> failure= new AtomicReference<>();
   private Manager manager;
   private Main(Path managerDir){ this.managerDir= managerDir; }
   public Manager manager(){ return manager; }
@@ -70,7 +70,7 @@ public final class Main{
     try{ e.display(); }
     catch(InterruptedException ie){ e.displayStderr(ie); }
   }
-  private static void run(String message){
+  private static void run(String message) throws Throwable{
     var main= new Main(binDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
     try{ Files.createDirectories(main.msgDir()); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Messages.couldNotCreateManagerFolder(main.managerDir,e); }
@@ -101,11 +101,11 @@ public final class Main{
     try{ Files.move(tmp,msgDir.resolve(name+".msg"),ATOMIC_MOVE); }
     catch(IOException e){ throw Messages.couldNotLeaveStartMessage(msgDir,e); }
   }
-  private void own(){
+  private void own() throws Throwable{
     WatchService watcher;
     try{ watcher= FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Messages.couldNotWatchMessageFolder(msgDir(),e); }
-    Thread.setDefaultUncaughtExceptionHandler((_,t)->fail(t instanceof UserError e ? e : Bug.of(t)));
+    Thread.setDefaultUncaughtExceptionHandler((_,t)->fail(t));
     var window= Window.create(this);
     manager= new Manager(managerDir,new Deployed(),window,this::fail);
     UserError.owner(window.frame);
@@ -122,7 +122,7 @@ public final class Main{
     if (problem != null){ throw problem; }
   }
   public void quit(){ done.countDown(); }
-  public void fail(RuntimeException problem){ failure.compareAndSet(null,problem); done.countDown(); }
+  public void fail(Throwable problem){ failure.compareAndSet(null,problem); done.countDown(); }
   public void forgetAssociation(Window window){
     if (!window.askForget()){ return; }
     try{ Association.reconcile(Association.launcher(),List.of()); }

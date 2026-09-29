@@ -1,5 +1,6 @@
 package controller;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -48,7 +49,7 @@ public record Eclipse(Path dir){
   private static Obj obj(List<Field> fields){ return new Obj(fields,Info.noSpan); }
   private static Field field(String key, Info value){ return new Field(key,Info.noSpan,value); }
   private static Str str(String value){ return new Str(value,Info.noSpan); }
-  public void publish(String state){ replace(dir.resolve("state.info"),state); }
+  public void publish(String state){ replace(dir.resolve("state.info"),state.getBytes(UTF_8)); }
   /// The JUnit report of main, when the newest unit test log of folder was written since main started.
   public static Optional<String> report(Path folder, String main, Instant since){
     while(true){
@@ -56,13 +57,13 @@ public record Eclipse(Path dir){
       catch(UncheckedIOException e){ if (!(e.getCause() instanceof NoSuchFileException)){ throw e; } }
     }
   }
-  public void report(String alias, String report){ replace(dir.resolve(alias).resolve("report.xml"),report); }
+  public void report(String alias, String report){ replace(dir.resolve(alias).resolve("report.xml"),report.getBytes(UTF_8)); }
   public static void append(Path file, String text){
     Fs.ensureDir(file.getParent());
     Fs.ofV(()->Files.writeString(file,text,CREATE,APPEND));
   }
   static List<Path> installs(Path dir){
-    var bases= Stream.concat(Stream.of(dir),Fs.of(()->{ try(var s= Files.list(dir)){ return s.filter(Files::isDirectory).sorted(Comparator.comparing(p->p.getFileName().toString())).toList(); } }).stream());
+    var bases= Stream.concat(Stream.of(dir),list(dir).stream().filter(Files::isDirectory).sorted(Comparator.comparing(p->p.getFileName().toString())));
     return bases.flatMap(b->Stream.of(b,b.resolve("eclipse"),b.resolve("Contents").resolve("Eclipse"))).filter(d->Files.isRegularFile(d.resolve(".eclipseproduct"))).distinct().toList();
   }
   public String connect(Path chosen, Path managerDir){
@@ -73,13 +74,17 @@ public record Eclipse(Path dir){
     var eclipse= found.getFirst();
     var plugin= JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("eclipsePlugin");
     var fearless= eclipse.resolve("dropins").resolve("fearless");
-    Fs.copyFresh(plugin,fearless.resolve("plugins"));
-    Fs.writeUtf8(fearless.resolve("manager.info"),Info.print(obj(List.of(field("manager",str(TaggedText.of(managerDir.toString()))),field("baseCache",str(TaggedText.of(Deployed.stdLib("baseCache").toString())))))));
+    var plugins= fearless.resolve("plugins");
+    var names= list(plugin).stream().map(Path::getFileName).toList();
+    names.forEach(n->replace(plugins.resolve(n),Fs.of(()->Files.readAllBytes(plugin.resolve(n)))));
+    list(plugins).stream().filter(p->!names.contains(p.getFileName())).forEach(Fs::rmTree);
+    replace(fearless.resolve("manager.info"),Info.print(obj(List.of(field("manager",str(TaggedText.of(managerDir.toString()))),field("baseCache",str(TaggedText.of(Deployed.stdLib("baseCache").toString())))))).getBytes(UTF_8));
     return Messages.eclipseConnected(eclipse);
   }
-  private static void replace(Path file, String text){
+  private static List<Path> list(Path dir){ return Fs.of(()->{ try(var s= Files.list(dir)){ return s.toList(); } }); }
+  private static void replace(Path file, byte[] content){
     var tmp= file.resolveSibling(file.getFileName()+".tmp");
-    Fs.writeUtf8(tmp,text);
-    Fs.ofV(()->Files.move(tmp,file,ATOMIC_MOVE));
+    Fs.ensureDir(file.getParent());
+    Fs.ofV(()->{ Files.write(tmp,content); Files.move(tmp,file,ATOMIC_MOVE); });
   }
 }

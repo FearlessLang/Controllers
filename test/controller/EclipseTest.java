@@ -16,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
 import tools.Fs;
+import tools.JavacTool;
 
 final class EclipseTest{
   static Project project(String alias, Kind kind, Optional<Map<String,String>> mains, String job, int runs, String lastRun, String failure){
@@ -121,6 +122,26 @@ Error 7 WellFormedness
         [###]b[###]eclipse
 
       Select the Eclipse program, or the folder holding it, of the one to connect.""",eclipse.connect(dir.resolve("two"),dir));
+  }
+  @Test void connectingPutsThePluginAndManagerInfoInDropinsReplacingAnOlderPlugin(@TempDir Path dir){
+    var app= dir.resolve("app");
+    Fs.writeUtf8(app.resolve("eclipsePlugin").resolve("new.jar"),"new");
+    var eclipse= eclipseAt(dir.resolve("eclipse"));
+    var fearless= eclipse.resolve("dropins").resolve("fearless");
+    Fs.writeUtf8(fearless.resolve("plugins").resolve("old.jar"),"old");
+    System.setProperty(JavacTool.launcherKey,JavacTool.consoleKey);
+    System.setProperty(JavacTool.appDirKey,app.toString());
+    try{ same("[###]"+eclipse+"[###]",new Eclipse(dir.resolve("state")).connect(eclipse,dir.resolve("manager"))); }
+    finally{ System.clearProperty(JavacTool.launcherKey); System.clearProperty(JavacTool.appDirKey); }
+    assertEquals(List.of(fearless.resolve("plugins").resolve("new.jar")),Fs.of(()->{ try(var s= Files.list(fearless.resolve("plugins"))){ return s.toList(); } }));
+    assertEquals("new",Fs.readUtf8(fearless.resolve("plugins").resolve("new.jar")));
+    assertEquals("""
+      {
+        "manager": "Str:%s",
+        "baseCache": "Str:%s"
+      }
+      """.stripIndent().formatted(dir.resolve("manager").toString().replace("\\","\\\\"),app.resolve("stdLib").resolve("baseCache").toString().replace("\\","\\\\")),Fs.readUtf8(fearless.resolve("manager.info")));
+    assertEquals(List.of("manager.info","plugins"),Fs.of(()->{ try(var s= Files.list(fearless)){ return s.map(p->p.getFileName().toString()).sorted().toList(); } }));
   }
   @Test void theStateIsReplacedWhole(@TempDir Path dir){
     var eclipse= new Eclipse(dir);
