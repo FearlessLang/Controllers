@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import javax.imageio.ImageIO;
 
@@ -30,20 +31,21 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     @Override public boolean equals(Object o){ return o instanceof Icon i && file.equals(i.file) && stamp == i.stamp; }
     @Override public int hashCode(){ return file.hashCode(); }
   }
-  static final int retries= 10;
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
-  public static Facts of(Path folder, String alias, Kind kind){ return of(folder,alias,kind,retries); }
-  private static Facts of(Path folder, String alias, Kind kind, int retries){
-    if (!Files.isDirectory(folder)){ return invalid("The folder of this project does not exist:\n"+folder+"\nRestore it, or forget this project."); }
-    UserError.root= folder;
-    try{ return read(folder,alias,kind); }
-    catch(UncheckedIOException e){
-      if (retries > 0 && e.getCause() instanceof NoSuchFileException){ return of(folder,alias,kind,retries-1); }
-      return invalid("The folder of this project can not be read:\n"+folder+"\n"+Messages.fileFailure(e.getCause())+"\nGive Fearless access to it, or forget this project.");
-    }
+  public static Facts of(Path folder, String alias, Kind kind){
+    try{ return retried(()->read(folder,alias,kind)); }
+    catch(UncheckedIOException e){ return invalid("The folder of this project can not be read:\n"+folder+"\n"+Messages.fileFailure(e.getCause())+"\nGive Fearless access to it, or forget this project."); }
   }
   private static Facts invalid(String problem){ return new Facts(0,0,-1,List.of(),false,false,Optional.empty(),List.of(),Optional.of(problem)); }
+  static <T> T retried(Supplier<T> read){
+    for(var left= 10;; left-= 1){
+      try{ return read.get(); }
+      catch(UncheckedIOException e){ if (left == 0 || !(e.getCause() instanceof NoSuchFileException)){ throw e; } }
+    }
+  }
   private static Facts read(Path folder, String alias, Kind kind){
+    if (!Files.isDirectory(folder)){ return invalid("The folder of this project does not exist:\n"+folder+"\nRestore it, or forget this project."); }
+    UserError.root= folder;
     var src= sources(folder);
     Map<String,Boolean> built= Map.of();
     Optional<String> problem;

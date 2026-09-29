@@ -125,9 +125,8 @@ public final class Main{
   public void fail(Throwable problem){ failure.compareAndSet(null,problem); done.countDown(); }
   public void forgetAssociation(Window window){
     if (!window.askForget()){ return; }
-    try{ Association.reconcile(Association.launcher(),List.of()); }
-    catch(UserError e){ display(e); System.exit(1); }
-    System.exit(0);
+    try{ Association.reconcile(Association.launcher(),List.of()); quit(); }
+    catch(UserError e){ fail(e); }
   }
   private void watch(WatchService watcher){
     while(true){

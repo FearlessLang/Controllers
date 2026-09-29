@@ -174,7 +174,7 @@ public final class Window implements Manager.View{
     manager.setMnemonic('M');
     manager.add(item("Edit project metadata...",true,this::editMetadata));
     manager.add(item("Show raw project state...",true,()->showText(frame,rawState(),"Raw project state",JOptionPane.PLAIN_MESSAGE)));
-    manager.add(item("Connect Eclipse...",true,this::connectEclipse));
+    manager.add(item("Connect Eclipse...",true,()->choose("Select Eclipse: its program, its folder, or the folder it was unzipped into",p->main.manager().connect(p))));
     manager.addSeparator();
     if (!Fs.isMac()){ manager.add(item("Forget association",true,()->main.forgetAssociation(this))); }
     manager.add(item("Quit manager",true,main::quit));
@@ -194,7 +194,7 @@ public final class Window implements Manager.View{
   }
   private void fillProjectMenu(){
     project.removeAll();
-    project.add(item("Add folder...",true,this::addFolder));
+    project.add(item("Add folder...",true,()->choose("Add a Fearless project folder",this::register)));
     project.addSeparator();
     var on= state.shown();
     var f= on.map(Project::folder);
@@ -206,13 +206,14 @@ public final class Window implements Manager.View{
     project.addSeparator();
     project.add(item("Forget project",on.isPresent(),()->ask("forget",on.get().alias(),"")));
   }
-  private void addFolder(){
+  private void choose(String title, Consumer<Path> chosen){
     var chooser= new JFileChooser();
     chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-    chooser.setDialogTitle("Add a Fearless project folder");
+    chooser.setDialogTitle(title);
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
-    main.manager().message(TaggedText.line(chooser.getSelectedFile().toPath().toString()));
+    chosen.accept(chooser.getSelectedFile().toPath());
   }
+  private void register(Path p){ main.manager().message(TaggedText.line(p.toString())); }
   private TransferHandler dropHandler(){
     return new TransferHandler(){
       @Override public boolean canImport(TransferSupport support){
@@ -222,17 +223,10 @@ public final class Window implements Manager.View{
       }
       @Override public boolean importData(TransferSupport support){
         var paths= Drop.paths(support.getTransferable(),main.manager()::refuse);
-        paths.forEach(p->main.manager().message(TaggedText.line(p.toString())));
+        paths.forEach(Window.this::register);
         return !paths.isEmpty();
       }
     };
-  }
-  private void connectEclipse(){
-    var chooser= new JFileChooser();
-    chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-    chooser.setDialogTitle("Select Eclipse: its program, its folder, or the folder it was unzipped into");
-    if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
-    main.manager().connect(chooser.getSelectedFile().toPath());
   }
   private void editMetadata(){
     var base= Registry.text(state.projects().stream().map(Project::entry).toList());

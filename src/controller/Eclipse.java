@@ -5,9 +5,7 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -50,13 +48,8 @@ public record Eclipse(Path dir){
   private static Str str(String value){ return new Str(value,Info.noSpan); }
   public void publish(String state){ replace(dir.resolve("state.info"),state.getBytes(UTF_8)); }
   /// The JUnit report of main, when the newest unit test log of folder was written since main started.
-  public static Optional<String> report(Path folder, String main, Instant since){ return report(folder,main,since,Facts.retries); }
-  private static Optional<String> report(Path folder, String main, Instant since, int retries){
-    try{ return LogFiles.list(folder).stream().filter(e->e.path().getFileName().toString().startsWith("unit_test_log")).findFirst().filter(e->e.when().isAfter(since)).map(_->JUnitReport.document(JUnitReport.suite(main,folder))); }
-    catch(UncheckedIOException e){
-      if (retries > 0 && e.getCause() instanceof NoSuchFileException){ return report(folder,main,since,retries-1); }
-      throw e;
-    }
+  public static Optional<String> report(Path folder, String main, Instant since){
+    return Facts.retried(()->LogFiles.list(folder).stream().filter(e->e.path().getFileName().toString().startsWith("unit_test_log")).findFirst().filter(e->e.when().isAfter(since)).map(_->JUnitReport.document(JUnitReport.suite(main,folder))));
   }
   public void report(String alias, String report){ replace(dir.resolve(alias).resolve("report.xml"),report.getBytes(UTF_8)); }
   public static void append(Path file, String text){

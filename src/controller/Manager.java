@@ -12,8 +12,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -75,8 +73,7 @@ public final class Manager{
     String failure= "";
     ChildJvm child;
     boolean terminated;
-    boolean thenRun;
-    Optional<String> named= Optional.empty();
+    Supplier<List<String>> then;
     List<String> todo= List.of();
     ScheduledFuture<?> reporting;
   }
@@ -106,13 +103,11 @@ public final class Manager{
   //Runs once before the watcher thread starts, then only from that thread: never concurrently.
   public void drain(){
     var msgDir= dir.resolve("messages");
-    try{ take(msgDir); }
-    catch(IOException e){ throw Messages.couldNotDrainMessageFolder(msgDir,e); }
+    try{ Fs.ofV(()->take(msgDir)); }
+    catch(UncheckedIOException e){ throw Messages.couldNotDrainMessageFolder(msgDir,e.getCause()); }
   }
   private void take(Path msgDir) throws IOException{
-    var files= list(msgDir,"*.msg");
-    files.sort(Comparator.comparing(f->f.getFileName().toString()));
-    for(var file: files){
+    for(var file: Names.list(msgDir).stream().filter(f->f.toString().endsWith(".msg")).toList()){
       Runnable r;
       try{ var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(); r= ()->apply(text); }
       catch(CharacterCodingException e){ r= ()->tell(Messages.unreadableMessage(file)); }
@@ -120,15 +115,10 @@ public final class Manager{
       post(r);
     }
     var old= Instant.now().minusSeconds(60);
-    for(var file: list(msgDir,"*.tmp")){
+    for(var file: Names.list(msgDir).stream().filter(f->f.toString().endsWith(".tmp")).toList()){
       try{ if (Files.getLastModifiedTime(file).toInstant().isBefore(old)){ Files.deleteIfExists(file); } }
       catch(NoSuchFileException e){}
     }
-  }
-  private static List<Path> list(Path msgDir, String glob) throws IOException{
-    var files= new ArrayList<Path>();
-    try(var stream= Files.newDirectoryStream(msgDir,glob)){ stream.forEach(files::add); }
-    return files;
   }
   public void ask(String verb, String name, String arg){ post(()->request(verb,name,arg)); }
   public void commit(String base, String text, Runnable done){ post(()->commitNow(base,text,done)); }
@@ -228,9 +218,8 @@ public final class Manager{
     if (p.linkProblem().isPresent()){ output(f,p.linkProblem().get().stripTrailing()+"\n"); return; }
     var l= live.get(f);
     l.terminated= false;
-    if (!p.needsCompiling()){ l.todo= run ? chosen(f,named) : List.of(); next(f); return; }
-    l.thenRun= run;
-    l.named= named;
+    l.then= run ? ()->chosen(f,named) : List::of;
+    if (!p.needsCompiling()){ l.todo= l.then.get(); next(f); return; }
     l.compiled.setLength(0);
     output(f,"--- compiling "+f.getFileName()+" ---\n");
     if (start(f,Project.compiling,()->tools.compile(f,out(f)))){ registry.update(f,e->e.withTimes(System.currentTimeMillis(),e.run())); }
@@ -308,7 +297,7 @@ public final class Manager{
       output(f,"--- compile "+(ec == 0 ? "done" : "failed with "+ec)+" ---\n");
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }
-      l.todo= ec == 0 && l.thenRun && !l.terminated ? chosen(f,l.named) : List.of();
+      l.todo= ec == 0 && !l.terminated ? l.then.get() : List.of();
       next(f);
       return;
     }
