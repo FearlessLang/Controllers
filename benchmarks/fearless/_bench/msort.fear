@@ -1,6 +1,6 @@
 /// A sequential merge sort with a costly comparison: plain Fearless code, no parallel flow.
 MSort: { #(xs: read List[Nat], cost: Nat): mut List[Nat] -> Block#
-  .if {xs.size <= 1} .return {xs.flow.list}
+  .if {xs.size <= 1} .return {xs.seqFlow.list}
   .let[Nat] mid = {xs.size.getTruncDiv 2}
   .return {Merge#(MSort#(xs.subList(0, mid), cost), MSort#(xs.subList mid, cost), cost)};
   }
