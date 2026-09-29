@@ -26,6 +26,10 @@ final class TokensTest{
     same("SignedInt|+1 UnSignedFloat|2.5 Op|+ SignedFloat|-1.0e3soft",tokens("+1 2.5 + -1.0e3soft"));
     same("CCurlyId|}x LineComment|// y",tokens("}x // y"));
   }
+  @Test void aBlockCommentEndsAtTheFirstCloseWhateverItsLength(){
+    same("BlockComment|/**/ BlockComment|/***/ BlockComment|/*/ */ Op|/",tokens("/**/ /***/ /*/ */ /"));
+    same("BlockComment|/*"+"* a ".repeat(100000)+"*/ LowercaseId|x",tokens("/*"+"* a ".repeat(100000)+"*/ x"));
+  }
   @Test void groupsNestAndAnUnclosedOneRunsToTheEnd(){
     var root= Tokens.group(Tokens.tokens("a.b(c, {d -> e[F] ) g"));
     same("[LowercaseId|a, DotName|.b, ORound, LowercaseId|g]",root.items.stream().map(TokensTest::show).toList().toString());

@@ -64,12 +64,14 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     var tokens= Tokens.tokens(text);
     return new Resolver(api, pkg, packages, aliases(head, packages), text, tokens, Tokens.group(tokens));
   }
-  /// the use directives of a package head file, alias to full name, with its package mapped
+  /// the use directives of a package head file naming a qualified type, alias to full name, with
+  /// its package mapped
   static Map<String,String> aliases(String head, Map<String,String> packages){
     var items= Tokens.group(Tokens.tokens(head)).items;
     var res= new HashMap<String,String>();
     for (int j= 0; j+4 < items.size(); j+= 1){
-      var use= word(items.get(j), "use") && Tokens.is(items.get(j+1), Kind.UppercaseId) && word(items.get(j+2), "as") && Tokens.is(items.get(j+3), Kind.UppercaseId) && Tokens.is(items.get(j+4), Kind.SemiColon);
+      var qualified= Tokens.is(items.get(j+1), Kind.UppercaseId) && Tokens.text(items.get(j+1)).indexOf('.') >= 0;
+      var use= word(items.get(j), "use") && qualified && word(items.get(j+2), "as") && Tokens.is(items.get(j+3), Kind.UppercaseId) && Tokens.is(items.get(j+4), Kind.SemiColon);
       if (use){ res.put(Tokens.text(items.get(j+3)), mapped(Tokens.text(items.get(j+1)), packages)); }
     }
     return res;
@@ -91,9 +93,10 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     var prefix= "";
     var touching= !items.isEmpty() && items.getLast() instanceof Tok t && pos <= t.end();
     var typing= touching && Tokens.is(items.getLast(), Kind.DotName, Kind.Op);
-    var qualifying= touching && Tokens.is(items.getLast(), Kind.UppercaseId) && Tokens.text(items.getLast()).indexOf('.') >= 0;
+    var dot= text.lastIndexOf('.', pos-1);
+    var qualifying= touching && Tokens.is(items.getLast(), Kind.UppercaseId) && dot >= items.getLast().start();
     if (typing){ from= items.removeLast().start(); prefix= text.substring(from, pos); }
-    else if (qualifying){ from= items.getLast().start()+Tokens.text(items.getLast()).indexOf('.'); prefix= text.substring(from, pos); }
+    else if (qualifying){ from= dot; prefix= text.substring(from, pos); }
     else if (pos > 0 && text.charAt(pos-1) == '.'){ from= pos-1; prefix= "."; }
     var types= types(items, from, prefix);
     var seg= touching && !typing ? List.<Item>of() : segment(items);
@@ -285,12 +288,13 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     return t.lambda(n, Chain.methodsOf(g).stream().flatMap(m->m.name().stream()).collect(Collectors.toSet()));
   }
   private Optional<Type> entry(Ty t){ return entry(t, new HashSet<>()); }
-  /// the compiled type, or a declaration of this file the last compile does not know, with the
-  /// methods of its supertypes; seen are the declarations already visited, which add nothing
+  /// the compiled type, or a declaration of this file the last compile does not know, with
+  /// distinct generics and the methods of its supertypes; seen are the declarations already
+  /// visited, which add nothing
   private Optional<Type> entry(Ty t, HashSet<String> seen){
     var res= api.entry(t);
     if (res.isPresent() || !t.name().startsWith(pkg+".") || !seen.add(t.name())){ return res; }
-    return declaration(root, t.name().substring(pkg.length()+1)).filter(h->h.xs().size() == t.args().size()).map(h->declared(h, seen));
+    return declaration(root, t.name().substring(pkg.length()+1)).filter(h->h.xs().size() == t.args().size() && h.xs().stream().distinct().count() == h.xs().size()).map(h->declared(h, seen));
   }
   private Type declared(Header h, HashSet<String> seen){
     var xs= new HashMap<String,Ty>();

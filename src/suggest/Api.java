@@ -49,7 +49,7 @@ public final class Api{
   }
   private final Map<String,Type> types;
   public Api(List<Type> all){ types= all.stream().collect(Collectors.toMap(t->t.name+"/"+t.bs.size(), Function.identity())); }
-  Optional<Type> entry(Ty t){ return Optional.ofNullable(types.get(t.name+"/"+t.args.size())); }
+  public Optional<Type> entry(Ty t){ return Optional.ofNullable(types.get(t.name+"/"+t.args.size())); }
   /// the public types of the package, with their generics as type variables
   List<Ty> types(String pkg){
     return types.values().stream().filter(t->t.name.startsWith(pkg+".") && !t.name.startsWith(pkg+"._")).map(t->new Ty(t.name, t.bs.stream().map(b->new Ty(b, List.of())).toList())).toList();

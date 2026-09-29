@@ -4,12 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static suggest.DocsTest.same;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
+import resources.ResolveResource;
 import suggest.Api.Ty;
 import suggest.Resolver.Row;
 import suggest.Resolver.Suggestions;
@@ -56,6 +62,7 @@ final class ResolverTest{
       m(".cmp",bs(),list(c("test.Person"),c("test.Person")),c("base.Bool")),m(".hash",bs(),list(),c("base.Nat")),m(".assertEq",bs(),list(c("test.Person")),c("base.Void"))),
     type("test.Persons",bs(),"[]",m("#",bs(),list(c("base.Nat"),c("base.Str"),c("base.List",c("test.Cat"))),c("test.Person"))),
     type("test.Cats",bs(),"[]",m("#",bs(),list(c("base.Str"),c("base.Nat")),c("test.Cat"))));
+  static final Api compiled= new Api(Api.parse(api));
   static final String head= Stream.of("Str","Nat","List","Flow","Opt","Opts","OptMatch","F","Block","OrderHash","Bool").map(n->"use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
     Cats: { #(name: Str, weight: Nat): Cat -> Cat: { .name: Str -> name; .weight: Nat -> weight; } }
@@ -72,9 +79,13 @@ final class ResolverTest{
   static final String opt= ".get .match";
   /// the suggestions at the | of the text
   static Suggestions at(String text){ return at(head,Map.of(),text); }
+  /// every offset of the text is suggested at too
   static Suggestions at(String head, Map<String,String> packages, String text){
     var pos= text.indexOf('|');
-    return Resolver.of(new Api(Api.parse(api)),"test",packages,head,text.substring(0,pos)+text.substring(pos+1)).suggest(pos);
+    var t= text.substring(0,pos)+text.substring(pos+1);
+    var r= Resolver.of(compiled,"test",packages,head,t);
+    IntStream.rangeClosed(0,t.length()).forEach(r::suggest);
+    return r.suggest(pos);
   }
   static String names(String text){ return at(text).rows().stream().map(Row::name).collect(Collectors.joining(" ")); }
   static String types(String text){ return at(text).types().stream().map(Ty::show).collect(Collectors.joining(" ")); }
@@ -164,6 +175,7 @@ final class ResolverTest{
     same(".assertEq .cmp .hash",names("NewThing: OrderHash[NewThing] { .cmp a, b -> a.| }"));
     same(".assertEq .cmp .hash",names("NewThing: OrderHash[NewThing] { .foo -> this.| }"));
     same(".flow .get .size",names("NewThing[T]: OrderHash[NewThing[T]] { .foo(l: List[T]) -> l.| }"));
+    same("",names("NewThing[T,T]: OrderHash[NewThing[T,T]] { .foo -> this.| }"));
     same("",names("NewThing[T]: OrderHash[NewThing[T]] { .foo(l: List[T]) -> l.get(0).| }"));
     same(".assertEq .cmp .hash",names("A: { .foo(n: NewThing) -> n.| }\nNewThing: OrderHash[NewThing] { }"));
   }
@@ -229,7 +241,7 @@ final class ResolverTest{
     same(person,probe("mut Persons#(1, \"a\", ps).|"));
   }
   @Test void theHeadFileGivesTheAliases(){
-    assertEquals(Map.of("List","base.List","S","base.Str"),Resolver.aliases("use base.List as List;\n// use base.Nat as N;\nuse base.Str as S;\nA: {}",Map.of()));
+    assertEquals(Map.of("List","base.List","S","base.Str"),Resolver.aliases("use base.List as List;\n// use base.Nat as N;\nuse base.Str as S;\nuse Foo as B;\nA: {}",Map.of()));
   }
   @Test void aMapDirectiveGivesAPackageNameWrittenHereAnotherPackage(){
     var packages= Map.of("lib","base");
@@ -261,6 +273,7 @@ final class ResolverTest{
     same("Opt[E] OptMatch[E,R] Opts",types(file+"base.Op|tMatch"));
     same("",types(file+"base.o|"));
     same("",types(file+"nope.O|"));
+    same("",types(file+"ba|se.O"));
   }
   @Test void aUseDirectiveSuggestsTheTypesOfThePackage(){
     var s= at("use base.Li|");
@@ -277,4 +290,19 @@ final class ResolverTest{
     same("",names("A: { .foo(base: Nat) -> base.O| }"));
     same("Opt[E] OptMatch[E,R] Opts OrderHash[T]",types("A: { .foo(base: Nat) -> base.O| }"));
   }
+  @Test void noTextNorCursorMakesTheSuggestionsThrow() throws IOException{
+    var heads= head+"\nuse Foo as B;\nuse base. as C;\nuse as D;\nuse lib.Str as;\nuse lib.Nat as N;";
+    List<Path> fear;
+    try(var all= Files.walk(ResolveResource.stLibPath)){ fear= all.filter(p->p.toString().endsWith(".fear")).sorted().toList(); }
+    for (var p : fear){
+      var t= Files.readString(p);
+      var r= Resolver.of(compiled,"base",Map.of("lib","base"),heads,t);
+      IntStream.rangeClosed(0,t.length()).forEach(r::suggest);
+    }
+    for (var t : List.of(file,Files.readString(ResolveResource.stLibPath.resolve("pipes.fear")))){
+      IntStream.rangeClosed(0,t.length()).forEach(k->suggest(heads,t.substring(0,k),k));
+      IntStream.range(0,t.length()).forEach(k->suggest(heads,t.substring(0,k)+t.substring(k+1),k));
+    }
+  }
+  static void suggest(String head, String text, int pos){ Resolver.of(compiled,"base",Map.of("lib","base"),head,text).suggest(pos); }
 }
