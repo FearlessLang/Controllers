@@ -134,6 +134,21 @@ public final class Messages{
   public static String malformedLink(String alias, String link){
     return "The manager was asked to link \""+alias+"\" with "+disp(link)+", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.";
   }
+  public static String thirdLineRefused(String verb, String name, String third, List<String> takers){
+    return "The manager was asked to "+disp(verb)+" "+disp(name)+" with the third line "+disp(third)+", but only the requests "+Join.of(takers.stream().map(v->"\""+v+"\""),"",", ","")+" take a third line.";
+  }
+  public static String dropRefused(String item, String why){ return "The manager was asked to register "+disp(item)+", dropped on its window, but "+why+"."; }
+  public static String dropUnreadable(Exception e){ return "The manager was asked to register what was dropped on its window, but the desktop did not hand it over: "+e.getMessage(); }
+  public static UserError tooManyArguments(List<String> args){
+    return new UserError("""
+      Fearless was started with %d arguments, but it takes at most one.
+
+      The arguments are:
+      %s
+      Start Fearless with no argument to show its window, or with one argument:
+      a project folder, or a file inside one.
+      """.formatted(args.size(),Join.of(args.stream().map(UserError::path),"","\n","","")));
+  }
   public static String noEclipse(Path dir){
     return "Eclipse is not connected: no Eclipse installation, a folder holding the file \".eclipseproduct\", is in\n  "+dir+"\nor in its folders \"eclipse\" or \"Contents/Eclipse\", or in those of a folder of it.\n\nSelect the Eclipse program, the folder holding it, or the folder Eclipse was unzipped into.";
   }

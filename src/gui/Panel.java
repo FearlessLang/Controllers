@@ -241,6 +241,10 @@ final class Panel{
     res.add(field);
     return res;
   }
-  static void openDocs(Component parent, Path folder){ Window.onFiles(parent,"The documentation is not opened",()->docs(folder).forEach(OpenPath::open)); }
-  private static List<Path> docs(Path folder){ return Fs.walk(folder.resolve(Facts.outDir).resolve("gen_java"),s->s.filter(p->p.toString().endsWith(".html")).toList()); }
+  static void openDocs(Component parent, Path folder){ Window.onFiles(parent,"The documentation is not opened",()->openAll(parent,folder.resolve(Facts.outDir).resolve("gen_java"))); }
+  private static void openAll(Component parent, Path gen){
+    var docs= Fs.walk(gen,s->s.filter(p->p.toString().endsWith(".html")).toList());
+    if (docs.isEmpty()){ JOptionPane.showMessageDialog(parent,"The documentation is not opened: no .html file is in\n"+gen,"Fearless",JOptionPane.ERROR_MESSAGE); return; }
+    docs.forEach(OpenPath::open);
+  }
 }

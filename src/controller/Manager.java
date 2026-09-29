@@ -132,6 +132,7 @@ public final class Manager{
   public void ask(String verb, String name, String arg){ post(()->request(verb,name,arg)); }
   public void commit(String text, Runnable done){ post(()->commitNow(text,done)); }
   public void connect(Path chosen){ post(()->connectNow(chosen)); }
+  public void refuse(String text){ post(()->tell(text)); }
   void settle(){
     try{ core.submit(()->{}).get(1,TimeUnit.MINUTES); }
     catch(InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
@@ -158,6 +159,7 @@ public final class Manager{
     scan(e.path());
   }
   private static final List<String> verbs= List.of("register","select","run","compile","check","terminate","clean","kind","forget","mains","link","clear");
+  private static final List<String> thirdLine= List.of("run","kind","mains","link");
   private void apply(String message){
     if (message.isEmpty()){ view.show(); return; }
     var lines= List.of(message.split("\n",-1));
@@ -167,6 +169,7 @@ public final class Manager{
   }
   private void request(String verb, String name, String arg){
     if (!verbs.contains(verb)){ tell(Messages.unknownVerb(verb,verbs)); return; }
+    if (!arg.isEmpty() && !thirdLine.contains(verb)){ tell(Messages.thirdLineRefused(verb,name,arg,thirdLine)); return; }
     if (verb.equals("register")){ register(name); return; }
     var e= registry.named(name);
     if (e.isEmpty()){ tell(Messages.unknownProject(verb,name,registry.all().stream().map(Entry::alias).toList())); return; }

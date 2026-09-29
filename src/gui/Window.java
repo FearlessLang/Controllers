@@ -13,6 +13,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -51,6 +52,7 @@ import controller.Project;
 import controller.Registry;
 import controller.TaggedText;
 import controller.Messages;
+import tools.Fs;
 import tools.OpenPath;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
@@ -165,7 +167,7 @@ public final class Window implements Manager.View{
     manager.add(item("Show raw project state...",true,()->showText(frame,rawState(),"Raw project state",JOptionPane.PLAIN_MESSAGE)));
     manager.add(item("Connect Eclipse...",true,this::connectEclipse));
     manager.addSeparator();
-    manager.add(item("Forget association",true,()->main.forgetAssociation(this)));
+    if (!Fs.isMac()){ manager.add(item("Forget association",true,()->main.forgetAssociation(this))); }
     manager.add(item("Quit manager",true,main::quit));
     project.setMnemonic('P');
     running.setMnemonic('R');
@@ -188,9 +190,9 @@ public final class Window implements Manager.View{
     var on= state.shown();
     var f= on.map(Project::folder);
     project.add(item("Clear cache",on.isPresent(),()->ask("clean",on.get().alias(),"")));
-    project.add(item("Browse files",on.isPresent(),()->OpenPath.open(f.get())));
+    project.add(item("Browse files",on.isPresent(),()->open(frame,f.get())));
     project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(frame,f.get())));
-    project.add(item("View base documentation",true,()->OpenPath.open(Deployed.stdLib("baseCache").resolve("base.html"))));
+    project.add(item("View base documentation",true,()->open(frame,Deployed.stdLib("baseCache").resolve("base.html"))));
     project.add(item("Error report",on.flatMap(Project::problem).isPresent(),()->showText(frame,on.get().problem().get(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE)));
     project.addSeparator();
     project.add(item("Forget project",on.isPresent(),()->ask("forget",on.get().alias(),"")));
@@ -210,10 +212,9 @@ public final class Window implements Manager.View{
         return true;
       }
       @Override public boolean importData(TransferSupport support){
-        var paths= Drop.paths(support.getTransferable());
-        if (paths.isEmpty()){ return false; }
+        var paths= Drop.paths(support.getTransferable(),main.manager()::refuse);
         paths.forEach(p->main.manager().message(TaggedText.line(p.toString())));
-        return true;
+        return !paths.isEmpty();
       }
     };
   }
@@ -261,6 +262,10 @@ public final class Window implements Manager.View{
   static void onFiles(Component parent, String refused, Runnable r){
     try{ r.run(); }
     catch(UncheckedIOException e){ JOptionPane.showMessageDialog(parent,refused+": "+Messages.fileFailure(e.getCause()),"Fearless",JOptionPane.ERROR_MESSAGE); }
+  }
+  static void open(Component parent, Path path){
+    if (!Files.exists(path)){ JOptionPane.showMessageDialog(parent,"Nothing is opened: nothing exists at\n"+path,"Fearless",JOptionPane.ERROR_MESSAGE); return; }
+    OpenPath.open(path);
   }
   static void showText(Component parent, String text, String title, int kind){
     var area= mono(new JTextArea(text,24,90));

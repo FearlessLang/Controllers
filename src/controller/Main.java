@@ -56,7 +56,10 @@ public final class Main{
   //TO TEST: on Windows the launcher hands Java a '?' in place of an unpaired surrogate of the
   //argument, so a folder whose name holds one is refused as a broken path when given as the
   //argument; the window and a register message register it.
-  static String message(String... args){ return args.length == 0 ? "" : TaggedText.line(Manager.path(args[0]).toString()); }
+  static String message(String... args){
+    if (args.length > 1){ throw Messages.tooManyArguments(List.of(args)); }
+    return args.length == 0 ? "" : TaggedText.line(Manager.path(args[0]).toString());
+  }
   private static void display(UserError e){
     try{ e.display(); }
     catch(InterruptedException ie){ e.displayStderr(ie); }
@@ -115,7 +118,7 @@ public final class Main{
   public void quit(){ done.countDown(); }
   public void fail(RuntimeException problem){ failure.compareAndSet(null,problem); done.countDown(); }
   public void forgetAssociation(Window window){
-    if (Fs.isMac() || !window.askForget()){ return; }
+    if (!window.askForget()){ return; }
     try{ Association.reconcile(Association.launcher(),List.of()); }
     catch(UserError e){ display(e); System.exit(1); }
     System.exit(0);

@@ -314,6 +314,14 @@ final class ManagerTest{
     assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.",view.notes.get(2));
     assertTrue(view.notes.get(3).startsWith("The manager was sent a message of 4 lines"));
   }
+  @Test void aThirdLineForARequestTakingNoneIsRefusedAndChangesNothing(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,"forget","hello","now");
+    assertEquals(List.of("hello "+hello),listed(dir));
+    assertEquals(List.of("The manager was asked to \"forget\" \"hello\" with the third line \"now\", but only the requests \"run\", \"kind\", \"mains\", \"link\" take a third line."),view.notes);
+  }
   @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir,"hello");

@@ -28,6 +28,17 @@ final class ManagerFolderTest{
     assertEquals("Str:"+here,Main.message("."));
     assertEquals("",Main.message());
   }
+  @Test void aStartWithTwoArgumentsIsRefusedNamingBoth(){
+    err("""
+      Fearless was started with 2 arguments, but it takes at most one.
+
+      The arguments are:
+        myProject
+        other
+      Start Fearless with no argument to show its window, or with one argument:
+      a project folder, or a file inside one.
+      """,()->Main.message("myProject","other"));
+  }
   @Test void aStartedFileIsTheFolderAround(@TempDir Path dir){
     var project= folder(dir,"myProject");
     var file= project.resolve("hello.fearless");
