@@ -135,10 +135,10 @@ public final class Window implements Manager.View{
       What your desktop already remembers by hand is left exactly as it is:
       this only removes what Fearless itself registered.""","Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);
   }
-  void ask(String verb, String name, String arg){ main.manager().ask(verb,name,arg); }
+  private void ask(String verb, String name, String arg){ main.manager().ask(verb,name,arg); }
   private void select(String name){ ask("select",name,""); }
   @Override public boolean visible(){ return ticker.isRunning(); }
-  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this)); }
+  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::ask)); }
   private void render(State s){
     state= s;
     tiles.render(s);

@@ -10,14 +10,17 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Image;
+import java.awt.KeyboardFocusManager;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -38,14 +41,15 @@ import controller.Registry.Kind;
 import fileSupport.LogFiles;
 import tools.Fs;
 import tools.OpenPath;
-import utils.Push;
 
 /// The right half of the window: everything about one registered project, and the
 /// buttons that act on it. One Panel per project, kept while the project stays registered:
 /// it holds the Output of the project.
 final class Panel{
+  interface Requests{ void ask(String verb, String name, String arg); }
+  private record Link(JTextField field, String was){ boolean typed(){ return !field.getText().strip().equals(was); } }
   private static final int iconSize= 32;
-  private final Window window;
+  private final Requests requests;
   final JPanel root= new JPanel(new BorderLayout(8,8));
   final JTextArea output= mono(named(new JTextArea(10,60),"output"));
   private final JScrollPane outputScroll= new JScrollPane(output);
@@ -55,6 +59,7 @@ final class Panel{
   private final JPanel mainsBox= named(new JPanel(),"mains");
   private final JScrollPane mainsScroll= new JScrollPane(mainsBox);
   private final JPanel mainsPanel= new JPanel(new BorderLayout());
+  private final JPanel pick= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
   private final JPanel linksBox= new JPanel();
   private final Collapsible links= new Collapsible("Links",new JScrollPane(linksBox),false);
   private final Collapsible information= new Collapsible("Information",new JScrollPane(details),true);
@@ -67,16 +72,16 @@ final class Panel{
   private final JButton copyLog= small("Copy",this::copyLog);
   private final JButton deleteLog= small("Delete",this::deleteLog);
   private Object shown= List.of();
+  private HashMap<String,Link> linkFields= new HashMap<>();
   private Project project;
-  Panel(Window window){
-    this.window= window;
+  Panel(Requests requests){
+    this.requests= requests;
     output.setEditable(false);
     details.setEditable(false);
     mainsBox.setLayout(new BoxLayout(mainsBox,BoxLayout.Y_AXIS));
     linksBox.setLayout(new BoxLayout(linksBox,BoxLayout.Y_AXIS));
-    var pick= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
-    pick.add(named(small("All",()->window.ask("mains",project.alias(),String.join(" ",project.knownMains()))),"all"));
-    pick.add(named(small("None",()->window.ask("mains",project.alias(),"")),"none"));
+    pick.add(named(small("All",()->requests.ask("mains",project.alias(),String.join(" ",project.knownMains()))),"all"));
+    pick.add(named(small("None",()->requests.ask("mains",project.alias(),"")),"none"));
     mainsPanel.add(pick,BorderLayout.NORTH);
     mainsPanel.add(mainsScroll,BorderLayout.CENTER);
     mainsPanel.setBorder(BorderFactory.createEtchedBorder());
@@ -109,7 +114,7 @@ final class Panel{
     outputPanel.add(outputScroll,BorderLayout.CENTER);
     root.add(outputPanel,BorderLayout.CENTER);
   }
-  private void clearOutput(){ window.ask("clear",project.alias(),""); }
+  private void clearOutput(){ requests.ask("clear",project.alias(),""); }
   void append(String text){
     var bar= outputScroll.getVerticalScrollBar();
     var following= bar.getValue()+bar.getVisibleAmount() >= bar.getMaximum()-16;
@@ -119,7 +124,7 @@ final class Panel{
   private void act(){
     information.setOpen(false);
     links.setOpen(false);
-    window.ask(project.action().verb(),project.alias(),"");
+    requests.ask(project.action().verb(),project.alias(),"");
   }
   void render(Project p, List<Project> all){
     var next= List.of(p,all.stream().map(Project::entry).toList());
@@ -137,7 +142,9 @@ final class Panel{
     fillKinds(p);
     fillMains(p);
     fillLinks(p,all);
+    var log= logList.getSelectedValue();
     logList.setListData(p.facts().logs().toArray(LogFiles.Entry[]::new));
+    logList.setSelectedValue(log,false);
     updateLogButtons();
     root.revalidate();
     root.repaint();
@@ -168,17 +175,17 @@ final class Panel{
     mainsBox.removeAll();
     mainsPanel.setVisible(p.kind() == Kind.code);
     var known= p.knownMains();
+    pick.setVisible(known.size() > 1);
     if (p.mains().isEmpty()){ mainsBox.add(new JLabel("<needs compiling>")); return; }
     if (known.size() == 1){ mainsBox.add(new JLabel(known.getFirst())); return; }
-    var chosen= p.selectedMains();
     for(var main: known){
-      var box= named(new JCheckBox(main,chosen.contains(main)),main);
-      box.setEnabled(!p.busy());
-      box.addActionListener(_->window.ask("mains",p.alias(),String.join(" ",box.isSelected() ? Push.of(chosen,main) : chosen.stream().filter(m->!m.equals(main)).toList())));
+      var box= named(new JCheckBox(main,p.selectedMains().contains(main)),main);
+      box.addActionListener(_->requests.ask("mains",p.alias(),ticked()));
       mainsBox.add(box);
     }
     mainsScroll.setPreferredSize(new Dimension(0,Math.min(3,known.size())*26+8));
   }
+  private String ticked(){ return String.join(" ",Stream.of(mainsBox.getComponents()).map(c->(JCheckBox)c).filter(JCheckBox::isSelected).map(JCheckBox::getText).toList()); }
   private void fillKinds(Project p){
     kinds.removeAll();
     if (p.kind() != Kind.idle){ kinds.add(kindButton(p,"Back to idle",Kind.idle)); return; }
@@ -187,12 +194,15 @@ final class Panel{
     kinds.add(kindButton(p,"Become code",Kind.code));
   }
   private JButton kindButton(Project p, String text, Kind target){
-    var res= small(text,()->window.ask("kind",p.alias(),target.text));
+    var res= named(small(text,()->requests.ask("kind",p.alias(),target.text)),target.text);
     res.setEnabled(!p.busy());
     return res;
   }
   private void fillLinks(Project p, List<Project> all){
     var iAmCode= p.kind() == Kind.code;
+    var old= linkFields;
+    var owner= KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+    linkFields= new HashMap<>();
     linksBox.removeAll();
     links.setVisible(iAmCode || p.kind().isData());
     if (!links.isVisible()){ return; }
@@ -201,20 +211,30 @@ final class Panel{
       .filter(o->iAmCode ? o.kind().isData() : o.kind() == Kind.code)
       .sorted(Comparator.comparing(Project::alias))
       .forEach(o->linksBox.add(linkRow(iAmCode ? p : o,iAmCode ? o : p,o.alias())));
+    old.values().forEach(l->carry(l,owner));
+  }
+  private void carry(Link from, Component owner){
+    var to= linkFields.get(from.field().getName());
+    if (to == null){ return; }
+    if (from.typed()){ to.field().setText(from.field().getText()); }
+    to.field().setCaretPosition(Math.min(from.field().getCaretPosition(),to.field().getText().length()));
+    if (from.field() == owner){ to.field().requestFocusInWindow(); }
   }
   private JPanel linkRow(Project code, Project data, String other){
     var row= new JPanel(new FlowLayout(FlowLayout.LEFT,6,0));
     row.add(new JLabel(other));
-    row.add(linkField(code,data,"read",code.entry().reads()));
-    if (data.kind() == Kind.dataReadWrite || code.entry().edits().containsKey(data.alias())){ row.add(linkField(code,data,"write",code.entry().edits())); }
+    row.add(linkField(code,data,other,"read",code.entry().reads()));
+    if (data.kind() == Kind.dataReadWrite || code.entry().edits().containsKey(data.alias())){ row.add(linkField(code,data,other,"write",code.entry().edits())); }
     return row;
   }
-  private JPanel linkField(Project code, Project data, String how, Map<String,List<String>> links){
+  private JPanel linkField(Project code, Project data, String other, String how, Map<String,List<String>> links){
     var was= String.join(" ",links.getOrDefault(data.alias(),List.of()));
-    var field= new JTextField(was,14);
+    var field= named(new JTextField(was,14),other+" "+how);
+    var link= new Link(field,was);
+    linkFields.put(field.getName(),link);
     field.addActionListener(_->field.transferFocus());
     field.addFocusListener(new FocusAdapter(){
-      @Override public void focusLost(FocusEvent e){ if (!field.getText().strip().equals(was)){ window.ask("link",code.alias(),data.alias()+" "+how+" "+field.getText()); } }
+      @Override public void focusLost(FocusEvent e){ if (linkFields.get(field.getName()) == link && link.typed()){ requests.ask("link",code.alias(),data.alias()+" "+how+" "+field.getText()); } }
     });
     var res= new JPanel(new FlowLayout(FlowLayout.LEFT,2,0));
     res.add(new JLabel(how));
