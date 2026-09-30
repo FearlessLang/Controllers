@@ -24,7 +24,6 @@ import tools.Fs;
 /// Action 6: end the manager.
 final class ClearCacheTest extends ManagerTest{
   static final Path console= data.resolve("eclipse").resolve("hello_world").resolve("console.txt");
-  static final Path state= data.resolve("eclipse").resolve("state.info");
   static final Path cache= project.resolve(".fearless_out");
   final At managerShown= new At("managerShown",linux(3000));
   final Click focusTiles= new Click("focusTiles",linux(200,1500));
@@ -43,7 +42,7 @@ final class ClearCacheTest extends ManagerTest{
     pilot.chord(KeyEvent.VK_F8);
     pilot.chord(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(data.resolve("projects.info")).contains("\"code\""));
+    until(()->Fs.readUtf8(info).contains("\"code\""));
     codeShown.go();
     look();
     var at= head.aim();

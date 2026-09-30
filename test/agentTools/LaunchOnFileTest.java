@@ -25,7 +25,7 @@ final class LaunchOnFileTest extends ManagerTest{
     look();
     var at= tiles.aim();
     var shown= pixels(at);
-    var remembered= Fs.readUtf8(data.resolve("projects.info"));
+    var remembered= Fs.readUtf8(info);
     assertEquals("""
       {
         "hello_world": {
@@ -37,7 +37,7 @@ final class LaunchOnFileTest extends ManagerTest{
     clean();
     launch(project.resolve("hello_world.fearless").toString());
     until(()->Arrays.equals(shown,pixels(at)));
-    assertEquals(remembered,Fs.readUtf8(data.resolve("projects.info")));
+    assertEquals(remembered,Fs.readUtf8(info));
     stopManagers();
   }
 }

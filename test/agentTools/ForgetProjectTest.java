@@ -50,7 +50,7 @@ final class ForgetProjectTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project),Fs.readUtf8(data.resolve("projects.info")));
+      """.formatted(project),Fs.readUtf8(info));
     assertEquals(files,files());
     stopManagers();
   }

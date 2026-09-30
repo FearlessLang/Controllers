@@ -44,8 +44,8 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     pilot.chord(KeyEvent.VK_F8);
     pilot.chord(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(data.resolve("projects.info")).contains("\"code\""));
-    var remembered= Fs.readUtf8(data.resolve("projects.info"));
+    until(()->Fs.readUtf8(info).contains("\"code\""));
+    var remembered= Fs.readUtf8(info);
     assertEquals("""
       {
         "hello_world": {
@@ -66,7 +66,7 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     managerShownAgain.go();
     look();
     assertNotEquals(selected,pixels(tile)[0]);
-    assertEquals(remembered,Fs.readUtf8(data.resolve("projects.info")));
+    assertEquals(remembered,Fs.readUtf8(info));
     selectTile.go();
     until(()->pixels(tile)[0]==selected);
     focusTilesAgain.go();

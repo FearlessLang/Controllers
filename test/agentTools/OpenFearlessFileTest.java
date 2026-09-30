@@ -37,7 +37,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     var tile= firstTile.aim();
     var bar= pixels(menu);
     var empty= pixels(tile);
-    assertFalse(Files.exists(data.resolve("projects.info")));
+    assertFalse(Files.exists(info));
     managerMenu.go();
     quitManager.go();
     until(()->!run.isAlive());
@@ -53,7 +53,7 @@ final class OpenFearlessFileTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project),Fs.readUtf8(data.resolve("projects.info")));
+      """.formatted(project),Fs.readUtf8(info));
     stopManagers();
     closeFiles.go();
   }

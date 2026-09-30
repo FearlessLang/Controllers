@@ -43,7 +43,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     pilot.chord(KeyEvent.VK_F8);
     pilot.chord(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(data.resolve("projects.info")).contains("\"code\""));
+    until(()->Fs.readUtf8(info).contains("\"code\""));
     assertEquals("""
       {
         "start": {
@@ -51,7 +51,7 @@ final class QuitWhileRunningTest extends ManagerTest{
           "kind": "code"
         }
       }
-      """.formatted(gui),Fs.readUtf8(data.resolve("projects.info")));
+      """.formatted(gui),Fs.readUtf8(info));
     compile.go();
     until(()->Fs.readUtf8(console).contains("--- compile "));
     assertEquals("--- compiling testGui1 ---\n--- compile done ---\n",Fs.readUtf8(console));

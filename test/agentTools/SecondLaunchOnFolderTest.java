@@ -47,7 +47,7 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project,other),Fs.readUtf8(data.resolve("projects.info")));
+      """.formatted(project,other),Fs.readUtf8(info));
     stopManagers();
   }
 }
