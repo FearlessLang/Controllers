@@ -7,7 +7,7 @@ Sample: {
 Samples: { #(n: Nat): mut List[Sample] -> (1 =~~= n).flow.map{i -> Sample{.id -> i}}.list }
 
 MoleculesPar: Main{_ -> Block#(
-  Samples#200 .flow.map{s -> s.analyse}.mapFilter{ms -> ms.flow.max{::}.first}.list,
+  Samples#200 .flow.map{s -> s.analyse}.mapFilter{ms -> ms.flow(ParImm#).max{::}.first}.list,
   Void
   )}
 MoleculesSeq: Main{_ -> Block#(
