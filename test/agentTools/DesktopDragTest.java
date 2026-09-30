@@ -6,9 +6,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
-
 import tools.Fs;
 import utils.OneOr;
 
@@ -31,59 +28,57 @@ import utils.OneOr;
 /// Action 13: read the two folders back: example.txt is in test2 and nowhere else.
 ///
 /// The windows are only ever carried, and never against an edge of the screen: a window let go at an edge is how a desk is asked to fill half the screen, and the desk then offers to fill the other half with something else, which is a conversation this test has no business starting. They are never resized either, which matters more: the program that shows folders opens its next window at the size the last one was left, so a test that resizes a window leaves the run after it aiming at a window that is no longer the shape it was measured on.
-final class DesktopDragTest{
-  private static final int[] onLinux= {
-    1822,784,
-    1596,842,700,842,
-    1404,843,
-    1822,546,
-    1596,842,2600,842,
-    32,128,
-    2000,640,
-    862,916,3000,1100,
-    1479,843,
-    3379,843};
-  private static final int[] onWindows= {
-    36,28,
-    300,14,300,300,
-    727,15,
-    36,135,
-    435,14,800,300,
-    950,696,
-    380,696,
-    505,182,1050,300,
-    535,24,
-    1250,15};
+final class DesktopDragTest extends PilotTest{
+  final At deskShown= new At("deskShown",linux(2500),windows(2500));
+  final DoubleClick openTest1= new DoubleClick("openTest1",linux(1822,784),windows(36,28));
+  final At test1Shown= new At("test1Shown",linux(5700),windows(5700));
+  final Drag placeTest1= new Drag("placeTest1",linux(1596,842,700,842),windows(300,14,300,300));
+  final At test1Placed= new At("test1Placed",linux(9700),windows(9700));
+  final Click sendTest1Away= new Click("sendTest1Away",linux(1404,843),windows(727,15));
+  final At test1Away= new At("test1Away",linux(12700),windows(12700));
+  final DoubleClick openTest2= new DoubleClick("openTest2",linux(1822,546),windows(36,135));
+  final At test2Shown= new At("test2Shown",linux(15700),windows(15700));
+  final Drag placeTest2= new Drag("placeTest2",linux(1596,842,2600,842),windows(435,14,800,300));
+  final At test2Placed= new At("test2Placed",linux(19700),windows(19700));
+  final Click showOpenWindows= new Click("showOpenWindows",linux(32,128),windows(950,696));
+  final At openWindowsShown= new At("openWindowsShown",linux(22700),windows(22700));
+  final Click pickTest1= new Click("pickTest1",linux(2000,640),windows(380,696));
+  final At test1Back= new At("test1Back",linux(25700),windows(25700));
+  final Drag carryFile= new Drag("carryFile",linux(862,916,3000,1100),windows(505,182,1050,300));
+  final At fileCarried= new At("fileCarried",linux(31000),windows(31000));
+  final Click closeTest1= new Click("closeTest1",linux(1479,843),windows(535,24));
+  final At test1Closed= new At("test1Closed",linux(34000),windows(34000));
+  final Click closeTest2= new Click("closeTest2",linux(3379,843),windows(1250,15));
   private static final Path desk= Path.of(System.getProperty("user.home"),"Desktop");
   private static final Path test1= desk.resolve("test1");
   private static final Path test2= desk.resolve("test2");
   private static final String content= "carried across the desk\n";
-  /// How long an action waits for the desk to finish drawing what the one before it started, before aiming at anything.
-  private static final int settle= 2500;
-  private final Pilot pilot= new Pilot();
-  private int[] aim;
-  private int at;
-  @Test void aFileIsCarriedFromOneFolderWindowIntoTheOther(){
-    aim= Fs.isWindows() ? onWindows : onLinux;
-    if (aim == null){ Assumptions.abort("This desk has no recording yet: walk the actions by hand and write down where each one aims."); }
+  @Override protected void walk(){
     assert !Files.exists(test1) && !Files.exists(test2);
     Fs.ensureDir(test1); Fs.ensureDir(test2);
     Fs.writeUtf8(test1.resolve("example.txt"),content);
-    open();
-    drag();
-    click();
-    open();
-    drag();
-    click();
-    click();
-    drag();
-    click();
-    click();
+    deskShown.go();
+    openTest1.go();
+    test1Shown.go();
+    placeTest1.go();
+    test1Placed.go();
+    sendTest1Away.go();
+    test1Away.go();
+    openTest2.go();
+    test2Shown.go();
+    placeTest2.go();
+    test2Placed.go();
+    showOpenWindows.go();
+    openWindowsShown.go();
+    pickTest1.go();
+    test1Back.go();
+    carryFile.go();
+    fileCarried.go();
+    closeTest1.go();
+    test1Closed.go();
+    closeTest2.go();
     assertEquals(test2.resolve("example.txt"),landed());
   }
-  private void open(){ Pilot.pause(settle); pilot.doubleClick(aim[at++],aim[at++]); }
-  private void click(){ Pilot.pause(settle); pilot.click(aim[at++],aim[at++]); }
-  private void drag(){ Pilot.pause(settle); pilot.drag(aim[at++],aim[at++],aim[at++],aim[at++]); }
   private Path landed(){
     var res= OneOr.of("example.txt",Stream.of(test1,test2).map(d->d.resolve("example.txt")).filter(this::isTheFile));
     Fs.ofV(()->Files.delete(res));
