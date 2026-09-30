@@ -20,7 +20,6 @@ import tools.Fs;
 /// Action 4: run the launcher: the manager window opens with no note, showing the tile of hello_world exactly as before, and the manager remembers exactly what it remembered before.
 /// Action 5: end the manager.
 final class KindResetTest extends ManagerTest{
-  static final Path notes= data.resolve("eclipse").resolve("console.txt");
   static final Path cache= project.resolve(".fearless_out");
   static final String remembered= """
     {

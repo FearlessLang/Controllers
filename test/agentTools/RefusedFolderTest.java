@@ -23,7 +23,6 @@ import tools.Fs;
 /// Action 7: end the manager.
 final class RefusedFolderTest extends ManagerTest{
   static final Path gone= data.resolveSibling("gone");
-  static final Path notes= data.resolve("eclipse").resolve("console.txt");
   final At noteShown= new At("noteShown",linux(3000));
   final Area window= new Area("window",linux(68,32,3772,2098));
   final Click ok= new Click("ok",linux(1952,1146));

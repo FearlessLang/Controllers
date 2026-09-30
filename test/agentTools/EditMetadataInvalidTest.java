@@ -6,7 +6,6 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.event.KeyEvent;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
@@ -26,7 +25,6 @@ import tools.Fs;
 /// Action 7: press Close: the editor goes away, the window is exactly as before it opened, and the manager still remembers helloWorld as idle.
 /// Action 8: end the manager.
 final class EditMetadataInvalidTest extends ManagerTest{
-  static final Path notes= data.resolve("eclipse").resolve("console.txt");
   static final String registry= """
     {
       "hello_world": {

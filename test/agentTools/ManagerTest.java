@@ -28,6 +28,7 @@ abstract class ManagerTest extends PilotTest{
   static final Path data= app.resolveSibling(JavacTool.dataDirNameFor(ResolveResource.versionId));
   static final Path info= data.resolve("projects.info");
   static final Path state= data.resolve("eclipse").resolve("state.info");
+  static final Path notes= data.resolve("eclipse").resolve("console.txt");
   static final Path share= Path.of(System.getProperty("user.home"),".local","share");
   Process launch(String... args) throws Exception{
     var before= pilot.shot();
