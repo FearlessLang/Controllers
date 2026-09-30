@@ -5,21 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Desktop;
-import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.lang.ProcessBuilder.Redirect;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.stream.IntStream;
-
-import org.junit.jupiter.api.AfterEach;
-
-import resources.ResolveResource;
-import tools.Fs;
-import tools.JavacTool;
-import utils.Bug;
 
 /// The manager makes the desk open .fearless files with it and forgets that again when asked, and a file already on screen in the file manager shows each change once its window is reloaded.
 ///
@@ -36,7 +23,7 @@ import utils.Bug;
 /// Action 8: end the manager and close the file manager window.
 ///
 /// A file manager keeps the icon it first drew for a file even after the desk learns a new one, so every look starts by reloading the window.
-final class FileAssociationTest extends PilotTest{
+final class FileAssociationTest extends ManagerTest{
   final At filesShown= new At("filesShown",linux(3000),windows(0));
   final Click focusFiles= new Click("focusFiles",linux(2200,1200),windows(0,0));
   final At genericShown= new At("genericShown",linux(3000),windows(0));
@@ -57,9 +44,6 @@ final class FileAssociationTest extends PilotTest{
   final At managerAwayAgain= new At("managerAwayAgain",linux(2000),windows(0));
   final At iconChangedAgain= new At("iconChangedAgain",linux(3000),windows(0));
   final Click closeFiles= new Click("closeFiles",linux(2374,842),windows(0,0));
-  private static final Path app= ResolveResource.managedFolderOut.resolve("fearlessManaged"+ResolveResource.versionId);
-  private static final Path launcher= Fs.isWindows() ? app.resolve(app.getFileName()+".exe") : app.resolve("bin").resolve(app.getFileName().toString());
-  private static final Path project= ResolveResource.integrationTests.resolve("helloWorld");
   @Override protected void walk() throws Exception{
     clean();
     Desktop.getDesktop().open(project.toFile());
@@ -88,40 +72,11 @@ final class FileAssociationTest extends PilotTest{
     stopManagers();
     closeFiles.go();
   }
-  private Process launch() throws Exception{
-    var before= pilot.shot();
-    var res= new ProcessBuilder(launcher.toString()).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start();
-    until(()->!same(before,pilot.shot()));
-    return res;
-  }
   private BufferedImage look(At reloaded){
     focusFiles.go();
     pilot.chord(KeyEvent.VK_F5);
     reloaded.go();
-    var s= Toolkit.getDefaultToolkit().getScreenSize();
-    pilot.glide(s.width-1,s.height/2,Pilot.none,s.width-1,s.height/2,Pilot.none);
+    look();
     return fileIcon.shot();
   }
-  private static boolean same(BufferedImage a, BufferedImage b){
-    var pa= a.getRGB(0,0,a.getWidth(),a.getHeight(),null,0,a.getWidth());
-    var pb= b.getRGB(0,0,b.getWidth(),b.getHeight(),null,0,b.getWidth());
-    assert pa.length==pb.length;
-    var diff= IntStream.range(0,pa.length).filter(i->Math.abs((pa[i]&0xff)-(pb[i]&0xff))+Math.abs((pa[i]>>8&0xff)-(pb[i]>>8&0xff))+Math.abs((pa[i]>>16&0xff)-(pb[i]>>16&0xff))>30).count();
-    return diff*20<pa.length;
-  }
-  private static void clean() throws Exception{
-    stopManagers();
-    Fs.rmTree(app.resolveSibling(JavacTool.dataDirNameFor(ResolveResource.versionId)));
-    Fs.rmTree(project.resolve(".fearless_out"));
-    if (Fs.isWindows()){ throw Bug.todo(); }
-    var share= Path.of(System.getProperty("user.home"),".local","share");
-    for (var dir: List.of(share.resolve("applications"),share.resolve("mime").resolve("packages"))){
-      Fs.walkV(dir,s->s.filter(p->p.getFileName().toString().contains("earless")).toList().forEach(p->Fs.ofV(()->Files.delete(p))));
-    }
-    assertEquals(0,new ProcessBuilder("update-mime-database",share.resolve("mime").toString()).start().waitFor());
-    assertEquals(0,new ProcessBuilder("update-desktop-database",share.resolve("applications").toString()).start().waitFor());
-  }
-  @AfterEach void stop(){ stopManagers(); }
-  private static void stopManagers(){ ProcessHandle.allProcesses().filter(p->p.info().command().filter(launcher.toString()::equals).isPresent()).forEach(FileAssociationTest::kill); }
-  private static void kill(ProcessHandle p){ p.destroyForcibly(); p.onExit().join(); }
 }
