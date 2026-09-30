@@ -4,11 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-import resources.ResolveResource;
 import tools.Fs;
 
 /// Forgetting a project takes its tile out of the window and the manager stops remembering it, while the other projects stay as they were, the manager keeps running, and the folder of the forgotten project is left exactly as it was.
@@ -21,7 +19,6 @@ import tools.Fs;
 /// Action 3: choose Forget project in its Project menu: the second tile goes away, the helloWorld tile stays as it was, not selected, the manager keeps running and remembers only helloWorld, and every file and folder of helloStackTraces is still there, unchanged.
 /// Action 4: end the manager.
 final class ForgetProjectTest extends ManagerTest{
-  static final Path other= ResolveResource.integrationTests.resolve("helloStackTraces");
   final At managerShown= new At("managerShown",linux(3000));
   final Area firstTile= new Area("firstTile",linux(74,149,128,88));
   final Area secondTile= new Area("secondTile",linux(202,149,128,88));

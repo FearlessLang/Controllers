@@ -4,10 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 
-import resources.ResolveResource;
 import tools.Fs;
 
 /// Running the launcher on a second project folder while the manager runs hands that folder to the running manager and ends at once: the folder joins the same window as a second tile, which takes the selection, and the manager remembers both folders.
@@ -19,7 +17,6 @@ import tools.Fs;
 /// Action 2: run the launcher on helloStackTraces: it ends at once, a second tile appears beside helloWorld and takes the selection from it, the manager keeps running, and it remembers helloWorld and helloStackTraces as idle projects.
 /// Action 3: end the manager.
 final class SecondLaunchOnFolderTest extends ManagerTest{
-  static final Path other= ResolveResource.integrationTests.resolve("helloStackTraces");
   final At managerShown= new At("managerShown",linux(3000));
   final Area firstTile= new Area("firstTile",linux(74,149,128,88));
   final Area secondTile= new Area("secondTile",linux(202,149,128,88));
