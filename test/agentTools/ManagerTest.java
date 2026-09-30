@@ -23,6 +23,7 @@ abstract class ManagerTest extends PilotTest{
   static final Path app= ResolveResource.managedFolderOut.resolve("fearlessManaged"+ResolveResource.versionId);
   static final Path launcher= Fs.isWindows() ? app.resolve(app.getFileName()+".exe") : app.resolve("bin").resolve(app.getFileName().toString());
   static final Path project= ResolveResource.integrationTests.resolve("helloWorld");
+  static final Path data= app.resolveSibling(JavacTool.dataDirNameFor(ResolveResource.versionId));
   Process launch(String... args) throws Exception{
     var before= pilot.shot();
     var res= new ProcessBuilder(Push.of(launcher.toString(),List.of(args))).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start();
@@ -43,7 +44,7 @@ abstract class ManagerTest extends PilotTest{
   }
   @AfterEach void clean() throws Exception{
     stopManagers();
-    Fs.rmTree(app.resolveSibling(JavacTool.dataDirNameFor(ResolveResource.versionId)));
+    Fs.rmTree(data);
     Fs.rmTree(project.resolve(".fearless_out"));
     if (Fs.isWindows()){ throw Bug.todo(); }
     var share= Path.of(System.getProperty("user.home"),".local","share");
