@@ -1,5 +1,6 @@
 package agentTools;
 
+import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -8,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -26,14 +28,19 @@ public abstract class PilotTest{
   private static final String os= System.getProperty("os.name").toLowerCase(Locale.ROOT);
   protected final Pilot pilot= new Pilot();
   private final ArrayList<Aim> aims= new ArrayList<>();
-  private long start;
-  protected abstract void walk();
-  @Test void walks(){
+  private long last;
+  protected abstract void walk() throws Exception;
+  @Test void walks() throws Exception{
     var unrecorded= channel.isEmpty() && aims.stream().anyMatch(a->a.recorded().isEmpty());
     if (unrecorded){ Assumptions.abort("This desk has no recording yet: walk the test here in agent mode and write down where each aim lands."); }
     channel.ifPresent(Fs::cleanDir);
-    start= System.currentTimeMillis();
+    last= System.currentTimeMillis();
     walk();
+  }
+  protected void until(BooleanSupplier done){
+    var end= System.currentTimeMillis()+60_000;
+    while (!done.getAsBoolean()){ assert System.currentTimeMillis()<end; Pilot.pause(100); }
+    last= System.currentTimeMillis();
   }
   public abstract class Aim{
     private final String name;
@@ -78,8 +85,9 @@ public abstract class PilotTest{
   public final class At extends Aim{
     public At(String name, On... ons){ super(name,1,ons); }
     public void go(){
-      var wait= take()[0]+(channel.isEmpty() ? start : 0)-System.currentTimeMillis();
+      var wait= take()[0]+(channel.isEmpty() ? last : 0)-System.currentTimeMillis();
       if (wait>0){ Pilot.pause((int)wait); }
+      last= System.currentTimeMillis();
     }
   }
   public final class Click extends Aim{
@@ -93,5 +101,9 @@ public abstract class PilotTest{
   public final class Drag extends Aim{
     public Drag(String name, On... ons){ super(name,4,ons); }
     public void go(){ var v= aim(); pilot.drag(v[0],v[1],v[2],v[3]); }
+  }
+  public final class Area extends Aim{
+    public Area(String name, On... ons){ super(name,4,ons); }
+    public BufferedImage shot(){ var v= aim(); return pilot.shot().getSubimage(v[0],v[1],v[2],v[3]); }
   }
 }
