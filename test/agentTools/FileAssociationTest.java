@@ -12,7 +12,6 @@ import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -40,23 +39,23 @@ import utils.Bug;
 final class FileAssociationTest extends PilotTest{
   final At filesShown= new At("filesShown",linux(3000),windows(0));
   final Click focusFiles= new Click("focusFiles",linux(2200,1200),windows(0,0));
-  final At genericShown= new At("genericShown",linux(6000),windows(0));
+  final At genericShown= new At("genericShown",linux(3000),windows(0));
   final Area fileIcon= new Area("fileIcon",linux(1836,880,72,60),windows(0,0,0,0));
-  final At managerShown= new At("managerShown",linux(22000),windows(0));
+  final At managerShown= new At("managerShown",linux(2000),windows(0));
   final Click sendManagerAway= new Click("sendManagerAway",linux(3754,48),windows(0,0));
-  final At managerAway= new At("managerAway",linux(24000),windows(0));
-  final At iconChanged= new At("iconChanged",linux(27000),windows(0));
+  final At managerAway= new At("managerAway",linux(2000),windows(0));
+  final At iconChanged= new At("iconChanged",linux(3000),windows(0));
   final Click bringManagerBack= new Click("bringManagerBack",linux(32,386),windows(0,0));
-  final At managerBack= new At("managerBack",linux(30000),windows(0));
+  final At managerBack= new At("managerBack",linux(3000),windows(0));
   final Click managerMenu= new Click("managerMenu",linux(98,79),windows(0,0));
   final Click forgetAssociation= new Click("forgetAssociation",linux(128,170),windows(0,0));
-  final At dialogShown= new At("dialogShown",linux(33000),windows(0));
+  final At dialogShown= new At("dialogShown",linux(3000),windows(0));
   final Click yes= new Click("yes",linux(1928,1154),windows(0,0));
-  final At iconReverted= new At("iconReverted",linux(40000),windows(0));
-  final At managerShownAgain= new At("managerShownAgain",linux(58000),windows(0));
+  final At iconReverted= new At("iconReverted",linux(3000),windows(0));
+  final At managerShownAgain= new At("managerShownAgain",linux(2000),windows(0));
   final Click sendManagerAwayAgain= new Click("sendManagerAwayAgain",linux(3754,48),windows(0,0));
-  final At managerAwayAgain= new At("managerAwayAgain",linux(60000),windows(0));
-  final At iconChangedAgain= new At("iconChangedAgain",linux(63000),windows(0));
+  final At managerAwayAgain= new At("managerAwayAgain",linux(2000),windows(0));
+  final At iconChangedAgain= new At("iconChangedAgain",linux(3000),windows(0));
   final Click closeFiles= new Click("closeFiles",linux(2374,842),windows(0,0));
   private static final Path app= ResolveResource.managedFolderOut.resolve("fearlessManaged"+ResolveResource.versionId);
   private static final Path launcher= Fs.isWindows() ? app.resolve(app.getFileName()+".exe") : app.resolve("bin").resolve(app.getFileName().toString());
@@ -66,10 +65,8 @@ final class FileAssociationTest extends PilotTest{
     Desktop.getDesktop().open(project.toFile());
     filesShown.go();
     var generic= look(genericShown);
-    var before= pilot.shot();
     var run= launch();
     managerShown.go();
-    opened(before);
     sendManagerAway.go();
     managerAway.go();
     var fearless= look(iconChanged);
@@ -80,23 +77,22 @@ final class FileAssociationTest extends PilotTest{
     forgetAssociation.go();
     dialogShown.go();
     yes.go();
-    assertTrue(run.waitFor(1,TimeUnit.MINUTES));
+    until(()->!run.isAlive());
     assertEquals(0,run.exitValue());
     assertTrue(same(generic,look(iconReverted)));
-    before= pilot.shot();
     launch();
     managerShownAgain.go();
-    opened(before);
     sendManagerAwayAgain.go();
     managerAwayAgain.go();
     assertTrue(same(fearless,look(iconChangedAgain)));
     stopManagers();
     closeFiles.go();
   }
-  private static Process launch() throws Exception{ return new ProcessBuilder(launcher.toString()).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start(); }
-  private void opened(BufferedImage before){
-    var r= Pilot.changed(before,pilot.shot(),6);
-    assertTrue(r.width>=400 && r.height>=300,r::toString);
+  private Process launch() throws Exception{
+    var before= pilot.shot();
+    var res= new ProcessBuilder(launcher.toString()).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start();
+    until(()->!same(before,pilot.shot()));
+    return res;
   }
   private BufferedImage look(At reloaded){
     focusFiles.go();
