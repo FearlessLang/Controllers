@@ -1,6 +1,7 @@
 package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -27,7 +28,7 @@ import utils.OneOr;
 /// Action 3: press Become code: the manager remembers diary as a code project.
 /// Action 4: press Compile: the manager knows diary.Write as the one main of diary.
 /// Action 5: open the Logs section: it opens with an empty list.
-/// Action 6: press Run: the program exits with 0 leaving one closed log of Diary holding dear diary, and the list shows it.
+/// Action 6: press Run: the program exits with 0 leaving one closed log of Diary holding dear diary and nothing in the working folder of the test, and the list shows it.
 /// Action 7: click the log in the list and press Copy: the clipboard holds exactly the text of the log.
 /// Action 8: press Delete and answer Yes: the log is gone, and the list is empty again.
 /// Action 9: end the manager.
@@ -76,6 +77,7 @@ final class LogsSectionTest extends ManagerTest{
     var empty= pixels(at);
     run.go();
     until(()->Fs.readUtf8(state).contains("\"exit\": \"0\""));
+    assertFalse(Files.exists(Path.of(".out")));
     look();
     until(()->!Arrays.equals(empty,pixels(at)));
     var log= Fs.walk(logs,s->OneOr.of("one log",s.filter(Files::isRegularFile)));

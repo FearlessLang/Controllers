@@ -82,7 +82,6 @@ public final class Window implements Manager.View{
     this.main= main;
     status.setBorder(BorderFactory.createEmptyBorder(4,8,4,8));
     tiles.setBorder(BorderFactory.createTitledBorder("Registered project folders"));
-    split.setResizeWeight(0.3);
     split.setDividerLocation(320);
     frame.setJMenuBar(menuBar());
     frame.add(split,BorderLayout.CENTER);
@@ -122,7 +121,7 @@ public final class Window implements Manager.View{
       frame.setVisible(true);
       frame.setExtendedState(frame.getExtendedState() & ~Frame.ICONIFIED);
       frame.toFront();
-      frame.requestFocus();
+      tiles.list.requestFocus();
       ticker.start();
       var check= new Timer(2000,_->checkSurfaced());
       check.setRepeats(false);

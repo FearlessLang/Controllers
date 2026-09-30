@@ -11,7 +11,7 @@ import org.junit.jupiter.api.AfterEach;
 
 import tools.Fs;
 
-/// A compile that fails says why in the Output, tells the manager the file and line of the problem, and leaves the panel saying the project needs compiling exactly as before; once the source is fixed, Compile succeeds and the problem is gone.
+/// A compile that fails says why in the Output, tells the manager the file and line of the problem, and leaves the panel saying the project is invalid; once the source is fixed, Compile succeeds and the problem is gone.
 ///
 /// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
 ///
@@ -19,9 +19,9 @@ import tools.Fs;
 /// Action 1: run the launcher on broken: the manager window opens showing broken, an idle project.
 /// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
 /// Action 3: press Become code: the manager remembers broken as a code project.
-/// Action 4: press Compile: the Output says the compile failed and why, the manager knows the file and line of the problem and no main, and the kind button and the mains row of the panel look exactly as before.
+/// Action 4: press Compile: the Output says the compile failed and why, the manager knows the file and line of the problem and no main, and the mains row of the panel changes.
 /// Action 5: replace the source file with one whose main prints a text.
-/// Action 6: press Compile: the Output says the compile is done, the manager knows the main of broken and no problem, and the mains row of the panel changes.
+/// Action 6: press Compile: the Output says the compile is done, the manager knows the main of broken and no problem, and the mains row of the panel changes again.
 /// Action 7: end the manager.
 final class CompileFailsTest extends ManagerTest{
   static final Path broken= data.resolveSibling("broken");
@@ -85,7 +85,8 @@ final class CompileFailsTest extends ManagerTest{
       }
       """.formatted(broken),Fs.readUtf8(state));
     look();
-    until(()->Arrays.equals(code,pixels(at)));
+    until(()->!Arrays.equals(code,pixels(at)));
+    var invalid= pixels(at);
     Fs.writeUtf8(source,"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"fixed\")}\n");
     compileFixed.go();
     until(()->Fs.readUtf8(state).contains("broken.Hello"));
@@ -109,6 +110,7 @@ final class CompileFailsTest extends ManagerTest{
     mainShown.go();
     look();
     assertFalse(Arrays.equals(code,pixels(at)));
+    assertFalse(Arrays.equals(invalid,pixels(at)));
     stopManagers();
   }
   @Override @AfterEach void clean() throws Exception{

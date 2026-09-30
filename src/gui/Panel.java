@@ -177,6 +177,7 @@ final class Panel{
   //no choice, and several mains are picked one by one or with All and None.
   private void fillMains(Project p){
     mainsBox.removeAll();
+    mainsScroll.setPreferredSize(null);
     mainsPanel.setVisible(p.kind() == Kind.code);
     var known= p.knownMains();
     pick.setVisible(known.size() > 1);
@@ -211,10 +212,12 @@ final class Panel{
     links.setVisible(iAmCode || p.kind().isData());
     if (!links.isVisible()){ return; }
     linksBox.add(new JLabel(iAmCode ? "Data projects this code project reads or edits:" : "Code projects that may read or edit this:"));
-    all.stream()
-      .filter(o->iAmCode ? o.kind().isData() : o.kind() == Kind.code)
-      .sorted(Comparator.comparing(Project::alias))
-      .forEach(o->linksBox.add(linkRow(iAmCode ? p : o,iAmCode ? o : p,o.alias())));
+    if (!iAmCode){ all.stream().filter(o->o.kind() == Kind.code).sorted(Comparator.comparing(Project::alias)).forEach(o->linksBox.add(linkRow(o,p.alias(),p.kind() == Kind.dataReadWrite,o.alias()))); }
+    if (iAmCode){
+      var linked= Stream.concat(p.entry().reads().keySet().stream(),p.entry().edits().keySet().stream());
+      Stream.concat(all.stream().filter(o->o.kind().isData()).map(Project::alias),linked).distinct().sorted()
+        .forEach(a->linksBox.add(linkRow(p,a,all.stream().anyMatch(o->o.alias().equals(a) && o.kind() == Kind.dataReadWrite),a)));
+    }
     old.values().forEach(l->carry(l,owner));
   }
   private void carry(Link from, Component owner){
@@ -224,21 +227,21 @@ final class Panel{
     to.field().setCaretPosition(Math.min(from.field().getCaretPosition(),to.field().getText().length()));
     if (from.field() == owner){ to.field().requestFocusInWindow(); }
   }
-  private JPanel linkRow(Project code, Project data, String other){
+  private JPanel linkRow(Project code, String data, boolean writable, String other){
     var row= new JPanel(new FlowLayout(FlowLayout.LEFT,6,0));
     row.add(new JLabel(other));
     row.add(linkField(code,data,other,"read",code.entry().reads()));
-    if (data.kind() == Kind.dataReadWrite || code.entry().edits().containsKey(data.alias())){ row.add(linkField(code,data,other,"write",code.entry().edits())); }
+    if (writable || code.entry().edits().containsKey(data)){ row.add(linkField(code,data,other,"write",code.entry().edits())); }
     return row;
   }
-  private JPanel linkField(Project code, Project data, String other, String how, Map<String,List<String>> links){
-    var was= String.join(" ",links.getOrDefault(data.alias(),List.of()));
+  private JPanel linkField(Project code, String data, String other, String how, Map<String,List<String>> links){
+    var was= String.join(" ",links.getOrDefault(data,List.of()));
     var field= named(new JTextField(was,14),other+" "+how);
     var link= new Link(field,was);
     linkFields.put(field.getName(),link);
     field.addActionListener(_->field.transferFocus());
     field.addFocusListener(new FocusAdapter(){
-      @Override public void focusLost(FocusEvent e){ if (linkFields.get(field.getName()) == link && link.typed()){ requests.ask("link",code.alias(),data.alias()+" "+how+" "+field.getText()); } }
+      @Override public void focusLost(FocusEvent e){ if (linkFields.get(field.getName()) == link && link.typed()){ requests.ask("link",code.alias(),data+" "+how+" "+field.getText()); } }
     });
     var res= new JPanel(new FlowLayout(FlowLayout.LEFT,2,0));
     res.add(new JLabel(how));
