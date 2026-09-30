@@ -11,7 +11,9 @@ import java.awt.Insets;
 import java.awt.Taskbar;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
@@ -50,7 +53,10 @@ import controller.Project;
 import controller.Registry;
 import controller.TaggedText;
 import controller.Messages;
+import tools.Fs;
 import tools.OpenPath;
+import userMessages.UserError;
+import utils.Bug;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
 /// the selected one on the right. It shows the State the Manager hands it and turns every
@@ -98,11 +104,16 @@ public final class Window implements Manager.View{
     tick();
   }
   public static Window create(Main main){ return onEdt(()->new Window(main)); }
-  private static <T> T onEdt(Supplier<T> make){
+  static <T> T onEdt(Supplier<T> make){
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
     var result= new AtomicReference<T>();
     try{ SwingUtilities.invokeAndWait(()->result.set(make.get())); }
-    catch(InterruptedException|InvocationTargetException e){ throw Messages.couldNotStartGui(e); }
+    catch(InterruptedException e){ throw Bug.of(e); }
+    catch(InvocationTargetException e){
+      if (e.getCause() instanceof UserError u){ throw u; }
+      if (e.getCause() instanceof VirtualMachineError || e.getCause() instanceof LinkageError){ throw (Error)e.getCause(); }
+      throw Messages.couldNotStartGui(e.getCause());
+    }
     return result.get();
   }
   @Override public void show(){
@@ -134,10 +145,11 @@ public final class Window implements Manager.View{
       What your desktop already remembers by hand is left exactly as it is:
       this only removes what Fearless itself registered.""","Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);
   }
-  void ask(String verb, String name, String arg){ main.manager().ask(verb,name,arg); }
+  private void ask(String verb, String name, String arg){ main.manager().ask(verb,name,arg); }
+  private void refuse(String text){ main.manager().refuse(text); }
   private void select(String name){ ask("select",name,""); }
   @Override public boolean visible(){ return ticker.isRunning(); }
-  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this)); }
+  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::ask,this::refuse)); }
   private void render(State s){
     state= s;
     tiles.render(s);
@@ -162,9 +174,9 @@ public final class Window implements Manager.View{
     manager.setMnemonic('M');
     manager.add(item("Edit project metadata...",true,this::editMetadata));
     manager.add(item("Show raw project state...",true,()->showText(frame,rawState(),"Raw project state",JOptionPane.PLAIN_MESSAGE)));
-    manager.add(item("Connect Eclipse...",true,this::connectEclipse));
+    manager.add(item("Connect Eclipse...",true,()->choose("Select Eclipse: its program, its folder, or the folder it was unzipped into",p->main.manager().connect(p))));
     manager.addSeparator();
-    manager.add(item("Forget association",true,()->main.forgetAssociation(this)));
+    if (!Fs.isMac()){ manager.add(item("Forget association",true,()->main.forgetAssociation(this))); }
     manager.add(item("Quit manager",true,main::quit));
     project.setMnemonic('P');
     running.setMnemonic('R');
@@ -182,25 +194,26 @@ public final class Window implements Manager.View{
   }
   private void fillProjectMenu(){
     project.removeAll();
-    project.add(item("Add folder...",true,this::addFolder));
+    project.add(item("Add folder...",true,()->choose("Add a Fearless project folder",this::register)));
     project.addSeparator();
     var on= state.shown();
     var f= on.map(Project::folder);
     project.add(item("Clear cache",on.isPresent(),()->ask("clean",on.get().alias(),"")));
-    project.add(item("Browse files",on.isPresent(),()->OpenPath.open(f.get())));
-    project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(f.get())));
-    project.add(item("View base documentation",true,()->OpenPath.open(Deployed.stdLib("baseCache").resolve("base.html"))));
+    project.add(item("Browse files",on.isPresent(),()->open(this::refuse,f.get())));
+    project.add(item("View documentation",on.flatMap(Project::mains).isPresent(),()->Panel.openDocs(this::refuse,f.get())));
+    project.add(item("View base documentation",true,()->open(this::refuse,Deployed.stdLib("baseCache").resolve("base.html"))));
     project.add(item("Error report",on.flatMap(Project::problem).isPresent(),()->showText(frame,on.get().problem().get(),"Why this project is invalid",JOptionPane.ERROR_MESSAGE)));
     project.addSeparator();
     project.add(item("Forget project",on.isPresent(),()->ask("forget",on.get().alias(),"")));
   }
-  private void addFolder(){
+  private void choose(String title, Consumer<Path> chosen){
     var chooser= new JFileChooser();
     chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-    chooser.setDialogTitle("Add a Fearless project folder");
+    chooser.setDialogTitle(title);
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
-    main.manager().message(TaggedText.of(chooser.getSelectedFile().toPath().toString()));
+    chosen.accept(chooser.getSelectedFile().toPath());
   }
+  private void register(Path p){ main.manager().message(TaggedText.line(p.toString())); }
   private TransferHandler dropHandler(){
     return new TransferHandler(){
       @Override public boolean canImport(TransferSupport support){
@@ -209,26 +222,19 @@ public final class Window implements Manager.View{
         return true;
       }
       @Override public boolean importData(TransferSupport support){
-        var paths= Drop.paths(support.getTransferable());
-        if (paths.isEmpty()){ return false; }
-        paths.forEach(p->main.manager().message(TaggedText.of(p.toString())));
-        return true;
+        var paths= Drop.paths(support.getTransferable(),main.manager()::refuse);
+        paths.forEach(Window.this::register);
+        return !paths.isEmpty();
       }
     };
   }
-  private void connectEclipse(){
-    var chooser= new JFileChooser();
-    chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-    chooser.setDialogTitle("Select Eclipse: its program, its folder, or the folder it was unzipped into");
-    if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
-    main.manager().connect(chooser.getSelectedFile().toPath());
-  }
   private void editMetadata(){
-    var area= mono(new JTextArea(Registry.text(state.projects().stream().map(Project::entry).toList()),30,100));
+    var base= Registry.text(state.projects().stream().map(Project::entry).toList());
+    var area= mono(new JTextArea(base,30,100));
     var dialog= new JDialog(frame,"Edit project metadata",true);
     var commit= new JButton("Commit");
     var close= new JButton("Close");
-    commit.addActionListener(_->main.manager().commit(area.getText(),()->SwingUtilities.invokeLater(dialog::dispose)));
+    commit.addActionListener(_->main.manager().commit(base,area.getText(),()->SwingUtilities.invokeLater(dialog::dispose)));
     close.addActionListener(_->dialog.dispose());
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(commit);
@@ -256,6 +262,14 @@ public final class Window implements Manager.View{
     res.setMargin(new Insets(0,6,0,6));
     res.addActionListener(_->action.run());
     return res;
+  }
+  static void onFiles(Consumer<String> refuse, String refused, Runnable r){
+    try{ r.run(); }
+    catch(UncheckedIOException e){ refuse.accept(refused+": "+Messages.fileFailure(e.getCause())); }
+  }
+  static void open(Consumer<String> refuse, Path path){
+    if (!Files.exists(path)){ refuse.accept("Nothing is opened: nothing exists at\n"+path); return; }
+    onFiles(refuse,"Nothing is opened",()->OpenPath.open(path));
   }
   static void showText(Component parent, String text, String title, int kind){
     var area= mono(new JTextArea(text,24,90));

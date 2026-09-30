@@ -19,6 +19,11 @@ final class TaggedTextTest{
     roundTrip("a \"b\"\n","Str:a \"b\"\n");
     roundTrip("","Str:");
   }
+  @Test void aTextOnOneLineHoldingANewlineIsNotStr(){
+    assertEquals("Str:C:\\data",TaggedText.line("C:\\data"));
+    assertEquals("UStr:(\"a\" | \"b\").u",TaggedText.line("a\nb"));
+    assertEquals("a\nb",read(TaggedText.line("a\nb")));
+  }
   @Test void aUnicodeTextIsUStrAsUStrEscapePrintsIt(){
     roundTrip("\u00e9","UStr:\"\".u\"00E9\"");
     roundTrip("C:/data/caf\u00e9/hello","UStr:\"C:/data/caf\".u\"00E9\"+(\"/hello\".u)");
@@ -46,6 +51,14 @@ final class TaggedTextTest{
     err("[###]Unicode scalars (no D800 to DFFF, nothing above 10FFFF) was expected[###]",()->read("UStr:\"\".u\"D800\""));
     err("[###]the end of the text was expected at offset 3[###]",()->read("UStr:\"a\".size"));
     err("[###]the closing \" was expected[###]",()->read("UStr:\"a"));
+  }
+  @Test void aCharacterOutsideTheSetAfterStrOrUStrIsRejected(){
+    err("\"Str:/tmp/caf\" [U+00E9] is malformed: after \"Str:\" every character is in the Fearless character set, but [U+00E9] is not.",()->read("Str:/tmp/caf\u00e9"));
+    err("[###] is malformed: after \"UStr:\" every character is in the Fearless character set, but [U+00E9] is not.",()->read("UStr:\"caf\u00e9\".u"));
+  }
+  @Test void parenthesesInUStrNestAtMost100Deep(){
+    assertEquals("a",read("UStr:"+"(".repeat(100)+"\"a\""+")".repeat(100)));
+    err("A \"UStr:\" text is malformed: its parentheses nest at most 100 deep, and the one at offset 100 after \"UStr:\" is deeper.",()->read("UStr:"+"(".repeat(100_000)));
   }
   @Test void aMalformedBase16IsRejected(){
     err("\"Base16:4\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.",()->read("Base16:4"));

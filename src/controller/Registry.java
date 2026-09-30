@@ -1,6 +1,7 @@
 package controller;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,6 +9,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -17,17 +19,21 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import controller.Info.Obj;
 import controller.Info.Obj.Field;
 import core.TName;
 import fileSupport.StringFiles;
+import metaParser.Message;
+import metaParser.Span;
 import userMessages.UserError;
 import utils.Join;
 import utils.OneOr;
 import utils.Push;
+import utils.Range;
 
 /// The registered projects: read once from `projects.info` and `activity.txt`, then kept
 /// in memory and written back whole on every change.
@@ -41,11 +47,15 @@ public final class Registry{
   }
   public record Entry(String alias, Path path, Kind kind, List<String> mains,
       Map<String,List<String>> reads, Map<String,List<String>> edits, long compiled, long run){
+    public Entry{ mains= List.copyOf(mains); reads= Collections.unmodifiableMap(new LinkedHashMap<>(reads)); edits= Collections.unmodifiableMap(new LinkedHashMap<>(edits)); }
     public Entry withKind(Kind k){ return new Entry(alias,path,k,mains,reads,edits,compiled,run); }
-    public Entry withMains(List<String> m){ return new Entry(alias,path,kind,List.copyOf(m),reads,edits,compiled,run); }
-    public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias,path,kind,mains,Map.copyOf(r),Map.copyOf(e),compiled,run); }
+    public Entry withMains(List<String> m){ return new Entry(alias,path,kind,m,reads,edits,compiled,run); }
+    public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias,path,kind,mains,r,e,compiled,run); }
     public Entry withTimes(long c, long r){ return new Entry(alias,path,kind,mains,reads,edits,c,r); }
   }
+  @SuppressWarnings("serial")
+  public static final class Refused extends RuntimeException{ Refused(String message){ super(message); } }
+  private static final Pattern activityLine= Pattern.compile("(-1|\\d{1,18}) (-1|\\d{1,18}) (.*)");
   private static final List<String> keys= List.of("path","kind","mains","reads","edits");
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
@@ -59,7 +69,7 @@ public final class Registry{
     var text= read(infoFile());
     var root= Info.parse(text,infoFile().toUri());
     var bad= badKinds(root);
-    all= withTimes(fromInfo(text,bad.isEmpty() ? root : idle((Obj)root,bad)));
+    all= withTimes(fromInfo(text,bad.isEmpty() ? root : idle((Obj)root,bad),Registry::real,dir));
     reset= all.stream().filter(e->bad.contains(e.alias())).toList();
     if (!reset.isEmpty()){ save(all); }
   }
@@ -74,26 +84,40 @@ public final class Registry{
     var kind= new Field("kind",Info.noSpan,new Info.Str(Kind.idle.text,Info.noSpan));
     return new Obj(Push.of(project.fields().stream().filter(f->!f.key().equals("kind")).toList(),kind),project.span());
   }
+  public static Path real(Path folder){
+    try{ return folder.toRealPath(); }
+    catch(IOException e){ return folder; }
+  }
+  static Path placed(Path folder, Path managerDir, Function<String,RuntimeException> err){
+    var manager= real(managerDir);
+    if (folder.getFileName() == null){ throw err.apply(Messages.projectFolderIsRoot(folder)); }
+    if (overlap(folder,manager)){ throw err.apply(Messages.managerFolderNotAProject(folder,manager)); }
+    return folder;
+  }
+  private static boolean overlap(Path a, Path b){ return a.startsWith(b) || b.startsWith(a); }
   private Path infoFile(){ return dir.resolve("projects.info"); }
   private Path activityFile(){ return dir.resolve("activity.txt"); }
   public List<Entry> all(){ return all; }
   public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all.stream().filter(e->e.path().equals(folder))); }
   public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all.stream().filter(e->e.alias().equals(alias))); }
   public Optional<Path> overlapping(Path folder){
-    return all.stream().map(Entry::path).filter(o->!o.equals(folder) && (folder.startsWith(o) || o.startsWith(folder))).findFirst();
+    return all.stream().map(Entry::path).filter(o->!o.equals(folder) && overlap(folder,o)).findFirst();
   }
-  public void add(String alias, Path folder){
-    assert folder.equals(folder.toAbsolutePath().normalize());
+  public void add(String alias, Path folder, Kind kind){
+    assert folder.isAbsolute() && folder.equals(real(folder));
     assert all.stream().noneMatch(e->e.path().equals(folder) || e.alias().equals(alias));
     assert overlapping(folder).isEmpty();
-    save(Push.of(all,new Entry(alias,folder,Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)));
+    save(Push.of(all,new Entry(alias,folder,kind,List.of(),Map.of(),Map.of(),-1,-1)));
   }
   public void remove(Path folder){ save(all.stream().filter(e->!e.path().equals(folder)).toList()); }
   public void update(Path folder, UnaryOperator<Entry> op){
     assert of(folder).isPresent();
     save(all.stream().map(e->e.path().equals(folder) ? op.apply(e) : e).toList());
   }
-  public void commit(String text){ save(entries(text).stream().map(e->of(e.path()).map(o->e.withTimes(o.compiled(),o.run())).orElse(e)).toList()); }
+  public void commit(String base, String text){
+    if (!text(all).equals(base)){ throw new Refused(Messages.metadataChanged()); }
+    save(entries(text,Registry::real).stream().map(e->of(e.path()).map(o->e.withTimes(o.compiled(),o.run())).orElse(e)).toList());
+  }
   public static String text(List<Entry> entries){ return Info.print(toInfo(entries)); }
   /// Why the links of a code project are broken, if they are; invalid says why a project is invalid.
   public Optional<String> linkProblem(Entry e, Function<Path,Optional<String>> invalid){
@@ -117,52 +141,69 @@ public final class Registry{
     }
     return Optional.empty();
   }
-  private List<Entry> entries(String text){ return fromInfo(text,Info.parse(text,infoFile().toUri())); }
+  private List<Entry> entries(String text, UnaryOperator<Path> identity){
+    try{ return fromInfo(text,Info.parse(text,infoFile().toUri()),identity,dir); }
+    catch(UserError e){ throw new Refused(e.getMessage()); }
+  }
   private void save(List<Entry> entries){
     var text= text(entries);
-    this.entries(text);
+    var back= entries(text,p->p);
+    assert back.equals(entries.stream().map(e->e.withTimes(-1,-1)).toList());
+    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+TaggedText.line(e.path().toString())),"","\n","\n",""));
     writeText(infoFile(),text);
-    writeText(activityFile(),Join.of(entries.stream().map(e->e.compiled()+" "+e.run()+" "+TaggedText.of(e.path().toString())),"","\n","\n",""));
     all= entries;
   }
   private static String read(Path file){ return StringFiles.read(file,UserError.onFileError()); }
   private List<Entry> withTimes(List<Entry> entries){
     if (!Files.exists(activityFile())){ return entries; }
-    var times= read(activityFile()).lines().map(l->l.split(" ",3)).collect(Collectors.toMap(p->Path.of(TaggedText.read(p[2],Messages::infoError)),p->p));
-    return entries.stream().map(e->Optional.ofNullable(times.get(e.path())).map(t->e.withTimes(Long.parseLong(t[0]),Long.parseLong(t[1]))).orElse(e)).toList();
+    var lines= read(activityFile()).lines().toList();
+    var times= new HashMap<Path,Matcher>();
+    for (int i : Range.of(lines)){
+      var m= activityLine.matcher(lines.get(i));
+      if (!m.matches()){ throw activityError(i,Message.displayString(lines.get(i))+" is malformed: a line is the time of the last compile, a space, the time of the last run, a space, then the project folder as a tagged text; a time is -1 for never, else the milliseconds since 1970, in at most 18 digits."); }
+      var folder= activityFolder(TaggedText.read(m.group(3),why->activityError(i,why)),i);
+      var first= times.put(folder,m);
+      if (first != null){ throw activityError(i,"The project folder\n"+folder+"\nis also on line "+(lines.indexOf(first.group())+1)+": a project folder is on one line only."); }
+    }
+    return entries.stream().map(e->Optional.ofNullable(times.get(e.path())).map(m->e.withTimes(Long.parseLong(m.group(1)),Long.parseLong(m.group(2)))).orElse(e)).toList();
   }
+  private Path activityFolder(String given, int line){
+    try{ return Path.of(given); }
+    catch(InvalidPathException e){ throw activityError(line,Message.displayString(given)+" is not a path this system accepts: "+e.getReason()+"."); }
+  }
+  private UserError activityError(int line, String why){ return Messages.infoError("In "+activityFile()+", line "+(line+1)+":\n"+why); }
   private void writeText(Path file, String text){
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
-    StringFiles.writeNew(tmp,text,UserError.onFileError());
-    try{ Files.move(tmp,file,ATOMIC_MOVE); }
+    try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,file,ATOMIC_MOVE); }
     catch(IOException e){ throw Messages.couldNotSaveRegisteredFolders(dir,e); }
   }
-  public static List<Entry> fromInfo(String source, Info root){
+  public static List<Entry> fromInfo(String source, Info root, UnaryOperator<Path> identity, Path managerDir){
     if (!(root instanceof Obj top)){
       throw Info.err(source,root.span(),"The whole file must be an object {...} mapping each project name to the metadata of that project.");
     }
     var entries= new ArrayList<Entry>();
     for (var field: top.fields()){
       if (!Names.isName(field.key())){
-        throw Info.err(source,field.keySpan(),"\""+field.key()+"\" is not a valid project name: a project name uses only lowercase letters, digits and underscores, and starts with a letter or an underscore.");
+        throw Info.err(source,field.keySpan(),"\""+field.key()+"\" is not a valid project name: a project name uses only lowercase letters, digits and underscores, starts with a letter or an underscore, and is not a name the file system reserves (\"con\", \"prn\", \"aux\", \"nul\", \"com1\" to \"com9\", \"lpt1\" to \"lpt9\").");
       }
-      entries.add(entryOf(source,field));
+      entries.add(entryOf(source,field,identity));
+      placed(entries.getLast().path(),managerDir,m->Info.err(source,pathSpan(top,field.key()),m));
     }
     for (var a: entries){
       for (var b: entries.subList(entries.indexOf(a)+1,entries.size())){
-        if (!a.path().equals(b.path()) && !a.path().startsWith(b.path()) && !b.path().startsWith(a.path())){ continue; }
-        var span= ((Obj)top.field(b.alias()).orElseThrow().value()).field("path").orElseThrow().value().span();
-        throw Info.err(source,span,"\""+b.alias()+"\" has the same path as \""+a.alias()+"\", or one is inside the other; every file belongs to exactly one project.");
+        if (!overlap(a.path(),b.path())){ continue; }
+        throw Info.err(source,pathSpan(top,b.alias()),"\""+b.alias()+"\" has the same path as \""+a.alias()+"\", or one is inside the other; every file belongs to exactly one project.");
       }
     }
     return entries;
   }
-  private static Entry entryOf(String source, Field field){
+  private static Span pathSpan(Obj top, String alias){ return ((Obj)top.field(alias).orElseThrow().value()).field("path").orElseThrow().value().span(); }
+  private static Entry entryOf(String source, Field field, UnaryOperator<Path> identity){
     if (!(field.value() instanceof Obj obj)){
       throw Info.err(source,field.value().span(),"The metadata of \""+field.key()+"\" must be an object {...}.");
     }
     for (var f: obj.fields()){
-      if (!keys.contains(f.key())){ throw Info.err(source,f.keySpan(),"Unknown project attribute \""+f.key()+"\": the attributes of a project are "+Join.of(keys.stream().map(k->"\""+k+"\""),"",", ","")+"."); }
+      if (!keys.contains(f.key())){ throw Info.err(source,f.keySpan(),"Unknown project attribute \""+f.key()+"\": the attributes of a project are "+Messages.quoted(keys)+"."); }
     }
     var mains= names(source,obj,"mains","\"mains\"",Registry::isMainName,mainShape);
     var reads= aliasMap(source,obj,"reads");
@@ -174,7 +215,7 @@ public final class Registry{
       var span= OneOr.of("type name "+both.get(),names.items().stream().filter(i->((Info.Str)i).value().equals(both.get()))).span();
       throw Info.err(source,span,"\""+both.get()+"\" is in both \"reads\".\""+link.getKey()+"\" and \"edits\".\""+link.getKey()+"\": a type name in \"edits\" also reads, so it is not repeated in \"reads\"; a type name in \"reads\" only reads.");
     }
-    return new Entry(field.key(),pathOf(source,field.key(),obj),kindOf(source,field.key(),obj),mains,reads,edits,-1,-1);
+    return new Entry(field.key(),identity.apply(pathOf(source,field.key(),obj)),kindOf(source,field.key(),obj),mains,reads,edits,-1,-1);
   }
   private static Path pathOf(String source, String alias, Obj obj){
     var field= obj.field("path").orElseThrow(()->Info.err(source,obj.span(),"Project \""+alias+"\" is missing its \"path\": the absolute path of the project folder."));
@@ -221,7 +262,7 @@ public final class Registry{
       if (names.isEmpty()){ throw Info.err(source,f.value().span(),label+" names no type: a link names the one or more type names the code uses for \""+f.key()+"\"."); }
       out.put(f.key(),names);
     }
-    return Collections.unmodifiableMap(out);
+    return out;
   }
   private static boolean isMainName(String s){
     var dot= s.indexOf('.');
@@ -232,7 +273,7 @@ public final class Registry{
   }
   private static Info entryToInfo(Entry e){
     var fields= new ArrayList<Field>();
-    fields.add(new Field("path",Info.noSpan,new Info.Str(TaggedText.of(e.path().toString().replace('\\','/')),Info.noSpan)));
+    fields.add(new Field("path",Info.noSpan,new Info.Str(TaggedText.of(e.path().toString().replace(e.path().getFileSystem().getSeparator(),"/")),Info.noSpan)));
     fields.add(new Field("kind",Info.noSpan,new Info.Str(e.kind().text,Info.noSpan)));
     if (!e.mains().isEmpty()){ fields.add(new Field("mains",Info.noSpan,strList(e.mains()))); }
     if (!e.reads().isEmpty()){ fields.add(new Field("reads",Info.noSpan,aliasMap(e.reads()))); }

@@ -4,23 +4,30 @@ import static controller.Errs.err;
 import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import javax.imageio.ImageIO;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import controller.Registry.Kind;
 import fileSupport.LogFiles;
 import tools.Fs;
+import utils.Range;
 
 final class FactsTest{
   static Path project(Path dir, String name){
@@ -148,6 +155,41 @@ final class FactsTest{
       [###]gone
       Restore it, or forget this project.""",Facts.of(dir.resolve("gone"),"gone",Kind.code).problem().orElseThrow());
   }
+  @Test void aFolderDeletedWhileItIsCheckedIsMissing(@TempDir Path dir){
+    assertTimeoutPreemptively(Duration.ofSeconds(60),()->{
+      for (var i: Range.of(0,20)){
+        var project= project(dir,"p"+i);
+        IntStream.range(0,300).forEach(j->Fs.writeUtf8(project.resolve("_hello").resolve("f"+j+".fear"),""));
+        var gone= Thread.startVirtualThread(()->Fs.rmTree(project));
+        Facts.of(project,"p"+i,Kind.code);
+        gone.join();
+        same("The folder of this project does not exist:[###]",Facts.of(project,"p"+i,Kind.code).problem().orElseThrow());
+      }
+    });
+  }
+  //Files older than 1970 and no cache: the built check reads the missing .built file on every try
+  @Test void aFileMissingOnEveryTryIsAProblemNotAHang(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    Fs.ofV(()->Files.setLastModifiedTime(project.resolve("_hello").resolve("_rank_app.fear"),FileTime.fromMillis(-5000)));
+    same("""
+      The folder of this project can not be read:
+      [###]someProject
+      no such file: [###]hello.built
+      Give Fearless access to it, or forget this project.""",assertTimeoutPreemptively(Duration.ofSeconds(60),()->Facts.of(project,"someproject",Kind.code)).problem().orElseThrow());
+  }
+  @Test void anUnreadableFolderIsAProblemNotACrash(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var project= project(dir,"someProject");
+    var hidden= project.resolve("_hello");
+    Fs.ofV(()->Files.setPosixFilePermissions(hidden,PosixFilePermissions.fromString("---------")));
+    Assumptions.assumeFalse(Files.isReadable(hidden));
+    same("""
+      The folder of this project can not be read:
+      [###]someProject
+      access denied: [###]_hello
+      Give Fearless access to it, or forget this project.""",Facts.of(project,"someproject",Kind.code).problem().orElseThrow());
+    Fs.ofV(()->Files.setPosixFilePermissions(hidden,PosixFilePermissions.fromString("rwxr-xr-x")));
+  }
   @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
     var project= project(dir,"someProject");
     var png= project.resolve(".config").resolve("icon").resolve("a.png");
@@ -155,7 +197,11 @@ final class FactsTest{
     Fs.ofV(()->ImageIO.write(new BufferedImage(4,4,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
     var first= Facts.of(project,"someproject",Kind.code);
     assertEquals(first,Facts.of(project,"someproject",Kind.code));
+    assertSame(first.icon().orElseThrow().image(),Facts.of(project,"someproject",Kind.code).icon().orElseThrow().image());
     assertEquals(4,first.icon().orElseThrow().image().getWidth());
+    Fs.ofV(()->ImageIO.write(new BufferedImage(6,6,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
+    Fs.ofV(()->Files.setLastModifiedTime(png,FileTime.fromMillis(Fs.lastModified(png)+1000)));
+    assertEquals(6,Facts.of(project,"someproject",Kind.code).icon().orElseThrow().image().getWidth());
   }
   @Test void twoIconsAreAProjectProblem(@TempDir Path dir){
     var project= project(dir,"someProject");
@@ -196,6 +242,16 @@ final class FactsTest{
     var facts= Facts.of(project,"someproject",Kind.code);
     assertTrue(facts.upToDate());
     assertTrue(facts.problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
+  }
+  @Test void aProjectWithBrokenNamesKeepsItsIcon(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    Fs.writeUtf8(project.resolve("_hello").resolve("Bad.fear"),"");
+    var png= project.resolve(".config").resolve("icon").resolve("a.png");
+    Fs.ensureDir(png.getParent());
+    Fs.ofV(()->ImageIO.write(new BufferedImage(4,4,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
+    var facts= Facts.of(project,"someproject",Kind.code);
+    assertTrue(facts.problem().orElseThrow().contains("Bad.fear"));
+    assertEquals(png,facts.icon().orElseThrow().file());
   }
   @Test void aDataFolderStillRejectsUnsafeNames(@TempDir Path dir){
     var project= dir.resolve("publicFiles");

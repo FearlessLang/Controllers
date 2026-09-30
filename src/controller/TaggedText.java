@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import metaParser.Message;
 import tools.Fs;
-import userMessages.UserError;
 import utils.Bug;
 import utils.Range;
 
@@ -25,18 +25,25 @@ import utils.Range;
 public final class TaggedText{
   private TaggedText(){}
   private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
-  public static String of(String text){
-    if (text.codePoints().allMatch(TaggedText::safe)){ return "Str:"+text; }
+  public static String of(String text){ return text.codePoints().allMatch(TaggedText::safe) ? "Str:"+text : notStr(text); }
+  public static String line(String text){ return text.indexOf('\n') < 0 ? of(text) : notStr(text); }
+  private static String notStr(String text){
     if (text.codePoints().noneMatch(TaggedText::surrogate)){ return "UStr:"+uStr(text.codePoints().toArray()); }
     return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes(text));
   }
-  static String read(String text, Function<String,UserError> bad){
-    if (text.startsWith("Str:")){ return text.substring("Str:".length()); }
-    if (text.startsWith("UStr:")){ return new Reader(text.substring("UStr:".length()),bad).all(); }
+  static String read(String text, Function<String,? extends RuntimeException> bad){
+    if (text.startsWith("Str:")){ return safeAfter("Str:",text,bad); }
+    if (text.startsWith("UStr:")){ return new Reader(safeAfter("UStr:",text,bad),bad).all(); }
     if (!text.startsWith("Base16:")){ throw bad.apply("\""+text+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way."); }
     var hex= text.substring("Base16:".length());
     if (!hex.matches("(?:[0-9A-F]{2})+")){ throw bad.apply("\""+text+"\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits."); }
     return path(HexFormat.of().parseHex(hex),text,bad);
+  }
+  private static String safeAfter(String tag, String text, Function<String,? extends RuntimeException> bad){
+    var res= text.substring(tag.length());
+    var unsafe= res.codePoints().filter(c->!safe(c)).findFirst();
+    if (unsafe.isEmpty()){ return res; }
+    throw bad.apply(Message.displayString(text)+" is malformed: after \""+tag+"\" every character is in the Fearless character set, but "+Message.displayChar(unsafe.getAsInt())+" is not.");
   }
   private static boolean safe(int c){ return c < 128 && Fs.allowed.indexOf(c) >= 0; }
   private static boolean surrogate(int c){ return c >= 0xD800 && c <= 0xDFFF; }
@@ -52,7 +59,7 @@ public final class TaggedText{
     for (int i : Range.of(0,path.length())){ res[2*i]= (byte)path.charAt(i); res[2*i+1]= (byte)(path.charAt(i) >> 8); }
     return res;
   }
-  private static String path(byte[] bytes, String text, Function<String,UserError> bad){
+  private static String path(byte[] bytes, String text, Function<String,? extends RuntimeException> bad){
     if (Fs.isWindows()){
       if (bytes.length % 2 != 0){ throw bad.apply("\""+text+"\" is malformed: a Windows name is 16 bit units, so its bytes are an even number."); }
       var res= new StringBuilder();
@@ -111,22 +118,23 @@ public final class TaggedText{
     return i;
   }
   private static String receiver(String e){
-    var oneLiteral= e.length() >= 2 && (e.charAt(0) == '"' || e.charAt(0) == '`') && e.charAt(e.length()-1) == e.charAt(0);
+    var oneLiteral= e.length() >= 2 && (e.charAt(0) == '"' || e.charAt(0) == '`') && e.indexOf(e.charAt(0),1) == e.length()-1;
     return oneLiteral ? e : "("+e+")";
   }
   /// A Fearless string expression: "..." and `...` joined by +, | and ^ (between two strings, or
   /// closing one), parentheses, .u, and .u"..." adding the characters with those code points.
   private static final class Reader{
     private final String s;
-    private final Function<String,UserError> bad;
+    private final Function<String,? extends RuntimeException> bad;
     private int i;
-    Reader(String s, Function<String,UserError> bad){ this.s= s; this.bad= bad; }
+    private int depth;
+    Reader(String s, Function<String,? extends RuntimeException> bad){ this.s= s; this.bad= bad; }
     String all(){
       var res= expr();
       if (i != s.length()){ throw fail("the end of the text"); }
       return res;
     }
-    private UserError fail(String expected){ return bad.apply("\"UStr:"+s+"\" is malformed: "+expected+" was expected at offset "+i+" after \"UStr:\"."); }
+    private RuntimeException fail(String expected){ return bad.apply("\"UStr:"+s+"\" is malformed: "+expected+" was expected at offset "+i+" after \"UStr:\"."); }
     private String expr(){
       var sb= new StringBuilder(atom());
       while(true){
@@ -148,7 +156,9 @@ public final class TaggedText{
       if (!atomNext()){ throw fail("a string \"...\", `...` or (...)"); }
       var open= s.charAt(i++);
       if (open == '('){
+        if (++depth > 100){ throw bad.apply("A \"UStr:\" text is malformed: its parentheses nest at most 100 deep, and the one at offset "+(i-1)+" after \"UStr:\" is deeper."); }
         var res= expr();
+        depth-= 1;
         if (i == s.length() || s.charAt(i) != ')'){ throw fail("')'"); }
         i+= 1;
         return res;

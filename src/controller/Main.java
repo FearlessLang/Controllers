@@ -11,13 +11,10 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -43,7 +40,7 @@ public final class Main{
   private static FileLock lock;
   private final Path managerDir;
   private final CountDownLatch done= new CountDownLatch(1);
-  private final AtomicReference<RuntimeException> failure= new AtomicReference<>();
+  private final AtomicReference<Throwable> failure= new AtomicReference<>();
   private Manager manager;
   private Main(Path managerDir){ this.managerDir= managerDir; }
   public Manager manager(){ return manager; }
@@ -60,12 +57,20 @@ public final class Main{
   //TO TEST: on Windows the launcher hands Java a '?' in place of an unpaired surrogate of the
   //argument, so a folder whose name holds one is refused as a broken path when given as the
   //argument; the window and a register message register it.
-  static String message(String... args){ return args.length == 0 ? "" : TaggedText.of(Manager.path(args[0]).toString()); }
+  static String message(String... args){
+    if (args.length > 1){ throw Messages.tooManyArguments(List.of(args)); }
+    return args.length == 0 ? "" : TaggedText.line(path(args[0]).toString());
+  }
+  private static Path path(String given){
+    if (given.isBlank()){ throw Violation.badLaunchArg(given,false); }
+    try{ return Path.of(given).toAbsolutePath().normalize(); }
+    catch(InvalidPathException e){ throw Violation.badLaunchArg(given,false); }
+  }
   private static void display(UserError e){
     try{ e.display(); }
     catch(InterruptedException ie){ e.displayStderr(ie); }
   }
-  private static void run(String message){
+  private static void run(String message) throws Throwable{
     var main= new Main(binDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
     try{ Files.createDirectories(main.msgDir()); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Messages.couldNotCreateManagerFolder(main.managerDir,e); }
@@ -96,18 +101,18 @@ public final class Main{
     try{ Files.move(tmp,msgDir.resolve(name+".msg"),ATOMIC_MOVE); }
     catch(IOException e){ throw Messages.couldNotLeaveStartMessage(msgDir,e); }
   }
-  private void own(){
+  private void own() throws Throwable{
     WatchService watcher;
     try{ watcher= FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Messages.couldNotWatchMessageFolder(msgDir(),e); }
-    Thread.setDefaultUncaughtExceptionHandler((_,t)->fail(t instanceof UserError e ? e : Bug.of(t)));
+    Thread.setDefaultUncaughtExceptionHandler((_,t)->fail(t));
     var window= Window.create(this);
     manager= new Manager(managerDir,new Deployed(),window,this::fail);
     UserError.owner(window.frame);
     Violation.running(()->manager.state().running());
     Tray.install(window,this);
     window.show();
-    drain();
+    manager.drain();
     Thread.startVirtualThread(()->watch(watcher));
     manager.start();
     if (!Fs.isMac()){ var l= Association.launcher(); Association.reconcile(l,Association.extensions(l)); }
@@ -117,12 +122,11 @@ public final class Main{
     if (problem != null){ throw problem; }
   }
   public void quit(){ done.countDown(); }
-  public void fail(RuntimeException problem){ failure.compareAndSet(null,problem); done.countDown(); }
+  public void fail(Throwable problem){ failure.compareAndSet(null,problem); done.countDown(); }
   public void forgetAssociation(Window window){
-    if (Fs.isMac() || !window.askForget()){ return; }
-    try{ Association.reconcile(Association.launcher(),List.of()); }
-    catch(UserError e){ display(e); System.exit(1); }
-    System.exit(0);
+    if (!window.askForget()){ return; }
+    try{ Association.reconcile(Association.launcher(),List.of()); quit(); }
+    catch(UserError e){ fail(e); }
   }
   private void watch(WatchService watcher){
     while(true){
@@ -130,33 +134,8 @@ public final class Main{
       try{ key= watcher.take(); }
       catch(InterruptedException e){ throw Bug.of(e); }
       key.pollEvents();
-      drain();
+      manager.drain();
       if (!key.reset()){ fail(Messages.messageFolderNotWatchable(msgDir())); return; }
     }
-  }
-  //Runs once before the watcher thread starts, then only from that thread: never concurrently.
-  private void drain(){
-    try{ take().forEach(manager::message); }
-    catch(IOException e){ throw Messages.couldNotDrainMessageFolder(msgDir(),e); }
-  }
-  private List<String> take() throws IOException{
-    var files= list("*.msg");
-    files.sort(Comparator.comparing(f->f.getFileName().toString()));
-    var messages= new ArrayList<String>();
-    for(var file: files){
-      messages.add(StringFiles.read(file,UserError.onFileError()));
-      Files.deleteIfExists(file);
-    }
-    var old= Instant.now().minusSeconds(60);
-    for(var file: list("*.tmp")){
-      try{ if (Files.getLastModifiedTime(file).toInstant().isBefore(old)){ Files.deleteIfExists(file); } }
-      catch(NoSuchFileException e){}
-    }
-    return messages;
-  }
-  private List<Path> list(String glob) throws IOException{
-    var files= new ArrayList<Path>();
-    try(var stream= Files.newDirectoryStream(msgDir(),glob)){ stream.forEach(files::add); }
-    return files;
   }
 }

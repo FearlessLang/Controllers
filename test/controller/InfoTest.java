@@ -2,13 +2,14 @@ package controller;
 
 import static controller.Errs.err;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+
+import metaParser.Span;
 
 final class InfoTest{
   private static final URI uri= URI.create("test:projects.info");
@@ -29,8 +30,8 @@ final class InfoTest{
     assertEquals("\"UStr:\\\"C:/caf\\\".u\\\"00E9\\\"\"\n",Info.print(s));
     assertEquals("C:/caf\u00e9",TaggedText.read(((Info.Str)parse(Info.print(s))).value(),Messages::infoError));
   }
-  @Test void printingACharacterOutsideTheSetIsABug(){
-    assertThrows(AssertionError.class,()->Info.print(new Info.Str("caf\u00e9",Info.noSpan)));
+  @Test void aPrintedCharacterOutsideTheSetIsPointedAtWhenParsedBack(){
+    err("[###]\n001| \"caf?\"\n   |     ^\n[###]The character [U+00E9] is outside the safe character set of Fearless[###]",()->parse(Info.print(new Info.Str("caf\u00e9",Info.noSpan))));
   }
   @Test void nestedListsAndObjectsParse(){
     var obj= (Info.Obj)parse("{\"a\":[\"x\",\"y\"],\"b\":{}}");
@@ -70,6 +71,14 @@ final class InfoTest{
   }
   @Test void anUnclosedObjectIsReported(){
     err("[###]never closed with a matching }.[###]",()->parse("{\"a\":\"1\""));
+  }
+  @Test void valuesNestAtMost100Deep(){
+    assertEquals("["+"[".repeat(99)+"]".repeat(99)+"]\n",Info.print(parse("[".repeat(100)+"]".repeat(100))));
+    err("[###]Lists and objects nest at most 100 deep, and this value is inside 100 of them.[###]",()->parse("[".repeat(100_000)));
+  }
+  @Test void anObjectOverSeveralLinesSpansToItsClosingBrace(){
+    var obj= (Info.Obj)parse("{\"somekey\": {\"b\": \"1\",\n\"c\": \"2\"}}");
+    assertEquals(new Span(uri,1,13,2,9),obj.field("somekey").orElseThrow().value().span());
   }
   @Test void anUnclosedListIsReported(){
     err("[###]never closed with a matching ].[###]",()->parse("[\"a\""));

@@ -211,7 +211,7 @@ final class FearlessGuiTest{
     Pilot.pause(1000);
     pilot.chord(KeyEvent.VK_ESCAPE);
     assertTrue(run.waitFor(1,TimeUnit.MINUTES));
-    Err.strCmp(expected+"\nmut Pilot.accept(_) error line: 30 in file _pilot/_rank_app.fear",Fs.readUtf8(out));
+    Err.strCmp(expected+"\nmut Pilot.accept(_) error line: 30 in file _pilot/_rank_app.fear",Fs.readUtf8(out).replaceAll("(?m)^Warning \\[t=\\d+ms\\]: \\d+ repaint frame\\(s\\) lost .*\n",""));
   }
   @AfterEach void stop(){
     run.descendants().forEach(ProcessHandle::destroyForcibly);

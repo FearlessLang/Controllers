@@ -87,7 +87,7 @@ final class Chain{
   record Param(String x, List<Item> type){}
   /// a method of a literal: [RC] [name] [Xs] params [: result] -> body, where params are (..) or
   /// written without parenthesis, and then a colon types the last parameter, not the result;
-  /// a lambda has no name; start and end are the offsets of its text
+  /// a lambda has no name; start and end are the offsets of the bracket or ; before and after it
   record Meth(Optional<String> name, List<String> xs, List<Param> params, List<Item> result, List<Item> body, int start, int end){}
   static List<Meth> methodsOf(Group g){
     var res= new ArrayList<Meth>();
@@ -98,7 +98,7 @@ final class Chain{
       if (!last && !Tokens.is(g.items.get(j), Kind.SemiColon)){ cur.add(g.items.get(j)); continue; }
       if (!cur.isEmpty()){ res.add(meth(cur, start, last ? g.end : g.items.get(j).start())); }
       cur= new ArrayList<>();
-      if (!last){ start= ((Tok)g.items.get(j)).end(); }
+      if (!last){ start= g.items.get(j).start(); }
     }
     return res;
   }

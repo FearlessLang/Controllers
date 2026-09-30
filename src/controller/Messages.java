@@ -1,11 +1,15 @@
 package controller;
 
+import static userMessages.UserError.disp;
 import static userMessages.UserError.path;
 import static userMessages.Violation.freshCopyThenReport;
 import static userMessages.Violation.reported;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 import userMessages.UserError;
 import utils.Join;
@@ -21,6 +25,7 @@ public final class Messages{
     coordination information into files.
     """;
   }
+  public static String quoted(List<String> texts){ return Join.of(texts.stream().map(t->"\""+t+"\""),"",", ",""); }
   private static String blockingPrograms(){ return """
     Programs that may use or block this folder include security software
     (antivirus, ransomware protection, endpoint protection), backup tools,
@@ -29,11 +34,11 @@ public final class Messages{
   }
 
   //-- what the user asked the manager, and it cannot accept; a String is a note, shown and not thrown
-  public static UserError folderNestedWithRegistered(Path folder, Path registered){
-    return new UserError("""
+  public static String folderNestedWithRegistered(Path folder, Path registered){
+    return """
       Fearless cannot keep track of this project folder.
 
-      You started Fearless on:
+      The manager was asked to register:
       %s
       Fearless is already keeping track of:
       %s
@@ -41,43 +46,45 @@ public final class Messages{
       that do not overlap, so that every file belongs to exactly one project.
 
       Use the folder Fearless already keeps track of, or make Fearless forget that
-      folder first, and then start Fearless on this one.
-      """.formatted(path(folder.toString()),path(registered.toString())));
+      folder first, and then register this one again.
+      """.formatted(path(folder.toString()),path(registered.toString()));
   }
-  public static UserError projectNamed(Path folder, String wanted, String alias){
-    return new UserError("""
+  public static String projectNamed(Path folder, String wanted, String alias){
+    return """
       Fearless keeps track of this project folder as "%s", not as "%s".
 
-      You started Fearless on:
+      The manager registered:
       %s
       A project name uses only lowercase letters, digits and underscores,
-      starts with a letter or an underscore, and is not the name of another
-      project Fearless keeps track of.
+      starts with a letter or an underscore, is not a name the file system
+      reserves ("con", "prn", "aux", "nul", "com1" to "com9", "lpt1" to "lpt9"),
+      and is not the name of another project Fearless keeps track of.
 
       The marker file "%s%s" in that folder holds the name: rename it to change the name.
-      """.formatted(alias,wanted,path(folder.toString()),alias,".fearless"));
+      """.formatted(alias,wanted,path(folder.toString()),alias,".fearless");
   }
-  public static UserError managerFolderNotAProject(Path given, Path managerDir){
-    return new UserError("""
+  public static String managerFolderNotAProject(Path folder, Path managerDir){
+    return """
       Fearless cannot keep track of this folder as a project.
 
-      You started Fearless on:
+      The folder is:
       %s
       The manager folder of this Fearless is:
       %s
       The manager folder holds what Fearless remembers about your projects: it is
       never part of a project, and no project is inside it.
-      """.formatted(path(given.toString()),path(managerDir.toString())));
+      """.formatted(path(folder.toString()),path(managerDir.toString()));
   }
-  public static UserError projectFolderIsRoot(Path root){
-    return new UserError("""
+  public static String projectFolderIsRoot(Path root){
+    return """
       Fearless cannot keep track of the root of a drive or of the file system as a
       project.
 
-      You started Fearless on:
+      The folder is:
       %s
-      Put the project in a folder inside it, and start Fearless on that folder.
-      """.formatted(path(root.toString())));
+      Put the project in a folder inside it, and make that folder the project
+      folder.
+      """.formatted(path(root.toString()));
   }
   public static UserError projectIconsMany(Path dir, List<Path> found){
     return new UserError("""
@@ -104,24 +111,50 @@ public final class Messages{
       """.formatted(path(icon.toString())));
   }
   public static UserError infoError(String rendered){ return new UserError(rendered); }
-  public static String kindReset(String alias){
-    return "In projects.info the \"kind\" of \""+alias+"\" was missing or not one of the kinds: \""+alias+"\" is now idle, and its compiled cache is deleted.";
+  public static String kindReset(String alias, Optional<String> cacheKept){
+    return "In projects.info the \"kind\" of \""+alias+"\" was missing or not one of the kinds: \""+alias+"\" is now idle, and its compiled cache is "+cacheKept.map(w->"not deleted: "+w).orElse("deleted")+".";
+  }
+  public static String fileFailure(IOException e){
+    return e.getClass().getSimpleName().replaceFirst("Exception$","").replaceAll("(?<=[a-z])(?=[A-Z])"," ").toLowerCase(Locale.ROOT)+": "+e.getMessage();
+  }
+  public static String registerRefused(Path folder, IOException e){
+    return "The manager was asked to register\n"+folder+"\nbut could not read or change it: "+fileFailure(e)+"\nGive Fearless access to the folder, then register it again.";
   }
   public static String tooManyLines(String message){
     return "The manager was sent a message of "+message.split("\n",-1).length+" lines, but a message is empty, to show the window, or a path, or a request of two or three lines: a verb, then a project name (a path for \"register\"), then for some verbs a third line:\n"+message;
   }
   public static String unknownVerb(String verb, List<String> verbs){
-    return "The manager was asked to \""+verb+"\", but that is not a request it knows: the requests are "+Join.of(verbs.stream().map(v->"\""+v+"\""),"",", ","")+".";
+    return "The manager was asked to "+disp(verb)+", but that is not a request it knows: the requests are "+quoted(verbs)+".";
   }
   public static String unknownProject(String verb, String name, List<String> names){
-    return "The manager was asked to \""+verb+"\" the project \""+name+"\", but no project is named \""+name+"\"."+Join.of(names.stream().map(n->"\n  "+n),"\nThe projects are:","","","\nNo project is registered.");
+    return "The manager was asked to "+disp(verb)+" the project "+disp(name)+", but no project is named "+disp(name)+"."+Join.of(names.stream().map(n->"\n  "+n),"\nThe projects are:","","","\nNo project is registered.");
   }
+  public static String unreadableMessage(Path file){ return "The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\nThe bytes of\n"+file+"\ndo not form valid UTF-8 text."; }
+  public static String metadataChanged(){ return "The project metadata is not committed: projects.info changed while it was edited.\nClose the editor, and choose Edit project metadata again to edit what projects.info holds now."; }
   public static String registerNoFolder(){ return "The manager was asked to register a folder, but the message names no folder."; }
+  public static String registerNotTagged(String why){ return "The manager was asked to register a folder, but the path in the message is not a tagged text: "+why; }
+  public static String registerNotAPath(String given, String why){ return "The manager was asked to register "+disp(given)+", but that is not a path this system accepts: "+why+"."; }
+  public static String registerNothing(Path path){ return "The manager was asked to register\n"+path+"\nbut nothing exists there: register an existing folder, or a file inside one."; }
   public static String unknownKind(Path folder, String text){
-    return "The manager was asked to change the kind of\n"+folder+"\nto \""+text+"\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".";
+    return "The manager was asked to change the kind of\n"+folder+"\nto "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".";
   }
   public static String malformedLink(String alias, String link){
-    return "The manager was asked to link \""+alias+"\" with \""+link+"\", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.";
+    return "The manager was asked to link \""+alias+"\" with "+disp(link)+", but a link is a project name, then \"read\" or \"write\", then the type names, none to remove the link.";
+  }
+  public static String thirdLineRefused(String verb, String name, String third, List<String> takers){
+    return "The manager was asked to "+disp(verb)+" "+disp(name)+" with the third line "+disp(third)+", but only the requests "+quoted(takers)+" take a third line.";
+  }
+  public static String dropRefused(String item, String why){ return "The manager was asked to register "+disp(item)+", dropped on its window, but "+why+"."; }
+  public static String dropUnreadable(Exception e){ return "The manager was asked to register what was dropped on its window, but the desktop did not hand it over: "+e.getMessage(); }
+  public static UserError tooManyArguments(List<String> args){
+    return new UserError("""
+      Fearless was started with %d arguments, but it takes at most one.
+
+      The arguments are:
+      %s
+      Start Fearless with no argument to show its window, or with one argument:
+      a project folder, or a file inside one.
+      """.formatted(args.size(),Join.of(args.stream().map(UserError::path),"","\n","","")));
   }
   public static String noEclipse(Path dir){
     return "Eclipse is not connected: no Eclipse installation, a folder holding the file \".eclipseproduct\", is in\n  "+dir+"\nor in its folders \"eclipse\" or \"Contents/Eclipse\", or in those of a folder of it.\n\nSelect the Eclipse program, the folder holding it, or the folder Eclipse was unzipped into.";
@@ -129,6 +162,7 @@ public final class Messages{
   public static String severalEclipses(Path dir, List<Path> found){
     return "Eclipse is not connected: more than one Eclipse installation is in\n  "+dir+Join.of(found.stream().map(f->"\n  "+f),"\nThey are:","","")+"\n\nSelect the Eclipse program, or the folder holding it, of the one to connect.";
   }
+  public static String eclipseNotConnected(IOException e){ return "Eclipse is not connected: "+fileFailure(e); }
   public static String eclipseConnected(Path eclipse){
     return """
       Eclipse is now connected:
@@ -185,6 +219,17 @@ public final class Messages{
       desktop took it away: its system tray went away or rejected the icon.
       Restore the system tray of this desktop, then start Fearless again.
       """);
+  }
+  public static UserError trayConnectionLost(Throwable cause){
+    return new UserError("""
+      The desktop stopped talking to the Fearless icon in the system tray.
+
+      The tray icon is how a closed manager window is brought back, and the
+      connection to the system tray of this desktop failed.
+
+      %s
+      Restore the system tray of this desktop, then start Fearless again.
+      """.formatted(reported(cause)), cause);
   }
   public static UserError couldNotAddTrayIcon(Throwable cause){
     return new UserError("""
@@ -306,8 +351,8 @@ public final class Messages{
   }
   public static UserError couldNotDrainMessageFolder(Path msgDir, Throwable cause){
     return new UserError("""
-      Fearless could not list its manager folder, or could not remove a
-      message file from it.
+      Fearless could not list its manager folder, or could not read or
+      remove a message file in it.
 
       The manager folder is:
       %s

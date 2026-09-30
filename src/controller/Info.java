@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import metaParser.Frame;
 import metaParser.Message;
@@ -58,16 +59,16 @@ public sealed interface Info{
     }
     sb.append("  ".repeat(indent)).append('}');
   }
-  private static boolean safe(int c){ return c < 128 && Fs.allowed.indexOf(c) >= 0; }
   private static void quote(String value, StringBuilder sb){
-    assert value.codePoints().allMatch(Info::safe);
     sb.append('"').append(value.replace("\\","\\\\").replace("\"","\\\"").replace("\n","\\n")).append('"');
-  }  final class Parser{
+  }
+  final class Parser{
     private final String text;
     private final URI uri;
     private int i= 0;
     private int line= 1;
     private int col= 1;
+    private int depth= 0;
     private Parser(String text, URI uri){ this.text= text; this.uri= uri; }
     private Info all(){
       var v= value();
@@ -78,12 +79,16 @@ public sealed interface Info{
     private Info value(){
       ws();
       if (!more()){ throw err(here(),"The text ends here, but a value (a string \"...\", a list [...] or an object {...}) was expected."); }
-      return switch(peek()){
+      if (depth == 100){ throw err(here(),"Lists and objects nest at most 100 deep, and this value is inside 100 of them."); }
+      depth+= 1;
+      var res= switch(peek()){
         case '"' -> str();
         case '[' -> list();
         case '{' -> obj();
         default -> throw err(here(),"Expected a string \"...\", a list [...] or an object {...} here.");
       };
+      depth-= 1;
+      return res;
     }
     private Str str(){
       var start= here();
@@ -108,21 +113,11 @@ public sealed interface Info{
         case 'n' -> '\n';
         default -> throw err(from(at),"Unknown escape \\"+c+": only \\\", \\\\ and \\n exist.");
       };
-    }    private Lst list(){
+    }
+    private Lst list(){
       var start= here();
       advance();
-      var items= new ArrayList<Info>();
-      while(true){
-        ws();
-        if (!more()){ throw err(from(start),"This list is never closed with a matching ]."); }
-        if (peek() == ']' && items.isEmpty()){ break; }
-        items.add(value());
-        ws();
-        if (!more()){ throw err(from(start),"This list is never closed with a matching ]."); }
-        if (peek() == ']'){ break; }
-        if (peek() != ','){ throw err(here(),"Expected ',' or ']' here, to continue or to close the list."); }
-        advance();
-      }
+      var items= seq(start,']',"list",this::value);
       var end= here();
       advance();
       return new Lst(items,between(start,end));
@@ -130,28 +125,34 @@ public sealed interface Info{
     private Obj obj(){
       var start= here();
       advance();
-      var fields= new ArrayList<Obj.Field>();
       var seen= new HashSet<String>();
-      while(true){
-        ws();
-        if (!more()){ throw err(from(start),"This object is never closed with a matching }."); }
-        if (peek() == '}' && fields.isEmpty()){ break; }
-        if (peek() != '"'){ throw err(here(),"Expected a quoted key \"...\" here."); }
-        var key= str();
-        if (!seen.add(key.value())){ throw err(key.span(),"Duplicate key \""+key.value()+"\": this object already has this key."); }
-        ws();
-        if (!more() || peek() != ':'){ throw err(here(),"Expected ':' after the key \""+key.value()+"\"."); }
-        advance();
-        fields.add(new Obj.Field(key.value(),key.span(),value()));
-        ws();
-        if (!more()){ throw err(from(start),"This object is never closed with a matching }."); }
-        if (peek() == '}'){ break; }
-        if (peek() != ','){ throw err(here(),"Expected ',' or '}' here, to continue or to close the object."); }
-        advance();
-      }
+      var fields= seq(start,'}',"object",()->field(seen));
       var end= here();
       advance();
       return new Obj(fields,between(start,end));
+    }
+    private Obj.Field field(HashSet<String> seen){
+      if (peek() != '"'){ throw err(here(),"Expected a quoted key \"...\" here."); }
+      var key= str();
+      if (!seen.add(key.value())){ throw err(key.span(),"Duplicate key \""+key.value()+"\": this object already has this key."); }
+      ws();
+      if (!more() || peek() != ':'){ throw err(here(),"Expected ':' after the key \""+key.value()+"\"."); }
+      advance();
+      return new Obj.Field(key.value(),key.span(),value());
+    }
+    private <T> List<T> seq(Span start, char close, String what, Supplier<T> item){
+      var items= new ArrayList<T>();
+      while(true){
+        ws();
+        if (!more()){ throw err(from(start),"This "+what+" is never closed with a matching "+close+"."); }
+        if (peek() == close && items.isEmpty()){ return items; }
+        items.add(item.get());
+        ws();
+        if (!more()){ throw err(from(start),"This "+what+" is never closed with a matching "+close+"."); }
+        if (peek() == close){ return items; }
+        if (peek() != ','){ throw err(here(),"Expected ',' or '"+close+"' here, to continue or to close the "+what+"."); }
+        advance();
+      }
     }
     private void ws(){
       while(more()){
@@ -174,7 +175,7 @@ public sealed interface Info{
     private Span here(){ return new Span(uri,line,col,line,col); }
     private Span from(Span start){ return between(start,here()); }
     private Span between(Span start, Span end){
-      return new Span(uri,start.startLine(),start.startCol(),end.startLine(),Math.max(end.startCol(),start.startCol()));
+      return new Span(uri,start.startLine(),start.startCol(),end.startLine(),end.startCol());
     }
     private UserError err(Span span, String msg){ return Info.err(text,span,msg); }
   }

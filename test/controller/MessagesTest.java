@@ -192,8 +192,8 @@ for it.""", Messages.messageFolderNotWatchable(msgDir).getMessage());
     var msgDir= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager");
     var cause= new IOException("The system cannot find the file specified");
     same("""
-Fearless could not list its manager folder, or could not remove a
-message file from it.
+Fearless could not list its manager folder, or could not read or
+remove a message file in it.
 
 The manager folder is:
   C:\\Users\\ada\\AppData\\Local\\Fearless\\manager
@@ -224,5 +224,69 @@ Programs that may use or block this folder include security software
 (antivirus, ransomware protection, endpoint protection), backup tools,
 sync tools, and file preview tools.
 """, Messages.couldNotSaveRegisteredFolders(managerDir, cause).getMessage());
+  }
+  @Test void folderNestedWithRegistered(){
+    same("""
+Fearless cannot keep track of this project folder.
+
+The manager was asked to register:
+  C:\\Users\\ada\\hello\\inner
+Fearless is already keeping track of:
+  C:\\Users\\ada\\hello
+One of the two is inside the other. Fearless keeps track of project folders
+that do not overlap, so that every file belongs to exactly one project.
+
+Use the folder Fearless already keeps track of, or make Fearless forget that
+folder first, and then register this one again.
+""", Messages.folderNestedWithRegistered(Path.of("C:\\Users\\ada\\hello\\inner"), Path.of("C:\\Users\\ada\\hello")));
+  }
+  @Test void projectNamed(){
+    same("""
+Fearless keeps track of this project folder as "hello2", not as "hello".
+
+The manager registered:
+  C:\\Users\\ada\\b\\hello
+A project name uses only lowercase letters, digits and underscores,
+starts with a letter or an underscore, is not a name the file system
+reserves ("con", "prn", "aux", "nul", "com1" to "com9", "lpt1" to "lpt9"),
+and is not the name of another project Fearless keeps track of.
+
+The marker file "hello2.fearless" in that folder holds the name: rename it to change the name.
+""", Messages.projectNamed(Path.of("C:\\Users\\ada\\b\\hello"), "hello", "hello2"));
+  }
+  @Test void managerFolderNotAProject(){
+    same("""
+Fearless cannot keep track of this folder as a project.
+
+The folder is:
+  C:\\Users\\ada\\fearless0_007\\messages
+The manager folder of this Fearless is:
+  C:\\Users\\ada\\fearless0_007
+The manager folder holds what Fearless remembers about your projects: it is
+never part of a project, and no project is inside it.
+""", Messages.managerFolderNotAProject(Path.of("C:\\Users\\ada\\fearless0_007\\messages"), Path.of("C:\\Users\\ada\\fearless0_007")));
+  }
+  @Test void projectFolderIsRoot(){
+    same("""
+Fearless cannot keep track of the root of a drive or of the file system as a
+project.
+
+The folder is:
+  C:\\
+Put the project in a folder inside it, and make that folder the project
+folder.
+""", Messages.projectFolderIsRoot(Path.of("C:\\")));
+  }
+  @Test void trayConnectionLost(){
+    same("""
+The desktop stopped talking to the Fearless icon in the system tray.
+
+The tray icon is how a closed manager window is brought back, and the
+connection to the system tray of this desktop failed.
+
+Reported reason:
+the session bus closed the connection
+Restore the system tray of this desktop, then start Fearless again.
+""", Messages.trayConnectionLost(new IOException("the session bus closed the connection")).getMessage());
   }
 }

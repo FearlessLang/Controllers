@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -29,7 +30,8 @@ import suggest.Resolver.Row;
 /// a dot, and on ctrl+space, the methods of the type of the expression before the cursor as the
 /// last compile describes them (suggest.Resolver), and the types of the package named before the
 /// dot, in a use directive or in code; a type and a method alike come with their documentation
-/// from the text rendering next to the api json. The edited file, src/_pkg/name.fear of a
+/// from the text rendering next to the api json, and the methods of a type the last compile does
+/// not know, declared in the edited file, with none. The edited file, src/_pkg/name.fear of a
 /// mirrored project, names the project and the package (a file of no mirrored project, or outside
 /// a package folder, gets nothing); the compiled information is the api json of every package
 /// of the project and of the standard library, read again when its file changes, and the map
@@ -53,14 +55,15 @@ public final class Assist implements IContentAssistProcessorExtension{
     var base= ManagerLink.baseCache.resolve("base.json");
     var types= Stream.concat(Stream.of(base), jsons(out)).flatMap(p->types(p).stream()).toList();
     var packages= Files.isDirectory(out) ? Api.packages(ManagerLink.read(out.resolve("_map.json")), pkgDir.substring(1)) : Map.<String,String>of();
-    var s= Resolver.of(new Api(types), pkgDir.substring(1), packages, head, text).suggest(offset);
+    var api= new Api(types);
+    var s= Resolver.of(api, pkgDir.substring(1), packages, head, text).suggest(offset);
     var typeProposals= s.types().stream().map(t->typeProposal(t, s.from(), offset, docs(txt(out, pkg(t.name())))));
     if (s.rows().isEmpty()){ return typeProposals.toArray(ICompletionProposal[]::new); }
-    var docs= docs(txt(out, pkg(s.receiver().name())));
+    var docs= api.entry(s.receiver()).map(t->docs(txt(out, pkg(t.name()))));
     return Stream.concat(s.rows().stream().map(r->proposal(r, s.from(), offset, docs, s.receiver())), typeProposals).toArray(ICompletionProposal[]::new);
   }
-  private static ICompletionProposal proposal(Row r, int from, int offset, Docs docs, Ty receiver){
-    return new CompletionProposal(r.insert(), from, offset-from, r.insert().length(), null, r.display(), null, docs.method(simple(receiver.name()), receiver.args().size(), r.name(), r.ts().size()).orElse(null));
+  private static ICompletionProposal proposal(Row r, int from, int offset, Optional<Docs> docs, Ty receiver){
+    return new CompletionProposal(r.insert(), from, offset-from, r.insert().length(), null, r.display(), null, docs.flatMap(d->d.method(simple(receiver.name()), receiver.args().size(), r.name(), r.ts().size())).orElse(null));
   }
   private static ICompletionProposal typeProposal(Ty t, int from, int offset, Docs docs){
     var name= simple(t.name());

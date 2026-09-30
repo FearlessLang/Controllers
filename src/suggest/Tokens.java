@@ -6,7 +6,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /// The tokens of fearlessParser.TokenKind: the same kinds, in the same order, with the same
-/// regular expressions, matched the same way: longest match, ties to the earlier kind.
+/// regular expressions (a block comment as the lazy match of the same texts, whose stack does not
+/// grow with the comment), matched the same way: longest match, ties to the earlier kind.
 /// Whitespace, comments, the kinds Frontend rejects (Bad...) and a character no kind matches are
 /// dropped. Brackets nest the tokens into groups as fearlessParser.Parse does: (..), [..] opened by
 /// OSquareArg, {..} closed by } or by }id. The text is still being typed: an unclosed group runs to
@@ -14,7 +15,7 @@ import java.util.regex.Pattern;
 /// and a closer closing no group is dropped.
 final class Tokens{
   enum Kind{
-    Ws("\\s+"), LineComment("//[^\\n]*"), BlockComment("/\\*[^*]*\\*+(?:[^/*][^*]*\\*+)*/"),
+    Ws("\\s+"), LineComment("//[^\\n]*"), BlockComment("(?s)/\\*.*?\\*/"),
     BadUnclosedBlockComment("(?s)/\\*(?!.*?\\*/).*"), BadUnopenedBlockCommentClose("\\*/"),
     Arrow("->"), ORound("\\("), CRound("\\)"), OCurly("\\{"), CCurlyId("\\}[A-Za-z0-9_]+'*"), CCurly("\\}"),
     OSquareArg("(?<=[A-Za-z0-9_'`\\x22\\x5C/#\\x2A\\x2D\\x2B%<>=!&\\x5E~\\x3F\\x7C])\\["), BadOSquare("\\["), CSquare("\\]"),
@@ -82,13 +83,12 @@ final class Tokens{
     var g= cur;
     while (g.parent != null && g.open != open){ g= g.parent; }
     if (g.parent == null){ return cur; }
-    for (var h= cur; h != g; h= h.parent){ h.end= closer.start; }
-    g.end= closer.end;
+    for (var h= cur; h != g.parent; h= h.parent){ h.end= closer.start; }
     return g.parent;
   }
   static Group innermost(Group g, int pos){
     for (var it : g.items){
-      if (it instanceof Group c && c.start < pos && pos < c.end){ return innermost(c, pos); }
+      if (it instanceof Group c && c.start < pos && pos <= c.end){ return innermost(c, pos); }
     }
     return g;
   }
