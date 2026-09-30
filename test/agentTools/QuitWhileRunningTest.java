@@ -6,9 +6,6 @@ import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.util.Arrays;
 
-import org.junit.jupiter.api.AfterEach;
-
-import resources.ResolveResource;
 import tools.Fs;
 import utils.OneOr;
 
@@ -24,7 +21,6 @@ import utils.OneOr;
 /// Action 5: press Run: the Output says the program runs, and the window of the program opens.
 /// Action 6: choose Quit manager in its Manager menu: the manager ends, the program ends, and the desk shows its background again.
 final class QuitWhileRunningTest extends ManagerTest{
-  static final Path gui= ResolveResource.integrationTests.resolve("testGui1");
   static final Path console= data.resolve("eclipse").resolve("start").resolve("console.txt");
   final At managerShown= new At("managerShown",linux(3000));
   final Click focusTiles= new Click("focusTiles",linux(200,1500));
@@ -68,9 +64,5 @@ final class QuitWhileRunningTest extends ManagerTest{
     assertEquals(0,manager.exitValue());
     until(()->!program.isAlive());
     until(()->same(desk,look()));
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(gui.resolve(".fearless_out"));
   }
 }
