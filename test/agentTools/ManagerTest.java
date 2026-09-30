@@ -35,6 +35,7 @@ abstract class ManagerTest extends PilotTest{
     pilot.glide(s.width-1,s.height/2,Pilot.none,s.width-1,s.height/2,Pilot.none);
     return pilot.shot();
   }
+  int[] pixels(int[] at){ return pilot.shot().getRGB(at[0],at[1],at[2],at[3],null,0,at[2]); }
   static boolean same(BufferedImage a, BufferedImage b){
     var pa= a.getRGB(0,0,a.getWidth(),a.getHeight(),null,0,a.getWidth());
     var pb= b.getRGB(0,0,b.getWidth(),b.getHeight(),null,0,b.getWidth());

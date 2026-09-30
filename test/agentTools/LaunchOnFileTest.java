@@ -40,5 +40,4 @@ final class LaunchOnFileTest extends ManagerTest{
     assertEquals(remembered,Fs.readUtf8(data.resolve("projects.info")));
     stopManagers();
   }
-  private int[] pixels(int[] at){ return pilot.shot().getRGB(at[0],at[1],at[2],at[3],null,0,at[2]); }
 }
