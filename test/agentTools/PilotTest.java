@@ -1,5 +1,6 @@
 package agentTools;
 
+import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -27,8 +28,8 @@ public abstract class PilotTest{
   protected final Pilot pilot= new Pilot();
   private final ArrayList<Aim> aims= new ArrayList<>();
   private long start;
-  protected abstract void walk();
-  @Test void walks(){
+  protected abstract void walk() throws Exception;
+  @Test void walks() throws Exception{
     var unrecorded= channel.isEmpty() && aims.stream().anyMatch(a->a.recorded().isEmpty());
     if (unrecorded){ Assumptions.abort("This desk has no recording yet: walk the test here in agent mode and write down where each aim lands."); }
     channel.ifPresent(Fs::cleanDir);
@@ -93,5 +94,9 @@ public abstract class PilotTest{
   public final class Drag extends Aim{
     public Drag(String name, On... ons){ super(name,4,ons); }
     public void go(){ var v= aim(); pilot.drag(v[0],v[1],v[2],v[3]); }
+  }
+  public final class Area extends Aim{
+    public Area(String name, On... ons){ super(name,4,ons); }
+    public BufferedImage shot(){ var v= aim(); return pilot.shot().getSubimage(v[0],v[1],v[2],v[3]); }
   }
 }
