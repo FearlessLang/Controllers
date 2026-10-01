@@ -21,7 +21,7 @@ Rest: { #(xs: read List[Nat], from: Nat, acc: mut EList[Nat]): Void -> Block#[Vo
   .var[Nat] k = {from}
   .loop {Block#
     .if {k.get == (xs.size)} .return {Break#}
-    .do {acc.add(xs.get(k.get))}
+    .do {acc.add(xs.get(k.get)).void}
     .do {k.set(k.get + 1)}
     .return {Continue#}
     }
