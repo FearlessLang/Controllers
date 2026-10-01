@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.swing.AbstractButton;
+import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
@@ -120,6 +121,32 @@ final class PanelTest{
     assertEquals("No",onEdt(shown::getText));
     loseFocus(shown);
     asked("link\nhello\nnotes read No");
+  }
+  @Test void aLinkToAProjectNoLongerDataStaysShownAndCanBeEmptied(){
+    var reader= project("hello",Kind.code,Optional.of(abc),List.of(),Map.of("notes",List.of("Notes")),true,"",-1);
+    render(reader,project("notes",Kind.idle,Optional.empty(),List.of(),Map.of(),true,"",-1));
+    assertEquals("Notes",onEdt(this.<JTextField>named("notes read")::getText));
+    render(reader);
+    JTextField shown= named("notes read");
+    onEdt(()->{ shown.setText(""); return null; });
+    loseFocus(shown);
+    asked("link\nhello\nnotes read ");
+  }
+  @Test void theMainsShrinkBackOnceUnknownAgain(){
+    var unknown= project("hello",Kind.code,Optional.empty(),List.of(),Map.of(),false,"",-1);
+    render(unknown);
+    Component scroll= this.<Component>named("mains").getParent().getParent();
+    var height= onEdt(()->scroll.getPreferredSize().height);
+    render(code(abc,List.of()));
+    render(unknown);
+    assertEquals(height,onEdt(()->scroll.getPreferredSize().height));
+  }
+  @Test void aFailedCompileShowsTheProjectInvalid(){
+    var p= project("hello",Kind.code,Optional.empty(),List.of(),Map.of(),false,"",-1);
+    var failed= new Project(p.entry(),p.facts(),p.mains(),p.linkProblem(),"",Instant.EPOCH,0,"",-1,"boom\n");
+    assertEquals(Optional.of("boom\n"),failed.problem());
+    render(failed);
+    assertEquals(1L,onEdt(()->all(panel.root).filter(c->c instanceof JLabel l && l.getText().equals("<invalid: see Error report>")).count()));
   }
   private static <T> T onEdt(Supplier<T> f){
     var out= new Box<T>(null);

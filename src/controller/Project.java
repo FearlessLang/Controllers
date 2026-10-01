@@ -30,7 +30,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   public boolean busy(){ return !job.isEmpty(); }
   public Optional<String> running(){ return busy() && !job.equals(compiling) ? Optional.of(job) : Optional.empty(); }
   public boolean needsCompiling(){ return kind() == Kind.code && !facts.upToDate(); }
-  public Optional<String> problem(){ return facts.problem().or(()->linkProblem); }
+  public Optional<String> problem(){ return facts.problem().or(()->linkProblem).or(()->Optional.of(failure).filter(f->!f.isEmpty())); }
   public List<String> knownMains(){ return mains.map(m->List.copyOf(m.keySet())).orElse(List.of()); }
   public List<String> selectedMains(){
     var known= knownMains();
