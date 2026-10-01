@@ -34,5 +34,5 @@ public final class Association{
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
   }
-  private static void eradicateAll(){ FileAssociations.eradicateAll(belongsToFamily,Violation::associationLeftHalfDone); }
+  static void eradicateAll(){ FileAssociations.eradicateAll(belongsToFamily,Violation::associationLeftHalfDone); }
 }

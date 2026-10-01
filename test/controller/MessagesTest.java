@@ -36,9 +36,6 @@ Fearless crashed because of a low-level JVM failure.
 
 Fearless includes its own packaged JVM. The packaged JVM failed, or the
 packaged Fearless code could not be linked correctly.
-
-Replace this Fearless folder with a fresh copy.
-If this keeps happening, report the problem.
 """, Messages.vmOrLinkageFailure(cause).getMessage());
   }
   @Test void couldNotLoadIcon(){
@@ -52,9 +49,6 @@ This copy of Fearless should already have this file:
 
 Reported reason:
 The process cannot access the file because it is being used by another process
-
-Replace this Fearless folder with a fresh copy.
-If this keeps happening, report the problem.
 """, Messages.couldNotLoadIcon(icon, cause).getMessage());
   }
   @Test void couldNotDecodeIcon(){
@@ -66,9 +60,6 @@ This copy of Fearless should already have this file:
   C:\\Users\\ada\\Downloads\\fearlessManaged0_007\\app\\icon.png
 The file is there and could be read, but it does not hold an image this
 Java runtime can decode.
-
-Replace this Fearless folder with a fresh copy.
-If this keeps happening, report the problem.
 """, Messages.couldNotDecodeIcon(icon).getMessage());
   }
   @Test void couldNotCreateManagerFolder(){
@@ -139,15 +130,33 @@ starting right now) then reads and removes those files. The message
 file was written, but renaming it to its final name failed.
 
 Reported reason:
-Cannot create a file when that file already exists
+Cannot create a file when that file already exists""", Messages.couldNotLeaveStartMessage(msgDir, cause).getMessage());
+  }
+  @Test void wiped(){
+    same("""
 
-A manager process may still be running: do not delete the manager
-folder. If the problem repeats, close programs that may be using or
-blocking the folder.
-Programs that may use or block this folder include security software
-(antivirus, ransomware protection, endpoint protection), backup tools,
-sync tools, and file preview tools.
-""", Messages.couldNotLeaveStartMessage(msgDir, cause).getMessage());
+
+Fearless deleted its manager folder
+  C:\\Users\\ada\\Downloads\\fearless0_007
+and removed every file association of Fearless.
+Replace this Fearless folder with a fresh copy.
+If this keeps happening, report the problem.
+""", Messages.wiped(Path.of("C:\\Users\\ada\\Downloads\\fearless0_007")));
+  }
+  @Test void notWiped(){
+    same("""
+
+
+Fearless could not delete its manager folder
+  C:\\Users\\ada\\Downloads\\fearless0_007
+and remove every file association of Fearless.
+Reported reason:
+The process cannot access the file because it is being used by another process
+
+Delete the manager folder.
+Replace this Fearless folder with a fresh copy.
+If this keeps happening, report the problem.
+""", Messages.notWiped(Path.of("C:\\Users\\ada\\Downloads\\fearless0_007"),new IOException("The process cannot access the file because it is being used by another process")));
   }
   @Test void couldNotWatchMessageFolder(){
     var msgDir= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager\\messages");

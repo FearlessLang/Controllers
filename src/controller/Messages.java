@@ -245,9 +245,7 @@ public final class Messages{
       Fearless crashed because of a low-level JVM failure.
 
       Fearless includes its own packaged JVM. The packaged JVM failed, or the
-      packaged Fearless code could not be linked correctly.
-
-      %s""".formatted(freshCopyThenReport()), cause);
+      packaged Fearless code could not be linked correctly.""", cause);
   }
   public static UserError couldNotLoadIcon(Path icon, Throwable cause){
     return new UserError("""
@@ -256,9 +254,7 @@ public final class Messages{
       This copy of Fearless should already have this file:
       %s
 
-      %s
-
-      %s""".formatted(path(icon.toString()),reported(cause),freshCopyThenReport()), cause);
+      %s""".formatted(path(icon.toString()),reported(cause)), cause);
   }
   public static UserError couldNotDecodeIcon(Path icon){
     return new UserError("""
@@ -267,9 +263,7 @@ public final class Messages{
       This copy of Fearless should already have this file:
       %s
       The file is there and could be read, but it does not hold an image this
-      Java runtime can decode.
-
-      %s""".formatted(path(icon.toString()),freshCopyThenReport()));
+      Java runtime can decode.""".formatted(path(icon.toString())));
   }
   public static UserError couldNotCreateManagerFolder(Path dir, Throwable cause){
     return new UserError("""
@@ -315,12 +309,28 @@ public final class Messages{
       starting right now) then reads and removes those files. The message
       file was written, but renaming it to its final name failed.
 
+      %s""".formatted(managerFolderIntro(),path(msgDir.toString()),reported(cause)), cause);
+  }
+  public static String wiped(Path managerDir){
+    return """
+
+
+      Fearless deleted its manager folder
+      %s
+      and removed every file association of Fearless.
+      %s""".formatted(path(managerDir.toString()),freshCopyThenReport());
+  }
+  public static String notWiped(Path managerDir, Throwable cause){
+    return """
+
+
+      Fearless could not delete its manager folder
+      %s
+      and remove every file association of Fearless.
       %s
 
-      A manager process may still be running: do not delete the manager
-      folder. If the problem repeats, close programs that may be using or
-      blocking the folder.
-      %s""".formatted(managerFolderIntro(),path(msgDir.toString()),reported(cause),blockingPrograms()), cause);
+      Delete the manager folder.
+      %s""".formatted(path(managerDir.toString()),reported(cause),freshCopyThenReport());
   }
   public static UserError couldNotWatchMessageFolder(Path msgDir, Throwable cause){
     return new UserError("""
