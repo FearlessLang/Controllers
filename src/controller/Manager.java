@@ -100,6 +100,11 @@ public final class Manager{
   public State state(){ return state; }
   public void start(){ core.scheduleWithFixedDelay(()->step(this::rotate),3,3,TimeUnit.SECONDS); }
   public void message(String text){ post(()->apply(text)); }
+  void stop(){
+    core.shutdownNow();
+    try{ var done= core.awaitTermination(1,TimeUnit.MINUTES); assert done; }
+    catch(InterruptedException e){ throw Bug.of(e); }
+  }
   //Runs once before the watcher thread starts, then only from that thread: never concurrently.
   public void drain(){
     var msgDir= dir.resolve("messages");
