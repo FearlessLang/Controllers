@@ -13,10 +13,12 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -24,6 +26,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -32,6 +35,7 @@ import java.util.stream.Stream;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
 import coordinator.MainsInfo;
+import fileAssociations.Icon;
 import mainCoordinator.MakeDemo;
 import tools.ChildJvm;
 import tools.Fs;
@@ -56,6 +60,7 @@ public final class Manager{
     ChildJvm run(Path folder, String main, Consumer<String> out);
     Optional<Map<String,String>> mains(Path folder);
     Path stdLibBase();
+    void associate(List<Icon> claimed, Function<String,String> claimedBy);
   }
   public record State(List<Project> projects, Optional<Path> selected){
     public Optional<Project> of(Path folder){ return OneOr.opt("project "+folder,projects.stream().filter(p->p.folder().equals(folder))); }
@@ -80,6 +85,7 @@ public final class Manager{
     List<String> todo= List.of();
     ScheduledFuture<?> reporting;
   }
+  private static final String conflict= "base.IconsConflict";
   private final ScheduledExecutorService core= Executors.newSingleThreadScheduledExecutor();
   public final Path dir;
   public final Eclipse eclipse;
@@ -89,6 +95,7 @@ public final class Manager{
   private final Registry registry;
   private final Map<Path,Live> live= new HashMap<>();
   private Optional<Path> selected= Optional.empty();
+  private Optional<List<Icon>> wanted= Optional.empty();
   private int turn;
   private volatile State state= new State(List.of(),Optional.empty());
   public Manager(Path dir, Tools tools, View view, Consumer<Throwable> fail){
@@ -138,7 +145,7 @@ public final class Manager{
   }
   private void post(Runnable r){ core.execute(()->step(r)); }
   private void step(Runnable r){
-    try{ r.run(); publish(); }
+    try{ r.run(); reassociate(); publish(); }
     catch(Throwable t){ fail.accept(t); }
   }
   private void load(){
@@ -151,7 +158,60 @@ public final class Manager{
       scan(e.path());
       tell(Messages.kindReset(e.alias(),kept));
     });
-    eclipse.publish(Eclipse.state(registry.all().stream().map(this::project).toList()));
+    ClaimIcons.materialise(dir.resolve("icons"),conflict,Fs.of(()->Files.readAllBytes(tools.stdLibBase().resolve("icons").resolve("conflict.png"))));
+    associateAtStartUp();
+    eclipse.publish(Eclipse.state(projects()));
+  }
+  private void associateAtStartUp(){
+    var blocked= new HashSet<String>();
+    try{ associate(blocked); return; }
+    catch(UserError e){
+      if (blocked.isEmpty() || blocked.contains(".fearless")){ throw e; }
+      var claimed= Project.claimed(projects());
+      blocked.stream().flatMap(b->claimed.get(b.substring(1)).stream()).map(Project.Claimant::folder).distinct().forEach(f->blockedAtStartUp(f,e));
+    }
+    associate(new HashSet<>());
+  }
+  private void blockedAtStartUp(Path f, UserError e){
+    live.get(f).claims= Project.noClaims;
+    failed(f,e.getMessage());
+    scan(f);
+  }
+  private void associate(Set<String> blocked){
+    var claimed= Project.claimed(projects());
+    var suffix= Fs.isWindows() ? ".ico" : ".png";
+    var next= claimed.entrySet().stream().map(e->new Icon("."+e.getKey(),icon(e.getValue(),suffix),icon(e.getValue(),".png"))).toList();
+    if (wanted.equals(Optional.of(next))){ return; }
+    wanted= Optional.of(next);
+    tools.associate(next,e->claimedBy(claimed,blocked,e));
+  }
+  private static String claimedBy(Map<String,List<Project.Claimant>> claimed, Set<String> blocked, String extension){
+    blocked.add(extension);
+    return Messages.claimedBy(claimed.getOrDefault(extension.substring(1),List.of()));
+  }
+  private Path icon(List<Project.Claimant> cs, String suffix){
+    if (cs.size() > 1){ return dir.resolve("icons").resolve(conflict+suffix); }
+    var c= cs.getFirst();
+    return c.folder().resolve(Facts.outDir).resolve("icons").resolve(c.claim().icon()+suffix);
+  }
+  private void reassociate(){
+    try{ associate(new HashSet<>()); }
+    catch(UserError e){ tell(e.getMessage()); }
+  }
+  private boolean associated(Path f, MainsInfo previous){
+    var before= wanted;
+    try{ associate(new HashSet<>()); return true; }
+    catch(UserError e){
+      wanted= before;
+      live.get(f).claims= previous;
+      failed(f,e.getMessage());
+      return false;
+    }
+  }
+  private void failed(Path f, String message){
+    live.get(f).failure= message;
+    output(f,message.stripTrailing()+"\n");
+    Fs.ofV(()->Files.deleteIfExists(f.resolve(Facts.outDir).resolve("mains.info")));
   }
   private void open(Entry e){
     live.put(e.path(),new Live());
@@ -173,12 +233,7 @@ public final class Manager{
       l.claims= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims));
       icons.forEach((icon,bytes)->ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icon,bytes));
     }
-    catch(UserError e){
-      l.failure= e.getMessage();
-      output(f,l.failure.stripTrailing()+"\n");
-      Fs.ofV(()->Files.deleteIfExists(file));
-      return false;
-    }
+    catch(UserError e){ failed(f,e.getMessage()); return false; }
     if (!l.claims.equals(read)){ Fs.writeUtf8(file,l.claims.print()); }
     return true;
   }
@@ -328,7 +383,8 @@ public final class Manager{
     l.job= "";
     if (what.equals(Project.compiling)){
       l.failure= ec == 0 ? "" : l.compiled.toString();
-      var done= ec == 0 && accept(f);
+      var previous= l.claims;
+      var done= ec == 0 && accept(f) && associated(f,previous);
       output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }
@@ -449,10 +505,11 @@ public final class Manager{
     return new Project(e,l.facts,l.mains,l.claims,registry.linkProblem(e,f->live.get(f).facts.problem()),l.job,l.since,l.runs,l.lastRun,l.exit,l.failure);
   }
   private Project project(Path f){ return project(registry.of(f).orElseThrow()); }
+  private List<Project> projects(){ return registry.all().stream().map(this::project).toList(); }
   private String alias(Path f){ return registry.of(f).orElseThrow().alias(); }
   private Path console(Path f){ return eclipse.console(alias(f)); }
   private void publish(){
-    var next= new State(registry.all().stream().map(this::project).toList(),selected);
+    var next= new State(projects(),selected);
     if (next.equals(state)){ return; }
     var old= state;
     var text= Eclipse.state(next.projects());

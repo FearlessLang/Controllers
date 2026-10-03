@@ -44,12 +44,14 @@ import org.junit.jupiter.api.io.TempDir;
 import controller.Manager.State;
 import controller.Registry.Kind;
 import coordinator.MainsInfo;
+import fileAssociations.Icon;
 import fileSupport.Info;
 import resources.LocalResources;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.Report;
 import userMessages.UserError;
+import userMessages.Violation;
 
 /// The whole manager without a window: messages in, Eclipse files and View calls out.
 /// Compiling writes a fresh cache and every job is a real child JVM running Child.
@@ -69,7 +71,7 @@ final class ManagerTest{
       """);
     Fs.runTool("javac",List.of("-d",classes.toString(),src.toString()));
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       FactsTest.cache(folder,"hello",FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
@@ -85,6 +87,11 @@ final class ManagerTest{
     }
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
+    @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
+      associated.add(claimed);
+      var blocked= Stream.concat(Stream.of(".fearless"),claimed.stream().map(Icon::extension)).filter(held::containsKey).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
+      if (!blocked.isEmpty()){ throw Violation.associationNotOurs(blocked,claimedBy); }
+    }
     private static ChildJvm jvm(Consumer<String> out, String... args){
       return ChildJvm.start(Stream.concat(Stream.of("-cp",classes.toString(),"Child"),Stream.of(args)).toList(),out);
     }
@@ -105,6 +112,8 @@ final class ManagerTest{
   private final List<Throwable> failures= Collections.synchronizedList(new ArrayList<>());
   private final View view= new View();
   private final Map<String,String> infos= new HashMap<>();
+  private final List<List<Icon>> associated= Collections.synchronizedList(new ArrayList<>());
+  private final Map<String,List<String>> held= new HashMap<>();
   @AfterEach void nothingFailed(){ assertEquals(List.of(),failures); }
   private Manager manager(Path dir, String... mains){
     var map= new LinkedHashMap<String,String>();
@@ -112,7 +121,7 @@ final class ManagerTest{
     var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
     return manager(dir,_->known);
   }
-  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read,infos),view,failures::add); }
+  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read,infos,associated,held),view,failures::add); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -1120,5 +1129,135 @@ final class ManagerTest{
     assertEquals(List.of("other::other.Other openWith hello.IconsFoo"),claimed(again).get("qux"));
     same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/foo.png\": no such file: [###]foo.png\nCompile the project again.",project(again,hello).problem().orElseThrow());
     assertEquals(Project.noClaims,project(again,hello).claims());
+  }
+  private List<String> wanted(Path dir){ return associated.getLast().stream().map(i->i.extension()+" "+shown(dir,i)).toList(); }
+  private static String shown(Path dir, Icon i){
+    assertEquals(i.png().toString().replaceAll("png$",Fs.isWindows() ? "ico" : "png"),i.ico().toString());
+    return dir.relativize(i.png()).toString().replace('\\','/');
+  }
+  private static String notOurs(String... lines){
+    return """
+      Fearless cannot become the program that opens the kinds of file listed
+      below.
+
+      Another program already answers for these kinds of file. Fearless
+      stopped before touching anything: your system is exactly as it was.
+
+      What stood in the way:
+      """+String.join("\n",lines);
+  }
+  @Test void theDesktopOpensEachClaimedExtensionWithItsIconOrTheConflictIconWhenSeveralMainsClaimIt(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    assertEquals(List.of(List.of()),associated);
+    assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(dir.resolve("manager").resolve("icons").resolve("base.IconsConflict.png")));
+    infos.put("hello",claiming("hello.Hello","bar","foo"));
+    infos.put("other",claiming("other.Other","baz","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of(".bar hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    send(m,"compile","other");
+    idle(m);
+    assertEquals(List.of(
+      ".bar hello/.fearless_out/icons/base.IconsConflict.png",
+      ".baz other/.fearless_out/icons/base.IconsConflict.png",
+      ".foo manager/icons/base.IconsConflict.png"),wanted(dir));
+    var calls= associated.size();
+    send(m,"select","hello");
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(calls,associated.size());
+    send(m,"clean","hello");
+    assertEquals(List.of(".baz other/.fearless_out/icons/base.IconsConflict.png",".foo other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    send(m,"forget","other");
+    assertEquals(List.of(),wanted(dir));
+    assertEquals(calls+2,associated.size());
+    assertEquals(List.of(),view.notes);
+  }
+  @Test void aCompileWhoseExtensionsTheDesktopRefusesFailsNamingTheirMainsAndKeepsTheClaimsBefore(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("other",claiming("other.Other","os","foo"));
+    infos.put("hello",claiming("hello.Hello","hs","bar"));
+    send(m,"compile","other");
+    send(m,"compile","hello");
+    idle(m);
+    var accepted= project(m,hello).claims();
+    held.put(".foo",List.of("org.gnome.TextEditor"));
+    held.put(".hs",List.of("vim"));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    touch(hello);
+    send(m,"run","hello");
+    idle(m);
+    var error= notOurs(
+      ".foo claimed by \"hello.Hello\" of project \"hello\" and \"other.Other\" of project \"other\" -> org.gnome.TextEditor",
+      ".hs claimed by \"hello.Hello\" of project \"hello\" -> vim");
+    same("[###]--- compiling hello ---\ncompiled\n"+error+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+    var p= project(m,hello);
+    same(error,p.problem().orElseThrow());
+    assertTrue(p.needsCompiling());
+    assertFalse(Files.exists(mainsInfo(hello)));
+    assertEquals(accepted,p.claims());
+    assertEquals(List.of(".foo manager/icons/base.IconsConflict.png",".hs hello/.fearless_out/icons/base.IconsConflict.png",".os other/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals(List.of("hello::hello.Hello openWith hello.IconsFoo"),claimed(m).get("bar"));
+    var calls= associated.size();
+    send(m,"select","other");
+    assertEquals(calls,associated.size());
+    assertEquals(List.of(),view.notes);
+  }
+  @Test void aCleanWhoseExtensionsTheDesktopRefusesIsToldOnce(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("other",claiming("other.Other","os","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    held.put(".qux",List.of("vim"));
+    send(m,"clean","hello");
+    send(m,"select","other");
+    same(notOurs(".qux claimed by \"other.Other\" of project \"other\" -> vim"),String.join("\n",view.notes));
+    assertEquals(List.of(".os other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    assertEquals(List.of("os","qux"),claimed(m).keySet().stream().sorted().toList());
+  }
+  @Test void aStartUpRefusedTheExtensionsOfOneProjectDropsItsClaimsAndKeepsTheOthers(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("other",claiming("other.Other","os","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    held.put(".qux",List.of("vim"));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    var error= notOurs(".qux claimed by \"other.Other\" of project \"other\" -> vim");
+    var p= project(again,other);
+    same(error,p.problem().orElseThrow());
+    same(error+"\n",eclipse(dir,"other","console.txt"));
+    assertEquals(Project.noClaims,p.claims());
+    assertTrue(p.needsCompiling());
+    assertFalse(Files.exists(mainsInfo(other)));
+    assertEquals(Optional.empty(),project(again,hello).problem());
+    assertEquals(List.of(".foo hello/.fearless_out/icons/hello.IconsFoo.png",".hs hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+  }
+  @Test void aStartUpRefusedTheFearlessExtensionFails(@TempDir Path dir){
+    held.put(".fearless",List.of("fearlessBin0_003"));
+    manager(dir).settle();
+    assertEquals(1,failures.size());
+    same(notOurs(".fearless -> fearlessBin0_003"),failures.getFirst().getMessage());
+    failures.clear();
   }
 }

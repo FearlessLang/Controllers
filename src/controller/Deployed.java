@@ -5,13 +5,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import coordinator.CapabilityEnvironment;
 import coordinator.Coordinator;
 import core.E.Literal;
 import core.OtherPackages;
+import fileAssociations.Icon;
 import naiveBackend.BackendTools;
 import tools.ChildJvm;
+import tools.Fs;
 import tools.JavacTool;
 import tools.SourceOracle;
 import userMessages.Violation;
@@ -44,6 +48,11 @@ public final class Deployed implements Manager.Tools{
     return Coordinator.startMain(folder,stdLib("base"),main,coordinator(folder).sharedClasspath(),out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
+  @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
+    if (Fs.isMac()){ return; }
+    var l= Association.launcher();
+    Association.reconcile(l,Stream.concat(Stream.of(new Icon(".fearless",l,Association.iconFile())),claimed.stream()).toList(),claimedBy);
+  }
   @Override public Optional<Map<String,String>> mains(Path folder){
     var c= coordinator(folder);
     return c.mains(folder,c.sourceOracle(stdLib("base")));

@@ -135,7 +135,6 @@ public final class Main{
     manager.drain();
     Thread.startVirtualThread(()->watch(watcher));
     manager.start();
-    if (!Fs.isMac()){ var l= Association.launcher(); Association.reconcile(l,Association.extensions(l)); }
     try{ done.await(); }
     catch(InterruptedException e){ throw Bug.of(e); }
     var problem= failure.get();
@@ -145,7 +144,7 @@ public final class Main{
   public void fail(Throwable problem){ failure.compareAndSet(null,problem); done.countDown(); }
   public void forgetAssociation(Window window){
     if (!window.askForget()){ return; }
-    try{ Association.reconcile(Association.launcher(),List.of()); quit(); }
+    try{ Association.reconcile(Association.launcher(),List.of(),e->""); quit(); }
     catch(UserError e){ fail(e); }
   }
   private void watch(WatchService watcher){
