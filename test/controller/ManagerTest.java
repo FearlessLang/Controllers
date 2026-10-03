@@ -1302,7 +1302,7 @@ final class ManagerTest{
     var hello= folder(dir,"hello");
     send(m,TaggedText.of(hello.toString()));
     var calls= new ArrayList<Integer>();
-    m.forget(()->calls.add(associated.size()));
+    m.forgetAssociation(()->calls.add(associated.size()));
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     send(m,"compile","hello");
     idle(m);

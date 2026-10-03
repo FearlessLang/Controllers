@@ -144,12 +144,9 @@ public final class Main{
   public void fail(Throwable problem){ failure.compareAndSet(null,problem); done.countDown(); }
   public void forgetAssociation(Window window){
     if (!window.askForget()){ return; }
-    manager.forget(this::unassociate);
+    manager.forgetAssociation(this::unassociate);
   }
-  private void unassociate(){
-    try{ Association.reconcile(Association.launcher(),List.of(),e->""); quit(); }
-    catch(UserError e){ fail(e); }
-  }
+  private void unassociate(){ Association.reconcile(Association.launcher(),List.of(),e->""); quit(); }
   private void watch(WatchService watcher){
     while(true){
       WatchKey key;

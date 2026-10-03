@@ -140,7 +140,7 @@ public final class Manager{
   public void commit(String base, String text, Runnable done){ post(()->commitNow(base,text,done)); }
   public void connect(Path chosen){ post(()->connectNow(chosen)); }
   public void refuse(String text){ post(()->tell(text)); }
-  public void forget(Runnable unassociate){ post(()->{ forgotten= true; unassociate.run(); }); }
+  public void forgetAssociation(Runnable unassociate){ post(()->{ forgotten= true; unassociate.run(); }); }
   void settle(){
     try{ core.submit(()->{}).get(1,TimeUnit.MINUTES); }
     catch(InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
@@ -166,17 +166,17 @@ public final class Manager{
   }
   private void associateAtStartUp(){
     var blocked= new HashSet<String>();
-    try{ associate(blocked); return; }
+    try{ associate(blocked); }
     catch(UserError e){
       if (blocked.isEmpty() || blocked.contains(".fearless")){ throw e; }
       var claimed= Project.claimed(projects());
-      blocked.stream().flatMap(b->claimed.get(b.substring(1)).stream()).map(Project.Claimant::folder).distinct().forEach(f->blockedAtStartUp(f,e));
+      blocked.stream().flatMap(b->claimed.get(b.substring(1)).stream()).map(Project.Claimant::folder).distinct().forEach(f->blockedAtStartUp(f,e.getMessage()));
+      associateAtStartUp();
     }
-    associateAtStartUp();
   }
-  private void blockedAtStartUp(Path f, UserError e){
+  private void blockedAtStartUp(Path f, String message){
     live.get(f).claims= Project.noClaims;
-    failed(f,e.getMessage());
+    failed(f,message);
     scan(f);
   }
   private void associate(Set<String> blocked){
@@ -230,14 +230,13 @@ public final class Manager{
   private boolean accept(Path f){
     var l= live.get(f);
     var read= read(f);
-    var file= f.resolve(Facts.outDir).resolve("mains.info");
     try{
       var icons= ClaimIcons.read(f,tools.stdLibBase(),read);
       l.claims= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims));
       icons.forEach((icon,bytes)->ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icon,bytes));
     }
     catch(UserError e){ failed(f,e.getMessage()); return false; }
-    if (!l.claims.equals(read)){ Fs.writeUtf8(file,l.claims.print()); }
+    if (!l.claims.equals(read)){ Fs.writeUtf8(f.resolve(Facts.outDir).resolve("mains.info"),l.claims.print()); }
     return true;
   }
   private static final List<String> verbs= List.of("register","select","run","compile","check","terminate","clean","kind","forget","mains","link","clear");

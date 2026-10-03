@@ -50,8 +50,8 @@ public final class Deployed implements Manager.Tools{
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
     if (Fs.isMac()){ return; }
-    var l= Association.launcher();
-    Association.reconcile(l,Stream.concat(Stream.of(new Icon(".fearless",l,Association.iconFile())),claimed.stream()).toList(),claimedBy);
+    var launcher= Association.launcher();
+    Association.reconcile(launcher,Stream.concat(Stream.of(new Icon(".fearless",launcher,Association.iconFile())),claimed.stream()).toList(),claimedBy);
   }
   @Override public Optional<Map<String,String>> mains(Path folder){
     var c= coordinator(folder);
