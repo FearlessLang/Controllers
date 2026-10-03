@@ -29,8 +29,8 @@ public final class Association{
   static void reconcile(Path launcher, List<Icon> extensions){
     FileAssociations.reconcile(identity(launcher),belongsToFamily,launcher,extensions,launcher,iconFile(),
       reported->Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations",Association::eradicateAll),
-      Violation::associationUserLocked,
-      Violation::associationNotOurs,
+      locked->Violation.associationUserLocked(locked,e->""),
+      held->Violation.associationNotOurs(held,e->""),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
   }
