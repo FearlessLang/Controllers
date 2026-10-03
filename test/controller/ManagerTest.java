@@ -877,4 +877,21 @@ final class ManagerTest{
     assertEquals(Map.of(),claimed(again));
     assertEquals(List.of(),view.notes);
   }
+  @Test void aKindRequestKeepingCodeKeepsTheAcceptedClaimsAndAKindChangeBackToCodeReadsMainsInfo(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"));
+    assertEquals(foo,claimed(m));
+    Fs.writeUtf8(hello.resolve(Facts.outDir).resolve("mains.info"),claiming("hello.Hello","","bar"));
+    send(m,"kind","hello","code");
+    assertEquals(foo,claimed(m));
+    send(m,"kind","hello","idle");
+    assertEquals(Map.of(),claimed(m));
+    send(m,"kind","hello","code");
+    assertEquals(Map.of("bar",List.of("hello::hello.Hello openWith hello.IconsFoo")),claimed(m));
+  }
 }

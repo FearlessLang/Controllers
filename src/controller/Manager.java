@@ -349,7 +349,7 @@ public final class Manager{
     var from= project(f).kind();
     if (from != Kind.idle && kind.get() != Kind.idle && from != kind.get()){ output(f,"--- kind change refused: a project of kind "+from.text+" goes back to idle before becoming "+kind.get().text+" ---\n"); return; }
     registry.update(f,e->e.withKind(kind.get()));
-    accept(f);
+    if (from != kind.get()){ accept(f); }
     scan(f);
   }
   private void link(Path f, List<String> words){
