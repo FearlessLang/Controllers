@@ -279,9 +279,9 @@ public final class Manager{
   private void open(String given){
     var cs= claimants(given);
     if (cs.isEmpty()){ register(given); return; }
-    if (cs.size() == 1){ open(cs.getFirst()); return; }
+    if (cs.size() == 1){ openWith(cs.getFirst()); return; }
     view.show();
-    view.choose(cs,c->post(()->picked(c)));
+    view.choose(cs,c->post(()->openWith(c)));
   }
   private List<Project.Claimant> claimants(String given){
     Path file;
@@ -292,11 +292,9 @@ public final class Manager{
     var dot= name.lastIndexOf('.');
     return dot < 0 ? List.of() : Project.claimed(projects()).getOrDefault(name.substring(dot+1).toLowerCase(Locale.ROOT),List.of());
   }
-  private void picked(Project.Claimant c){
-    if (registry.of(c.folder()).isPresent()){ open(c); }
-  }
-  private void open(Project.Claimant c){
+  private void openWith(Project.Claimant c){
     var f= c.folder();
+    if (!live.containsKey(f)){ return; }
     scan(f);
     selected= Optional.of(f);
     if (live.get(f).job.equals(c.main())){ view.show(); return; }

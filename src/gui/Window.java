@@ -138,8 +138,8 @@ public final class Window implements Manager.View{
   @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(()->panel(folder).append(text)); }
   @Override public void note(String text){ SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE)); }
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(()->panel(folder).output.setText("")); }
-  @Override public void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){ SwingUtilities.invokeLater(()->chooser(choices,picked)); }
-  private void chooser(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){
+  @Override public void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){ SwingUtilities.invokeLater(()->openWith(choices,picked)); }
+  private void openWith(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){
     var list= choices(choices);
     var dialog= new JDialog(frame,"Open with",false);
     Runnable pick= ()->pick(dialog,list,picked);
