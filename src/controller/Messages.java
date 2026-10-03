@@ -177,8 +177,8 @@ public final class Messages{
   public static UserError iconRefused(String main, boolean shortcut, MainsInfo.Claim c, String problem){
     return new UserError(icon(main,shortcut,c)+" "+problem+" (from "+disp(from(c))+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
   }
-  public static UserError iconUnreadable(String main, boolean shortcut, MainsInfo.Claim c, IOException e){
-    return new UserError(icon(main,shortcut,c)+" can not be read from "+disp(from(c))+": "+fileFailure(e)+"\nCompile the project again.");
+  public static UserError iconUnreadable(String main, boolean shortcut, MainsInfo.Claim c, String why){
+    return new UserError(icon(main,shortcut,c)+" can not be read from "+disp(from(c))+": "+why+"\nCompile the project again.");
   }
   private static String icon(String main, boolean shortcut, MainsInfo.Claim c){
     var claim= "\"base."+(shortcut ? "Shortcut" : "OpenWith")+"["+c.icon()+(c.extension().isEmpty() ? "" : ",\\\""+c.extension()+"\\\"")+"]\"";

@@ -17,6 +17,7 @@ import coordinator.MainsInfo;
 import fileAssociations.Ico;
 import realSourceOracle.ZipLocator;
 import tools.Fs;
+import userMessages.UserError;
 
 final class ClaimIcons{
   private static final byte[] pngHead= {(byte)0x89,'P','N','G','\r','\n',0x1A,'\n',0,0,0,13,'I','H','D','R'};
@@ -33,7 +34,8 @@ final class ClaimIcons{
     var steps= c.zipSteps().isEmpty() ? List.<String>of() : List.of(c.zipSteps().split(";"));
     byte[] bytes;
     try{ bytes= c.zipEntry().isEmpty() ? Fs.of(()->Files.readAllBytes(file)) : ZipLocator.entryBytes(file,steps,c.zipEntry()); }
-    catch(UncheckedIOException e){ throw Messages.iconUnreadable(main,shortcut,c,e.getCause()); }
+    catch(UncheckedIOException e){ throw Messages.iconUnreadable(main,shortcut,c,Messages.fileFailure(e.getCause())); }
+    catch(UserError e){ throw Messages.iconUnreadable(main,shortcut,c,e.getMessage().stripTrailing()); }
     if (bytes.length < 24 || !Arrays.equals(bytes,0,16,pngHead,0,16)){ throw Messages.iconRefused(main,shortcut,c,"is not a PNG image"); }
     var w= ByteBuffer.wrap(bytes).getInt(16);
     var h= ByteBuffer.wrap(bytes).getInt(20);

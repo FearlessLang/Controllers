@@ -1119,6 +1119,22 @@ final class ManagerTest{
     idle(m);
     assertArrayEquals(other,bytes(icons(hello).resolve("hello.IconsFoo.png")));
   }
+  @Test void anIconEntryRemovedFromItsZipBeforeStartUpFailsNamingTheIcon(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    var png= image(dir.resolve("foo.png"),128,128,"png");
+    Fs.ensureDir(hello.resolve("art"));
+    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
+    infos.put("hello",info("hello.Hello","",claim("hello.IconsFoo","art/pics.zip","inner.zip","foo.png","foo")));
+    send(m,"compile","hello");
+    idle(m);
+    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("bar.png",png))));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/pics.zip/inner.zip/foo.png\": Cannot find entry in zip (that was found before).[###]\"foo.png\"\nCompile the project again.",project(again,hello).problem().orElseThrow());
+    assertEquals(Project.noClaims,project(again,hello).claims());
+  }
   @Test void anIconRemovedBeforeStartUpFailsThatProjectOnly(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= folder(dir,"hello");
