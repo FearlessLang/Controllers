@@ -1,6 +1,5 @@
 package controller;
 
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,19 +38,20 @@ final class ClaimIcons{
     var w= ByteBuffer.wrap(bytes).getInt(16);
     var h= ByteBuffer.wrap(bytes).getInt(20);
     if (w != h || w < 64 || w > 1024){ throw Messages.iconRefused(main,shortcut,c,"is "+w+"x"+h+" pixels"); }
-    if (image(bytes) == null){ throw Messages.iconRefused(main,shortcut,c,"is not a PNG image"); }
+    if (!decodes(bytes)){ throw Messages.iconRefused(main,shortcut,c,"is not a PNG image"); }
     return bytes;
   }
-  private static BufferedImage image(byte[] bytes){
-    try{ return ImageIO.read(new ByteArrayInputStream(bytes)); }
-    catch(IOException e){ return null; }
+  private static boolean decodes(byte[] bytes){
+    try{ return ImageIO.read(new ByteArrayInputStream(bytes)) != null; }
+    catch(IOException e){ return false; }
   }
-  static void materialise(Path dir, Map<String,byte[]> icons){ icons.forEach((icon,bytes)->write(dir,icon,bytes)); }
-  private static void write(Path dir, String icon, byte[] bytes){
+  static void materialise(Path dir, String icon, byte[] bytes){
     var png= dir.resolve(icon+".png");
-    if (Files.exists(png) && Arrays.equals(Fs.of(()->Files.readAllBytes(png)),bytes)){ return; }
+    var ico= dir.resolve(icon+".ico");
+    var same= Files.exists(png) && (!Fs.isWindows() || Files.exists(ico)) && Arrays.equals(Fs.of(()->Files.readAllBytes(png)),bytes);
+    if (same){ return; }
     Fs.ensureDir(dir);
     Fs.ofV(()->Files.write(png,bytes));
-    if (Fs.isWindows()){ Ico.fromPng(png,dir.resolve(icon+".ico")); }
+    if (Fs.isWindows()){ Ico.fromPng(png,ico); }
   }
 }

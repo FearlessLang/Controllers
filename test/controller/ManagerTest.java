@@ -1,6 +1,7 @@
 package controller;
 
 import static controller.Errs.same;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -1000,7 +1001,7 @@ final class ManagerTest{
     assertEquals(Project.noClaims,p.claims());
     assertEquals(1000,claimed(m).size());
   }
-  static byte[] image(Path file, int w, int h, String format){
+  private static byte[] image(Path file, int w, int h, String format){
     var out= new ByteArrayOutputStream();
     var written= Fs.of(()->ImageIO.write(new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB),format,out));
     assert written;
@@ -1029,7 +1030,7 @@ final class ManagerTest{
       send(m,"compile","hello");
       idle(m);
       assertEquals(Project.State.codeCompiled,project(m,hello).state());
-      assertTrue(Arrays.equals(png,bytes(icons(hello).resolve("hello.IconsFoo.png"))));
+      assertArrayEquals(png,bytes(icons(hello).resolve("hello.IconsFoo.png")));
     }
     var accepted= project(m,hello).claims();
     for (var size: List.of(List.of(63,63),List.of(1025,1025),List.of(300,200))){
@@ -1042,7 +1043,7 @@ final class ManagerTest{
       same(error,project(m,hello).problem().orElseThrow());
       assertTrue(project(m,hello).needsCompiling());
       assertEquals(accepted,project(m,hello).claims());
-      assertTrue(Arrays.equals(bytes(icons(hello).resolve("hello.IconsFoo.png")),image(dir.resolve("last.png"),1024,1024,"png")));
+      assertArrayEquals(bytes(icons(hello).resolve("hello.IconsFoo.png")),image(dir.resolve("last.png"),1024,1024,"png"));
     }
   }
   @Test void aPngIsMeasuredBeforeItIsDecodedAndMustDecode(@TempDir Path dir){
@@ -1085,8 +1086,8 @@ final class ManagerTest{
     idle(m);
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
     assertEquals(List.of("base.IconsConflict.png","hello.IconsFoo.png"),Names.list(icons(hello)).stream().map(p->p.getFileName().toString()).sorted().toList());
-    assertTrue(Arrays.equals(png,bytes(icons(hello).resolve("hello.IconsFoo.png"))));
-    assertTrue(Arrays.equals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(icons(hello).resolve("base.IconsConflict.png"))));
+    assertArrayEquals(png,bytes(icons(hello).resolve("hello.IconsFoo.png")));
+    assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(icons(hello).resolve("base.IconsConflict.png")));
     var old= FileTime.fromMillis(1_000_000);
     Fs.ofV(()->Files.setLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"),old));
     touch(hello);
@@ -1098,7 +1099,7 @@ final class ManagerTest{
     touch(hello);
     send(m,"compile","hello");
     idle(m);
-    assertTrue(Arrays.equals(other,bytes(icons(hello).resolve("hello.IconsFoo.png"))));
+    assertArrayEquals(other,bytes(icons(hello).resolve("hello.IconsFoo.png")));
   }
   @Test void anIconRemovedBeforeStartUpFailsThatProjectOnly(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");

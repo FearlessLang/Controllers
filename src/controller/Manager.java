@@ -171,7 +171,7 @@ public final class Manager{
     try{
       var icons= ClaimIcons.read(f,tools.stdLibBase(),read);
       l.claims= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims));
-      ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icons);
+      icons.forEach((icon,bytes)->ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icon,bytes));
     }
     catch(UserError e){
       l.failure= e.getMessage();
