@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import coordinator.MainsInfo;
+import core.WellKnownExtensions;
 import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
@@ -151,7 +152,9 @@ public final class Messages{
   public static UserError noFreeExtension(String main, boolean shortcut, String icon){
     var prefix= shortcut ? "fapp" : "ffile";
     var name= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
-    var example= name.isEmpty() || name.equals("fearless") ? "ext" : name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
+    var cut= name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
+    var refused= cut.isEmpty() || cut.equals("fearless") || shortcut && WellKnownExtensions.all.contains(cut);
+    var example= refused ? "ext" : cut;
     return new UserError("No free extension is left for "+claim(shortcut,icon,"")+" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind(shortcut)+" an explicit extension, for example "+claim(shortcut,icon,example)+".");
   }
   private static String kind(boolean shortcut){ return shortcut ? "Shortcut" : "OpenWith"; }
@@ -161,10 +164,6 @@ public final class Messages{
   }
   public static UserError shortcutBadFileName(String main, String file){
     return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
-  }
-  public static UserError shortcutExtRefused(String main, String file){
-    var why= file.endsWith(".zip") ? "a \".zip\" file of a project is read as a zip archive, and a shortcut file is not a zip archive" : "a \".fear\" file of a project is a source file, and it must be inside a package folder";
-    return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": "+why+". Give this Shortcut another extension.");
   }
   public static UserError shortcutMasksFile(String main, String file, String name){
     return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": the project has the file "+disp(name)+", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file "+disp(name)+".");

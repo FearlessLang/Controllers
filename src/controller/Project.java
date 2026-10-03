@@ -107,7 +107,6 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
     var file= name+"."+ext;
     try{ BuildWithZip.checkIndividualVisibleSegment(new PathEntry(project,Path.of(file))); }
     catch(UserError e){ throw Messages.shortcutBadFileName(main,file); }
-    if (ext.equals("zip") || ext.equals("fear")){ throw Messages.shortcutExtRefused(main,file); }
     var masks= Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name),LinkOption.NOFOLLOW_LINKS);
     if (masks){ throw Messages.shortcutMasksFile(main,file,name); }
     return file;

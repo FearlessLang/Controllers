@@ -1434,8 +1434,6 @@ final class ManagerTest{
     var bar= claim("base.IconsConflict","icons/conflict.png","","","bar");
     var longName= "hello.L"+"o".repeat(196);
     for (var c: List.of(
-      Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","zip"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.zip\": a \".zip\" file of a project is read as a zip archive, and a shortcut file is not a zip archive. Give this Shortcut another extension."),
-      Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","fear"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.fear\": a \".fear\" file of a project is a source file, and it must be inside a package folder. Give this Shortcut another extension."),
       Map.entry(info(longName,bar,""),"Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(196)+".bar\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
       Map.entry(info("hello.Todo",bar,""),"Main \"hello.Todo\" can not have the shortcut file \"todo.bar\": the project has the file \"todo\", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
       infos.put("hello",c.getKey());
