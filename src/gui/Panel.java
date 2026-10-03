@@ -67,7 +67,8 @@ final class Panel{
   private final JScrollPane mainsScroll= new JScrollPane(mainsBox);
   private final JPanel mainsPanel= new JPanel(new BorderLayout());
   private final JPanel pick= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
-  private final JPanel claimsBox= named(new JPanel(),"claims");
+  private final JPanel claimsBox= new JPanel();
+  private final JScrollPane claimsScroll= named(new JScrollPane(claimsBox),"claims");
   private final JPanel linksBox= new JPanel();
   private final Collapsible links= new Collapsible("Links",new JScrollPane(linksBox),false);
   private final Collapsible information= new Collapsible("Information",new JScrollPane(details),true);
@@ -90,7 +91,8 @@ final class Panel{
     mainsBox.setLayout(new BoxLayout(mainsBox,BoxLayout.Y_AXIS));
     linksBox.setLayout(new BoxLayout(linksBox,BoxLayout.Y_AXIS));
     claimsBox.setLayout(new BoxLayout(claimsBox,BoxLayout.Y_AXIS));
-    claimsBox.setBorder(BorderFactory.createEtchedBorder());
+    claimsScroll.setBorder(BorderFactory.createEtchedBorder());
+    claimsScroll.getVerticalScrollBar().setUnitIncrement(16);
     pick.add(named(small("All",()->requests.ask("mains",project.alias(),String.join(" ",project.knownMains()))),"all"));
     pick.add(named(small("None",()->requests.ask("mains",project.alias(),"")),"none"));
     mainsPanel.add(pick,BorderLayout.NORTH);
@@ -114,7 +116,7 @@ final class Panel{
     top.add(header);
     top.add(kinds);
     top.add(mainsPanel);
-    top.add(claimsBox);
+    top.add(claimsScroll);
     top.add(links);
     top.add(information);
     top.add(new Collapsible("Logs",logScroll,false,viewLog,copyLog,deleteLog));
@@ -141,7 +143,8 @@ final class Panel{
   }
   void render(Project p, List<Project> all){
     var claimed= Project.claimed(all);
-    var next= List.of(p,all.stream().map(Project::entry).toList(),claimed);
+    var stamps= claimed.values().stream().flatMap(List::stream).map(c->c.icon(".png").toFile().lastModified()).toList();
+    var next= List.of(p,all.stream().map(Project::entry).toList(),claimed,stamps);
     if (next.equals(shown)){ return; }
     shown= next;
     project= p;
@@ -205,8 +208,9 @@ final class Panel{
     claimsBox.removeAll();
     var mine= claimed.values().stream().flatMap(List::stream).filter(c->c.folder().equals(p.folder()))
       .collect(Collectors.groupingBy(Project.Claimant::main,TreeMap::new,Collectors.toList()));
-    claimsBox.setVisible(!mine.isEmpty());
+    claimsScroll.setVisible(!mine.isEmpty());
     mine.forEach((main,cs)->fillClaims(main,cs,claimed));
+    claimsScroll.setPreferredSize(new Dimension(0,Math.min(240,claimsBox.getPreferredSize().height+4)));
   }
   private void fillClaims(String main, List<Project.Claimant> cs, Map<String,List<Project.Claimant>> claimed){
     claimsBox.add(row(new JLabel(main)));

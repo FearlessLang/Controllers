@@ -11,7 +11,9 @@ import java.awt.Color;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -200,6 +203,41 @@ final class PanelTest{
     assertTrue(onEdt(this.<Component>named("claims")::isVisible));
     render(code(abc,List.of()));
     assertFalse(onEdt(this.<Component>named("claims")::isVisible));
+  }
+  private static void png(Path file, Color color){
+    var img= new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB);
+    var g= img.createGraphics();
+    g.setColor(color);
+    g.fillRect(0,0,64,64);
+    Fs.ensureDir(file.getParent());
+    Fs.ofV(()->ImageIO.write(img,"png",file.toFile()));
+  }
+  private int shownColor(String text){
+    Component claims= named("claims");
+    var icon= (ImageIcon)onEdt(()->OneOr.of(text,all(claims).filter(c->c instanceof JLabel l && text.equals(l.getText())).map(c->((JLabel)c).getIcon())));
+    var shown= new BufferedImage(20,20,BufferedImage.TYPE_INT_RGB);
+    shown.createGraphics().drawImage(icon.getImage(),0,0,null);
+    return shown.getRGB(10,10) & 0xFFFFFF;
+  }
+  @Test void anIconRewrittenOnDiskIsShownAtTheNextRender(@TempDir Path dir){
+    var file= dir.resolve("b").resolve(Facts.outDir).resolve("icons").resolve("b.IconsBar.png");
+    png(file,Color.red);
+    var hello= claiming(dir,"hello",List.of(),List.of(claim("hello.IconsBar","bar")));
+    var b= claiming(dir,"b",List.of(),List.of(claim("b.IconsBar","bar")));
+    render(hello,b);
+    assertEquals(0xFF0000,shownColor("b::b.Main"));
+    png(file,Color.blue);
+    Fs.ofV(()->Files.setLastModifiedTime(file,FileTime.fromMillis(file.toFile().lastModified()+10_000)));
+    render(hello,b);
+    assertEquals(0x0000FF,shownColor("b::b.Main"));
+  }
+  @Test void manyClaimsScrollInsteadOfPushingTheRestOfThePanelAway(@TempDir Path dir){
+    var mains= IntStream.range(0,40).boxed().collect(Collectors.toMap(i->"hello.Main"+i,i->new MainsInfo.Main("_hello/main.fear",List.of(),List.of(claim("hello.IconsFoo","e"+i)))));
+    var p= claiming(dir,"hello",List.of(),List.of());
+    render(new Project(p.entry(),p.facts(),p.mains(),new MainsInfo(mains),Optional.empty(),"",Instant.EPOCH,0,"",-1,""));
+    assertEquals(120,claimTexts().size());
+    Component claims= named("claims");
+    assertTrue(onEdt(()->claims.getPreferredSize().height) <= 240);
   }
   private static <T> T onEdt(Supplier<T> f){
     var out= new Box<T>(null);
