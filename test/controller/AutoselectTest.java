@@ -57,6 +57,12 @@ final class AutoselectTest{
     assertEquals(List.of(fapp(n)),filled(fresh,shortcut("hello.Bar","hello.IconsBar","bar"),"hello"));
     assertEquals(List.of(fapp(n)),filled(fresh,info("hello.Bar",List.of(),List.of(claim("hello.IconsBar","ffile%03d".formatted(n+5)))),"hello"));
   }
+  @Test void aKeptExtensionIsNotOneTheProjectClaimsExplicitly(){
+    var n= start("hello","hello.Bar","hello.IconsBar");
+    var previous= info("hello.Bar",List.of(claim("hello.IconsBar","fapp007"),claim("hello.IconsBar",fapp(n+5))),List.of());
+    var fresh= info("hello.Bar",List.of(claim("hello.IconsBar","fapp007"),claim("hello.IconsBar","")),List.of());
+    assertEquals(List.of("fapp007",fapp(n+5)),filled(fresh,previous,"hello"));
+  }
   @Test void twoShortcutsOfOneMainGetDifferentNumbers(){
     var got= filled(info("hello.Bar",List.of(claim("hello.IconsOne",""),claim("hello.IconsTwo","")),List.of()),Project.noClaims,"hello");
     assertEquals(fapp(start("hello","hello.Bar","hello.IconsOne")),got.getFirst());
@@ -76,5 +82,11 @@ final class AutoselectTest{
     err("""
       No free extension is left for "base.OpenWith[base.IconsConflict]" of main "hello.Foo_1": all the 1000 extensions "ffile000" to "ffile999" are used by the projects of this manager. Give this OpenWith an explicit extension, for example "base.OpenWith[base.IconsConflict,\\"foo1\\"]".
       """,()->Project.filled(info("hello.Foo_1",List.of(),List.of(claim("base.IconsConflict",""))),Project.noClaims,"hello",Stream.of(openWiths)));
+    err("""
+      No free extension is left for "base.Shortcut[hello.IconsBar]" of main "hello.ImageViewerApplication": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager. Give this Shortcut an explicit extension, for example "base.Shortcut[hello.IconsBar,\\"imageviewerappli\\"]".
+      """,()->Project.filled(shortcut("hello.ImageViewerApplication","hello.IconsBar",""),Project.noClaims,"hello",Stream.of(all)));
+    err("""
+      No free extension is left for "base.Shortcut[hello.IconsBar]" of main "hello.Fearless": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager. Give this Shortcut an explicit extension, for example "base.Shortcut[hello.IconsBar,\\"ext\\"]".
+      """,()->Project.filled(shortcut("hello.Fearless","hello.IconsBar",""),Project.noClaims,"hello",Stream.of(all)));
   }
 }

@@ -60,14 +60,15 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       .collect(Collectors.groupingBy(c->c.claim().extension(),TreeMap::new,Collectors.toUnmodifiableList()));
   }
   static MainsInfo filled(MainsInfo info, MainsInfo previous, String alias, Stream<MainsInfo> others){
-    var used= Stream.concat(Stream.of(info,previous),others)
-      .flatMap(i->i.mains().values().stream())
-      .flatMap(m->Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
-      .map(MainsInfo.Claim::extension).collect(Collectors.toCollection(HashSet::new));
-    var fill= new Fill(previous,alias,used);
+    var fill= new Fill(previous,alias,extensions(Stream.concat(Stream.of(info,previous),others)),extensions(Stream.of(info)));
     return new MainsInfo(info.mains().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e->fill.main(e.getKey(),e.getValue()))));
   }
-  private record Fill(MainsInfo previous, String alias, HashSet<String> used){
+  private static HashSet<String> extensions(Stream<MainsInfo> infos){
+    return infos.flatMap(i->i.mains().values().stream())
+      .flatMap(m->Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
+      .map(MainsInfo.Claim::extension).collect(Collectors.toCollection(HashSet::new));
+  }
+  private record Fill(MainsInfo previous, String alias, HashSet<String> used, HashSet<String> explicit){
     MainsInfo.Main main(String main, MainsInfo.Main m){ return new MainsInfo.Main(m.file(),claims(main,m.shortcuts(),true),claims(main,m.openWiths(),false)); }
     List<MainsInfo.Claim> claims(String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c->claim(main,c,shortcut)).toList(); }
     MainsInfo.Claim claim(String main, MainsInfo.Claim c, boolean shortcut){
@@ -84,7 +85,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       return Optional.ofNullable(previous.mains().get(main)).stream()
         .flatMap(m->(shortcut ? m.shortcuts() : m.openWiths()).stream())
         .filter(p->p.icon().equals(c.icon()) && p.extension().matches(prefix+"[0-9]{3}"))
-        .map(MainsInfo.Claim::extension).findFirst();
+        .map(MainsInfo.Claim::extension).filter(e->!explicit.contains(e)).findFirst();
     }
   }
   public State state(){

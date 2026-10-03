@@ -938,6 +938,24 @@ final class ManagerTest{
     assertEquals(project(again,hello).claims(),MainsInfo.read(hello).orElseThrow());
     assertEquals(Project.State.codeCompiled,project(again,hello).state());
   }
+  @Test void aMissingExtensionFilledAtStartUpAvoidsTheClaimsOfTheProjectsLoadedAfter(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    var auto= fapp("hello","hello.Hello","base.IconsConflict");
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","","foo"));
+    Fs.writeUtf8(mainsInfo(other),claiming("other.Other",auto,"bar"));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(List.of("hello","other"),again.state().projects().stream().map(Project::alias).toList());
+    assertEquals(List.of("other::other.Other shortcut base.IconsConflict"),claimed(again).get(auto));
+    assertEquals(project(again,hello).claims(),MainsInfo.read(hello).orElseThrow());
+  }
   @Test void noFreeExtensionLeftFailsTheCompileAndRunsNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= folder(dir,"hello");

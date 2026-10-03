@@ -142,6 +142,8 @@ public final class Manager{
   }
   private void load(){
     Fs.writeUtf8(eclipse.notes(),"");
+    registry.all().forEach(e->live.put(e.path(),new Live()));
+    live.forEach((f,l)->l.claims= read(f));
     registry.all().forEach(this::open);
     registry.reset.forEach(e->{
       var kept= uncache(e.path());
@@ -156,14 +158,15 @@ public final class Manager{
     accept(e.path());
     scan(e.path());
   }
+  private MainsInfo read(Path f){
+    if (registry.of(f).orElseThrow().kind() != Kind.code){ return Project.noClaims; }
+    try{ return MainsInfo.read(f).orElse(Project.noClaims); }
+    catch(UserError|UncheckedIOException e){ return Project.noClaims; }
+  }
   private boolean accept(Path f){
     var l= live.get(f);
     var previous= l.claims;
-    l.claims= Project.noClaims;
-    if (registry.of(f).orElseThrow().kind() != Kind.code){ return true; }
-    MainsInfo read;
-    try{ read= MainsInfo.read(f).orElse(Project.noClaims); }
-    catch(UserError|UncheckedIOException e){ return true; }
+    var read= read(f);
     var file= f.resolve(Facts.outDir).resolve("mains.info");
     try{ l.claims= Project.filled(read,previous,alias(f),live.entrySet().stream().filter(e->!e.getKey().equals(f)).map(e->e.getValue().claims)); }
     catch(UserError e){

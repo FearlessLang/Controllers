@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
 
@@ -148,7 +149,8 @@ public final class Messages{
   public static UserError noFreeExtension(String main, boolean shortcut, String icon){
     var kind= shortcut ? "Shortcut" : "OpenWith";
     var prefix= shortcut ? "fapp" : "ffile";
-    var example= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
+    var name= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
+    var example= name.isEmpty() || name.equals("fearless") ? "ext" : name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
     return new UserError("No free extension is left for \"base."+kind+"["+icon+"]\" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind+" an explicit extension, for example \"base."+kind+"["+icon+",\\\""+example+"\\\"]\".");
   }
   public static UserError tooManyArguments(List<String> args){
