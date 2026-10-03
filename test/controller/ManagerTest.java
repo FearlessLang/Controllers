@@ -1456,8 +1456,10 @@ final class ManagerTest{
     send(m,"clear","hello");
     send(m,"clear","other");
     var doc= TaggedText.of(doc(dir,"a.foo").toString());
+    var shown= view.shown;
     send(m,doc);
     assertEquals(List.of(List.of("hello::hello.Hello","other::other.Hello")),view.choices);
+    assertEquals(shown+1,view.shown);
     idle(m);
     assertEquals("",eclipse(dir,"hello","console.txt")+eclipse(dir,"other","console.txt"));
     view.picked.accept(view.last.get(1));
@@ -1472,6 +1474,19 @@ final class ManagerTest{
     m.settle();
     idle(m);
     assertEquals("",eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
+  }
+  @Test void anExtensionMatchesInAnyCaseAsTheDesktopMatchesIt(@TempDir Path dir){
+    var m= opening(dir);
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    send(m,TaggedText.of(doc(dir,"Report.Old.FOO").toString()));
+    idle(m);
+    same(running("hello.Hello"),eclipse(dir,"hello","console.txt"));
     assertEquals(List.of("hello "+hello),listed(dir));
   }
   @Test void aFileOpenedWhileItsMainRunsShowsTheProjectAndRunsNothingMore(@TempDir Path dir){

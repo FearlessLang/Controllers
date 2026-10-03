@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -279,6 +280,7 @@ public final class Manager{
     var cs= claimants(given);
     if (cs.isEmpty()){ register(given); return; }
     if (cs.size() == 1){ open(cs.getFirst()); return; }
+    view.show();
     view.choose(cs,c->post(()->picked(c)));
   }
   private List<Project.Claimant> claimants(String given){
@@ -288,7 +290,7 @@ public final class Manager{
     if (!Files.isRegularFile(file)){ return List.of(); }
     var name= file.getFileName().toString();
     var dot= name.lastIndexOf('.');
-    return dot < 0 ? List.of() : Project.claimed(projects()).getOrDefault(name.substring(dot+1),List.of());
+    return dot < 0 ? List.of() : Project.claimed(projects()).getOrDefault(name.substring(dot+1).toLowerCase(Locale.ROOT),List.of());
   }
   private void picked(Project.Claimant c){
     if (registry.of(c.folder()).isPresent()){ open(c); }
