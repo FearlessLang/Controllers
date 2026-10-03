@@ -165,12 +165,10 @@ public final class Manager{
   }
   private boolean accept(Path f){
     var l= live.get(f);
-    var previous= l.claims;
     var read= read(f);
     var file= f.resolve(Facts.outDir).resolve("mains.info");
-    try{ l.claims= Project.filled(read,previous,alias(f),live.entrySet().stream().filter(e->!e.getKey().equals(f)).map(e->e.getValue().claims)); }
+    try{ l.claims= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims)); }
     catch(UserError e){
-      l.claims= previous;
       l.failure= e.getMessage();
       output(f,l.failure.stripTrailing()+"\n");
       Fs.ofV(()->Files.deleteIfExists(file));

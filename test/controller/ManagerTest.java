@@ -871,8 +871,8 @@ final class ManagerTest{
     send(m,"compile","other");
     idle(m);
     assertEquals(List.of("bar","foo","hs","os"),claimed(m).keySet().stream().sorted().toList());
-    Fs.ofV(()->Files.delete(hello.resolve(Facts.outDir).resolve("mains.info")));
-    Fs.writeUtf8(other.resolve(Facts.outDir).resolve("mains.info"),"{\"other.Other\": []}\n");
+    Fs.ofV(()->Files.delete(mainsInfo(hello)));
+    Fs.writeUtf8(mainsInfo(other),"{\"other.Other\": []}\n");
     var again= manager(dir,"hello.Hello");
     again.settle();
     assertEquals(Map.of(),claimed(again));
@@ -887,7 +887,7 @@ final class ManagerTest{
     idle(m);
     var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"),"hs",List.of("hello::hello.Hello shortcut base.IconsConflict"));
     assertEquals(foo,claimed(m));
-    Fs.writeUtf8(hello.resolve(Facts.outDir).resolve("mains.info"),claiming("hello.Hello","hs","bar"));
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","hs","bar"));
     send(m,"kind","hello","code");
     assertEquals(foo,claimed(m));
     send(m,"kind","hello","idle");

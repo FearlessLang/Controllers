@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -59,8 +60,8 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       .sorted(Comparator.comparing(Claimant::label))
       .collect(Collectors.groupingBy(c->c.claim().extension(),TreeMap::new,Collectors.toUnmodifiableList()));
   }
-  static MainsInfo filled(MainsInfo info, MainsInfo previous, String alias, Stream<MainsInfo> others){
-    var fill= new Fill(previous,alias,extensions(Stream.concat(Stream.of(info,previous),others)),extensions(Stream.of(info)));
+  static MainsInfo filled(MainsInfo info, MainsInfo previous, String alias, Stream<MainsInfo> all){
+    var fill= new Fill(previous,alias,extensions(Stream.concat(Stream.of(info),all)),extensions(Stream.of(info)));
     return new MainsInfo(info.mains().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e->fill.main(e.getKey(),e.getValue()))));
   }
   private static HashSet<String> extensions(Stream<MainsInfo> infos){
@@ -68,24 +69,21 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       .flatMap(m->Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
       .map(MainsInfo.Claim::extension).collect(Collectors.toCollection(HashSet::new));
   }
-  private record Fill(MainsInfo previous, String alias, HashSet<String> used, HashSet<String> explicit){
+  private record Fill(MainsInfo previous, String alias, HashSet<String> used, Set<String> explicit){
     MainsInfo.Main main(String main, MainsInfo.Main m){ return new MainsInfo.Main(m.file(),claims(main,m.shortcuts(),true),claims(main,m.openWiths(),false)); }
     List<MainsInfo.Claim> claims(String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c->claim(main,c,shortcut)).toList(); }
     MainsInfo.Claim claim(String main, MainsInfo.Claim c, boolean shortcut){
       if (!c.extension().isEmpty()){ return c; }
       var prefix= shortcut ? "fapp" : "ffile";
       var start= Math.floorMod((alias+"::"+main+"::"+c.icon()).hashCode(),1000);
-      var ext= kept(main,c,shortcut,prefix)
+      var ext= Stream.ofNullable(previous.mains().get(main))
+        .flatMap(m->(shortcut ? m.shortcuts() : m.openWiths()).stream())
+        .filter(p->p.icon().equals(c.icon())).map(MainsInfo.Claim::extension)
+        .filter(e->e.matches(prefix+"[0-9]{3}") && !explicit.contains(e)).findFirst()
         .or(()->IntStream.range(0,1000).mapToObj(i->prefix+"%03d".formatted((start+i)%1000)).filter(e->!used.contains(e)).findFirst())
         .orElseThrow(()->Messages.noFreeExtension(main,shortcut,c.icon()));
       used.add(ext);
       return new MainsInfo.Claim(c.icon(),c.diskPath(),c.zipSteps(),c.zipEntry(),ext);
-    }
-    Optional<String> kept(String main, MainsInfo.Claim c, boolean shortcut, String prefix){
-      return Optional.ofNullable(previous.mains().get(main)).stream()
-        .flatMap(m->(shortcut ? m.shortcuts() : m.openWiths()).stream())
-        .filter(p->p.icon().equals(c.icon()) && p.extension().matches(prefix+"[0-9]{3}"))
-        .map(MainsInfo.Claim::extension).filter(e->!explicit.contains(e)).findFirst();
     }
   }
   public State state(){
