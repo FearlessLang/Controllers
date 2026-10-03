@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -1041,6 +1042,23 @@ final class ManagerTest{
       same(error,project(m,hello).problem().orElseThrow());
       assertTrue(project(m,hello).needsCompiling());
       assertEquals(accepted,project(m,hello).claims());
+      assertTrue(Arrays.equals(bytes(icons(hello).resolve("hello.IconsFoo.png")),image(dir.resolve("last.png"),1024,1024,"png")));
+    }
+  }
+  @Test void aPngIsMeasuredBeforeItIsDecodedAndMustDecode(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    var foo= hello.resolve("art").resolve("foo.png");
+    var png= image(foo,64,64,"png");
+    var huge= ByteBuffer.allocate(33).put(png,0,16).putInt(100000).putInt(100000).put(png,24,9).array();
+    infos.put("hello",info("hello.Hello",claim("hello.IconsFoo","art/foo.png","","",""),""));
+    for (var c: List.of(Map.entry(huge,"is 100000x100000 pixels"),Map.entry(Arrays.copyOf(png,png.length/2),"is not a PNG image"),Map.entry(Arrays.copyOf(png,20),"is not a PNG image"))){
+      Fs.ofV(()->Files.write(foo,c.getKey()));
+      touch(hello);
+      send(m,"compile","hello");
+      idle(m);
+      same(iconError("base.Shortcut[hello.IconsFoo]",c.getValue(),"art/foo.png"),project(m,hello).problem().orElseThrow());
     }
   }
   @Test void anIconThatIsNotAPngFailsTheCompile(@TempDir Path dir){
@@ -1085,13 +1103,20 @@ final class ManagerTest{
   @Test void anIconRemovedBeforeStartUpFailsThatProjectOnly(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
     send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
     infos.put("hello",claiming("hello.Hello","bar","foo"));
+    infos.put("other",claiming("other.Other","baz","qux"));
     send(m,"compile","hello");
+    send(m,"compile","other");
     idle(m);
     Fs.rmTree(hello.resolve("art"));
     var again= manager(dir,"hello.Hello");
     again.settle();
+    assertEquals(Optional.empty(),project(again,other).problem());
+    assertEquals(MainsInfo.read(other).orElseThrow(),project(again,other).claims());
+    assertEquals(List.of("other::other.Other openWith hello.IconsFoo"),claimed(again).get("qux"));
     same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/foo.png\": no such file: [###]foo.png\nCompile the project again.",project(again,hello).problem().orElseThrow());
     assertEquals(Project.noClaims,project(again,hello).claims());
   }
