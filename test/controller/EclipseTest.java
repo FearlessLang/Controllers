@@ -18,6 +18,7 @@ import controller.Registry.Kind;
 import fileSupport.Info;
 import tools.Fs;
 import tools.JavacTool;
+import userMessages.UserError;
 
 final class EclipseTest{
   static Project project(String alias, Kind kind, Optional<Map<String,String>> mains, String job, int runs, String lastRun, String failure){
@@ -42,7 +43,7 @@ Error 7 WellFormedness
   }
   private static String message(Info.Obj.Field f){
     var s= ((Info.Str)f.value()).value();
-    return f.key().equals("message") ? TaggedText.read(s,Messages::infoError) : s;
+    return f.key().equals("message") ? TaggedText.read(s,UserError::new) : s;
   }
   @Test void theStateHoldsEveryProjectByNameWithItsFolderKindRunsMainsAndProblem(){
     var hello= project("hello",Kind.code,Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear")),"hello.Hello",3,"hello.Hello","");

@@ -172,7 +172,7 @@ public final class Registry{
     try{ return Path.of(given); }
     catch(InvalidPathException e){ throw activityError(line,Message.displayString(given)+" is not a path this system accepts: "+e.getReason()+"."); }
   }
-  private UserError activityError(int line, String why){ return Messages.infoError("In "+activityFile()+", line "+(line+1)+":\n"+why); }
+  private UserError activityError(int line, String why){ return new UserError("In "+activityFile()+", line "+(line+1)+":\n"+why); }
   private void writeText(Path file, String text){
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,file,ATOMIC_MOVE); }

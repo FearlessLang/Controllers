@@ -10,9 +10,10 @@ import org.junit.jupiter.api.Test;
 
 import fileSupport.Info;
 import tools.Fs;
+import userMessages.UserError;
 
 final class TaggedTextTest{
-  private static String read(String text){ return TaggedText.read(text,Messages::infoError); }
+  private static String read(String text){ return TaggedText.read(text,UserError::new); }
   private static void roundTrip(String text, String tagged){
     assertEquals(tagged,TaggedText.of(text));
     assertEquals(text,read(tagged));

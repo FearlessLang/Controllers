@@ -36,6 +36,7 @@ import fileSupport.Info;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.Report;
+import userMessages.UserError;
 
 /// The whole manager without a window: messages in, Eclipse files and View calls out.
 /// Compiling writes a fresh cache and every job is a real child JVM running Child.
@@ -132,7 +133,7 @@ final class ManagerTest{
   }
   private static List<String> listed(Path dir){
     var state= (Info.Obj)Info.parse(eclipse(dir,"state.info"),dir.toUri());
-    return state.fields().stream().map(f->f.key()+" "+TaggedText.read(((Info.Str)((Info.Obj)f.value()).field("folder").orElseThrow().value()).value(),Messages::infoError)).toList();
+    return state.fields().stream().map(f->f.key()+" "+TaggedText.read(((Info.Str)((Info.Obj)f.value()).field("folder").orElseThrow().value()).value(),UserError::new)).toList();
   }
   @Test void aMessageWithNoFolderShowsTheWindow(@TempDir Path dir){
     var m= manager(dir);

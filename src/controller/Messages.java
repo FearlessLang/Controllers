@@ -110,7 +110,6 @@ public final class Messages{
       replace that file with a PNG image, or remove it.
       """.formatted(path(icon.toString())));
   }
-  public static UserError infoError(String rendered){ return new UserError(rendered); }
   public static String kindReset(String alias, Optional<String> cacheKept){
     return "In projects.info the \"kind\" of \""+alias+"\" was missing or not one of the kinds: \""+alias+"\" is now idle, and its compiled cache is "+cacheKept.map(w->"not deleted: "+w).orElse("deleted")+".";
   }
