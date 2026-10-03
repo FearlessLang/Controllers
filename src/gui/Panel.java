@@ -15,12 +15,16 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
@@ -50,6 +54,7 @@ final class Panel{
   interface Requests{ void ask(String verb, String name, String arg); }
   private record Link(JTextField field, String was){ boolean typed(){ return !field.getText().strip().equals(was); } }
   private static final int iconSize= 32;
+  private static final int claimSize= 20;
   private final Requests requests;
   private final Consumer<String> refuse;
   final JPanel root= new JPanel(new BorderLayout(8,8));
@@ -62,6 +67,7 @@ final class Panel{
   private final JScrollPane mainsScroll= new JScrollPane(mainsBox);
   private final JPanel mainsPanel= new JPanel(new BorderLayout());
   private final JPanel pick= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
+  private final JPanel claimsBox= named(new JPanel(),"claims");
   private final JPanel linksBox= new JPanel();
   private final Collapsible links= new Collapsible("Links",new JScrollPane(linksBox),false);
   private final Collapsible information= new Collapsible("Information",new JScrollPane(details),true);
@@ -83,6 +89,8 @@ final class Panel{
     details.setEditable(false);
     mainsBox.setLayout(new BoxLayout(mainsBox,BoxLayout.Y_AXIS));
     linksBox.setLayout(new BoxLayout(linksBox,BoxLayout.Y_AXIS));
+    claimsBox.setLayout(new BoxLayout(claimsBox,BoxLayout.Y_AXIS));
+    claimsBox.setBorder(BorderFactory.createEtchedBorder());
     pick.add(named(small("All",()->requests.ask("mains",project.alias(),String.join(" ",project.knownMains()))),"all"));
     pick.add(named(small("None",()->requests.ask("mains",project.alias(),"")),"none"));
     mainsPanel.add(pick,BorderLayout.NORTH);
@@ -106,6 +114,7 @@ final class Panel{
     top.add(header);
     top.add(kinds);
     top.add(mainsPanel);
+    top.add(claimsBox);
     top.add(links);
     top.add(information);
     top.add(new Collapsible("Logs",logScroll,false,viewLog,copyLog,deleteLog));
@@ -131,7 +140,8 @@ final class Panel{
     requests.ask(project.action().verb(),project.alias(),"");
   }
   void render(Project p, List<Project> all){
-    var next= List.of(p,all.stream().map(Project::entry).toList());
+    var claimed= Project.claimed(all);
+    var next= List.of(p,all.stream().map(Project::entry).toList(),claimed);
     if (next.equals(shown)){ return; }
     shown= next;
     project= p;
@@ -145,6 +155,7 @@ final class Panel{
     details.setCaretPosition(0);
     fillKinds(p);
     fillMains(p);
+    fillClaims(p,claimed);
     fillLinks(p,all);
     var log= logList.getSelectedValue();
     logList.setListData(p.facts().logs().toArray(LogFiles.Entry[]::new));
@@ -189,6 +200,48 @@ final class Panel{
       mainsBox.add(box);
     }
     mainsScroll.setPreferredSize(new Dimension(0,Math.min(3,known.size())*26+8));
+  }
+  private void fillClaims(Project p, Map<String,List<Project.Claimant>> claimed){
+    claimsBox.removeAll();
+    var mine= claimed.values().stream().flatMap(List::stream).filter(c->c.folder().equals(p.folder()))
+      .collect(Collectors.groupingBy(Project.Claimant::main,TreeMap::new,Collectors.toList()));
+    claimsBox.setVisible(!mine.isEmpty());
+    mine.forEach((main,cs)->fillClaims(main,cs,claimed));
+  }
+  private void fillClaims(String main, List<Project.Claimant> cs, Map<String,List<Project.Claimant>> claimed){
+    claimsBox.add(row(new JLabel(main)));
+    section("Extensions this main opens:",cs.stream().filter(c->others(c,claimed).isEmpty()).map(Panel::extension).toList());
+    section("Conflicting extensions:",cs.stream().filter(c->!others(c,claimed).isEmpty()).map(c->conflict(c,others(c,claimed))).toList());
+    section("Shortcuts (double click to run):",cs.stream().filter(Project.Claimant::shortcut).map(this::shortcut).toList());
+  }
+  private static List<Project.Claimant> others(Project.Claimant c, Map<String,List<Project.Claimant>> claimed){ return claimed.get(c.claim().extension()).stream().filter(o->!o.equals(c)).toList(); }
+  private void section(String heading, List<? extends Component> items){
+    if (items.isEmpty()){ return; }
+    claimsBox.add(row(new JLabel(heading)));
+    items.forEach(i->claimsBox.add(indented(row(i))));
+  }
+  private static JPanel row(Component... cs){
+    var res= new JPanel(new FlowLayout(FlowLayout.LEFT,6,1));
+    Stream.of(cs).forEach(res::add);
+    return res;
+  }
+  private static JPanel indented(JPanel row){
+    row.setBorder(BorderFactory.createEmptyBorder(0,16,0,0));
+    return row;
+  }
+  private static JLabel extension(Project.Claimant c){ return new JLabel("."+c.claim().extension(),new ImageIcon(Icons.of(c,claimSize)),JLabel.LEADING); }
+  private static JPanel conflict(Project.Claimant c, List<Project.Claimant> others){
+    var first= others.getFirst();
+    var res= row(extension(c),new JLabel("also claimed by"),new JLabel(first.label(),new ImageIcon(Icons.of(first,claimSize)),JLabel.LEADING));
+    if (others.size() > 1){ res.add(new JLabel("and "+(others.size()-1)+" more")); }
+    return res;
+  }
+  private JLabel shortcut(Project.Claimant c){
+    var res= named(new JLabel(new ImageIcon(Icons.of(c,iconSize))),"shortcut "+c.main()+" "+c.claim().extension());
+    res.addMouseListener(new MouseAdapter(){
+      @Override public void mouseClicked(MouseEvent e){ if (e.getClickCount() == 2){ requests.ask("run",c.alias(),c.main()); } }
+    });
+    return res;
   }
   private String ticked(){ return String.join(" ",Stream.of(mainsBox.getComponents()).map(c->(JCheckBox)c).filter(JCheckBox::isSelected).map(JCheckBox::getText).toList()); }
   private void fillKinds(Project p){

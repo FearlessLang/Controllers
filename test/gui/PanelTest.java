@@ -3,10 +3,14 @@ package gui;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Color;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -14,22 +18,28 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import controller.Facts;
 import controller.Project;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
+import coordinator.MainsInfo;
+import tools.Fs;
 import utils.Box;
 import utils.OneOr;
 import utils.ThrowingConsumer;
@@ -147,6 +157,49 @@ final class PanelTest{
     assertEquals(Optional.of("boom\n"),failed.problem());
     render(failed);
     assertEquals(1L,onEdt(()->all(panel.root).filter(c->c instanceof JLabel l && l.getText().equals("<invalid: see Error report>")).count()));
+  }
+  private static MainsInfo.Claim claim(String icon, String ext){ return new MainsInfo.Claim(icon,"icons/x.png","","",ext); }
+  private static Project claiming(Path dir, String alias, List<MainsInfo.Claim> shortcuts, List<MainsInfo.Claim> openWiths){
+    var p= project(alias,Kind.code,Optional.of(List.of(alias+".Main")),List.of(),Map.of(),true,"",-1);
+    var entry= new Entry(alias,dir.resolve(alias),Kind.code,List.of(),Map.of(),Map.of(),-1,-1);
+    var claims= new MainsInfo(Map.of(alias+".Main",new MainsInfo.Main("_"+alias+"/main.fear",shortcuts,openWiths)));
+    return new Project(entry,p.facts(),p.mains(),claims,Optional.empty(),"",Instant.EPOCH,0,"",-1,"");
+  }
+  private List<String> claimTexts(){
+    Component claims= named("claims");
+    return onEdt(()->all(claims).filter(c->c instanceof JLabel).map(c->Objects.requireNonNullElse(((JLabel)c).getText(),"<icon>")).toList());
+  }
+  @Test void eachMainShowsTheExtensionsItOpensItsConflictsAndItsShortcuts(@TempDir Path dir){
+    var red= new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB);
+    var g= red.createGraphics();
+    g.setColor(Color.red);
+    g.fillRect(0,0,64,64);
+    var file= dir.resolve("hello").resolve(Facts.outDir).resolve("icons").resolve("hello.IconsFoo.png");
+    Fs.ensureDir(file.getParent());
+    Fs.ofV(()->ImageIO.write(red,"png",file.toFile()));
+    var hello= claiming(dir,"hello",List.of(claim("hello.IconsApp","app")),List.of(claim("hello.IconsFoo","foo"),claim("hello.IconsFoo","bar")));
+    var others= List.of("d","b","c").stream().map(a->claiming(dir,a,List.of(),List.of(claim(a+".IconsBar","bar")))).toArray(Project[]::new);
+    render(hello,others);
+    assertEquals(List.of("hello.Main","Extensions this main opens:",".app",".foo","Conflicting extensions:",".bar","also claimed by","b::b.Main","and 2 more","Shortcuts (double click to run):","<icon>"),claimTexts());
+    Component claims= named("claims");
+    var foo= (ImageIcon)onEdt(()->OneOr.of("one .foo",all(claims).filter(c->c instanceof JLabel l && ".foo".equals(l.getText())).map(c->((JLabel)c).getIcon())));
+    var shown= new BufferedImage(20,20,BufferedImage.TYPE_INT_RGB);
+    shown.createGraphics().drawImage(foo.getImage(),0,0,null);
+    assertEquals(List.of(20,20,0xFF0000),List.of(foo.getIconWidth(),foo.getIconHeight(),shown.getRGB(10,10) & 0xFFFFFF));
+    JLabel shortcut= named("shortcut hello.Main app");
+    onEdt(()->{
+      for (var l: shortcut.getMouseListeners()){ l.mouseClicked(new MouseEvent(shortcut,MouseEvent.MOUSE_CLICKED,0,0,1,1,1,false)); }
+      for (var l: shortcut.getMouseListeners()){ l.mouseClicked(new MouseEvent(shortcut,MouseEvent.MOUSE_CLICKED,0,0,1,1,2,false)); }
+      return null;
+    });
+    asked("run\nhello\nhello.Main");
+    render(hello,others[0]);
+    assertEquals(List.of("hello.Main","Extensions this main opens:",".app",".foo","Conflicting extensions:",".bar","also claimed by","d::d.Main","Shortcuts (double click to run):","<icon>"),claimTexts());
+    render(hello);
+    assertEquals(List.of("hello.Main","Extensions this main opens:",".app",".bar",".foo","Shortcuts (double click to run):","<icon>"),claimTexts());
+    assertTrue(onEdt(this.<Component>named("claims")::isVisible));
+    render(code(abc,List.of()));
+    assertFalse(onEdt(this.<Component>named("claims")::isVisible));
   }
   private static <T> T onEdt(Supplier<T> f){
     var out= new Box<T>(null);
