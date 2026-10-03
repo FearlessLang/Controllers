@@ -172,23 +172,28 @@ final class PanelTest{
     Component claims= named("claims");
     return onEdt(()->all(claims).filter(c->c instanceof JLabel).map(c->Objects.requireNonNullElse(((JLabel)c).getText(),"<icon>")).toList());
   }
-  @Test void eachMainShowsTheExtensionsItOpensItsConflictsAndItsShortcuts(@TempDir Path dir){
-    var red= new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB);
-    var g= red.createGraphics();
-    g.setColor(Color.red);
+  private static void png(Path file, Color color){
+    var img= new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB);
+    var g= img.createGraphics();
+    g.setColor(color);
     g.fillRect(0,0,64,64);
-    var file= dir.resolve("hello").resolve(Facts.outDir).resolve("icons").resolve("hello.IconsFoo.png");
     Fs.ensureDir(file.getParent());
-    Fs.ofV(()->ImageIO.write(red,"png",file.toFile()));
+    Fs.ofV(()->ImageIO.write(img,"png",file.toFile()));
+  }
+  private List<Integer> shown(String text){
+    Component claims= named("claims");
+    var icon= (ImageIcon)onEdt(()->OneOr.of(text,all(claims).filter(c->c instanceof JLabel l && text.equals(l.getText())).map(c->((JLabel)c).getIcon())));
+    var shown= new BufferedImage(20,20,BufferedImage.TYPE_INT_RGB);
+    shown.createGraphics().drawImage(icon.getImage(),0,0,null);
+    return List.of(icon.getIconWidth(),icon.getIconHeight(),shown.getRGB(10,10) & 0xFFFFFF);
+  }
+  @Test void eachMainShowsTheExtensionsItOpensItsConflictsAndItsShortcuts(@TempDir Path dir){
+    png(dir.resolve("hello").resolve(Facts.outDir).resolve("icons").resolve("hello.IconsFoo.png"),Color.red);
     var hello= claiming(dir,"hello",List.of(claim("hello.IconsApp","app")),List.of(claim("hello.IconsFoo","foo"),claim("hello.IconsFoo","bar")));
     var others= List.of("d","b","c").stream().map(a->claiming(dir,a,List.of(),List.of(claim(a+".IconsBar","bar")))).toArray(Project[]::new);
     render(hello,others);
     assertEquals(List.of("hello.Main","Extensions this main opens:",".app",".foo","Conflicting extensions:",".bar","also claimed by","b::b.Main","and 2 more","Shortcuts (double click to run):","<icon>"),claimTexts());
-    Component claims= named("claims");
-    var foo= (ImageIcon)onEdt(()->OneOr.of("one .foo",all(claims).filter(c->c instanceof JLabel l && ".foo".equals(l.getText())).map(c->((JLabel)c).getIcon())));
-    var shown= new BufferedImage(20,20,BufferedImage.TYPE_INT_RGB);
-    shown.createGraphics().drawImage(foo.getImage(),0,0,null);
-    assertEquals(List.of(20,20,0xFF0000),List.of(foo.getIconWidth(),foo.getIconHeight(),shown.getRGB(10,10) & 0xFFFFFF));
+    assertEquals(List.of(20,20,0xFF0000),shown(".foo"));
     JLabel shortcut= named("shortcut hello.Main app");
     onEdt(()->{
       for (var l: shortcut.getMouseListeners()){ l.mouseClicked(new MouseEvent(shortcut,MouseEvent.MOUSE_CLICKED,0,0,1,1,1,false)); }
@@ -204,32 +209,17 @@ final class PanelTest{
     render(code(abc,List.of()));
     assertFalse(onEdt(this.<Component>named("claims")::isVisible));
   }
-  private static void png(Path file, Color color){
-    var img= new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB);
-    var g= img.createGraphics();
-    g.setColor(color);
-    g.fillRect(0,0,64,64);
-    Fs.ensureDir(file.getParent());
-    Fs.ofV(()->ImageIO.write(img,"png",file.toFile()));
-  }
-  private int shownColor(String text){
-    Component claims= named("claims");
-    var icon= (ImageIcon)onEdt(()->OneOr.of(text,all(claims).filter(c->c instanceof JLabel l && text.equals(l.getText())).map(c->((JLabel)c).getIcon())));
-    var shown= new BufferedImage(20,20,BufferedImage.TYPE_INT_RGB);
-    shown.createGraphics().drawImage(icon.getImage(),0,0,null);
-    return shown.getRGB(10,10) & 0xFFFFFF;
-  }
   @Test void anIconRewrittenOnDiskIsShownAtTheNextRender(@TempDir Path dir){
     var file= dir.resolve("b").resolve(Facts.outDir).resolve("icons").resolve("b.IconsBar.png");
     png(file,Color.red);
     var hello= claiming(dir,"hello",List.of(),List.of(claim("hello.IconsBar","bar")));
     var b= claiming(dir,"b",List.of(),List.of(claim("b.IconsBar","bar")));
     render(hello,b);
-    assertEquals(0xFF0000,shownColor("b::b.Main"));
+    assertEquals(List.of(20,20,0xFF0000),shown("b::b.Main"));
     png(file,Color.blue);
     Fs.ofV(()->Files.setLastModifiedTime(file,FileTime.fromMillis(file.toFile().lastModified()+10_000)));
     render(hello,b);
-    assertEquals(0x0000FF,shownColor("b::b.Main"));
+    assertEquals(List.of(20,20,0x0000FF),shown("b::b.Main"));
   }
   @Test void manyClaimsScrollInsteadOfPushingTheRestOfThePanelAway(@TempDir Path dir){
     var mains= IntStream.range(0,40).boxed().collect(Collectors.toMap(i->"hello.Main"+i,i->new MainsInfo.Main("_hello/main.fear",List.of(),List.of(claim("hello.IconsFoo","e"+i)))));

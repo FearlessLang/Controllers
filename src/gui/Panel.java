@@ -213,30 +213,26 @@ final class Panel{
     claimsScroll.setPreferredSize(new Dimension(0,Math.min(240,claimsBox.getPreferredSize().height+4)));
   }
   private void fillClaims(String main, List<Project.Claimant> cs, Map<String,List<Project.Claimant>> claimed){
-    claimsBox.add(row(new JLabel(main)));
-    section("Extensions this main opens:",cs.stream().filter(c->others(c,claimed).isEmpty()).map(Panel::extension).toList());
+    claimsBox.add(row(0,new JLabel(main)));
+    section("Extensions this main opens:",cs.stream().filter(c->others(c,claimed).isEmpty()).map(c->row(16,label("."+c.claim().extension(),c))).toList());
     section("Conflicting extensions:",cs.stream().filter(c->!others(c,claimed).isEmpty()).map(c->conflict(c,others(c,claimed))).toList());
-    section("Shortcuts (double click to run):",cs.stream().filter(Project.Claimant::shortcut).map(this::shortcut).toList());
+    section("Shortcuts (double click to run):",cs.stream().filter(Project.Claimant::shortcut).map(c->row(16,shortcut(c))).toList());
   }
   private static List<Project.Claimant> others(Project.Claimant c, Map<String,List<Project.Claimant>> claimed){ return claimed.get(c.claim().extension()).stream().filter(o->!o.equals(c)).toList(); }
-  private void section(String heading, List<? extends Component> items){
-    if (items.isEmpty()){ return; }
-    claimsBox.add(row(new JLabel(heading)));
-    items.forEach(i->claimsBox.add(indented(row(i))));
+  private void section(String heading, List<JPanel> rows){
+    if (rows.isEmpty()){ return; }
+    claimsBox.add(row(0,new JLabel(heading)));
+    rows.forEach(claimsBox::add);
   }
-  private static JPanel row(Component... cs){
+  private static JPanel row(int indent, Component... cs){
     var res= new JPanel(new FlowLayout(FlowLayout.LEFT,6,1));
+    res.setBorder(BorderFactory.createEmptyBorder(0,indent,0,0));
     Stream.of(cs).forEach(res::add);
     return res;
   }
-  private static JPanel indented(JPanel row){
-    row.setBorder(BorderFactory.createEmptyBorder(0,16,0,0));
-    return row;
-  }
-  private static JLabel extension(Project.Claimant c){ return new JLabel("."+c.claim().extension(),new ImageIcon(Icons.of(c,claimSize)),JLabel.LEADING); }
+  private static JLabel label(String text, Project.Claimant c){ return new JLabel(text,new ImageIcon(Icons.of(c,claimSize)),JLabel.LEADING); }
   private static JPanel conflict(Project.Claimant c, List<Project.Claimant> others){
-    var first= others.getFirst();
-    var res= row(extension(c),new JLabel("also claimed by"),new JLabel(first.label(),new ImageIcon(Icons.of(first,claimSize)),JLabel.LEADING));
+    var res= row(16,label("."+c.claim().extension(),c),new JLabel("also claimed by"),label(others.getFirst().label(),others.getFirst()));
     if (others.size() > 1){ res.add(new JLabel("and "+(others.size()-1)+" more")); }
     return res;
   }
