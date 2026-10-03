@@ -55,6 +55,7 @@ public final class Manager{
     ChildJvm compile(Path folder, Consumer<String> out);
     ChildJvm run(Path folder, String main, Consumer<String> out);
     Optional<Map<String,String>> mains(Path folder);
+    Path stdLibBase();
   }
   public record State(List<Project> projects, Optional<Path> selected){
     public Optional<Project> of(Path folder){ return OneOr.opt("project "+folder,projects.stream().filter(p->p.folder().equals(folder))); }
@@ -167,7 +168,11 @@ public final class Manager{
     var l= live.get(f);
     var read= read(f);
     var file= f.resolve(Facts.outDir).resolve("mains.info");
-    try{ l.claims= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims)); }
+    try{
+      var icons= ClaimIcons.read(f,tools.stdLibBase(),read);
+      l.claims= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims));
+      ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icons);
+    }
     catch(UserError e){
       l.failure= e.getMessage();
       output(f,l.failure.stripTrailing()+"\n");

@@ -10,7 +10,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import coordinator.MainsInfo;
 import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
@@ -153,6 +155,17 @@ public final class Messages{
     var example= name.isEmpty() || name.equals("fearless") ? "ext" : name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
     return new UserError("No free extension is left for \"base."+kind+"["+icon+"]\" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind+" an explicit extension, for example \"base."+kind+"["+icon+",\\\""+example+"\\\"]\".");
   }
+  public static UserError iconRefused(String main, boolean shortcut, MainsInfo.Claim c, String problem){
+    return new UserError(icon(main,shortcut,c)+" "+problem+" (from "+disp(from(c))+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
+  }
+  public static UserError iconUnreadable(String main, boolean shortcut, MainsInfo.Claim c, IOException e){
+    return new UserError(icon(main,shortcut,c)+" can not be read from "+disp(from(c))+": "+fileFailure(e)+"\nCompile the project again.");
+  }
+  private static String icon(String main, boolean shortcut, MainsInfo.Claim c){
+    var claim= "\"base."+(shortcut ? "Shortcut" : "OpenWith")+"["+c.icon()+(c.extension().isEmpty() ? "" : ",\\\""+c.extension()+"\\\"")+"]\"";
+    return "The icon "+disp(c.icon())+" in "+claim+" of main "+disp(main);
+  }
+  private static String from(MainsInfo.Claim c){ return Join.of(Stream.of(c.diskPath(),c.zipSteps().replace(';','/'),c.zipEntry()).filter(s->!s.isEmpty()),"","/",""); }
   public static UserError tooManyArguments(List<String> args){
     return new UserError("""
       Fearless was started with %d arguments, but it takes at most one.

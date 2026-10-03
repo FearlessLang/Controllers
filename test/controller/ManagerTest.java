@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -13,6 +15,7 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,6 +28,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -36,6 +43,7 @@ import controller.Manager.State;
 import controller.Registry.Kind;
 import coordinator.MainsInfo;
 import fileSupport.Info;
+import resources.LocalResources;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.Report;
@@ -63,6 +71,8 @@ final class ManagerTest{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       FactsTest.cache(folder,"hello",FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
+      MainsInfo.read(folder).orElseThrow().mains().values().stream().flatMap(m->Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
+        .filter(c->!c.icon().startsWith("base.")).map(c->folder.resolve(c.diskPath())).filter(p->!Files.exists(p)).forEach(p->image(p,64,64,"png"));
       return jvm(out,"compiled","0","0");
     }
     @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
@@ -72,6 +82,7 @@ final class ManagerTest{
       return jvm(out,"ran "+main,"0",main.endsWith("Slow") ? "60000" : "0");
     }
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
+    @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     private static ChildJvm jvm(Consumer<String> out, String... args){
       return ChildJvm.start(Stream.concat(Stream.of("-cp",classes.toString(),"Child"),Stream.of(args)).toList(),out);
     }
@@ -809,7 +820,11 @@ final class ManagerTest{
     assertEquals(Project.State.codeCompiled,project(again,hello).state());
   }
   private static String claiming(String main, String shortcut, String openWith){
-    return "{\""+main+"\": [\"_hello/_rank_app.fear\", [[\"base.IconsConflict\", \"icons/conflict.png\", \"\", \"\", \""+shortcut+"\"]], [[\"hello.IconsFoo\", \"_hello/icons/foo.png\", \"\", \"\", \""+openWith+"\"]]]}\n";
+    return info(main,claim("base.IconsConflict","icons/conflict.png","","",shortcut),claim("hello.IconsFoo","art/foo.png","","",openWith));
+  }
+  private static String info(String main, String shortcuts, String openWiths){ return "{\""+main+"\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], ["+openWiths+"]]}\n"; }
+  private static String claim(String icon, String diskPath, String zipSteps, String zipEntry, String ext){
+    return Stream.of(icon,diskPath,zipSteps,zipEntry,ext).map(t->"\""+t+"\"").collect(Collectors.joining(", ","[","]"));
   }
   private static Map<String,List<String>> claimed(Manager m){
     return Project.claimed(m.state().projects()).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e->e.getValue().stream().map(c->c.label()+(c.shortcut() ? " shortcut " : " openWith ")+c.claim().icon()).toList()));
@@ -911,7 +926,7 @@ final class ManagerTest{
     send(m,"compile","hello");
     idle(m);
     var auto= fapp("hello","hello.Hello","base.IconsConflict");
-    same("[###][\"base.IconsConflict\", \"icons/conflict.png\", \"\", \"\", \""+auto+"\"][###][\"hello.IconsFoo\", \"_hello/icons/foo.png\", \"\", \"\", \"foo\"][###]",Fs.readUtf8(mainsInfo(hello)));
+    same("[###][\"base.IconsConflict\", \"icons/conflict.png\", \"\", \"\", \""+auto+"\"][###][\"hello.IconsFoo\", \"art/foo.png\", \"\", \"\", \"foo\"][###]",Fs.readUtf8(mainsInfo(hello)));
     assertEquals(MainsInfo.read(hello).orElseThrow(),project(m,hello).claims());
     assertEquals(List.of("hello::hello.Hello shortcut base.IconsConflict"),claimed(m).get(auto));
     infos.put("other",claiming("other.Other",auto,"bar"));
@@ -930,6 +945,7 @@ final class ManagerTest{
     send(m,TaggedText.of(hello.toString()));
     send(m,"compile","hello");
     idle(m);
+    image(hello.resolve("art").resolve("foo.png"),64,64,"png");
     Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","","foo"));
     var again= manager(dir,"hello.Hello");
     again.settle();
@@ -948,6 +964,8 @@ final class ManagerTest{
     send(m,"compile","other");
     idle(m);
     var auto= fapp("hello","hello.Hello","base.IconsConflict");
+    image(hello.resolve("art").resolve("foo.png"),64,64,"png");
+    image(other.resolve("art").resolve("foo.png"),64,64,"png");
     Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","","foo"));
     Fs.writeUtf8(mainsInfo(other),claiming("other.Other",auto,"bar"));
     var again= manager(dir,"hello.Hello");
@@ -962,7 +980,7 @@ final class ManagerTest{
     var other= folder(dir,"other");
     send(m,TaggedText.of(hello.toString()));
     send(m,TaggedText.of(other.toString()));
-    var all= IntStream.range(0,1000).mapToObj(i->"[\"other.IconsO\", \"_other/icons/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
+    var all= IntStream.range(0,1000).mapToObj(i->"[\"other.IconsO\", \"art/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
     infos.put("other","{\"other.Other\": [\"_other/_rank_app.fear\", ["+all+"], []]}\n");
     send(m,"compile","other");
     idle(m);
@@ -980,5 +998,101 @@ final class ManagerTest{
     assertFalse(Files.exists(mainsInfo(hello)));
     assertEquals(Project.noClaims,p.claims());
     assertEquals(1000,claimed(m).size());
+  }
+  static byte[] image(Path file, int w, int h, String format){
+    var out= new ByteArrayOutputStream();
+    var written= Fs.of(()->ImageIO.write(new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB),format,out));
+    assert written;
+    Fs.ensureDir(file.getParent());
+    Fs.ofV(()->Files.write(file,out.toByteArray()));
+    return out.toByteArray();
+  }
+  private static byte[] zip(String entry, byte[] content){
+    var out= new ByteArrayOutputStream();
+    Fs.ofV(()->{ try(var z= new ZipOutputStream(out)){ z.putNextEntry(new ZipEntry(entry)); z.write(content); } });
+    return out.toByteArray();
+  }
+  private static byte[] bytes(Path file){ return Fs.of(()->Files.readAllBytes(file)); }
+  private static Path icons(Path project){ return project.resolve(Facts.outDir).resolve("icons"); }
+  private static String iconError(String claim, String problem, String from){
+    return "The icon \"hello.IconsFoo\" in \""+claim+"\" of main \"hello.Hello\" "+problem+" (from \""+from+"\"): an icon must be a square PNG image with a side from 64 to 1024 pixels.\n";
+  }
+  @Test void anIconIsASquarePngWithASideFrom64To1024Pixels(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    infos.put("hello",claiming("hello.Hello","bar","foo"));
+    for (var side: List.of(64,1024)){
+      var png= image(hello.resolve("art").resolve("foo.png"),side,side,"png");
+      touch(hello);
+      send(m,"compile","hello");
+      idle(m);
+      assertEquals(Project.State.codeCompiled,project(m,hello).state());
+      assertTrue(Arrays.equals(png,bytes(icons(hello).resolve("hello.IconsFoo.png"))));
+    }
+    var accepted= project(m,hello).claims();
+    for (var size: List.of(List.of(63,63),List.of(1025,1025),List.of(300,200))){
+      image(hello.resolve("art").resolve("foo.png"),size.get(0),size.get(1),"png");
+      touch(hello);
+      send(m,"compile","hello");
+      idle(m);
+      var error= iconError("base.OpenWith[hello.IconsFoo,\\\"foo\\\"]","is "+size.get(0)+"x"+size.get(1)+" pixels","art/foo.png");
+      same("[###]compiled\n"+error+"--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+      same(error,project(m,hello).problem().orElseThrow());
+      assertTrue(project(m,hello).needsCompiling());
+      assertEquals(accepted,project(m,hello).claims());
+    }
+  }
+  @Test void anIconThatIsNotAPngFailsTheCompile(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    image(hello.resolve("art").resolve("foo.jpg"),64,64,"jpg");
+    infos.put("hello",info("hello.Hello",claim("hello.IconsFoo","art/foo.jpg","","",""),""));
+    send(m,"compile","hello");
+    idle(m);
+    same(iconError("base.Shortcut[hello.IconsFoo]","is not a PNG image","art/foo.jpg"),project(m,hello).problem().orElseThrow());
+    assertFalse(Files.exists(icons(hello)));
+  }
+  @Test void iconsAreCopiedOutOfZipsAndTheStdLibOnceAndRewrittenOnlyWhenChanged(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    var png= image(dir.resolve("foo.png"),128,128,"png");
+    Fs.ensureDir(hello.resolve("art"));
+    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
+    var foo= claim("hello.IconsFoo","art/pics.zip","inner.zip","foo.png","");
+    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","")+", "+foo,foo.replace("\"\"]","\"foo\"]")));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    assertEquals(List.of("base.IconsConflict.png","hello.IconsFoo.png"),Names.list(icons(hello)).stream().map(p->p.getFileName().toString()).sorted().toList());
+    assertTrue(Arrays.equals(png,bytes(icons(hello).resolve("hello.IconsFoo.png"))));
+    assertTrue(Arrays.equals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(icons(hello).resolve("base.IconsConflict.png"))));
+    var old= FileTime.fromMillis(1_000_000);
+    Fs.ofV(()->Files.setLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"),old));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(old,Fs.of(()->Files.getLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"))));
+    var other= image(dir.resolve("foo.png"),256,256,"png");
+    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",other))));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertTrue(Arrays.equals(other,bytes(icons(hello).resolve("hello.IconsFoo.png"))));
+  }
+  @Test void anIconRemovedBeforeStartUpFailsThatProjectOnly(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    infos.put("hello",claiming("hello.Hello","bar","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    Fs.rmTree(hello.resolve("art"));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/foo.png\": no such file: [###]foo.png\nCompile the project again.",project(again,hello).problem().orElseThrow());
+    assertEquals(Project.noClaims,project(again,hello).claims());
   }
 }

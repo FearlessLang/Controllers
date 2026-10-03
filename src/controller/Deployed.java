@@ -43,6 +43,7 @@ public final class Deployed implements Manager.Tools{
   @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
     return Coordinator.startMain(folder,stdLib("base"),main,coordinator(folder).sharedClasspath(),out);
   }
+  @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Optional<Map<String,String>> mains(Path folder){
     var c= coordinator(folder);
     return c.mains(folder,c.sourceOracle(stdLib("base")));
