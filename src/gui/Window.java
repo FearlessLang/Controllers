@@ -138,15 +138,13 @@ public final class Window implements Manager.View{
   @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(()->panel(folder).append(text)); }
   @Override public void note(String text){ SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE)); }
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(()->panel(folder).output.setText("")); }
-  @Override public void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){ SwingUtilities.invokeLater(()->openWith(choices,picked)); }
-  private void openWith(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){
+  @Override public void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){ SwingUtilities.invokeLater(()->chooser(choices,picked)); }
+  private void chooser(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){
     var list= choices(choices);
     var dialog= new JDialog(frame,"Open with",false);
     Runnable pick= ()->pick(dialog,list,picked);
     var run= small("Run",pick);
-    list.addMouseListener(new MouseAdapter(){
-      @Override public void mouseClicked(MouseEvent e){ if (e.getClickCount() == 2){ pick.run(); } }
-    });
+    doubleClicked(list,pick);
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(run);
     dialog.add(new JScrollPane(list),BorderLayout.CENTER);
@@ -301,6 +299,12 @@ public final class Window implements Manager.View{
   }
   static String clock(long seconds){ return "%02d:%02d:%02d".formatted(seconds/3600,(seconds/60)%60,seconds%60); }
   static <T extends JComponent> T named(T c, String name){ c.setName(name); return c; }
+  static <T extends JComponent> T doubleClicked(T c, Runnable r){
+    c.addMouseListener(new MouseAdapter(){
+      @Override public void mouseClicked(MouseEvent e){ if (e.getClickCount() == 2){ r.run(); } }
+    });
+    return c;
+  }
   static JTextArea mono(JTextArea area){ area.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13)); return area; }
   static JButton small(String text, Runnable action){
     var res= new JButton(text);

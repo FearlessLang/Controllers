@@ -57,15 +57,13 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
     var known= knownMains();
     return known.size() == 1 ? known : known.stream().filter(entry.mains()::contains).toList();
   }
-  private Stream<Claimant> claimants(){
-    return claims.mains().entrySet().stream()
-      .flatMap(e->Stream.concat(claimants(e.getKey(),e.getValue().shortcuts(),true),claimants(e.getKey(),e.getValue().openWiths(),false)));
+  static Stream<Claimant> claimants(Path folder, String alias, MainsInfo info){
+    return info.mains().entrySet().stream()
+      .flatMap(e->Stream.concat(claimants(folder,alias,e.getKey(),e.getValue().shortcuts(),true),claimants(folder,alias,e.getKey(),e.getValue().openWiths(),false)));
   }
-  private Stream<Claimant> claimants(String main, List<MainsInfo.Claim> cs, boolean shortcut){
-    return cs.stream().filter(c->!c.extension().isEmpty()).map(c->new Claimant(folder(),alias(),main,shortcut,c));
-  }
+  private static Stream<Claimant> claimants(Path folder, String alias, String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c->new Claimant(folder,alias,main,shortcut,c)); }
   public static Map<String,List<Claimant>> claimed(List<Project> projects){
-    return projects.stream().flatMap(Project::claimants)
+    return projects.stream().flatMap(p->claimants(p.folder(),p.alias(),p.claims))
       .sorted(Comparator.comparing(Claimant::label))
       .collect(Collectors.groupingBy(c->c.claim().extension(),TreeMap::new,Collectors.toUnmodifiableList()));
   }
@@ -95,14 +93,12 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       return new MainsInfo.Claim(c.icon(),c.diskPath(),c.zipSteps(),c.zipEntry(),ext);
     }
   }
-  static List<String> shortcuts(Path project, MainsInfo info){
+  static List<String> shortcuts(Stream<Claimant> cs){
     var files= new LinkedHashMap<String,String>();
-    for (var e: info.mains().entrySet()){
-      for (var c: e.getValue().shortcuts()){
-        var file= shortcutFile(project,e.getKey(),c.extension());
-        var other= files.putIfAbsent(file,e.getKey());
-        if (other != null){ throw Messages.shortcutsCollide(other,e.getKey(),file); }
-      }
+    for (var c: cs.filter(Claimant::shortcut).toList()){
+      var file= shortcutFile(c.folder(),c.main(),c.claim().extension());
+      var other= files.putIfAbsent(file,c.main());
+      if (other != null){ throw Messages.shortcutsCollide(other,c.main(),file); }
     }
     return List.copyOf(files.keySet());
   }

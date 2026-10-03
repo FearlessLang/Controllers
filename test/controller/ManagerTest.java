@@ -91,9 +91,10 @@ final class ManagerTest{
     @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
       claimed.forEach(i->Fs.of(()->Files.readAllBytes(i.png())));
       associated.add(claimed);
-      var userLocked= Stream.concat(Stream.of(".fearless"),claimed.stream().map(Icon::extension)).filter(locked::contains).toList();
+      var all= Stream.concat(Stream.of(".fearless"),claimed.stream().map(Icon::extension)).toList();
+      var userLocked= all.stream().filter(locked::contains).toList();
       if (!userLocked.isEmpty()){ throw Violation.associationUserLocked(userLocked,claimedBy); }
-      var blocked= Stream.concat(Stream.of(".fearless"),claimed.stream().map(Icon::extension)).filter(held::containsKey).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
+      var blocked= all.stream().filter(held::containsKey).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw Violation.associationNotOurs(blocked,claimedBy); }
     }
     private static ChildJvm jvm(Consumer<String> out, String... args){
@@ -134,6 +135,11 @@ final class ManagerTest{
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
+    return res;
+  }
+  private static Path registered(Manager m, Path dir, String name){
+    var res= folder(dir,name);
+    send(m,TaggedText.of(res.toString()));
     return res;
   }
   private static Path data(Path dir){
@@ -185,8 +191,7 @@ final class ManagerTest{
   }
   @Test void selectingAnEmptyFolderMakesItAHelloWorldCodeProject(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     assertEquals(List.of("hello "+hello),listed(dir));
     assertTrue(Files.isRegularFile(hello.resolve("hello.fearless")));
     assertTrue(Files.isRegularFile(hello.resolve("_hello").resolve("_rank_app.fear")));
@@ -232,8 +237,7 @@ final class ManagerTest{
   }
   @Test void aRunMessageCompilesThenRunsTheOnlyMain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     same("""
@@ -251,8 +255,7 @@ final class ManagerTest{
   }
   @Test void compilingAnUpToDateProjectDoesNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     var once= eclipse(dir,"hello","console.txt");
@@ -263,8 +266,7 @@ final class ManagerTest{
   }
   @Test void aBusyProjectRefusesJobsCleaningAndKindChangesThenTerminateEndsTheJob(@TempDir Path dir){
     var m= manager(dir,"hello.Slow");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     assertEquals(Optional.of("hello.Slow"),project(m,hello).running());
@@ -292,8 +294,7 @@ final class ManagerTest{
   }
   @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
     var m= manager(dir,"hello.Slow","hello.Two");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"mains","hello","hello.Two hello.Slow");
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
@@ -303,8 +304,7 @@ final class ManagerTest{
   }
   @Test void theSelectedMainsRunInTheOrderOfTheMains(@TempDir Path dir){
     var m= manager(dir,"hello.One","hello.Two","hello.Three");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     same("[###]--- nothing to run: none of \"hello.One\", \"hello.Two\", \"hello.Three\" is selected ---\n",eclipse(dir,"hello","console.txt"));
@@ -325,8 +325,7 @@ final class ManagerTest{
   }
   @Test void aNamedMainRunsAloneAndAnUnknownOneIsRefused(@TempDir Path dir){
     var m= manager(dir,"hello.One","hello.Two");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     send(m,"clear","hello");
@@ -342,8 +341,7 @@ final class ManagerTest{
   }
   @Test void forgettingARunningProjectEndsItsJobAndForgetsIt(@TempDir Path dir){
     var m= manager(dir,"hello.Slow");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     send(m,"forget","hello");
@@ -355,8 +353,7 @@ final class ManagerTest{
   }
   @Test void aRequestNamesARegisteredProject(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","other");
     send(m,"compile",hello.toString());
     assertEquals(List.of("hello "+hello),listed(dir));
@@ -369,8 +366,7 @@ final class ManagerTest{
   }
   @Test void aRequestTheManagerDoesNotKnowIsRefused(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"build","hello");
     send(m,"kind","hello","library");
     send(m,"link","hello","data sometimes");
@@ -383,16 +379,14 @@ final class ManagerTest{
   }
   @Test void aThirdLineForARequestTakingNoneIsRefusedAndChangesNothing(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"forget","hello","now");
     assertEquals(List.of("hello "+hello),listed(dir));
     assertEquals(List.of("The manager was asked to \"forget\" \"hello\" with the third line \"now\", but only the requests \"run\", \"kind\", \"mains\", \"link\" take a third line."),view.notes);
   }
   @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,TaggedText.of(data(dir).toString()));
     send(m,"kind","data","data:readOnly");
     var info= dir.resolve("manager").resolve("projects.info");
@@ -426,8 +420,7 @@ final class ManagerTest{
   }
   @Test void aFolderInsideARegisteredOneIsRefused(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,TaggedText.of(folder(hello,"inner").toString()));
     assertEquals(1,view.notes.size());
     assertEquals(List.of("hello "+hello),listed(dir));
@@ -435,10 +428,8 @@ final class ManagerTest{
   @Test void aLinkToARegisteredFolderOnlySelectsItAndALinkIntoOneIsRefused(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     var link= Fs.of(()->Files.createSymbolicLink(dir.resolve("link"),hello));
     var inner= Fs.of(()->Files.createSymbolicLink(dir.resolve("inner"),folder(hello,"inner")));
     send(m,TaggedText.of(link.toString()));
@@ -525,8 +516,7 @@ final class ManagerTest{
     var data= data(dir);
     send(m,TaggedText.of(data.toString()));
     var base= Registry.text(m.state().projects().stream().map(Project::entry).toList());
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var done= new ArrayList<String>();
     m.commit(base,base,()->done.add("stale"));
     m.settle();
@@ -612,8 +602,7 @@ final class ManagerTest{
   @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var managerDir= dir.resolve("manager");
     var files= List.of(managerDir.resolve("projects.info"),managerDir.resolve("activity.txt"));
     var before= files.stream().map(Fs::readUtf8).toList();
@@ -676,8 +665,7 @@ final class ManagerTest{
   }
   @Test void aMissingOrUnknownKindMakesTheProjectIdleAndClearsItsCache(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     var info= dir.resolve("manager").resolve("projects.info");
@@ -692,8 +680,7 @@ final class ManagerTest{
   @Test void compilingForgetsSelectedMainsThatAreGoneAndRunningRefusesThem(@TempDir Path dir){
     var mains= new ArrayList<>(List.of("hello.One","hello.Two"));
     var m= manager(dir,_->Optional.of(mains.stream().collect(Collectors.toMap(k->k,_->"_hello/_rank_app.fear"))));
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"mains","hello","hello.One hello.Old hello.Two");
     send(m,"compile","hello");
     idle(m);
@@ -708,8 +695,7 @@ final class ManagerTest{
   @Test void mainsThatCanNotBeReadMakeTheProjectInvalidAndOutOfDateAndAreNotReadAgainWhileNothingChanges(@TempDir Path dir){
     var reads= new ArrayList<Path>();
     var m= manager(dir,f->{ reads.add(f); throw Report.launchPathNotFound(dir.resolve("gone")); });
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     send(m,"select","hello");
@@ -724,8 +710,7 @@ final class ManagerTest{
   }
   @Test void aCompileWhoseJvmDoesNotStartIsShownOnItsProject(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var noJvm= folder(dir,"nojvm");
-    send(m,TaggedText.of(noJvm.toString()));
+    var noJvm= registered(m,dir,"nojvm");
     send(m,"run","nojvm");
     assertEquals("--- compiling nojvm ---\n--- compile did not start: io: Cannot run program \"java\": error=2, No such file or directory ---\n",eclipse(dir,"nojvm","console.txt"));
     var p= project(m,noJvm);
@@ -733,8 +718,7 @@ final class ManagerTest{
   }
   @Test void aRunReportsUnderTheNameItsProjectHasNow(@TempDir Path dir){
     var m= manager(dir,"hello.Slow");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     commit(m,"{\"other\": {\"path\": \"Str:"+hello.toString().replace('\\','/')+"\", \"kind\": \"code\"}}",()->{});
@@ -748,16 +732,14 @@ final class ManagerTest{
   }
   @Test void aLogTheReportCanNotReadStopsTheReportOnly(@TempDir Path dir){
     var m= manager(dir,"hello.Garbled");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     same("[###]ran hello.Garbled\n--- the report of hello.Garbled stops: malformed input: [###] ---\n--- hello.Garbled exited with 0 after [###]s ---\n",eclipse(dir,"hello","console.txt"));
   }
   @Test void mainsTheCompilerWouldCompileMakeTheProjectOutOfDate(@TempDir Path dir){
     var m= manager(dir,_->Optional.empty());
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     var p= project(m,hello);
@@ -772,8 +754,7 @@ final class ManagerTest{
       Fs.writeUtf8(f.resolve("readme.txt"),"new\n");
       throw Report.launchPathNotFound(f);
     });
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     var p= project(m,hello);
@@ -790,8 +771,7 @@ final class ManagerTest{
       Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(System.currentTimeMillis()+60_000)));
       return Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear"));
     });
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     view.visible= false;
     send(m,"compile","hello");
     idle(m);
@@ -803,8 +783,7 @@ final class ManagerTest{
   }
   @Test void aNewManagerRemembersTheProjectsAndStartsWithEmptyConsoles(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     var again= manager(dir,"hello.Hello");
@@ -851,8 +830,7 @@ final class ManagerTest{
   }
   @Test void aCompileClaimsTheExtensionsOfItsMainsInfoAndANewManagerClaimsThemAgain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     assertEquals(Map.of(),claimed(m));
     infos.put("hello",claiming("hello.Hello","","foo"));
     send(m,"compile","hello");
@@ -871,10 +849,8 @@ final class ManagerTest{
   }
   @Test void projectsClaimingTheSameExtensionAreAllItsClaimantsUntilCleanedIdleOrForgotten(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","fapp042","foo"));
     infos.put("other",claiming("other.Other","bar","foo"));
     send(m,"compile","other");
@@ -896,10 +872,8 @@ final class ManagerTest{
   }
   @Test void aProjectWhoseMainsInfoIsMissingOrUnreadableClaimsNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     infos.put("other",claiming("other.Other","os","bar"));
     send(m,"compile","hello");
@@ -915,8 +889,7 @@ final class ManagerTest{
   }
   @Test void aKindRequestKeepingCodeKeepsTheAcceptedClaimsAndAKindChangeBackToCodeReadsMainsInfo(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     send(m,"compile","hello");
     idle(m);
@@ -930,7 +903,7 @@ final class ManagerTest{
     send(m,"kind","hello","code");
     assertEquals(Map.of("bar",List.of("hello::hello.Hello openWith hello.IconsFoo"),"hs",List.of("hello::hello.Hello shortcut base.IconsConflict")),claimed(m));
   }
-  private static String fapp(String alias, String main, String icon){ return "fapp%03d".formatted(Math.floorMod((alias+"::"+main+"::"+icon).hashCode(),1000)); }
+  private static String fapp(String alias, String main, String icon){ return AutoselectTest.fapp(AutoselectTest.start(alias,main,icon)); }
   private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve("mains.info"); }
   private static void touch(Path project){
     var src= project.resolve("_"+project.getFileName()).resolve("_rank_app.fear");
@@ -938,10 +911,8 @@ final class ManagerTest{
   }
   @Test void aCompileWritesTheAutoselectedExtensionsIntoMainsInfoAndARecompileKeepsThem(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","","foo"));
     send(m,"compile","hello");
     idle(m);
@@ -961,8 +932,7 @@ final class ManagerTest{
   }
   @Test void aMainsInfoWithMissingExtensionsIsFilledAtStartUp(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     image(hello.resolve("art").resolve("foo.png"),64,64,"png");
@@ -976,10 +946,8 @@ final class ManagerTest{
   }
   @Test void aMissingExtensionFilledAtStartUpAvoidsTheClaimsOfTheProjectsLoadedAfter(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
@@ -996,10 +964,8 @@ final class ManagerTest{
   }
   @Test void noFreeExtensionLeftFailsTheCompileAndRunsNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     var all= IntStream.range(0,1000).mapToObj(i->"[\"other.IconsO\", \"art/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
     infos.put("other","{\"other.Other\": [\"_other/_rank_app.fear\", ["+all+"], []]}\n");
     send(m,"compile","other");
@@ -1039,8 +1005,7 @@ final class ManagerTest{
   }
   @Test void anIconIsASquarePngWithASideFrom64To1024Pixels(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     infos.put("hello",claiming("hello.Hello","bar","foo"));
     for (var side: List.of(64,1024)){
       var png= image(hello.resolve("art").resolve("foo.png"),side,side,"png");
@@ -1066,8 +1031,7 @@ final class ManagerTest{
   }
   @Test void aPngIsMeasuredBeforeItIsDecodedAndMustDecode(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var foo= hello.resolve("art").resolve("foo.png");
     var png= image(foo,64,64,"png");
     var huge= ByteBuffer.allocate(33).put(png,0,16).putInt(100000).putInt(100000).put(png,24,9).array();
@@ -1082,8 +1046,7 @@ final class ManagerTest{
   }
   @Test void anIconThatIsNotAPngFailsTheCompile(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     image(hello.resolve("art").resolve("foo.jpg"),64,64,"jpg");
     infos.put("hello",info("hello.Hello",claim("hello.IconsFoo","art/foo.jpg","","",""),""));
     send(m,"compile","hello");
@@ -1093,8 +1056,7 @@ final class ManagerTest{
   }
   @Test void iconsAreCopiedOutOfZipsAndTheStdLibOnceAndRewrittenOnlyWhenChanged(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var png= image(dir.resolve("foo.png"),128,128,"png");
     Fs.ensureDir(hello.resolve("art"));
     Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
@@ -1121,8 +1083,7 @@ final class ManagerTest{
   }
   @Test void anIconEntryRemovedFromItsZipBeforeStartUpFailsNamingTheIcon(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var png= image(dir.resolve("foo.png"),128,128,"png");
     Fs.ensureDir(hello.resolve("art"));
     Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
@@ -1137,10 +1098,8 @@ final class ManagerTest{
   }
   @Test void anIconRemovedBeforeStartUpFailsThatProjectOnly(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","bar","foo"));
     infos.put("other",claiming("other.Other","baz","qux"));
     send(m,"compile","hello");
@@ -1173,10 +1132,8 @@ final class ManagerTest{
   }
   @Test void theDesktopOpensEachClaimedExtensionWithItsIconOrTheConflictIconWhenSeveralMainsClaimIt(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     assertEquals(List.of(List.of()),associated);
     assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(dir.resolve("manager").resolve("icons").resolve("base.IconsConflict.png")));
     infos.put("hello",claiming("hello.Hello","bar","foo"));
@@ -1204,10 +1161,8 @@ final class ManagerTest{
   }
   @Test void aCompileWhoseExtensionsTheDesktopRefusesFailsNamingTheirMainsAndKeepsTheClaimsBefore(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("other",claiming("other.Other","os","foo"));
     infos.put("hello",claiming("hello.Hello","hs","bar"));
     send(m,"compile","other");
@@ -1238,10 +1193,8 @@ final class ManagerTest{
   }
   @Test void aCleanWhoseExtensionsTheDesktopRefusesIsToldOnce(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     infos.put("other",claiming("other.Other","os","qux"));
     send(m,"compile","hello");
@@ -1256,10 +1209,8 @@ final class ManagerTest{
   }
   @Test void aStartUpRefusedTheExtensionsOfOneProjectDropsItsClaimsAndKeepsTheOthers(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     infos.put("other",claiming("other.Other","os","qux"));
     send(m,"compile","hello");
@@ -1287,10 +1238,8 @@ final class ManagerTest{
   }
   @Test void aStartUpRefusingOtherExtensionsOnceTheFirstRefusedAreDroppedDropsThoseToo(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     infos.put("other",claiming("other.Other","os","qux"));
     send(m,"compile","hello");
@@ -1321,8 +1270,7 @@ final class ManagerTest{
   }
   @Test void afterForgettingTheAssociationsTheManagerNeverAssociatesAgain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var calls= new ArrayList<Integer>();
     m.forgetAssociation(()->calls.add(associated.size()));
     infos.put("hello",claiming("hello.Hello","hs","foo"));
@@ -1334,8 +1282,7 @@ final class ManagerTest{
   }
   @Test void aRecompileChangingAnIconImageGivesItToTheDesktopAndOneChangingNothingDoesNot(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     infos.put("hello",claiming("hello.Hello","bar","foo"));
     send(m,"compile","hello");
     idle(m);
@@ -1353,10 +1300,8 @@ final class ManagerTest{
   }
   @Test void aProjectWhoseIconFilesAreGoneClaimsNothingAndTheOthersKeepTheirClaims(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     infos.put("other",claiming("other.Other","os","qux"));
     send(m,"compile","hello");
@@ -1372,8 +1317,7 @@ final class ManagerTest{
   }
   @Test void aProjectWhoseClaimsFailedIsNotInvalidOnceIdle(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     image(hello.resolve("art").resolve("foo.png"),300,200,"png");
     infos.put("hello",claiming("hello.Hello","bar","foo"));
     send(m,"compile","hello");
@@ -1386,8 +1330,7 @@ final class ManagerTest{
   @Test void aShortcutFileTheManagerCanNotCreateIsToldAndTheCompileIsDone(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","bar"),""));
@@ -1405,10 +1348,8 @@ final class ManagerTest{
   @Test void aCompiledCacheTheManagerCanNotWriteAtStartUpFailsThatProjectOnly(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","","foo"));
     infos.put("other",claiming("other.Other","os","qux"));
     send(m,"compile","hello");
@@ -1431,8 +1372,7 @@ final class ManagerTest{
   private static List<String> top(Path project){ return Names.list(project).stream().map(p->p.getFileName().toString()).toList(); }
   @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var shortcuts= claim("base.IconsConflict","icons/conflict.png","","","bar")+", "+claim("base.IconsConflict","icons/conflict.png","","","");
     infos.put("hello","{\"hello.FooBar\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], []], \"hello.Foo'\": [\"_hello/_rank_app.fear\", [], ["+claim("base.IconsConflict","icons/conflict.png","","","foo")+"]]}\n");
     send(m,"compile","hello");
@@ -1462,8 +1402,7 @@ final class ManagerTest{
   }
   @Test void aShortcutMainWithoutAFileNameOrWithAReservedOneOrSharingItsFileFailsTheCompileAndCreatesNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var bar= claim("base.IconsConflict","icons/conflict.png","","","bar");
     infos.put("hello",info("hello.Hello",bar,""));
     send(m,"compile","hello");
@@ -1489,8 +1428,7 @@ final class ManagerTest{
   }
   @Test void aShortcutFileBreakingTheProjectFileRulesFailsTheCompileAndCreatesNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     Fs.writeUtf8(hello.resolve("todo"),"");
     var calls= associated.size();
     var bar= claim("base.IconsConflict","icons/conflict.png","","","bar");
@@ -1533,10 +1471,8 @@ final class ManagerTest{
   private static String running(String main){ return "--- running "+main+" ---\nran "+main+"\n--- "+main+" exited with 0 after [###]s ---\n"; }
   @Test void aFileWhoseExtensionOneMainClaimsRunsThatMainCompilingFirstWhenNeeded(@TempDir Path dir){
     var m= opening(dir);
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     send(m,"compile","hello");
     idle(m);
@@ -1558,10 +1494,8 @@ final class ManagerTest{
   }
   @Test void aFileWhoseExtensionSeveralMainsClaimListsThemSortedAndRunsThePickedOne(@TempDir Path dir){
     var m= opening(dir);
-    var other= folder(dir,"other");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(other.toString()));
-    send(m,TaggedText.of(hello.toString()));
+    var other= registered(m,dir,"other");
+    var hello= registered(m,dir,"hello");
     infos.put("other",claiming("other.Hello","os","foo"));
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     send(m,"compile","other");
@@ -1592,8 +1526,7 @@ final class ManagerTest{
   }
   @Test void anExtensionMatchesInAnyCaseAsTheDesktopMatchesIt(@TempDir Path dir){
     var m= opening(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     send(m,"compile","hello");
     idle(m);
@@ -1605,8 +1538,7 @@ final class ManagerTest{
   }
   @Test void aFileOpenedWhileItsMainRunsShowsTheProjectAndRunsNothingMore(@TempDir Path dir){
     var m= opening(dir);
-    var slow= folder(dir,"slow");
-    send(m,TaggedText.of(slow.toString()));
+    var slow= registered(m,dir,"slow");
     infos.put("slow",claiming("slow.Slow","ss","foo"));
     send(m,"compile","slow");
     idle(m);
@@ -1626,8 +1558,7 @@ final class ManagerTest{
   }
   @Test void aFileNobodyClaimsAFearlessFileAndAFolderRegisterAsBeforeAndAClaimedFileRegistersNothing(@TempDir Path dir){
     var m= opening(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     infos.put("hello",claiming("hello.Hello","hs","foo"));
     send(m,"compile","hello");
     idle(m);

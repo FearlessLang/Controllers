@@ -172,7 +172,7 @@ final class PanelTest{
     Component claims= named("claims");
     return onEdt(()->all(claims).filter(c->c instanceof JLabel).map(c->Objects.requireNonNullElse(((JLabel)c).getText(),"<icon>")).toList());
   }
-  private static void png(Path file, Color color){
+  static void png(Path file, Color color){
     var img= new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB);
     var g= img.createGraphics();
     g.setColor(color);
@@ -183,9 +183,12 @@ final class PanelTest{
   private List<Integer> shown(String text){
     Component claims= named("claims");
     var icon= (ImageIcon)onEdt(()->OneOr.of(text,all(claims).filter(c->c instanceof JLabel l && text.equals(l.getText())).map(c->((JLabel)c).getIcon())));
-    var shown= new BufferedImage(20,20,BufferedImage.TYPE_INT_RGB);
-    shown.createGraphics().drawImage(icon.getImage(),0,0,null);
-    return List.of(icon.getIconWidth(),icon.getIconHeight(),shown.getRGB(10,10) & 0xFFFFFF);
+    return List.of(icon.getIconWidth(),icon.getIconHeight(),center(icon));
+  }
+  static int center(ImageIcon icon){
+    var res= new BufferedImage(icon.getIconWidth(),icon.getIconHeight(),BufferedImage.TYPE_INT_RGB);
+    res.createGraphics().drawImage(icon.getImage(),0,0,null);
+    return res.getRGB(icon.getIconWidth()/2,icon.getIconHeight()/2) & 0xFFFFFF;
   }
   @Test void eachMainShowsTheExtensionsItOpensItsConflictsAndItsShortcuts(@TempDir Path dir){
     png(dir.resolve("hello").resolve(Facts.outDir).resolve("icons").resolve("hello.IconsFoo.png"),Color.red);

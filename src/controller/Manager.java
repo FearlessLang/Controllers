@@ -100,7 +100,7 @@ public final class Manager{
   private final Registry registry;
   private final Map<Path,Live> live= new HashMap<>();
   private Optional<Path> selected= Optional.empty();
-  private Optional<List<?>> wanted= Optional.empty();
+  private List<?> wanted= List.of();
   private boolean forgotten;
   private int turn;
   private volatile State state= new State(List.of(),Optional.empty());
@@ -157,8 +157,7 @@ public final class Manager{
   }
   private void load(){
     Fs.writeUtf8(eclipse.notes(),"");
-    registry.all().forEach(e->live.put(e.path(),new Live()));
-    live.forEach((f,l)->l.claims= read(f));
+    registry.all().forEach(e->live.computeIfAbsent(e.path(),_->new Live()).claims= read(e.path()));
     registry.all().forEach(this::open);
     registry.reset.forEach(e->{
       var kept= uncache(e.path());
@@ -175,11 +174,11 @@ public final class Manager{
     catch(UserError e){
       if (blocked.isEmpty() || blocked.contains(".fearless")){ throw e; }
       var claimed= Project.claimed(projects());
-      blocked.stream().flatMap(b->claimed.get(b.substring(1)).stream()).map(Project.Claimant::folder).distinct().forEach(f->blockedAtStartUp(f,e.getMessage()));
+      blocked.stream().flatMap(b->claimed.get(b.substring(1)).stream()).map(Project.Claimant::folder).distinct().forEach(f->unclaim(f,e.getMessage()));
       associateAtStartUp();
     }
   }
-  private void blockedAtStartUp(Path f, String message){
+  private void unclaim(Path f, String message){
     live.get(f).claims= Project.noClaims;
     failed(f,message);
     scan(f);
@@ -187,23 +186,20 @@ public final class Manager{
   private void associate(Set<String> blocked){
     if (forgotten){ return; }
     Project.claimed(projects()).values().stream().flatMap(List::stream).filter(c->!Files.isRegularFile(c.icon(".png")))
-      .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(c->blockedAtStartUp(c.folder(),Messages.iconGone(c.icon(".png"))));
+      .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(c->unclaim(c.folder(),Messages.iconGone(c.icon(".png"))));
     var claimed= Project.claimed(projects());
     var suffix= Fs.isWindows() ? ".ico" : ".png";
     var next= claimed.entrySet().stream().map(e->new Icon("."+e.getKey(),icon(e.getValue(),suffix),icon(e.getValue(),".png"))).toList();
     List<?> known= List.of(next,next.stream().map(i->Fs.lastModified(i.png())).toList());
-    if (wanted.equals(Optional.of(known))){ return; }
-    wanted= Optional.of(known);
+    if (wanted.equals(known)){ return; }
+    wanted= known;
     tools.associate(next,e->claimedBy(claimed,blocked,e));
   }
   private static String claimedBy(Map<String,List<Project.Claimant>> claimed, Set<String> blocked, String extension){
     blocked.add(extension);
     return Messages.claimedBy(claimed.getOrDefault(extension.substring(1),List.of()));
   }
-  private Path icon(List<Project.Claimant> cs, String suffix){
-    if (cs.size() > 1){ return dir.resolve("icons").resolve(conflict+suffix); }
-    return cs.getFirst().icon(suffix);
-  }
+  private Path icon(List<Project.Claimant> cs, String suffix){ return cs.size() > 1 ? dir.resolve("icons").resolve(conflict+suffix) : cs.getFirst().icon(suffix); }
   private void reassociate(){
     try{ associate(new HashSet<>()); }
     catch(UserError e){ tell(e.getMessage()); }
@@ -240,9 +236,9 @@ public final class Manager{
     l.failure= "";
     var read= read(f);
     try{
-      var icons= ClaimIcons.read(f,tools.stdLibBase(),read);
+      var icons= ClaimIcons.read(tools.stdLibBase(),Project.claimants(f,alias(f),read));
       var filled= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims));
-      Project.shortcuts(f,filled);
+      Project.shortcuts(Project.claimants(f,alias(f),filled));
       icons.forEach((icon,bytes)->ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icon,bytes));
       if (!filled.equals(read)){ Fs.writeUtf8(f.resolve(Facts.outDir).resolve("mains.info"),filled.print()); }
       l.claims= filled;
@@ -423,7 +419,7 @@ public final class Manager{
       l.failure= ec == 0 ? "" : l.compiled.toString();
       var previous= l.claims;
       var done= ec == 0 && accept(f) && associated(f,previous);
-      if (done){ Project.shortcuts(f,l.claims).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->shortcut(f,p)); }
+      if (done){ Project.shortcuts(Project.claimants(f,alias(f),l.claims)).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->shortcut(f,p)); }
       output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }

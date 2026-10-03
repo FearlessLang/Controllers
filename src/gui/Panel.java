@@ -1,5 +1,6 @@
 package gui;
 
+import static gui.Window.doubleClicked;
 import static gui.Window.mono;
 import static gui.Window.named;
 import static gui.Window.small;
@@ -15,8 +16,6 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -237,11 +236,7 @@ final class Panel{
     return res;
   }
   private JLabel shortcut(Project.Claimant c){
-    var res= named(new JLabel(new ImageIcon(Icons.of(c,iconSize))),"shortcut "+c.main()+" "+c.claim().extension());
-    res.addMouseListener(new MouseAdapter(){
-      @Override public void mouseClicked(MouseEvent e){ if (e.getClickCount() == 2){ requests.ask("run",c.alias(),c.main()); } }
-    });
-    return res;
+    return doubleClicked(named(new JLabel(new ImageIcon(Icons.of(c,iconSize))),"shortcut "+c.main()+" "+c.claim().extension()),()->requests.ask("run",c.alias(),c.main()));
   }
   private String ticked(){ return String.join(" ",Stream.of(mainsBox.getComponents()).map(c->(JCheckBox)c).filter(JCheckBox::isSelected).map(JCheckBox::getText).toList()); }
   private void fillKinds(Project p){

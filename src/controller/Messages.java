@@ -149,12 +149,13 @@ public final class Messages{
   public static String dropRefused(String item, String why){ return "The manager was asked to register "+disp(item)+", dropped on its window, but "+why+"."; }
   public static String dropUnreadable(Exception e){ return "The manager was asked to register what was dropped on its window, but the desktop did not hand it over: "+e.getMessage(); }
   public static UserError noFreeExtension(String main, boolean shortcut, String icon){
-    var kind= shortcut ? "Shortcut" : "OpenWith";
     var prefix= shortcut ? "fapp" : "ffile";
     var name= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
     var example= name.isEmpty() || name.equals("fearless") ? "ext" : name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
-    return new UserError("No free extension is left for \"base."+kind+"["+icon+"]\" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind+" an explicit extension, for example \"base."+kind+"["+icon+",\\\""+example+"\\\"]\".");
+    return new UserError("No free extension is left for "+claim(shortcut,icon,"")+" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind(shortcut)+" an explicit extension, for example "+claim(shortcut,icon,example)+".");
   }
+  private static String kind(boolean shortcut){ return shortcut ? "Shortcut" : "OpenWith"; }
+  private static String claim(boolean shortcut, String icon, String ext){ return "\"base."+kind(shortcut)+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
   public static UserError shortcutNoFileName(String main){
     return new UserError("Main "+disp(main)+" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\".");
   }
@@ -174,17 +175,14 @@ public final class Messages{
   public static String iconGone(Path file){ return "The icon file of a claim of this project is gone:\n"+file+"\nThe project claims no extension until it is compiled again."; }
   public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project can not be saved in its compiled cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c->disp(c.main())+" of project "+disp(c.alias()))," claimed by "," and ","",""); }
-  public static UserError iconRefused(String main, boolean shortcut, MainsInfo.Claim c, String problem){
-    return new UserError(icon(main,shortcut,c)+" "+problem+" (from "+disp(from(c))+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
+  public static UserError iconRefused(Project.Claimant c, String problem){
+    return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
   }
-  public static UserError iconUnreadable(String main, boolean shortcut, MainsInfo.Claim c, String why){
-    return new UserError(icon(main,shortcut,c)+" can not be read from "+disp(from(c))+": "+why+"\nCompile the project again.");
+  public static UserError iconUnreadable(Project.Claimant c, String why){
+    return new UserError(icon(c)+" can not be read from "+from(c.claim())+": "+why+"\nCompile the project again.");
   }
-  private static String icon(String main, boolean shortcut, MainsInfo.Claim c){
-    var claim= "\"base."+(shortcut ? "Shortcut" : "OpenWith")+"["+c.icon()+(c.extension().isEmpty() ? "" : ",\\\""+c.extension()+"\\\"")+"]\"";
-    return "The icon "+disp(c.icon())+" in "+claim+" of main "+disp(main);
-  }
-  private static String from(MainsInfo.Claim c){ return Join.of(Stream.of(c.diskPath(),c.zipSteps().replace(';','/'),c.zipEntry()).filter(s->!s.isEmpty()),"","/",""); }
+  private static String icon(Project.Claimant c){ return "The icon "+disp(c.claim().icon())+" in "+claim(c.shortcut(),c.claim().icon(),c.claim().extension())+" of main "+disp(c.main()); }
+  private static String from(MainsInfo.Claim c){ return disp(Join.of(Stream.of(c.diskPath(),c.zipSteps().replace(';','/'),c.zipEntry()).filter(s->!s.isEmpty()),"","/","")); }
   public static UserError tooManyArguments(List<String> args){
     return new UserError("""
       Fearless was started with %d arguments, but it takes at most one.

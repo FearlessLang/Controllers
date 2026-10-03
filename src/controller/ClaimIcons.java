@@ -10,10 +10,10 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
 
-import coordinator.MainsInfo;
 import fileAssociations.Ico;
 import realSourceOracle.ZipLocator;
 import tools.Fs;
@@ -21,26 +21,24 @@ import userMessages.UserError;
 
 final class ClaimIcons{
   private static final byte[] pngHead= {(byte)0x89,'P','N','G','\r','\n',0x1A,'\n',0,0,0,13,'I','H','D','R'};
-  static Map<String,byte[]> read(Path project, Path base, MainsInfo info){
+  static Map<String,byte[]> read(Path base, Stream<Project.Claimant> cs){
     var res= new LinkedHashMap<String,byte[]>();
-    for (var e: info.mains().entrySet()){
-      for (var c: e.getValue().shortcuts()){ res.computeIfAbsent(c.icon(),_->icon(project,base,e.getKey(),true,c)); }
-      for (var c: e.getValue().openWiths()){ res.computeIfAbsent(c.icon(),_->icon(project,base,e.getKey(),false,c)); }
-    }
+    cs.forEach(c->res.computeIfAbsent(c.claim().icon(),_->icon(base,c)));
     return res;
   }
-  private static byte[] icon(Path project, Path base, String main, boolean shortcut, MainsInfo.Claim c){
-    var file= (c.icon().startsWith("base.") ? base : project).resolve(c.diskPath());
+  private static byte[] icon(Path base, Project.Claimant claimant){
+    var c= claimant.claim();
+    var file= (c.icon().startsWith("base.") ? base : claimant.folder()).resolve(c.diskPath());
     var steps= c.zipSteps().isEmpty() ? List.<String>of() : List.of(c.zipSteps().split(";"));
     byte[] bytes;
     try{ bytes= c.zipEntry().isEmpty() ? Fs.of(()->Files.readAllBytes(file)) : ZipLocator.entryBytes(file,steps,c.zipEntry()); }
-    catch(UncheckedIOException e){ throw Messages.iconUnreadable(main,shortcut,c,Messages.fileFailure(e.getCause())); }
-    catch(UserError e){ throw Messages.iconUnreadable(main,shortcut,c,e.getMessage().stripTrailing()); }
-    if (bytes.length < 24 || !Arrays.equals(bytes,0,16,pngHead,0,16)){ throw Messages.iconRefused(main,shortcut,c,"is not a PNG image"); }
+    catch(UncheckedIOException e){ throw Messages.iconUnreadable(claimant,Messages.fileFailure(e.getCause())); }
+    catch(UserError e){ throw Messages.iconUnreadable(claimant,e.getMessage().stripTrailing()); }
+    if (bytes.length < 24 || !Arrays.equals(bytes,0,16,pngHead,0,16)){ throw Messages.iconRefused(claimant,"is not a PNG image"); }
     var w= ByteBuffer.wrap(bytes).getInt(16);
     var h= ByteBuffer.wrap(bytes).getInt(20);
-    if (w != h || w < 64 || w > 1024){ throw Messages.iconRefused(main,shortcut,c,"is "+w+"x"+h+" pixels"); }
-    if (!decodes(bytes)){ throw Messages.iconRefused(main,shortcut,c,"is not a PNG image"); }
+    if (w != h || w < 64 || w > 1024){ throw Messages.iconRefused(claimant,"is "+w+"x"+h+" pixels"); }
+    if (!decodes(bytes)){ throw Messages.iconRefused(claimant,"is not a PNG image"); }
     return bytes;
   }
   private static boolean decodes(byte[] bytes){

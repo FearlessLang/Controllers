@@ -20,8 +20,8 @@ final class AutoselectTest{
   private static MainsInfo info(String main, List<Claim> shortcuts, List<Claim> openWiths){ return new MainsInfo(Map.of(main,new Main("_hello/bar.fear",shortcuts,openWiths))); }
   private static MainsInfo shortcut(String main, String icon, String ext){ return info(main,List.of(claim(icon,ext)),List.of()); }
   private static MainsInfo others(String... exts){ return info("other.Other",Stream.of(exts).map(e->claim("other.IconsO",e)).toList(),List.of()); }
-  private static int start(String alias, String main, String icon){ return Math.floorMod((alias+"::"+main+"::"+icon).hashCode(),1000); }
-  private static String fapp(int n){ return "fapp%03d".formatted(Math.floorMod(n,1000)); }
+  static int start(String alias, String main, String icon){ return Math.floorMod((alias+"::"+main+"::"+icon).hashCode(),1000); }
+  static String fapp(int n){ return "fapp%03d".formatted(Math.floorMod(n,1000)); }
   private static List<String> exts(MainsInfo i){
     return i.mains().values().stream().flatMap(m->Stream.concat(m.shortcuts().stream(),m.openWiths().stream())).map(Claim::extension).toList();
   }
