@@ -1282,7 +1282,7 @@ final class ManagerTest{
       below.
 
       On this system a program opens a type of file, not an extension, and the
-      type of each of these extensions is also the type of other file names:
+      type of each of these extensions also covers other file names:
       opening it would open those files too. Fearless stopped before touching
       anything: your system is exactly as it was.
 
@@ -1290,7 +1290,7 @@ final class ManagerTest{
       Shortcut[I], and Fearless chooses one.
 
       What stood in the way:
-      .qux claimed by "other.Other" of project "other" -> text/x-qux, also the type of *.quux""";
+      .qux claimed by "other.Other" of project "other" -> text/x-qux, also covering *.quux""";
     var p= project(again,other);
     same(error,p.problem().orElseThrow());
     assertEquals(Project.noClaims,p.claims());

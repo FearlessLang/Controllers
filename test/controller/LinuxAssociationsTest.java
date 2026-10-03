@@ -195,6 +195,11 @@ final class LinuxAssociationsTest{
     sysMime("subclasses","text/x-foo-dialect text/x-foo\n");
     assertEquals("sharedType {.foo=text/x-foo=[*.food]}",refused(".foo"));
   }
+  @Test void theOtherGlobsOfTheTypeComeBeforeThoseOfTheTypesBelowIt(){
+    sysMime("globs2","50:text/x-foo-dialect:*.food\n50:text/x-foo:*.fooz\n");
+    sysMime("subclasses","text/x-foo-dialect text/x-foo\n");
+    assertEquals("sharedType {.foo=text/x-foo=[*.fooz, *.food]}",refused(".foo"));
+  }
   @Test void anExtensionWhoseTypeNameIsTakenIsShared(){
     sysMime("globs2","50:text/x-quux:*.quux\n");
     sysMime("types","application/x-executable\ntext/x-quux\n");
