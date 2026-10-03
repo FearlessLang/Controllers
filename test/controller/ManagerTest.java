@@ -89,6 +89,7 @@ final class ManagerTest{
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
+      claimed.forEach(i->Fs.of(()->Files.readAllBytes(i.png())));
       associated.add(claimed);
       var userLocked= Stream.concat(Stream.of(".fearless"),claimed.stream().map(Icon::extension)).filter(locked::contains).toList();
       if (!userLocked.isEmpty()){ throw Violation.associationUserLocked(userLocked,claimedBy); }
@@ -1314,6 +1315,102 @@ final class ManagerTest{
     assertEquals(List.of("foo","hs"),claimed(m).keySet().stream().sorted().toList());
     assertEquals(List.of(1),calls);
     assertEquals(1,associated.size());
+  }
+  @Test void aRecompileChangingAnIconImageGivesItToTheDesktopAndOneChangingNothingDoesNot(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    infos.put("hello",claiming("hello.Hello","bar","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var calls= associated.size();
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(calls,associated.size());
+    image(hello.resolve("art").resolve("foo.png"),128,128,"png");
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(calls+1,associated.size());
+    assertEquals(associated.get(calls-1),associated.getLast());
+  }
+  @Test void aProjectWhoseIconFilesAreGoneClaimsNothingAndTheOthersKeepTheirClaims(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("other",claiming("other.Other","os","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    Fs.rmTree(hello.resolve(Facts.outDir));
+    send(m,"select","other");
+    var p= project(m,hello);
+    assertEquals("The icon file of a claim of this project is gone:\n"+icons(hello).resolve("hello.IconsFoo.png")+"\nThe project claims no extension until it is compiled again.",p.problem().orElseThrow());
+    assertEquals(Project.noClaims,p.claims());
+    assertEquals(List.of(".os other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    assertEquals(List.of(),view.notes);
+  }
+  @Test void aProjectWhoseClaimsFailedIsNotInvalidOnceIdle(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    image(hello.resolve("art").resolve("foo.png"),300,200,"png");
+    infos.put("hello",claiming("hello.Hello","bar","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeInvalid,project(m,hello).state());
+    send(m,"kind","hello","idle");
+    assertEquals(Project.State.idle,project(m,hello).state());
+    assertEquals(Optional.empty(),project(m,hello).problem());
+  }
+  @Test void aShortcutFileTheManagerCanNotCreateIsToldAndTheCompileIsDone(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,"compile","hello");
+    idle(m);
+    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","bar"),""));
+    mode(hello,"r-xr-xr-x");
+    Assumptions.assumeFalse(Files.isWritable(hello));
+    touch(hello);
+    send(m,"clear","hello");
+    send(m,"compile","hello");
+    idle(m);
+    mode(hello,"rwxr-xr-x");
+    assertEquals("--- compiling hello ---\ncompiled\n--- shortcut file not created: access denied: "+hello.resolve("hello.bar")+" ---\n--- compile done ---\n",eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of(".bar hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
+  @Test void aCompiledCacheTheManagerCanNotWriteAtStartUpFailsThatProjectOnly(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    infos.put("other",claiming("other.Other","os","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    var out= hello.resolve(Facts.outDir);
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","","foo"));
+    mode(mainsInfo(hello),"r--r--r--");
+    mode(out,"r-xr-xr-x");
+    Assumptions.assumeFalse(Files.isWritable(out));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    mode(out,"rwxr-xr-x");
+    var p= project(again,hello);
+    assertEquals("The icons and the extensions of the claims of this project can not be saved in its compiled cache: access denied: "+mainsInfo(hello)+"\nGive Fearless access to the folder, then compile the project again.",p.problem().orElseThrow());
+    same("[###]--- mains.info not deleted: access denied: "+mainsInfo(hello)+" ---\n",eclipse(dir,"hello","console.txt"));
+    assertEquals(Project.noClaims,p.claims());
+    assertEquals(List.of("os","qux"),claimed(again).keySet().stream().sorted().toList());
   }
   private static List<String> top(Path project){ return Names.list(project).stream().map(p->p.getFileName().toString()).toList(); }
   @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@TempDir Path dir){

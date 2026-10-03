@@ -44,6 +44,7 @@ import tools.ChildJvm;
 import tools.Fs;
 import userMessages.UserError;
 import utils.Bug;
+import utils.DistinctBy;
 import utils.OneOr;
 
 /// The manager without its window: the registered projects, their jobs, and every request
@@ -99,7 +100,7 @@ public final class Manager{
   private final Registry registry;
   private final Map<Path,Live> live= new HashMap<>();
   private Optional<Path> selected= Optional.empty();
-  private Optional<List<Icon>> wanted= Optional.empty();
+  private Optional<List<?>> wanted= Optional.empty();
   private boolean forgotten;
   private int turn;
   private volatile State state= new State(List.of(),Optional.empty());
@@ -185,11 +186,14 @@ public final class Manager{
   }
   private void associate(Set<String> blocked){
     if (forgotten){ return; }
+    Project.claimed(projects()).values().stream().flatMap(List::stream).filter(c->!Files.isRegularFile(c.icon(".png")))
+      .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(c->blockedAtStartUp(c.folder(),Messages.iconGone(c.icon(".png"))));
     var claimed= Project.claimed(projects());
     var suffix= Fs.isWindows() ? ".ico" : ".png";
     var next= claimed.entrySet().stream().map(e->new Icon("."+e.getKey(),icon(e.getValue(),suffix),icon(e.getValue(),".png"))).toList();
-    if (wanted.equals(Optional.of(next))){ return; }
-    wanted= Optional.of(next);
+    List<?> known= List.of(next,next.stream().map(i->Fs.lastModified(i.png())).toList());
+    if (wanted.equals(Optional.of(known))){ return; }
+    wanted= Optional.of(known);
     tools.associate(next,e->claimedBy(claimed,blocked,e));
   }
   private static String claimedBy(Map<String,List<Project.Claimant>> claimed, Set<String> blocked, String extension){
@@ -217,7 +221,8 @@ public final class Manager{
   private void failed(Path f, String message){
     live.get(f).failure= message;
     output(f,message.stripTrailing()+"\n");
-    Fs.ofV(()->Files.deleteIfExists(f.resolve(Facts.outDir).resolve("mains.info")));
+    try{ Files.deleteIfExists(f.resolve(Facts.outDir).resolve("mains.info")); }
+    catch(IOException e){ output(f,"--- mains.info not deleted: "+Messages.fileFailure(e)+" ---\n"); }
   }
   private void open(Entry e){
     live.put(e.path(),new Live());
@@ -232,17 +237,19 @@ public final class Manager{
   }
   private boolean accept(Path f){
     var l= live.get(f);
+    l.failure= "";
     var read= read(f);
     try{
       var icons= ClaimIcons.read(f,tools.stdLibBase(),read);
       var filled= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims));
       Project.shortcuts(f,filled);
-      l.claims= filled;
       icons.forEach((icon,bytes)->ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icon,bytes));
+      if (!filled.equals(read)){ Fs.writeUtf8(f.resolve(Facts.outDir).resolve("mains.info"),filled.print()); }
+      l.claims= filled;
+      return true;
     }
     catch(UserError e){ failed(f,e.getMessage()); return false; }
-    if (!l.claims.equals(read)){ Fs.writeUtf8(f.resolve(Facts.outDir).resolve("mains.info"),l.claims.print()); }
-    return true;
+    catch(UncheckedIOException e){ failed(f,Messages.claimsNotSaved(e.getCause())); return false; }
   }
   private static final List<String> verbs= List.of("register","select","run","compile","check","terminate","clean","kind","forget","mains","link","clear");
   private static final List<String> thirdLine= List.of("run","kind","mains","link");
@@ -416,7 +423,7 @@ public final class Manager{
       l.failure= ec == 0 ? "" : l.compiled.toString();
       var previous= l.claims;
       var done= ec == 0 && accept(f) && associated(f,previous);
-      if (done){ Project.shortcuts(f,l.claims).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->Fs.ofV(()->Files.writeString(p,MakeDemo.markerContent,StandardOpenOption.CREATE_NEW))); }
+      if (done){ Project.shortcuts(f,l.claims).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->shortcut(f,p)); }
       output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }
@@ -427,6 +434,10 @@ public final class Manager{
     l.exit= ec;
     output(f,"--- "+what+" exited with "+ec+" after "+Duration.between(l.since,Instant.now()).toSeconds()+"s ---\n");
     next(f);
+  }
+  private void shortcut(Path f, Path file){
+    try{ Files.writeString(file,MakeDemo.markerContent,StandardOpenOption.CREATE_NEW); }
+    catch(IOException e){ output(f,"--- shortcut file not created: "+Messages.fileFailure(e)+" ---\n"); }
   }
   private void terminate(Path f){
     var l= live.get(f);

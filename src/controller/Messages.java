@@ -171,6 +171,8 @@ public final class Messages{
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" can not both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
+  public static String iconGone(Path file){ return "The icon file of a claim of this project is gone:\n"+file+"\nThe project claims no extension until it is compiled again."; }
+  public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project can not be saved in its compiled cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c->disp(c.main())+" of project "+disp(c.alias()))," claimed by "," and ","",""); }
   public static UserError iconRefused(String main, boolean shortcut, MainsInfo.Claim c, String problem){
     return new UserError(icon(main,shortcut,c)+" "+problem+" (from "+disp(from(c))+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
