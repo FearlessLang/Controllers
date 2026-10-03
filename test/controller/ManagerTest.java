@@ -46,6 +46,7 @@ import controller.Registry.Kind;
 import coordinator.MainsInfo;
 import fileAssociations.Icon;
 import fileSupport.Info;
+import mainCoordinator.MakeDemo;
 import resources.LocalResources;
 import tools.ChildJvm;
 import tools.Fs;
@@ -1315,7 +1316,7 @@ final class ManagerTest{
     assertEquals(1,associated.size());
   }
   private static List<String> top(Path project){ return Names.list(project).stream().map(p->p.getFileName().toString()).toList(); }
-  @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerAndNeverTouchesAnExistingOne(@TempDir Path dir){
+  @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= folder(dir,"hello");
     send(m,TaggedText.of(hello.toString()));
@@ -1325,8 +1326,8 @@ final class ManagerTest{
     idle(m);
     var auto= "foo_bar."+fapp("hello","hello.FooBar","base.IconsConflict");
     assertEquals(List.of(".fearless_out","_hello","foo_bar.bar",auto,"hello.fearless"),top(hello));
-    assertEquals("",Fs.readUtf8(hello.resolve("foo_bar.bar")));
-    assertEquals("",Fs.readUtf8(hello.resolve(auto)));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.bar")));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve(auto)));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
     Fs.writeUtf8(hello.resolve("foo_bar.bar"),"kept\n");
     Fs.ofV(()->Files.move(hello.resolve(auto),dir.resolve(auto)));
@@ -1337,13 +1338,13 @@ final class ManagerTest{
     idle(m);
     assertEquals(List.of(".fearless_out","_hello","foo_bar.bar",auto,"hello.fearless"),top(hello));
     assertEquals("kept\n",Fs.readUtf8(hello.resolve("foo_bar.bar")));
-    assertEquals("",Fs.readUtf8(hello.resolve(auto)));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve(auto)));
     assertTrue(Files.exists(dir.resolve(auto)));
     Fs.ofV(()->Files.delete(hello.resolve("foo_bar.bar")));
     touch(hello);
     send(m,"compile","hello");
     idle(m);
-    assertEquals("",Fs.readUtf8(hello.resolve("foo_bar.bar")));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.bar")));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
   }
   @Test void aShortcutMainWithoutAFileNameOrWithAReservedOneOrSharingItsFileFailsTheCompileAndCreatesNothing(@TempDir Path dir){
@@ -1382,7 +1383,7 @@ final class ManagerTest{
     var bar= claim("base.IconsConflict","icons/conflict.png","","","bar");
     var longName= "hello.L"+"o".repeat(196);
     for (var c: List.of(
-      Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","zip"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.zip\": a \".zip\" file of a project is read as a zip archive, and a shortcut file is empty. Give this Shortcut another extension."),
+      Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","zip"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.zip\": a \".zip\" file of a project is read as a zip archive, and a shortcut file is not a zip archive. Give this Shortcut another extension."),
       Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","fear"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.fear\": a \".fear\" file of a project is a source file, and it must be inside a package folder. Give this Shortcut another extension."),
       Map.entry(info(longName,bar,""),"Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(196)+".bar\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
       Map.entry(info("hello.Todo",bar,""),"Main \"hello.Todo\" can not have the shortcut file \"todo.bar\": the project has the file \"todo\", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
@@ -1405,7 +1406,7 @@ final class ManagerTest{
     touch(hello);
     send(m,"compile","hello");
     idle(m);
-    assertEquals("",Fs.readUtf8(hello.resolve("todo.bar")));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("todo.bar")));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
   }
   private Manager opening(Path dir){

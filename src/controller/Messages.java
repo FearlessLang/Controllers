@@ -162,7 +162,7 @@ public final class Messages{
     return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
   }
   public static UserError shortcutExtRefused(String main, String file){
-    var why= file.endsWith(".zip") ? "a \".zip\" file of a project is read as a zip archive, and a shortcut file is empty" : "a \".fear\" file of a project is a source file, and it must be inside a package folder";
+    var why= file.endsWith(".zip") ? "a \".zip\" file of a project is read as a zip archive, and a shortcut file is not a zip archive" : "a \".fear\" file of a project is a source file, and it must be inside a package folder";
     return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": "+why+". Give this Shortcut another extension.");
   }
   public static UserError shortcutMasksFile(String main, String file, String name){

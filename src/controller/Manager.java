@@ -11,6 +11,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -415,7 +416,7 @@ public final class Manager{
       l.failure= ec == 0 ? "" : l.compiled.toString();
       var previous= l.claims;
       var done= ec == 0 && accept(f) && associated(f,previous);
-      if (done){ Project.shortcuts(f,l.claims).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->Fs.ofV(()->Files.createFile(p))); }
+      if (done){ Project.shortcuts(f,l.claims).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->Fs.ofV(()->Files.writeString(p,MakeDemo.markerContent,StandardOpenOption.CREATE_NEW))); }
       output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }
