@@ -38,8 +38,9 @@ final class FactsTest{
     return res;
   }
   static void cache(Path project, String pkg, long stamp){
-    at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear",stamp);
+    at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear\ntop rank",stamp);
     at(project.resolve(".fearless_out").resolve(pkg+".json"),"{}\n",stamp);
+    at(project.resolve(".fearless_out").resolve("mains.info"),"{}\n",stamp);
   }
   private static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file,content);
