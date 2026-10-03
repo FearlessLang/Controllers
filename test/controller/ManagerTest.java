@@ -71,7 +71,7 @@ final class ManagerTest{
       """);
     Fs.runTool("javac",List.of("-d",classes.toString(),src.toString()));
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       FactsTest.cache(folder,"hello",FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
@@ -89,6 +89,8 @@ final class ManagerTest{
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
       associated.add(claimed);
+      var userLocked= Stream.concat(Stream.of(".fearless"),claimed.stream().map(Icon::extension)).filter(locked::contains).toList();
+      if (!userLocked.isEmpty()){ throw Violation.associationUserLocked(userLocked,claimedBy); }
       var blocked= Stream.concat(Stream.of(".fearless"),claimed.stream().map(Icon::extension)).filter(held::containsKey).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw Violation.associationNotOurs(blocked,claimedBy); }
     }
@@ -114,6 +116,7 @@ final class ManagerTest{
   private final Map<String,String> infos= new HashMap<>();
   private final List<List<Icon>> associated= Collections.synchronizedList(new ArrayList<>());
   private final Map<String,List<String>> held= new HashMap<>();
+  private final List<String> locked= new ArrayList<>();
   @AfterEach void nothingFailed(){ assertEquals(List.of(),failures); }
   private Manager manager(Path dir, String... mains){
     var map= new LinkedHashMap<String,String>();
@@ -121,7 +124,7 @@ final class ManagerTest{
     var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
     return manager(dir,_->known);
   }
-  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read,infos,associated,held),view,failures::add); }
+  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read,infos,associated,held,locked),view,failures::add); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -1259,5 +1262,52 @@ final class ManagerTest{
     assertEquals(1,failures.size());
     same(notOurs(".fearless -> fearlessBin0_003"),failures.getFirst().getMessage());
     failures.clear();
+  }
+  @Test void aStartUpRefusingOtherExtensionsOnceTheFirstRefusedAreDroppedDropsThoseToo(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("other",claiming("other.Other","os","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    locked.add(".hs");
+    held.put(".qux",List.of("vim"));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    same("""
+      Fearless cannot become the program that opens the kinds of file listed
+      below.
+
+      Your system remembers a choice you made by hand for these kinds of file,
+      and no program can change or remove that choice, including this one.
+      Fearless stopped before touching anything: your system is exactly as it
+      was.
+
+      The only way to clear it is Settings, Apps, Default apps, Reset - which
+      resets every app default on your machine, not only this one.
+
+      What is locked:
+      .hs claimed by "hello.Hello" of project "hello\"""",project(again,hello).problem().orElseThrow());
+    same(notOurs(".qux claimed by \"other.Other\" of project \"other\" -> vim"),project(again,other).problem().orElseThrow());
+    assertEquals(Project.noClaims,project(again,hello).claims());
+    assertEquals(Project.noClaims,project(again,other).claims());
+    assertEquals(List.of(),wanted(dir));
+  }
+  @Test void afterForgettingTheAssociationsTheManagerNeverAssociatesAgain(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    var calls= new ArrayList<Integer>();
+    m.forget(()->calls.add(associated.size()));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("foo","hs"),claimed(m).keySet().stream().sorted().toList());
+    assertEquals(List.of(1),calls);
+    assertEquals(1,associated.size());
   }
 }

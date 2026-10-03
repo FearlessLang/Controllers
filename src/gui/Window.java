@@ -139,7 +139,8 @@ public final class Window implements Manager.View{
   }
   public boolean askForget(){
     return onEdt(()->JOptionPane.showConfirmDialog(frame,"""
-      Remove Fearless as the program registered to open Fearless projects?
+      Remove Fearless as the program registered to open Fearless projects
+      and the kinds of file claimed by the mains of its projects?
 
       What your desktop already remembers by hand is left exactly as it is:
       this only removes what Fearless itself registered.""","Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);

@@ -96,6 +96,7 @@ public final class Manager{
   private final Map<Path,Live> live= new HashMap<>();
   private Optional<Path> selected= Optional.empty();
   private Optional<List<Icon>> wanted= Optional.empty();
+  private boolean forgotten;
   private int turn;
   private volatile State state= new State(List.of(),Optional.empty());
   public Manager(Path dir, Tools tools, View view, Consumer<Throwable> fail){
@@ -139,6 +140,7 @@ public final class Manager{
   public void commit(String base, String text, Runnable done){ post(()->commitNow(base,text,done)); }
   public void connect(Path chosen){ post(()->connectNow(chosen)); }
   public void refuse(String text){ post(()->tell(text)); }
+  public void forget(Runnable unassociate){ post(()->{ forgotten= true; unassociate.run(); }); }
   void settle(){
     try{ core.submit(()->{}).get(1,TimeUnit.MINUTES); }
     catch(InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
@@ -170,7 +172,7 @@ public final class Manager{
       var claimed= Project.claimed(projects());
       blocked.stream().flatMap(b->claimed.get(b.substring(1)).stream()).map(Project.Claimant::folder).distinct().forEach(f->blockedAtStartUp(f,e));
     }
-    associate(new HashSet<>());
+    associateAtStartUp();
   }
   private void blockedAtStartUp(Path f, UserError e){
     live.get(f).claims= Project.noClaims;
@@ -178,6 +180,7 @@ public final class Manager{
     scan(f);
   }
   private void associate(Set<String> blocked){
+    if (forgotten){ return; }
     var claimed= Project.claimed(projects());
     var suffix= Fs.isWindows() ? ".ico" : ".png";
     var next= claimed.entrySet().stream().map(e->new Icon("."+e.getKey(),icon(e.getValue(),suffix),icon(e.getValue(),".png"))).toList();
