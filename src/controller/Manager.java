@@ -378,8 +378,7 @@ public final class Manager{
     renamed.forEach((f,shown)->Fs.writeUtf8(console(f),shown));
     live.keySet().stream().filter(f->registry.of(f).isEmpty()).toList().forEach(this::drop);
     registry.all().stream().filter(e->!live.containsKey(e.path())).forEach(this::open);
-    var kinds= old.stream().collect(Collectors.toMap(Entry::path,Entry::kind));
-    registry.all().stream().filter(e->kinds.get(e.path()) != e.kind()).forEach(e->accept(e.path()));
+    old.stream().filter(o->registry.of(o.path()).filter(e->e.kind() != o.kind()).isPresent()).forEach(o->accept(o.path()));
     registry.all().forEach(e->scan(e.path()));
     done.run();
   }

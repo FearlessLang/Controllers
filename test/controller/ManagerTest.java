@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import controller.Manager.State;
-import coordinator.MainsInfo;
 import controller.Registry.Kind;
+import coordinator.MainsInfo;
 import fileSupport.Info;
 import tools.ChildJvm;
 import tools.Fs;

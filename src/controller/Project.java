@@ -45,16 +45,15 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
     var known= knownMains();
     return known.size() == 1 ? known : known.stream().filter(entry.mains()::contains).toList();
   }
-  public List<Claimant> claimants(){
+  private Stream<Claimant> claimants(){
     return claims.mains().entrySet().stream()
-      .flatMap(e->Stream.concat(claimants(e.getKey(),e.getValue().shortcuts(),true),claimants(e.getKey(),e.getValue().openWiths(),false)))
-      .toList();
+      .flatMap(e->Stream.concat(claimants(e.getKey(),e.getValue().shortcuts(),true),claimants(e.getKey(),e.getValue().openWiths(),false)));
   }
   private Stream<Claimant> claimants(String main, List<MainsInfo.Claim> cs, boolean shortcut){
     return cs.stream().filter(c->!c.extension().isEmpty()).map(c->new Claimant(folder(),alias(),main,shortcut,c));
   }
   public static Map<String,List<Claimant>> claimed(List<Project> projects){
-    return projects.stream().flatMap(p->p.claimants().stream())
+    return projects.stream().flatMap(Project::claimants)
       .sorted(Comparator.comparing(Claimant::label))
       .collect(Collectors.groupingBy(c->c.claim().extension(),TreeMap::new,Collectors.toUnmodifiableList()));
   }
