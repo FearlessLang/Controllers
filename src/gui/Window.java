@@ -9,6 +9,8 @@ import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Taskbar;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.UncheckedIOException;
@@ -26,12 +28,15 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -40,6 +45,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.TransferHandler;
@@ -132,6 +138,45 @@ public final class Window implements Manager.View{
   @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(()->panel(folder).append(text)); }
   @Override public void note(String text){ SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE)); }
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(()->panel(folder).output.setText("")); }
+  @Override public void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){ SwingUtilities.invokeLater(()->chooser(choices,picked)); }
+  private void chooser(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){
+    var list= choices(choices);
+    var dialog= new JDialog(frame,"Open with",false);
+    Runnable pick= ()->pick(dialog,list,picked);
+    var run= small("Run",pick);
+    list.addMouseListener(new MouseAdapter(){
+      @Override public void mouseClicked(MouseEvent e){ if (e.getClickCount() == 2){ pick.run(); } }
+    });
+    var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    buttons.add(run);
+    dialog.add(new JScrollPane(list),BorderLayout.CENTER);
+    dialog.add(buttons,BorderLayout.SOUTH);
+    dialog.getRootPane().setDefaultButton(run);
+    dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+    dialog.pack();
+    dialog.setLocationRelativeTo(frame);
+    dialog.setVisible(true);
+    list.requestFocusInWindow();
+  }
+  private static void pick(JDialog dialog, JList<Project.Claimant> list, Consumer<Project.Claimant> picked){
+    if (list.isSelectionEmpty()){ return; }
+    dialog.dispose();
+    picked.accept(list.getSelectedValue());
+  }
+  static JList<Project.Claimant> choices(List<Project.Claimant> choices){
+    var icons= choices.stream().map(c->new ImageIcon(Icons.of(c,32))).toList();
+    var res= new JList<>(choices.toArray(Project.Claimant[]::new));
+    res.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    res.setSelectedIndex(0);
+    res.setCellRenderer(new DefaultListCellRenderer(){
+      @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focused){
+        super.getListCellRendererComponent(l,choices.get(i).label(),i,selected,focused);
+        setIcon(icons.get(i));
+        return this;
+      }
+    });
+    return res;
+  }
   private boolean onScreen(){ return frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) == 0; }
   //A desktop that refuses to show a window reports it as iconified and never deiconifies it.
   private void checkSurfaced(){
@@ -213,7 +258,7 @@ public final class Window implements Manager.View{
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
     chosen.accept(chooser.getSelectedFile().toPath());
   }
-  private void register(Path p){ main.manager().message(TaggedText.line(p.toString())); }
+  private void register(Path p){ ask("register",TaggedText.line(p.toString()),""); }
   private TransferHandler dropHandler(){
     return new TransferHandler(){
       @Override public boolean canImport(TransferSupport support){

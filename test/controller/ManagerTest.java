@@ -74,7 +74,7 @@ final class ManagerTest{
   record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
-      FactsTest.cache(folder,"hello",FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
+      FactsTest.cache(folder,folder.getFileName().toString(),FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
       MainsInfo.read(folder).orElseThrow().mains().values().stream().flatMap(m->Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
         .filter(c->!c.icon().startsWith("base.")).map(c->folder.resolve(c.diskPath())).filter(p->!Files.exists(p)).forEach(p->image(p,64,64,"png"));
       return jvm(out,"compiled","0","0");
@@ -110,6 +110,10 @@ final class ManagerTest{
     @Override public void clear(Path folder){ cleared.add(folder); }
     boolean visible= true;
     @Override public boolean visible(){ return visible; }
+    final List<List<String>> choices= new ArrayList<>();
+    Consumer<Project.Claimant> picked;
+    List<Project.Claimant> last;
+    @Override public void choose(List<Project.Claimant> cs, Consumer<Project.Claimant> p){ choices.add(cs.stream().map(Project.Claimant::label).toList()); last= cs; picked= p; }
   }
   private final List<Throwable> failures= Collections.synchronizedList(new ArrayList<>());
   private final View view= new View();
@@ -1403,5 +1407,116 @@ final class ManagerTest{
     idle(m);
     assertEquals("",Fs.readUtf8(hello.resolve("todo.bar")));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
+  private Manager opening(Path dir){
+    return manager(dir,f->Optional.of(Map.of(f.getFileName()+"."+(f.getFileName().toString().equals("slow") ? "Slow" : "Hello"),"_hello/_rank_app.fear")));
+  }
+  private static Path doc(Path dir, String name){
+    var res= dir.resolve("desk").resolve(name);
+    Fs.writeUtf8(res,"");
+    return res;
+  }
+  private static String running(String main){ return "--- running "+main+" ---\nran "+main+"\n--- "+main+" exited with 0 after [###]s ---\n"; }
+  @Test void aFileWhoseExtensionOneMainClaimsRunsThatMainCompilingFirstWhenNeeded(@TempDir Path dir){
+    var m= opening(dir);
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    send(m,"select","other");
+    var shown= view.shown;
+    send(m,TaggedText.of(doc(dir,"a.foo").toString()));
+    idle(m);
+    same(running("hello.Hello"),eclipse(dir,"hello","console.txt"));
+    assertEquals(Optional.of(hello),m.state().selected());
+    touch(hello);
+    send(m,"clear","hello");
+    send(m,TaggedText.of(doc(dir,"b.hs").toString()));
+    idle(m);
+    same("--- compiling hello ---\ncompiled\n--- compile done ---\n"+running("hello.Hello"),eclipse(dir,"hello","console.txt"));
+    assertEquals(shown,view.shown);
+    assertEquals(List.of(),view.choices);
+    assertEquals(List.of("hello "+hello,"other "+other),listed(dir));
+  }
+  @Test void aFileWhoseExtensionSeveralMainsClaimListsThemSortedAndRunsThePickedOne(@TempDir Path dir){
+    var m= opening(dir);
+    var other= folder(dir,"other");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(other.toString()));
+    send(m,TaggedText.of(hello.toString()));
+    infos.put("other",claiming("other.Hello","os","foo"));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    send(m,"compile","other");
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    send(m,"clear","other");
+    var doc= TaggedText.of(doc(dir,"a.foo").toString());
+    send(m,doc);
+    assertEquals(List.of(List.of("hello::hello.Hello","other::other.Hello")),view.choices);
+    idle(m);
+    assertEquals("",eclipse(dir,"hello","console.txt")+eclipse(dir,"other","console.txt"));
+    view.picked.accept(view.last.get(1));
+    m.settle();
+    idle(m);
+    same(running("other.Hello"),eclipse(dir,"other","console.txt"));
+    assertEquals("",eclipse(dir,"hello","console.txt"));
+    assertEquals(Optional.of(other),m.state().selected());
+    send(m,doc);
+    send(m,"forget","other");
+    view.picked.accept(view.last.get(1));
+    m.settle();
+    idle(m);
+    assertEquals("",eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
+  }
+  @Test void aFileOpenedWhileItsMainRunsShowsTheProjectAndRunsNothingMore(@TempDir Path dir){
+    var m= opening(dir);
+    var slow= folder(dir,"slow");
+    send(m,TaggedText.of(slow.toString()));
+    infos.put("slow",claiming("slow.Slow","ss","foo"));
+    send(m,"compile","slow");
+    idle(m);
+    var doc= TaggedText.of(doc(dir,"a.foo").toString());
+    send(m,doc);
+    until(m,_->eclipse(dir,"slow","console.txt").contains("ran slow.Slow"));
+    var shown= view.shown;
+    send(m,"select","slow");
+    send(m,"clear","slow");
+    send(m,TaggedText.of(doc(dir,"b.ss").toString()));
+    send(m,doc);
+    assertEquals(shown+3,view.shown);
+    assertEquals(Optional.of("slow.Slow"),project(m,slow).running());
+    assertEquals("",eclipse(dir,"slow","console.txt"));
+    send(m,"terminate","slow");
+    idle(m);
+  }
+  @Test void aFileNobodyClaimsAFearlessFileAndAFolderRegisterAsBeforeAndAClaimedFileRegistersNothing(@TempDir Path dir){
+    var m= opening(dir);
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    var notes= folder(dir,"notes");
+    var proj= folder(dir,"proj");
+    var named= folder(dir,"named.foo");
+    Fs.writeUtf8(notes.resolve("a.txt"),"");
+    Fs.writeUtf8(proj.resolve("proj.fearless"),"");
+    send(m,TaggedText.of(notes.resolve("a.txt").toString()));
+    send(m,TaggedText.of(proj.resolve("proj.fearless").toString()));
+    send(m,TaggedText.of(named.toString()));
+    send(m,TaggedText.of(doc(dir,"a.foo").toString()));
+    idle(m);
+    send(m,TaggedText.of(dir.resolve("desk").resolve("gone.foo").toString()));
+    assertEquals(List.of("hello "+hello,"named_foo "+named,"notes "+notes,"proj "+proj),listed(dir).stream().sorted().toList());
+    same(running("hello.Hello"),eclipse(dir,"hello","console.txt"));
+    same("[###]"+dir.resolve("desk").resolve("gone.foo")+"[###]",String.join("\n",view.notes));
+    assertEquals(List.of(),view.choices);
   }
 }

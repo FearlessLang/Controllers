@@ -55,6 +55,7 @@ public final class Manager{
     void note(String text);
     void clear(Path folder);
     boolean visible();
+    void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked);
   }
   public interface Tools{
     ChildJvm compile(Path folder, Consumer<String> out);
@@ -195,8 +196,7 @@ public final class Manager{
   }
   private Path icon(List<Project.Claimant> cs, String suffix){
     if (cs.size() > 1){ return dir.resolve("icons").resolve(conflict+suffix); }
-    var c= cs.getFirst();
-    return c.folder().resolve(Facts.outDir).resolve("icons").resolve(c.claim().icon()+suffix);
+    return cs.getFirst().icon(suffix);
   }
   private void reassociate(){
     try{ associate(new HashSet<>()); }
@@ -247,7 +247,7 @@ public final class Manager{
   private void apply(String message){
     if (message.isEmpty()){ view.show(); return; }
     var lines= List.of(message.split("\n",-1));
-    if (lines.size() == 1){ register(lines.getFirst()); return; }
+    if (lines.size() == 1){ open(lines.getFirst()); return; }
     if (lines.size() > 3){ tell(Messages.tooManyLines(message)); return; }
     request(lines.get(0),lines.get(1),lines.size() > 2 ? lines.get(2) : "");
   }
@@ -274,6 +274,31 @@ public final class Manager{
       case "clear" -> { Fs.writeUtf8(console(folder),""); view.clear(folder); }
       default -> throw Bug.unreachable();
     }
+  }
+  private void open(String given){
+    var cs= claimants(given);
+    if (cs.isEmpty()){ register(given); return; }
+    if (cs.size() == 1){ open(cs.getFirst()); return; }
+    view.choose(cs,c->post(()->picked(c)));
+  }
+  private List<Project.Claimant> claimants(String given){
+    Path file;
+    try{ file= Path.of(TaggedText.read(given,Registry.Refused::new)); }
+    catch(Registry.Refused|InvalidPathException e){ return List.of(); }
+    if (!Files.isRegularFile(file)){ return List.of(); }
+    var name= file.getFileName().toString();
+    var dot= name.lastIndexOf('.');
+    return dot < 0 ? List.of() : Project.claimed(projects()).getOrDefault(name.substring(dot+1),List.of());
+  }
+  private void picked(Project.Claimant c){
+    if (registry.of(c.folder()).isPresent()){ open(c); }
+  }
+  private void open(Project.Claimant c){
+    var f= c.folder();
+    scan(f);
+    selected= Optional.of(f);
+    if (live.get(f).job.equals(c.main())){ view.show(); return; }
+    job(f,true,Optional.of(c.main()));
   }
   private void register(String given){
     if (given.isBlank()){ tell(Messages.registerNoFolder()); return; }

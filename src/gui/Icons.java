@@ -20,6 +20,7 @@ import javax.swing.Icon;
 import controller.Association;
 import controller.Project;
 import controller.Messages;
+import userMessages.UserError;
 import utils.Range;
 
 public final class Icons{
@@ -31,6 +32,10 @@ public final class Icons{
   }
   /// The icon of a project: its own PNG, or one made up from its name.
   public static Image of(Project p, int size){ return p.facts().icon().<Image>map(i->i.image()).orElseGet(()->generated(p.alias(),size)); }
+  public static Image of(Project.Claimant c, int size){
+    try{ return read(c.icon(".png")).getScaledInstance(size,size,Image.SCALE_SMOOTH); }
+    catch(UserError e){ return generated(c.label(),size); }
+  }
   static Image read(Path file){
     try{
       var res= ImageIO.read(file.toFile());

@@ -36,6 +36,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   public static final MainsInfo noClaims= new MainsInfo(Map.of());
   public record Claimant(Path folder, String alias, String main, boolean shortcut, MainsInfo.Claim claim){
     public String label(){ return alias+"::"+main; }
+    public Path icon(String suffix){ return folder.resolve(Facts.outDir).resolve("icons").resolve(claim.icon()+suffix); }
   }
   public enum State{
     codeInvalid("code: invalid content"), dataInvalid("data: invalid content"), idle("idle"), dataReadOnly("data: read only"), dataReadWrite("data: read write"),
