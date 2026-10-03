@@ -419,7 +419,10 @@ public final class Manager{
       l.failure= ec == 0 ? "" : l.compiled.toString();
       var previous= l.claims;
       var done= ec == 0 && accept(f) && associated(f,previous);
-      if (done){ Project.shortcuts(Project.claimants(f,alias(f),l.claims)).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->shortcut(f,p)); }
+      if (done){
+        Project.shortcuts(Project.claimants(f,alias(f),l.claims)).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->shortcut(f,p));
+        unclaimedIcons(f,l.claims);
+      }
       output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }
@@ -434,6 +437,12 @@ public final class Manager{
   private void shortcut(Path f, Path file){
     try{ Files.writeString(file,MakeDemo.markerContent,StandardOpenOption.CREATE_NEW); }
     catch(IOException e){ output(f,"--- shortcut file not created: "+Messages.fileFailure(e)+" ---\n"); }
+  }
+  private void unclaimedIcons(Path f, MainsInfo claims){
+    var kept= Project.claimants(f,alias(f),claims).flatMap(c->Stream.of(c.icon(".png"),c.icon(Fs.isWindows() ? ".ico" : ".png"))).toList();
+    try(var s= Files.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p: s.filter(p->!kept.contains(p)).toList()){ Files.delete(p); } }
+    catch(NoSuchFileException e){}
+    catch(IOException e){ output(f,"--- unclaimed icons not removed: "+Messages.fileFailure(e)+" ---\n"); }
   }
   private void terminate(Path f){
     var l= live.get(f);

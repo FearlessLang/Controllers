@@ -1084,6 +1084,39 @@ final class ManagerTest{
     idle(m);
     assertArrayEquals(other,bytes(icons(hello).resolve("hello.IconsFoo.png")));
   }
+  private static List<String> iconFiles(Path project){ return Names.list(icons(project)).stream().map(p->p.getFileName().toString()).toList(); }
+  @Test void aRecompileRemovesTheIconFilesNoClaimUsesAnyMore(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var bar= claim("hello.IconsBar","art/bar.png","","","bar");
+    var foo= claim("hello.IconsFoo","art/foo.png","","","foo");
+    var qux= claim("hello.IconsFoo","art/foo.png","","","qux");
+    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","hs"),bar+", "+foo+", "+qux));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("base.IconsConflict.png","hello.IconsBar.png","hello.IconsFoo.png"),iconFiles(hello));
+    infos.put("hello",info("hello.Hello","",qux));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    assertEquals(List.of("hello.IconsFoo.png"),iconFiles(hello));
+    assertTrue(Files.exists(mainsInfo(hello)));
+  }
+  @Test void aCompileWhoseExtensionsTheDesktopRefusesKeepsTheIconFilesOfTheClaimsBefore(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    held.put(".bar",List.of("vim"));
+    infos.put("hello",info("hello.Hello","",claim("hello.IconsBar","art/bar.png","","","bar")));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeInvalid,project(m,hello).state());
+    assertEquals(List.of("base.IconsConflict.png","hello.IconsBar.png","hello.IconsFoo.png"),iconFiles(hello));
+  }
   @Test void anIconEntryRemovedFromItsZipBeforeStartUpFailsNamingTheIcon(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
