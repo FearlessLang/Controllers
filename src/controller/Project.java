@@ -24,7 +24,9 @@ import controller.Registry.Kind;
 import coordinator.MainsInfo;
 import realSourceOracle.AutoloadHandler;
 import realSourceOracle.BuildWithZip;
+import realSourceOracle.PathEntry;
 import userMessages.Report;
+import userMessages.UserError;
 import utils.Join;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
@@ -105,10 +107,10 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   }
   private static String shortcutFile(Path project, String main, String ext){
     var name= AutoloadHandler.fileName(main.substring(main.lastIndexOf('.')+1)).orElseThrow(()->Messages.shortcutNoFileName(main));
-    if (BuildWithZip.winReserved.contains(name)){ throw Messages.shortcutReservedName(main,name); }
     var file= name+"."+ext;
+    try{ BuildWithZip.checkIndividualVisibleSegment(new PathEntry(project,Path.of(file))); }
+    catch(UserError e){ throw Messages.shortcutBadFileName(main,file); }
     if (ext.equals("zip") || ext.equals("fear")){ throw Messages.shortcutExtRefused(main,file); }
-    if (file.length() > BuildWithZip.maxPath){ throw Messages.shortcutTooLong(main,file); }
     var masks= Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name),LinkOption.NOFOLLOW_LINKS);
     if (masks){ throw Messages.shortcutMasksFile(main,file,name); }
     return file;

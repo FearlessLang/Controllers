@@ -1356,7 +1356,7 @@ final class ManagerTest{
     for (var c: List.of(
       Map.entry("{\"hello.Foo'\": "+main+"}\n","Main \"hello.Foo'\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
       Map.entry("{\"hello.Foo_bar\": "+main+"}\n","Main \"hello.Foo_bar\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
-      Map.entry("{\"hello.Con\": "+main+"}\n","Main \"hello.Con\" can not have a Shortcut: its name maps to the file name \"con\", reserved on Windows. A main with a Shortcut has a name that does not map to \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\"."),
+      Map.entry("{\"hello.Con\": "+main+"}\n","Main \"hello.Con\" can not have the shortcut file \"con.bar\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
       Map.entry("{\"b.Bar\": "+main+", \"a.Bar\": "+main+"}\n","Mains \"a.Bar\" and \"b.Bar\" can not both have the shortcut file \"bar.bar\": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension."))){
       infos.put("hello",c.getKey());
       touch(hello);
@@ -1380,7 +1380,7 @@ final class ManagerTest{
     for (var c: List.of(
       Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","zip"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.zip\": a \".zip\" file of a project is read as a zip archive, and a shortcut file is empty. Give this Shortcut another extension."),
       Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","fear"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.fear\": a \".fear\" file of a project is a source file, and it must be inside a package folder. Give this Shortcut another extension."),
-      Map.entry(info(longName,bar,""),"Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(196)+".bar\": a file name in a project is at most 200 characters long, and this one is 201. Give this main a shorter name."),
+      Map.entry(info(longName,bar,""),"Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(196)+".bar\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
       Map.entry(info("hello.Todo",bar,""),"Main \"hello.Todo\" can not have the shortcut file \"todo.bar\": the project has the file \"todo\", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
       infos.put("hello",c.getKey());
       touch(hello);
