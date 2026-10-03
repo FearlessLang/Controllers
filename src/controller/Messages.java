@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import coordinator.MainsInfo;
+import realSourceOracle.BuildWithZip;
 import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
@@ -160,6 +161,16 @@ public final class Messages{
   }
   public static UserError shortcutReservedName(String main, String name){
     return new UserError("Main "+disp(main)+" can not have a Shortcut: its name maps to the file name "+disp(name)+", reserved on Windows. A main with a Shortcut has a name that does not map to \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\".");
+  }
+  public static UserError shortcutExtRefused(String main, String file){
+    var why= file.endsWith(".zip") ? "a \".zip\" file of a project is read as a zip archive, and a shortcut file is empty" : "a \".fear\" file of a project is a source file, and it must be inside a package folder";
+    return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": "+why+". Give this Shortcut another extension.");
+  }
+  public static UserError shortcutTooLong(String main, String file){
+    return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": a file name in a project is at most "+BuildWithZip.maxPath+" characters long, and this one is "+file.length()+". Give this main a shorter name.");
+  }
+  public static UserError shortcutMasksFile(String main, String file, String name){
+    return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": the project has the file "+disp(name)+", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file "+disp(name)+".");
   }
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" can not both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");

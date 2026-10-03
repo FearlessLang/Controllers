@@ -1,5 +1,7 @@
 package controller;
 
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -22,6 +24,7 @@ import controller.Registry.Kind;
 import coordinator.MainsInfo;
 import realSourceOracle.AutoloadHandler;
 import realSourceOracle.BuildWithZip;
+import userMessages.Report;
 import utils.Join;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
@@ -89,21 +92,26 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       return new MainsInfo.Claim(c.icon(),c.diskPath(),c.zipSteps(),c.zipEntry(),ext);
     }
   }
-  static List<String> shortcuts(MainsInfo info){
+  static List<String> shortcuts(Path project, MainsInfo info){
     var files= new LinkedHashMap<String,String>();
     for (var e: info.mains().entrySet()){
       for (var c: e.getValue().shortcuts()){
-        var file= shortcutName(e.getKey())+"."+c.extension();
+        var file= shortcutFile(project,e.getKey(),c.extension());
         var other= files.putIfAbsent(file,e.getKey());
         if (other != null){ throw Messages.shortcutsCollide(other,e.getKey(),file); }
       }
     }
     return List.copyOf(files.keySet());
   }
-  private static String shortcutName(String main){
+  private static String shortcutFile(Path project, String main, String ext){
     var name= AutoloadHandler.fileName(main.substring(main.lastIndexOf('.')+1)).orElseThrow(()->Messages.shortcutNoFileName(main));
     if (BuildWithZip.winReserved.contains(name)){ throw Messages.shortcutReservedName(main,name); }
-    return name;
+    var file= name+"."+ext;
+    if (ext.equals("zip") || ext.equals("fear")){ throw Messages.shortcutExtRefused(main,file); }
+    if (file.length() > BuildWithZip.maxPath){ throw Messages.shortcutTooLong(main,file); }
+    var masks= Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name),LinkOption.NOFOLLOW_LINKS);
+    if (masks){ throw Messages.shortcutMasksFile(main,file,name); }
+    return file;
   }
   public State state(){
     if (busy()){ return State.busy; }

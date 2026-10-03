@@ -234,7 +234,7 @@ public final class Manager{
     try{
       var icons= ClaimIcons.read(f,tools.stdLibBase(),read);
       var filled= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims));
-      Project.shortcuts(filled);
+      Project.shortcuts(f,filled);
       l.claims= filled;
       icons.forEach((icon,bytes)->ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icon,bytes));
     }
@@ -390,7 +390,7 @@ public final class Manager{
       l.failure= ec == 0 ? "" : l.compiled.toString();
       var previous= l.claims;
       var done= ec == 0 && accept(f) && associated(f,previous);
-      if (done){ Project.shortcuts(l.claims).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->Fs.ofV(()->Files.createFile(p))); }
+      if (done){ Project.shortcuts(f,l.claims).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->Fs.ofV(()->Files.createFile(p))); }
       output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }

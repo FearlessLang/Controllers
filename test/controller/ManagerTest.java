@@ -1369,4 +1369,39 @@ final class ManagerTest{
     }
     assertEquals(List.of(".bar hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
   }
+  @Test void aShortcutFileBreakingTheProjectFileRulesFailsTheCompileAndCreatesNothing(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    Fs.writeUtf8(hello.resolve("todo"),"");
+    var calls= associated.size();
+    var bar= claim("base.IconsConflict","icons/conflict.png","","","bar");
+    var longName= "hello.L"+"o".repeat(196);
+    for (var c: List.of(
+      Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","zip"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.zip\": a \".zip\" file of a project is read as a zip archive, and a shortcut file is empty. Give this Shortcut another extension."),
+      Map.entry(info("hello.Bar",claim("base.IconsConflict","icons/conflict.png","","","fear"),""),"Main \"hello.Bar\" can not have the shortcut file \"bar.fear\": a \".fear\" file of a project is a source file, and it must be inside a package folder. Give this Shortcut another extension."),
+      Map.entry(info(longName,bar,""),"Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(196)+".bar\": a file name in a project is at most 200 characters long, and this one is 201. Give this main a shorter name."),
+      Map.entry(info("hello.Todo",bar,""),"Main \"hello.Todo\" can not have the shortcut file \"todo.bar\": the project has the file \"todo\", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
+      infos.put("hello",c.getKey());
+      touch(hello);
+      send(m,"run","hello");
+      idle(m);
+      same("[###]--- compiling hello ---\ncompiled\n"+c.getValue()+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+      same(c.getValue(),project(m,hello).problem().orElseThrow());
+      assertEquals(List.of(".fearless_out","_hello","hello.fearless","todo"),top(hello));
+    }
+    assertEquals(calls,associated.size());
+    infos.put("hello",info("hello.L"+"o".repeat(195),bar,""));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertTrue(Files.exists(hello.resolve("l"+"o".repeat(195)+".bar")));
+    Fs.ofV(()->Files.delete(hello.resolve("todo")));
+    infos.put("hello",info("hello.Todo",bar,""));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals("",Fs.readUtf8(hello.resolve("todo.bar")));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
 }
