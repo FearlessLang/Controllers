@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +20,8 @@ import java.util.stream.Stream;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
 import coordinator.MainsInfo;
+import realSourceOracle.AutoloadHandler;
+import realSourceOracle.BuildWithZip;
 import utils.Join;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
@@ -85,6 +88,22 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       used.add(ext);
       return new MainsInfo.Claim(c.icon(),c.diskPath(),c.zipSteps(),c.zipEntry(),ext);
     }
+  }
+  static List<String> shortcuts(MainsInfo info){
+    var files= new LinkedHashMap<String,String>();
+    for (var e: info.mains().entrySet()){
+      for (var c: e.getValue().shortcuts()){
+        var file= shortcutName(e.getKey())+"."+c.extension();
+        var other= files.putIfAbsent(file,e.getKey());
+        if (other != null){ throw Messages.shortcutsCollide(other,e.getKey(),file); }
+      }
+    }
+    return List.copyOf(files.keySet());
+  }
+  private static String shortcutName(String main){
+    var name= AutoloadHandler.fileName(main.substring(main.lastIndexOf('.')+1)).orElseThrow(()->Messages.shortcutNoFileName(main));
+    if (BuildWithZip.winReserved.contains(name)){ throw Messages.shortcutReservedName(main,name); }
+    return name;
   }
   public State state(){
     if (busy()){ return State.busy; }

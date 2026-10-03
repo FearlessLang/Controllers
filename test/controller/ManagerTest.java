@@ -1310,4 +1310,63 @@ final class ManagerTest{
     assertEquals(List.of(1),calls);
     assertEquals(1,associated.size());
   }
+  private static List<String> top(Path project){ return Names.list(project).stream().map(p->p.getFileName().toString()).toList(); }
+  @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerAndNeverTouchesAnExistingOne(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    var shortcuts= claim("base.IconsConflict","icons/conflict.png","","","bar")+", "+claim("base.IconsConflict","icons/conflict.png","","","");
+    infos.put("hello","{\"hello.FooBar\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], []], \"hello.Foo'\": [\"_hello/_rank_app.fear\", [], ["+claim("base.IconsConflict","icons/conflict.png","","","foo")+"]]}\n");
+    send(m,"compile","hello");
+    idle(m);
+    var auto= "foo_bar."+fapp("hello","hello.FooBar","base.IconsConflict");
+    assertEquals(List.of(".fearless_out","_hello","foo_bar.bar",auto,"hello.fearless"),top(hello));
+    assertEquals("",Fs.readUtf8(hello.resolve("foo_bar.bar")));
+    assertEquals("",Fs.readUtf8(hello.resolve(auto)));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    Fs.writeUtf8(hello.resolve("foo_bar.bar"),"kept\n");
+    Fs.ofV(()->Files.move(hello.resolve(auto),dir.resolve(auto)));
+    send(m,"select","hello");
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of(".fearless_out","_hello","foo_bar.bar",auto,"hello.fearless"),top(hello));
+    assertEquals("kept\n",Fs.readUtf8(hello.resolve("foo_bar.bar")));
+    assertEquals("",Fs.readUtf8(hello.resolve(auto)));
+    assertTrue(Files.exists(dir.resolve(auto)));
+    Fs.ofV(()->Files.delete(hello.resolve("foo_bar.bar")));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals("",Fs.readUtf8(hello.resolve("foo_bar.bar")));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
+  @Test void aShortcutMainWithoutAFileNameOrWithAReservedOneOrSharingItsFileFailsTheCompileAndCreatesNothing(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    var bar= claim("base.IconsConflict","icons/conflict.png","","","bar");
+    infos.put("hello",info("hello.Hello",bar,""));
+    send(m,"compile","hello");
+    idle(m);
+    var accepted= project(m,hello).claims();
+    var before= top(hello);
+    var main= "[\"_hello/_rank_app.fear\", ["+bar+"], []]";
+    for (var c: List.of(
+      Map.entry("{\"hello.Foo'\": "+main+"}\n","Main \"hello.Foo'\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
+      Map.entry("{\"hello.Foo_bar\": "+main+"}\n","Main \"hello.Foo_bar\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
+      Map.entry("{\"hello.Con\": "+main+"}\n","Main \"hello.Con\" can not have a Shortcut: its name maps to the file name \"con\", reserved on Windows. A main with a Shortcut has a name that does not map to \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\"."),
+      Map.entry("{\"b.Bar\": "+main+", \"a.Bar\": "+main+"}\n","Mains \"a.Bar\" and \"b.Bar\" can not both have the shortcut file \"bar.bar\": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension."))){
+      infos.put("hello",c.getKey());
+      touch(hello);
+      send(m,"run","hello");
+      idle(m);
+      same("[###]--- compiling hello ---\ncompiled\n"+c.getValue()+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+      same(c.getValue(),project(m,hello).problem().orElseThrow());
+      assertEquals(accepted,project(m,hello).claims());
+      assertEquals(before,top(hello));
+    }
+    assertEquals(List.of(".bar hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+  }
 }

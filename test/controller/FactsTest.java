@@ -133,6 +133,15 @@ final class FactsTest{
     at(project.resolve("someproject.fearless"),"",stamp+5000);
     assertTrue(Facts.of(project,"someproject",Kind.code).upToDate());
   }
+  @Test void aShortcutFileAtTheTopLevelKeepsTheCacheUpToDateAndTheProjectValid(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    var stamp= after(project);
+    cache(project,"hello",stamp);
+    at(project.resolve("bar.fapp042"),"",stamp+5000);
+    var facts= Facts.of(project,"someproject",Kind.code);
+    assertTrue(facts.upToDate());
+    assertEquals(Optional.empty(),facts.problem());
+  }
   @Test void aFileAddedToAPackageMakesItStaleWhateverItsTime(@TempDir Path dir){
     var project= project(dir,"someProject");
     cache(project,"hello",after(project));

@@ -155,6 +155,15 @@ public final class Messages{
     var example= name.isEmpty() || name.equals("fearless") ? "ext" : name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
     return new UserError("No free extension is left for \"base."+kind+"["+icon+"]\" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind+" an explicit extension, for example \"base."+kind+"["+icon+",\\\""+example+"\\\"]\".");
   }
+  public static UserError shortcutNoFileName(String main){
+    return new UserError("Main "+disp(main)+" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\".");
+  }
+  public static UserError shortcutReservedName(String main, String name){
+    return new UserError("Main "+disp(main)+" can not have a Shortcut: its name maps to the file name "+disp(name)+", reserved on Windows. A main with a Shortcut has a name that does not map to \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\".");
+  }
+  public static UserError shortcutsCollide(String main1, String main2, String file){
+    return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" can not both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
+  }
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c->disp(c.main())+" of project "+disp(c.alias()))," claimed by "," and ","",""); }
   public static UserError iconRefused(String main, boolean shortcut, MainsInfo.Claim c, String problem){
     return new UserError(icon(main,shortcut,c)+" "+problem+" (from "+disp(from(c))+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
