@@ -156,12 +156,25 @@ public final class Manager{
     accept(e.path());
     scan(e.path());
   }
-  private void accept(Path f){
+  private boolean accept(Path f){
     var l= live.get(f);
+    var previous= l.claims;
     l.claims= Project.noClaims;
-    if (registry.of(f).orElseThrow().kind() != Kind.code){ return; }
-    try{ l.claims= MainsInfo.read(f).orElse(Project.noClaims); }
-    catch(UserError|UncheckedIOException e){}
+    if (registry.of(f).orElseThrow().kind() != Kind.code){ return true; }
+    MainsInfo read;
+    try{ read= MainsInfo.read(f).orElse(Project.noClaims); }
+    catch(UserError|UncheckedIOException e){ return true; }
+    var file= f.resolve(Facts.outDir).resolve("mains.info");
+    try{ l.claims= Project.filled(read,previous,alias(f),live.entrySet().stream().filter(e->!e.getKey().equals(f)).map(e->e.getValue().claims)); }
+    catch(UserError e){
+      l.claims= previous;
+      l.failure= e.getMessage();
+      output(f,l.failure.stripTrailing()+"\n");
+      Fs.ofV(()->Files.deleteIfExists(file));
+      return false;
+    }
+    if (!l.claims.equals(read)){ Fs.writeUtf8(file,l.claims.print()); }
+    return true;
   }
   private static final List<String> verbs= List.of("register","select","run","compile","check","terminate","clean","kind","forget","mains","link","clear");
   private static final List<String> thirdLine= List.of("run","kind","mains","link");
@@ -309,11 +322,11 @@ public final class Manager{
     l.job= "";
     if (what.equals(Project.compiling)){
       l.failure= ec == 0 ? "" : l.compiled.toString();
-      output(f,"--- compile "+(ec == 0 ? "done" : "failed with "+ec)+" ---\n");
-      if (ec == 0){ accept(f); }
+      var done= ec == 0 && accept(f);
+      output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }
-      l.todo= ec == 0 && !l.terminated ? l.then.get() : List.of();
+      l.todo= done && !l.terminated ? l.then.get() : List.of();
       next(f);
       return;
     }

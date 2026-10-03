@@ -145,6 +145,12 @@ public final class Messages{
   }
   public static String dropRefused(String item, String why){ return "The manager was asked to register "+disp(item)+", dropped on its window, but "+why+"."; }
   public static String dropUnreadable(Exception e){ return "The manager was asked to register what was dropped on its window, but the desktop did not hand it over: "+e.getMessage(); }
+  public static UserError noFreeExtension(String main, boolean shortcut, String icon){
+    var kind= shortcut ? "Shortcut" : "OpenWith";
+    var prefix= shortcut ? "fapp" : "ffile";
+    var example= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
+    return new UserError("No free extension is left for \"base."+kind+"["+icon+"]\" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind+" an explicit extension, for example \"base."+kind+"["+icon+",\\\""+example+"\\\"]\".");
+  }
   public static UserError tooManyArguments(List<String> args){
     return new UserError("""
       Fearless was started with %d arguments, but it takes at most one.

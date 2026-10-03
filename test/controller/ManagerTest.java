@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -821,7 +822,7 @@ final class ManagerTest{
     infos.put("hello",claiming("hello.Hello","","foo"));
     send(m,"compile","hello");
     idle(m);
-    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"));
+    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"),fapp("hello","hello.Hello","base.IconsConflict"),List.of("hello::hello.Hello shortcut base.IconsConflict"));
     assertEquals(foo,claimed(m));
     assertEquals(MainsInfo.read(hello).orElseThrow(),project(m,hello).claims());
     var again= manager(dir,"hello.Hello");
@@ -864,12 +865,12 @@ final class ManagerTest{
     var other= folder(dir,"other");
     send(m,TaggedText.of(hello.toString()));
     send(m,TaggedText.of(other.toString()));
-    infos.put("hello",claiming("hello.Hello","","foo"));
-    infos.put("other",claiming("other.Other","","bar"));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("other",claiming("other.Other","os","bar"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
-    assertEquals(List.of("bar","foo"),claimed(m).keySet().stream().sorted().toList());
+    assertEquals(List.of("bar","foo","hs","os"),claimed(m).keySet().stream().sorted().toList());
     Fs.ofV(()->Files.delete(hello.resolve(Facts.outDir).resolve("mains.info")));
     Fs.writeUtf8(other.resolve(Facts.outDir).resolve("mains.info"),"{\"other.Other\": []}\n");
     var again= manager(dir,"hello.Hello");
@@ -881,17 +882,85 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= folder(dir,"hello");
     send(m,TaggedText.of(hello.toString()));
-    infos.put("hello",claiming("hello.Hello","","foo"));
+    infos.put("hello",claiming("hello.Hello","hs","foo"));
     send(m,"compile","hello");
     idle(m);
-    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"));
+    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"),"hs",List.of("hello::hello.Hello shortcut base.IconsConflict"));
     assertEquals(foo,claimed(m));
-    Fs.writeUtf8(hello.resolve(Facts.outDir).resolve("mains.info"),claiming("hello.Hello","","bar"));
+    Fs.writeUtf8(hello.resolve(Facts.outDir).resolve("mains.info"),claiming("hello.Hello","hs","bar"));
     send(m,"kind","hello","code");
     assertEquals(foo,claimed(m));
     send(m,"kind","hello","idle");
     assertEquals(Map.of(),claimed(m));
     send(m,"kind","hello","code");
-    assertEquals(Map.of("bar",List.of("hello::hello.Hello openWith hello.IconsFoo")),claimed(m));
+    assertEquals(Map.of("bar",List.of("hello::hello.Hello openWith hello.IconsFoo"),"hs",List.of("hello::hello.Hello shortcut base.IconsConflict")),claimed(m));
+  }
+  private static String fapp(String alias, String main, String icon){ return "fapp%03d".formatted(Math.floorMod((alias+"::"+main+"::"+icon).hashCode(),1000)); }
+  private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve("mains.info"); }
+  private static void touch(Path project){
+    var src= project.resolve("_"+project.getFileName()).resolve("_rank_app.fear");
+    Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(Fs.lastModified(src)+60_000)));
+  }
+  @Test void aCompileWritesTheAutoselectedExtensionsIntoMainsInfoAndARecompileKeepsThem(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var auto= fapp("hello","hello.Hello","base.IconsConflict");
+    same("[###][\"base.IconsConflict\", \"icons/conflict.png\", \"\", \"\", \""+auto+"\"][###][\"hello.IconsFoo\", \"_hello/icons/foo.png\", \"\", \"\", \"foo\"][###]",Fs.readUtf8(mainsInfo(hello)));
+    assertEquals(MainsInfo.read(hello).orElseThrow(),project(m,hello).claims());
+    assertEquals(List.of("hello::hello.Hello shortcut base.IconsConflict"),claimed(m).get(auto));
+    infos.put("other",claiming("other.Other",auto,"bar"));
+    send(m,"compile","other");
+    idle(m);
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("hello::hello.Hello shortcut base.IconsConflict","other::other.Other shortcut base.IconsConflict"),claimed(m).get(auto));
+    same("[###]\""+auto+"\"[###]",Fs.readUtf8(mainsInfo(hello)));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
+  @Test void aMainsInfoWithMissingExtensionsIsFilledAtStartUp(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,"compile","hello");
+    idle(m);
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","","foo"));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    var auto= fapp("hello","hello.Hello","base.IconsConflict");
+    assertEquals(List.of(auto,"foo"),claimed(again).keySet().stream().sorted().toList());
+    assertEquals(project(again,hello).claims(),MainsInfo.read(hello).orElseThrow());
+    assertEquals(Project.State.codeCompiled,project(again,hello).state());
+  }
+  @Test void noFreeExtensionLeftFailsTheCompileAndRunsNothing(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    var all= IntStream.range(0,1000).mapToObj(i->"[\"other.IconsO\", \"_other/icons/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
+    infos.put("other","{\"other.Other\": [\"_other/_rank_app.fear\", ["+all+"], []]}\n");
+    send(m,"compile","other");
+    idle(m);
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    send(m,"run","hello");
+    idle(m);
+    var error= """
+      No free extension is left for "base.Shortcut[base.IconsConflict]" of main "hello.Hello": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager. Give this Shortcut an explicit extension, for example "base.Shortcut[base.IconsConflict,\\"hello\\"]".
+      """;
+    same("--- compiling hello ---\ncompiled\n"+error+"--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+    var p= project(m,hello);
+    same(error,p.problem().orElseThrow());
+    assertEquals(Project.State.codeInvalid,p.state());
+    assertTrue(p.needsCompiling());
+    assertFalse(Files.exists(mainsInfo(hello)));
+    assertEquals(Project.noClaims,p.claims());
+    assertEquals(1000,claimed(m).size());
   }
 }
