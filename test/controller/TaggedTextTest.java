@@ -3,9 +3,12 @@ package controller;
 import static controller.Errs.err;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.net.URI;
+
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
+import fileSupport.Info;
 import tools.Fs;
 
 final class TaggedTextTest{
@@ -42,6 +45,11 @@ final class TaggedTextTest{
     assertEquals("\u00e9x",read("UStr:\"\".u \"E9\"+\"x\".u"));
     Assumptions.assumeTrue(Fs.isWindows());
     assertEquals("ab",read("Base16:61006200"));
+  }
+  @Test void aTaggedTextIsAStringWithItsQuotesEscaped(){
+    var s= new Info.Str(TaggedText.of("C:/caf\u00e9"),Info.noSpan);
+    assertEquals("\"UStr:\\\"C:/caf\\\".u\\\"00E9\\\"\"\n",Info.print(s));
+    assertEquals("C:/caf\u00e9",read(((Info.Str)Info.parse(Info.print(s),URI.create("test:projects.info"))).value()));
   }
   @Test void aTextWithoutATagIsRejected(){
     err("\"C:/data\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",()->read("C:/data"));

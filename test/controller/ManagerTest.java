@@ -32,6 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import controller.Manager.State;
 import controller.Registry.Kind;
+import fileSupport.Info;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.Report;

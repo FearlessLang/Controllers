@@ -20,6 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import controller.Registry.Entry;
 import controller.Registry.Kind;
+import fileSupport.Info;
 import tools.Fs;
 
 final class RegistryTest{

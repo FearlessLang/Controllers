@@ -14,9 +14,10 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import controller.Info.Obj;
-import controller.Info.Obj.Field;
-import controller.Info.Str;
+import fileSupport.Info;
+import fileSupport.Info.Obj;
+import fileSupport.Info.Obj.Field;
+import fileSupport.Info.Str;
 import fileSupport.JUnitReport;
 import fileSupport.LogFiles;
 import tools.Fs;

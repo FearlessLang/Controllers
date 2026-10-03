@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-/// Reads the Info files the manager writes (controller.Info in Controllers): objects {...} of
+/// Reads the Info files the manager writes (fileSupport.Info in Coordinator): objects {...} of
 /// strings "..." (escapes \" \\ \n) and objects; an object becomes a Map in field order.
 /// A text that may hold characters outside the Fearless character set (a path, a compile error)
 /// is tagged, as controller.TaggedText writes it: "Str:" then the text, "UStr:" then the text as

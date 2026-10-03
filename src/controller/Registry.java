@@ -23,9 +23,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import controller.Info.Obj;
-import controller.Info.Obj.Field;
 import core.TName;
+import fileSupport.Info;
+import fileSupport.Info.Obj;
+import fileSupport.Info.Obj.Field;
 import fileSupport.StringFiles;
 import metaParser.Message;
 import metaParser.Span;
