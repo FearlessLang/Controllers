@@ -5,18 +5,27 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import controller.Registry.Entry;
 import controller.Registry.Kind;
+import coordinator.MainsInfo;
 import utils.Join;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
 /// folder holds, its mains once known, why its links are broken, its job, if any, and the output of its last compile when that failed.
-public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mains, Optional<String> linkProblem, String job, Instant since, int runs, String lastRun, int exit, String failure){
+public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mains, MainsInfo claims, Optional<String> linkProblem, String job, Instant since, int runs, String lastRun, int exit, String failure){
   public static final String compiling= "compiling";
+  public static final MainsInfo noClaims= new MainsInfo(Map.of());
+  public record Claimant(Path folder, String alias, String main, boolean shortcut, MainsInfo.Claim claim){
+    public String label(){ return alias+"::"+main; }
+  }
   public enum State{
     codeInvalid("code: invalid content"), dataInvalid("data: invalid content"), idle("idle"), dataReadOnly("data: read only"), dataReadWrite("data: read write"),
     codeNoCache("code: not compiled (no cache)"), codeOutdated("code: not compiled (cache out of date)"), codeCompiled("code: compiled"), busy("code: busy");
@@ -35,6 +44,19 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   public List<String> selectedMains(){
     var known= knownMains();
     return known.size() == 1 ? known : known.stream().filter(entry.mains()::contains).toList();
+  }
+  public List<Claimant> claimants(){
+    return claims.mains().entrySet().stream()
+      .flatMap(e->Stream.concat(claimants(e.getKey(),e.getValue().shortcuts(),true),claimants(e.getKey(),e.getValue().openWiths(),false)))
+      .toList();
+  }
+  private Stream<Claimant> claimants(String main, List<MainsInfo.Claim> cs, boolean shortcut){
+    return cs.stream().filter(c->!c.extension().isEmpty()).map(c->new Claimant(folder(),alias(),main,shortcut,c));
+  }
+  public static Map<String,List<Claimant>> claimed(List<Project> projects){
+    return projects.stream().flatMap(p->p.claimants().stream())
+      .sorted(Comparator.comparing(Claimant::label))
+      .collect(Collectors.groupingBy(c->c.claim().extension(),TreeMap::new,Collectors.toUnmodifiableList()));
   }
   public State state(){
     if (busy()){ return State.busy; }

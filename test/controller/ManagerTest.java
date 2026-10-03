@@ -14,6 +14,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import controller.Manager.State;
+import coordinator.MainsInfo;
 import controller.Registry.Kind;
 import fileSupport.Info;
 import tools.ChildJvm;
@@ -56,10 +58,10 @@ final class ManagerTest{
       """);
     Fs.runTool("javac",List.of("-d",classes.toString(),src.toString()));
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
-      FactsTest.cache(folder,"hello",FactsTest.after(folder));
+      FactsTest.cache(folder,"hello",FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
       return jvm(out,"compiled","0","0");
     }
     @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
@@ -88,6 +90,7 @@ final class ManagerTest{
   }
   private final List<Throwable> failures= Collections.synchronizedList(new ArrayList<>());
   private final View view= new View();
+  private final Map<String,String> infos= new HashMap<>();
   @AfterEach void nothingFailed(){ assertEquals(List.of(),failures); }
   private Manager manager(Path dir, String... mains){
     var map= new LinkedHashMap<String,String>();
@@ -95,7 +98,7 @@ final class ManagerTest{
     var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
     return manager(dir,_->known);
   }
-  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read),view,failures::add); }
+  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read,infos),view,failures::add); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -803,5 +806,75 @@ final class ManagerTest{
     var again= manager(dir,"hello.Hello");
     again.settle();
     assertEquals(Project.State.codeCompiled,project(again,hello).state());
+  }
+  private static String claiming(String main, String shortcut, String openWith){
+    return "{\""+main+"\": [\"_hello/_rank_app.fear\", [[\"base.IconsConflict\", \"icons/conflict.png\", \"\", \"\", \""+shortcut+"\"]], [[\"hello.IconsFoo\", \"_hello/icons/foo.png\", \"\", \"\", \""+openWith+"\"]]]}\n";
+  }
+  private static Map<String,List<String>> claimed(Manager m){
+    return Project.claimed(m.state().projects()).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e->e.getValue().stream().map(c->c.label()+(c.shortcut() ? " shortcut " : " openWith ")+c.claim().icon()).toList()));
+  }
+  @Test void aCompileClaimsTheExtensionsOfItsMainsInfoAndANewManagerClaimsThemAgain(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    send(m,TaggedText.of(hello.toString()));
+    assertEquals(Map.of(),claimed(m));
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"));
+    assertEquals(foo,claimed(m));
+    assertEquals(MainsInfo.read(hello).orElseThrow(),project(m,hello).claims());
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(foo,claimed(again));
+    var info= dir.resolve("manager").resolve("projects.info");
+    assertEquals(Registry.text(List.of(project(again,hello).entry())),Fs.readUtf8(info));
+    commit(again,Registry.text(List.of(project(again,hello).entry().withKind(Kind.idle))),()->{});
+    assertEquals(Map.of(),claimed(again));
+    assertEquals(Project.noClaims,project(again,hello).claims());
+  }
+  @Test void projectsClaimingTheSameExtensionAreAllItsClaimantsUntilCleanedIdleOrForgotten(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","fapp042","foo"));
+    infos.put("other",claiming("other.Other","bar","foo"));
+    send(m,"compile","other");
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Map.of(
+      "fapp042",List.of("hello::hello.Hello shortcut base.IconsConflict"),
+      "bar",List.of("other::other.Other shortcut base.IconsConflict"),
+      "foo",List.of("hello::hello.Hello openWith hello.IconsFoo","other::other.Other openWith hello.IconsFoo")),claimed(m));
+    send(m,"clean","hello");
+    assertEquals(Map.of("bar",List.of("other::other.Other shortcut base.IconsConflict"),"foo",List.of("other::other.Other openWith hello.IconsFoo")),claimed(m));
+    send(m,"kind","other","idle");
+    assertEquals(Map.of(),claimed(m));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("fapp042","foo"),claimed(m).keySet().stream().sorted().toList());
+    send(m,"forget","hello");
+    assertEquals(Map.of(),claimed(m));
+  }
+  @Test void aProjectWhoseMainsInfoIsMissingOrUnreadableClaimsNothing(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= folder(dir,"hello");
+    var other= folder(dir,"other");
+    send(m,TaggedText.of(hello.toString()));
+    send(m,TaggedText.of(other.toString()));
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    infos.put("other",claiming("other.Other","","bar"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    assertEquals(List.of("bar","foo"),claimed(m).keySet().stream().sorted().toList());
+    Fs.ofV(()->Files.delete(hello.resolve(Facts.outDir).resolve("mains.info")));
+    Fs.writeUtf8(other.resolve(Facts.outDir).resolve("mains.info"),"{\"other.Other\": []}\n");
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(Map.of(),claimed(again));
+    assertEquals(List.of(),view.notes);
   }
 }

@@ -37,10 +37,11 @@ final class FactsTest{
     Fs.writeUtf8(res.resolve(name.toLowerCase()+".fearless"),"");
     return res;
   }
-  static void cache(Path project, String pkg, long stamp){
+  static void cache(Path project, String pkg, long stamp){ cache(project,pkg,stamp,"{}\n"); }
+  static void cache(Path project, String pkg, long stamp, String mainsInfo){
     at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear\ntop rank",stamp);
     at(project.resolve(".fearless_out").resolve(pkg+".json"),"{}\n",stamp);
-    at(project.resolve(".fearless_out").resolve("mains.info"),"{}\n",stamp);
+    at(project.resolve(".fearless_out").resolve("mains.info"),mainsInfo,stamp);
   }
   private static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file,content);

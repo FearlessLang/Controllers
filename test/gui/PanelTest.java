@@ -42,7 +42,7 @@ final class PanelTest{
     var entry= new Entry(alias,Path.of(alias).toAbsolutePath(),kind,chosen,reads,Map.of(),-1,run);
     var facts= new Facts(1,1,0,List.of("hello"),true,upToDate,Optional.empty(),List.of(),Optional.empty());
     var mains= known.<Map<String,String>>map(ms->Collections.unmodifiableMap(ms.stream().collect(Collectors.toMap(m->m,_->"_hello/_rank_app.fear",(x,_)->x,LinkedHashMap::new))));
-    return new Project(entry,facts,mains,Optional.empty(),job,Instant.EPOCH,0,"",-1,"");
+    return new Project(entry,facts,mains,Project.noClaims,Optional.empty(),job,Instant.EPOCH,0,"",-1,"");
   }
   private static Project code(List<String> known, List<String> chosen){ return project("hello",Kind.code,Optional.of(known),chosen,Map.of(),true,"",-1); }
   private static final List<String> abc= List.of("hello.A","hello.B","hello.C");
@@ -143,7 +143,7 @@ final class PanelTest{
   }
   @Test void aFailedCompileShowsTheProjectInvalid(){
     var p= project("hello",Kind.code,Optional.empty(),List.of(),Map.of(),false,"",-1);
-    var failed= new Project(p.entry(),p.facts(),p.mains(),p.linkProblem(),"",Instant.EPOCH,0,"",-1,"boom\n");
+    var failed= new Project(p.entry(),p.facts(),p.mains(),p.claims(),p.linkProblem(),"",Instant.EPOCH,0,"",-1,"boom\n");
     assertEquals(Optional.of("boom\n"),failed.problem());
     render(failed);
     assertEquals(1L,onEdt(()->all(panel.root).filter(c->c instanceof JLabel l && l.getText().equals("<invalid: see Error report>")).count()));

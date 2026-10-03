@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import controller.Registry.Entry;
 import controller.Registry.Kind;
+import coordinator.MainsInfo;
 import mainCoordinator.MakeDemo;
 import tools.ChildJvm;
 import tools.Fs;
@@ -64,6 +65,7 @@ public final class Manager{
     Facts scanned;
     Facts facts;
     Optional<Map<String,String>> mains= Optional.empty();
+    MainsInfo claims= Project.noClaims;
     String job= "";
     Instant since= Instant.EPOCH;
     int runs;
@@ -151,7 +153,15 @@ public final class Manager{
   private void open(Entry e){
     live.put(e.path(),new Live());
     Fs.writeUtf8(eclipse.console(e.alias()),"");
+    accept(e.path());
     scan(e.path());
+  }
+  private void accept(Path f){
+    var l= live.get(f);
+    l.claims= Project.noClaims;
+    if (registry.of(f).orElseThrow().kind() != Kind.code){ return; }
+    try{ l.claims= MainsInfo.read(f).orElse(Project.noClaims); }
+    catch(UserError|UncheckedIOException e){}
   }
   private static final List<String> verbs= List.of("register","select","run","compile","check","terminate","clean","kind","forget","mains","link","clear");
   private static final List<String> thirdLine= List.of("run","kind","mains","link");
@@ -300,6 +310,7 @@ public final class Manager{
     if (what.equals(Project.compiling)){
       l.failure= ec == 0 ? "" : l.compiled.toString();
       output(f,"--- compile "+(ec == 0 ? "done" : "failed with "+ec)+" ---\n");
+      if (ec == 0){ accept(f); }
       scan(f);
       if (l.mains.isPresent()){ forgetStale(f); }
       l.todo= ec == 0 && !l.terminated ? l.then.get() : List.of();
@@ -324,6 +335,7 @@ public final class Manager{
   private void clean(Path f){
     if (refused(f,"clear cache")){ return; }
     uncache(f).ifPresent(w->output(f,"--- clear cache failed: "+w+" ---\n"));
+    accept(f);
     scan(f);
   }
   private static Optional<String> uncache(Path f){
@@ -337,6 +349,7 @@ public final class Manager{
     var from= project(f).kind();
     if (from != Kind.idle && kind.get() != Kind.idle && from != kind.get()){ output(f,"--- kind change refused: a project of kind "+from.text+" goes back to idle before becoming "+kind.get().text+" ---\n"); return; }
     registry.update(f,e->e.withKind(kind.get()));
+    accept(f);
     scan(f);
   }
   private void link(Path f, List<String> words){
@@ -365,6 +378,8 @@ public final class Manager{
     renamed.forEach((f,shown)->Fs.writeUtf8(console(f),shown));
     live.keySet().stream().filter(f->registry.of(f).isEmpty()).toList().forEach(this::drop);
     registry.all().stream().filter(e->!live.containsKey(e.path())).forEach(this::open);
+    var kinds= old.stream().collect(Collectors.toMap(Entry::path,Entry::kind));
+    registry.all().stream().filter(e->kinds.get(e.path()) != e.kind()).forEach(e->accept(e.path()));
     registry.all().forEach(e->scan(e.path()));
     done.run();
   }
@@ -413,7 +428,7 @@ public final class Manager{
   }
   private Project project(Entry e){
     var l= live.get(e.path());
-    return new Project(e,l.facts,l.mains,registry.linkProblem(e,f->live.get(f).facts.problem()),l.job,l.since,l.runs,l.lastRun,l.exit,l.failure);
+    return new Project(e,l.facts,l.mains,l.claims,registry.linkProblem(e,f->live.get(f).facts.problem()),l.job,l.since,l.runs,l.lastRun,l.exit,l.failure);
   }
   private Project project(Path f){ return project(registry.of(f).orElseThrow()); }
   private String alias(Path f){ return registry.of(f).orElseThrow().alias(); }
