@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.awt.Color;
@@ -157,6 +158,91 @@ final class LinuxAssociationsTest{
     assertFalse(Files.exists(home.resolve("mime").resolve("packages").resolve(old+".xml")));
     assertFalse(Files.exists(mimetypes().resolve(old+"-1.png")));
   }
+  private void sysMime(String file, String text){
+    var path= sys.resolve("mime").resolve(file);
+    Fs.writeUtf8(path,(Files.exists(path) ? Fs.readUtf8(path) : "")+text);
+  }
+  @Test void aTypeTheFamilyDeclaredIsKnownWhereAnotherFolderDeclaresIt(){
+    Fs.writeUtf8(home.resolve("mime").resolve("globs2"),"100:application/x-zork:*.zork\n");
+    Fs.writeUtf8(home.resolve("mime").resolve("packages").resolve("fearlessManaged0_000.xml"),
+      "  <mime-type type=\"application/x-zork\"><comment>x</comment><glob pattern=\"*.zork\" weight=\"100\"/><icon name=\"x\"/></mime-type>\n");
+    sysMime("globs2","50:application/x-zork:*.zork\n50:application/x-zork:*.zrk\n");
+    assertEquals("sharedType {.zork=application/x-zork=[*.zrk]}",refused(".zork"));
+  }
+  @Test void aGlobOfTheDesktopFolderNoPackageThereNamesIsStale(){
+    Fs.writeUtf8(home.resolve("mime").resolve("globs2"),"100:application/x-zork:*.zork\n50:text/x-qux:*.qux\n");
+    Fs.writeUtf8(home.resolve("mime").resolve("types"),"application/x-zork\ntext/x-qux\n");
+    Fs.writeUtf8(home.resolve("mime").resolve("packages").resolve("other.xml"),"<mime-type type='text/x-qux'><glob pattern='*.qux'/></mime-type>\n");
+    reconcile(".zork",".qux");
+    same("""
+      <?xml version="1.0" encoding="UTF-8"?>
+      <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+        <mime-type type="application/x-zork"><comment>fearlessManaged0_001</comment><glob pattern="*.zork" weight="100"/><icon name="fearlessManaged0_001-[###]"/></mime-type>
+        <mime-type type="text/x-qux"><icon name="fearlessManaged0_001-[###]"/></mime-type>
+      </mime-info>
+      """,Fs.readUtf8(packageFile()));
+  }
+  @Test void theDatabaseRebuiltFromThePackageChangesNothing(){
+    reconcile(".fearless",".foo");
+    Fs.writeUtf8(home.resolve("mime").resolve("globs2"),"100:application/x-fearless:*.fearless\n");
+    Fs.writeUtf8(home.resolve("mime").resolve("types"),"application/x-fearless\ntext/x-foo\n");
+    ran.clear();
+    reconcile(".fearless",".foo");
+    assertEquals(List.of(),ran);
+  }
+  @Test void aTypeBelowTheTypeOfAnExtensionSharesIt(){
+    sysMime("globs2","50:text/x-foo-dialect:*.food\n");
+    sysMime("subclasses","text/x-foo-dialect text/x-foo\n");
+    assertEquals("sharedType {.foo=text/x-foo=[*.food]}",refused(".foo"));
+  }
+  @Test void anExtensionWhoseTypeNameIsTakenIsShared(){
+    sysMime("globs2","50:text/x-quux:*.quux\n");
+    sysMime("types","application/x-executable\ntext/x-quux\n");
+    sysMime("aliases","application/x-qq text/x-quux\n");
+    assertEquals("sharedType {.executable=application/x-executable=[], .qq=text/x-quux=[*.quux]}",refused(".executable",".zork",".qq"));
+    assertFalse(Files.exists(home));
+  }
+  @Test void theProgramsOpeningATypeAboveTheTypeOfAnExtensionHoldIt(){
+    sysMime("subclasses","text/x-foo text/x-base\ntext/x-base text/plain\n");
+    Fs.writeUtf8(sys.resolve("applications").resolve("editor.desktop"),"[Desktop Entry]\nMimeType=text/plain;\n");
+    assertEquals("notOurs {.foo=[editor]}",refused(".foo"));
+  }
+  @Test void theProgramsNamingAnAliasOfTheTypeHoldIt(){
+    sysMime("aliases","text/x-foo-old text/x-foo\n");
+    Fs.writeUtf8(sys.resolve("applications").resolve("vim.desktop"),"[Desktop Entry]\nMimeType=text/x-foo-old;\n");
+    Fs.writeUtf8(root.resolve("etc").resolve("mimeapps.list"),"[Default Applications]\ntext/x-foo-old=other.desktop\n");
+    assertEquals("notOurs {.foo=[vim, other]}",refused(".foo"));
+  }
+  @Test void theAddedAssociationsHoldTheType(){
+    Fs.writeUtf8(root.resolve("config").resolve("mimeapps.list"),
+      "[Default Applications]\ntext/x-bar=a.desktop\n[Added Associations]\ntext/x-foo=b.desktop;c.desktop;\n[Removed Associations]\ntext/x-foo=d.desktop;\n");
+    Fs.writeUtf8(home.resolve("applications").resolve("mimeapps.list"),"[Default Applications]\ntext/x-foo=e.desktop\n[Added Associations]\ntext/x-foo=f.desktop\n");
+    assertEquals("notOurs {.foo=[b, c, e, f]}",refused(".foo"));
+    assertFalse(Files.exists(desktopFile()));
+  }
+  @Test void anUnwritableIconFolderIsRefusedBeforeWritingAnything(){
+    Fs.writeUtf8(mimetypes().resolve(identity+"-0123abc.png"),"");
+    assertTrue(mimetypes().toFile().setWritable(false));
+    try{
+      assumeFalse(Files.isWritable(mimetypes()));
+      assertEquals("notWritable "+mimetypes(),refused(".zork"));
+    }
+    finally{ mimetypes().toFile().setWritable(true); }
+    assertTrue(Files.exists(mimetypes().resolve(identity+"-0123abc.png")));
+    assertFalse(Files.exists(desktopFile()));
+    assertEquals(List.of(),ran);
+  }
+  @Test void removingEveryIdentityRemovesTheIconsOfIdentitiesAlreadyGone(){
+    Fs.writeUtf8(mimetypes().resolve("fearlessBin0_001-a52baa.png"),"");
+    Fs.writeUtf8(mimetypes().resolve("fearlessBin0_001.png"),"");
+    Fs.writeUtf8(mimetypes().resolve("other-a52baa.png"),"");
+    Fs.writeUtf8(appIcon().resolveSibling("fearlessBin0_001.png"),"");
+    Fs.writeUtf8(appIcon().resolveSibling("other.png"),"");
+    FileAssociations.eradicateAll(Association.belongsToFamily,IllegalStateException::new);
+    assertEquals(List.of("fearlessBin0_001.png","other-a52baa.png"),icons());
+    assertEquals(List.of(appIcon().resolveSibling("other.png")),Fs.of(()->{ try(var s= Files.list(appIcon().getParent())){ return s.toList(); }}));
+    assertEquals(List.of(),ran);
+  }
   @Test void eachReconcileLeavesOnlyTheIconsItWantsOfItsIdentity(){
     reconcile(".zork",".foo");
     var wanted= icons();
@@ -178,11 +264,11 @@ final class LinuxAssociationsTest{
   @Test void removingTheIdentityRemovesAllItsFiles(){
     reconcile(".zork",".foo");
     Fs.writeUtf8(mimetypes().resolve(identity+"-0123abc.png"),"");
-    Fs.writeUtf8(mimetypes().resolve(identity+"x-0123abc.png"),"");
+    Fs.writeUtf8(mimetypes().resolve("other-0123abc.png"),"");
     ran.clear();
     FileAssociations.eradicateAll(Association.belongsToFamily,IllegalStateException::new);
     assertEquals(rebuilt(),ran);
-    assertEquals(List.of(identity+"x-0123abc.png"),icons());
+    assertEquals(List.of("other-0123abc.png"),icons());
     assertFalse(Files.exists(appIcon()));
     assertFalse(Files.exists(desktopFile()));
     assertFalse(Files.exists(packageFile()));

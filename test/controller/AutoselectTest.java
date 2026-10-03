@@ -94,5 +94,8 @@ final class AutoselectTest{
     err("""
       No free extension is left for "base.OpenWith[base.IconsConflict]" of main "hello.Doc": all the 1000 extensions "ffile000" to "ffile999" are used by the projects of this manager. Give this OpenWith an explicit extension, for example "base.OpenWith[base.IconsConflict,\\"doc\\"]".
       """,()->Project.filled(info("hello.Doc",List.of(),List.of(claim("base.IconsConflict",""))),Project.noClaims,"hello",Stream.of(openWiths)));
+    err("""
+      No free extension is left for "base.Shortcut[hello.IconsBar]" of main "hello.Fapp042": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager. Give this Shortcut an explicit extension, for example "base.Shortcut[hello.IconsBar,\\"ext\\"]".
+      """,()->Project.filled(shortcut("hello.Fapp042","hello.IconsBar",""),Project.noClaims,"hello",Stream.of(all)));
   }
 }

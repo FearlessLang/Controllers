@@ -153,7 +153,7 @@ public final class Messages{
     var prefix= shortcut ? "fapp" : "ffile";
     var name= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
     var cut= name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
-    var refused= cut.isEmpty() || cut.equals("fearless") || shortcut && WellKnownExtensions.all.contains(cut);
+    var refused= cut.isEmpty() || cut.equals("fearless") || cut.matches(prefix+"[0-9]{3}") || shortcut && WellKnownExtensions.all.contains(cut);
     var example= refused ? "ext" : cut;
     return new UserError("No free extension is left for "+claim(shortcut,icon,"")+" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind(shortcut)+" an explicit extension, for example "+claim(shortcut,icon,example)+".");
   }
