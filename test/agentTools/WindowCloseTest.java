@@ -17,7 +17,7 @@ final class WindowCloseTest extends ManagerTest{
   final Click closeManager= new Click("closeManager",linux(3822,50),windows(1255,11));
   final At managerBack= new At("managerBack",linux(1000),windows(1000));
   final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,146));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();

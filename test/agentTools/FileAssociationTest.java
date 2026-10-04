@@ -35,7 +35,7 @@ final class FileAssociationTest extends ManagerTest{
   final Click bringManagerBack= new Click("bringManagerBack",linux(32,386),windows(860,696));
   final At managerBack= new At("managerBack",linux(3000),windows(3000));
   final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click forgetAssociation= new Click("forgetAssociation",linux(128,170),windows(61,124));
+  final Click forgetAssociation= new Click("forgetAssociation",linux(128,170),windows(61,145));
   final At dialogShown= new At("dialogShown",linux(3000),windows(3000));
   final Click yes= new Click("yes",linux(1928,1154),windows(614,387));
   final At iconReverted= new At("iconReverted",linux(3000),windows(3000));

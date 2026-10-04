@@ -28,7 +28,7 @@ final class QuitWhileRunningTest extends ManagerTest{
   final Click run= new Click("run",linux(164,111),windows(102,67));
   final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
   final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,146));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();

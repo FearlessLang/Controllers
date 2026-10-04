@@ -38,13 +38,13 @@ final class ConnectEclipseTest extends ManagerTest{
   final At managerShown= new At("managerShown",linux(3000),windows(3000));
   final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
   final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click connectEclipse= new Click("connectEclipse",linux(128,145),windows(61,100));
+  final Click connectEclipse= new Click("connectEclipse",linux(128,145),windows(61,121));
   final At chooserShown= new At("chooserShown",linux(1500),windows(4000));
   final Click fileName= new Click("fileName",linux(2000,1180),windows(685,416));
   final At noteShown= new At("noteShown",linux(1000),windows(1000));
   final Click ok= new Click("ok",linux(1952,1164),windows(639,396));
   final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79),windows(31,33));
-  final Click connectEclipseAgain= new Click("connectEclipseAgain",linux(128,145),windows(61,100));
+  final Click connectEclipseAgain= new Click("connectEclipseAgain",linux(128,145),windows(61,121));
   final At chooserShownAgain= new At("chooserShownAgain",linux(1500),windows(4000));
   final Click fileNameAgain= new Click("fileNameAgain",linux(2000,1180),windows(685,416));
   final At noteShownAgain= new At("noteShownAgain",linux(1000),windows(1000));

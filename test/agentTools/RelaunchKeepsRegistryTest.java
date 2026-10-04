@@ -29,7 +29,7 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
   final At codeShown= new At("codeShown",linux(1000),windows(1000));
   final Area panel= new Area("panel",linux(80,94,1320,340),windows(22,50,600,340));
   final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,146));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
   final At managerShownAgain= new At("managerShownAgain",linux(3000),windows(3000));
   final Click selectTile= new Click("selectTile",linux(138,190),windows(71,145));
   final Click focusTilesAgain= new Click("focusTilesAgain",linux(200,1500),windows(200,400));

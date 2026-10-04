@@ -33,7 +33,7 @@ final class KindResetTest extends ManagerTest{
   final Click ok= new Click("ok",linux(1952,1132),windows(639,367));
   final Area tiles= new Area("tiles",linux(68,68,310,180),windows(0,23,310,180));
   final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,146));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
   final At managerShown= new At("managerShown",linux(3000),windows(3000));
   @Override protected void walk() throws Exception{
     clean();

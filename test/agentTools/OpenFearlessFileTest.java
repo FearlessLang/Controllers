@@ -24,7 +24,7 @@ final class OpenFearlessFileTest extends ManagerTest{
   final Area menuBar= new Area("menuBar",linux(68,69,190,20),windows(0,23,190,22));
   final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
   final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,146));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
   final At filesShown= new At("filesShown",linux(3000),windows(4000));
   final DoubleClick openFile= new DoubleClick("openFile",linux(1872,915),windows(503,254));
   final Click closeFiles= new Click("closeFiles",linux(2374,844),windows(1016,58));

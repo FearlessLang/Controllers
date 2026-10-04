@@ -1079,7 +1079,7 @@ final class ManagerTest{
     send(m,"compile","hello");
     idle(m);
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
-    assertEquals(List.of("base.IconsConflict.png","hello.IconsFoo.png"),Names.list(icons(hello)).stream().map(p->p.getFileName().toString()).sorted().toList());
+    assertEquals(iconNames("base.IconsConflict","hello.IconsFoo"),iconFiles(hello));
     assertArrayEquals(png,bytes(icons(hello).resolve("hello.IconsFoo.png")));
     assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(icons(hello).resolve("base.IconsConflict.png")));
     var old= FileTime.fromMillis(1_000_000);
@@ -1095,7 +1095,8 @@ final class ManagerTest{
     idle(m);
     assertArrayEquals(other,bytes(icons(hello).resolve("hello.IconsFoo.png")));
   }
-  private static List<String> iconFiles(Path project){ return Names.list(icons(project)).stream().map(p->p.getFileName().toString()).toList(); }
+  private static List<String> iconFiles(Path project){ return Names.list(icons(project)).stream().map(p->p.getFileName().toString()).sorted().toList(); }
+  private static List<String> iconNames(String... types){ return Stream.of(types).flatMap(t->Stream.of(t+".png",t+(Fs.isWindows() ? ".ico" : ".png"))).distinct().sorted().toList(); }
   @Test void aRecompileRemovesTheIconFilesNoClaimUsesAnyMore(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
@@ -1105,13 +1106,13 @@ final class ManagerTest{
     infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","fapp001"),bar+", "+foo+", "+qux));
     send(m,"compile","hello");
     idle(m);
-    assertEquals(List.of("base.IconsConflict.png","hello.IconsBar.png","hello.IconsFoo.png"),iconFiles(hello));
+    assertEquals(iconNames("base.IconsConflict","hello.IconsBar","hello.IconsFoo"),iconFiles(hello));
     infos.put("hello",info("hello.Hello","",qux));
     touch(hello);
     send(m,"compile","hello");
     idle(m);
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
-    assertEquals(List.of("hello.IconsFoo.png"),iconFiles(hello));
+    assertEquals(iconNames("hello.IconsFoo"),iconFiles(hello));
     assertTrue(Files.exists(mainsInfo(hello)));
   }
   @Test void aCompileWhoseExtensionsTheDesktopRefusesKeepsTheIconFilesOfTheClaimsBefore(@TempDir Path dir){
@@ -1126,7 +1127,7 @@ final class ManagerTest{
     send(m,"compile","hello");
     idle(m);
     assertEquals(Project.State.codeInvalid,project(m,hello).state());
-    assertEquals(List.of("base.IconsConflict.png","hello.IconsBar.png","hello.IconsFoo.png"),iconFiles(hello));
+    assertEquals(iconNames("base.IconsConflict","hello.IconsBar","hello.IconsFoo"),iconFiles(hello));
   }
   @Test void anIconEntryRemovedFromItsZipBeforeStartUpFailsNamingTheIcon(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
