@@ -7,6 +7,7 @@ import java.util.function.Predicate;
 
 import fileAssociations.FileAssociations;
 import fileAssociations.Icon;
+import tools.Fs;
 import tools.JavacTool;
 import userMessages.Violation;
 
@@ -29,8 +30,7 @@ public final class Association{
   static void reconcile(Path launcher, List<Icon> extensions, Function<String,String> claimedBy){
     FileAssociations.reconcile(identity(launcher),belongsToFamily,launcher,extensions,launcher,iconFile(),
       reported->Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations",Association::eradicateAll),
-      locked->Violation.associationUserLocked(locked,claimedBy),
-      shared->Violation.associationSharedType(shared,claimedBy),
+      locked->Fs.isWindows() ? Violation.associationUserLocked(locked,claimedBy) : Violation.associationChosenDefault(locked,claimedBy),
       held->Violation.associationNotOurs(held,claimedBy),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);

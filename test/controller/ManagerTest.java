@@ -72,7 +72,7 @@ final class ManagerTest{
       """);
     Fs.runTool("javac",List.of("-d",classes.toString(),src.toString()));
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked, Map<String,Map.Entry<String,List<String>>> shared) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       FactsTest.cache(folder,folder.getFileName().toString(),FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
@@ -91,12 +91,10 @@ final class ManagerTest{
     @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
       claimed.forEach(i->Fs.of(()->Files.readAllBytes(i.png())));
       associated.add(claimed);
-      var all= Stream.concat(Stream.of(".fearless"),claimed.stream().map(Icon::extension)).toList();
-      var userLocked= all.stream().filter(locked::contains).toList();
+      var all= Stream.concat(Stream.of(new Icon(".fearless",null,null)),claimed.stream()).toList();
+      var userLocked= all.stream().map(Icon::extension).filter(locked::contains).toList();
       if (!userLocked.isEmpty()){ throw Violation.associationUserLocked(userLocked,claimedBy); }
-      var sharedType= all.stream().filter(shared::containsKey).collect(Collectors.toMap(e->e,shared::get,(a,_)->a,LinkedHashMap::new));
-      if (!sharedType.isEmpty()){ throw Violation.associationSharedType(sharedType,claimedBy); }
-      var blocked= all.stream().filter(held::containsKey).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
+      var blocked= all.stream().filter(i->!i.system()).map(Icon::extension).filter(held::containsKey).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw Violation.associationNotOurs(blocked,claimedBy); }
     }
     private static ChildJvm jvm(Consumer<String> out, String... args){
@@ -126,7 +124,6 @@ final class ManagerTest{
   private final List<List<Icon>> associated= Collections.synchronizedList(new ArrayList<>());
   private final Map<String,List<String>> held= new HashMap<>();
   private final List<String> locked= new ArrayList<>();
-  private final Map<String,Map.Entry<String,List<String>>> shared= new HashMap<>();
   @AfterEach void nothingFailed(){ assertEquals(List.of(),failures); }
   private Manager manager(Path dir, String... mains){
     var map= new LinkedHashMap<String,String>();
@@ -134,7 +131,7 @@ final class ManagerTest{
     var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
     return manager(dir,_->known);
   }
-  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read,infos,associated,held,locked,shared),view,failures::add); }
+  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read,infos,associated,held,locked),view,failures::add); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -1109,7 +1106,7 @@ final class ManagerTest{
     infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     send(m,"compile","hello");
     idle(m);
-    held.put(".bar",List.of("vim"));
+    locked.add(".bar");
     infos.put("hello",info("hello.Hello","",claim("hello.IconsBar","art/bar.png","","","bar")));
     touch(hello);
     send(m,"compile","hello");
@@ -1154,6 +1151,22 @@ final class ManagerTest{
   private static String shown(Path dir, Icon i){
     assertEquals(i.png().toString().replaceAll("png$",Fs.isWindows() ? "ico" : "png"),i.ico().toString());
     return dir.relativize(i.png()).toString().replace('\\','/');
+  }
+  private static String userLocked(String... lines){
+    return """
+      Fearless cannot become the program that opens the kinds of file listed
+      below.
+
+      Your system remembers a choice you made by hand for these kinds of file,
+      and no program can change or remove that choice, including this one.
+      Fearless stopped before touching anything: your system is exactly as it
+      was.
+
+      The only way to clear it is Settings, Apps, Default apps, Reset - which
+      resets every app default on your machine, not only this one.
+
+      What is locked:
+      """+String.join("\n",lines);
   }
   private static String notOurs(String... lines){
     return """
@@ -1205,15 +1218,12 @@ final class ManagerTest{
     send(m,"compile","hello");
     idle(m);
     var accepted= project(m,hello).claims();
-    held.put(".foo",List.of("org.gnome.TextEditor"));
-    held.put(".fapp001",List.of("vim"));
+    locked.add(".foo");
     infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     touch(hello);
     send(m,"run","hello");
     idle(m);
-    var error= notOurs(
-      ".fapp001 claimed by \"hello.Hello\" of project \"hello\" -> vim",
-      ".foo claimed by \"hello.Hello\" of project \"hello\" and \"other.Other\" of project \"other\" -> org.gnome.TextEditor");
+    var error= userLocked(".foo claimed by \"hello.Hello\" of project \"hello\" and \"other.Other\" of project \"other\"");
     same("[###]--- compiling hello ---\ncompiled\n"+error+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
     var p= project(m,hello);
     same(error,p.problem().orElseThrow());
@@ -1236,10 +1246,10 @@ final class ManagerTest{
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
-    held.put(".qux",List.of("vim"));
+    held.put(".fapp002",List.of("vim"));
     send(m,"clean","hello");
     send(m,"select","other");
-    same(notOurs(".qux claimed by \"other.Other\" of project \"other\" -> vim"),String.join("\n",view.notes));
+    same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"),String.join("\n",view.notes));
     assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
     assertEquals(List.of("fapp002","qux"),claimed(m).keySet().stream().sorted().toList());
   }
@@ -1252,10 +1262,10 @@ final class ManagerTest{
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
-    held.put(".qux",List.of("vim"));
+    held.put(".fapp002",List.of("vim"));
     var again= manager(dir,"hello.Hello");
     again.settle();
-    var error= notOurs(".qux claimed by \"other.Other\" of project \"other\" -> vim");
+    var error= notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim");
     var p= project(again,other);
     same(error,p.problem().orElseThrow());
     same(error+"\n",eclipse(dir,"other","console.txt"));
@@ -1264,42 +1274,6 @@ final class ManagerTest{
     assertFalse(Files.exists(mainsInfo(other)));
     assertEquals(Optional.empty(),project(again,hello).problem());
     assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
-  }
-  @Test void anExtensionWhoseTypeOtherFileNamesShareFailsTheCompileAndIsDroppedAtStartUp(@TempDir Path dir){
-    var m= manager(dir,"hello.Hello");
-    var hello= registered(m,dir,"hello");
-    var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
-    infos.put("other",claiming("other.Other","fapp002","qux"));
-    send(m,"compile","hello");
-    send(m,"compile","other");
-    idle(m);
-    shared.put(".qux",Map.entry("text/x-qux",List.of("*.quux")));
-    var again= manager(dir,"hello.Hello");
-    again.settle();
-    var error= """
-      Fearless cannot become the program that opens the kinds of file listed
-      below.
-
-      On this system a program opens a type of file, not an extension, and the
-      type of each of these extensions also covers other file names:
-      opening it would open those files too. Fearless stopped before touching
-      anything: your system is exactly as it was.
-
-      Use another extension, or leave the extension out, as in OpenWith[I] or
-      Shortcut[I], and Fearless chooses one.
-
-      What stood in the way:
-      .qux claimed by "other.Other" of project "other" -> text/x-qux, also covering *.quux""";
-    var p= project(again,other);
-    same(error,p.problem().orElseThrow());
-    assertEquals(Project.noClaims,p.claims());
-    assertEquals(Optional.empty(),project(again,hello).problem());
-    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
-    send(again,"compile","other");
-    idle(again);
-    same(error,project(again,other).problem().orElseThrow());
-    assertEquals(Project.noClaims,project(again,other).claims());
   }
   @Test void aStartUpRefusedTheFearlessExtensionFails(@TempDir Path dir){
     held.put(".fearless",List.of("fearlessBin0_003"));
@@ -1318,24 +1292,11 @@ final class ManagerTest{
     send(m,"compile","other");
     idle(m);
     locked.add(".fapp001");
-    held.put(".qux",List.of("vim"));
+    held.put(".fapp002",List.of("vim"));
     var again= manager(dir,"hello.Hello");
     again.settle();
-    same("""
-      Fearless cannot become the program that opens the kinds of file listed
-      below.
-
-      Your system remembers a choice you made by hand for these kinds of file,
-      and no program can change or remove that choice, including this one.
-      Fearless stopped before touching anything: your system is exactly as it
-      was.
-
-      The only way to clear it is Settings, Apps, Default apps, Reset - which
-      resets every app default on your machine, not only this one.
-
-      What is locked:
-      .fapp001 claimed by "hello.Hello" of project "hello\"""",project(again,hello).problem().orElseThrow());
-    same(notOurs(".qux claimed by \"other.Other\" of project \"other\" -> vim"),project(again,other).problem().orElseThrow());
+    same(userLocked(".fapp001 claimed by \"hello.Hello\" of project \"hello\""),project(again,hello).problem().orElseThrow());
+    same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"),project(again,other).problem().orElseThrow());
     assertEquals(Project.noClaims,project(again,hello).claims());
     assertEquals(Project.noClaims,project(again,other).claims());
     assertEquals(List.of(),wanted(dir));
