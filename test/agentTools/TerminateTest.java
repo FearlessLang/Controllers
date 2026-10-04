@@ -13,7 +13,6 @@ import org.opentest4j.AssertionFailedError;
 
 import tools.Fs;
 import utils.Err;
-import utils.OneOr;
 
 /// Terminating a program the manager runs ends that program alone: its window goes away, the Output says it was terminated and how it exited, the manager keeps running, and the top of the panel offers Run again exactly as before the run.
 ///
@@ -30,15 +29,15 @@ import utils.OneOr;
 final class TerminateTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path console= data.resolve("eclipse").resolve("start").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click run= new Click("run",linux(164,111));
-  final Click terminate= new Click("terminate",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At mainShown= new At("mainShown",linux(1000),windows(1000));
+  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
+  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
+  final Click run= new Click("run",linux(164,111),windows(102,67));
+  final Click terminate= new Click("terminate",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     var manager= launch(gui.toString());
@@ -60,7 +59,7 @@ final class TerminateTest extends ManagerTest{
     run.go();
     until(()->!Arrays.equals(desk,pixels(window)));
     assertEquals("--- compiling testGui1 ---\n--- compile done ---\n--- running gui_example.Foo ---\n",Fs.readUtf8(console));
-    var program= OneOr.of("program",manager.descendants());
+    var program= program(manager);
     look();
     assertFalse(Arrays.equals(ready,pixels(at)));
     terminate.go();
@@ -74,21 +73,21 @@ final class TerminateTest extends ManagerTest{
           "running": "",
           "runs": "1",
           "lastRun": "gui_example.Foo",
-          "exit": "143",
+          "exit": "%s",
           "mains": {
             "gui_example.Foo": "_gui_example/_rank_app.fear"
           },
           "problem": {}
         }
       }
-      """.formatted(gui),Fs.readUtf8(state));
+      """.formatted(escaped(gui),killed),Fs.readUtf8(state));
     Err.strCmp("""
       --- compiling testGui1 ---
       --- compile done ---
       --- running gui_example.Foo ---
       --- terminating gui_example.Foo ---
-      --- gui_example.Foo exited with 143 after [###]s ---
-      """,Fs.readUtf8(console));
+      --- gui_example.Foo exited with %s after [###]s ---
+      """.formatted(killed),Fs.readUtf8(console));
     assertTrue(manager.isAlive());
     until(()->Arrays.equals(desk,pixels(window)));
     look();

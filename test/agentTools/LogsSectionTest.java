@@ -36,19 +36,19 @@ final class LogsSectionTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path diary= data.resolveSibling("diary");
   static final Path logs= diary.resolve(".out").resolve("logs").resolve("diary");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,140));
-  final Click compile= new Click("compile",linux(164,111));
-  final At compileShown= new At("compileShown",linux(1000));
-  final Click openLogs= new Click("openLogs",linux(128,253));
-  final Area list= new Area("list",linux(80,240,3750,170));
-  final Click run= new Click("run",linux(164,111));
-  final Click firstLog= new Click("firstLog",linux(250,278));
-  final Click copy= new Click("copy",linux(3739,251));
-  final Click delete= new Click("delete",linux(3796,251));
-  final At confirmShown= new At("confirmShown",linux(1500));
-  final Click yes= new Click("yes",linux(1933,1150));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,140),windows(332,94));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At compileShown= new At("compileShown",linux(1000),windows(1000));
+  final Click openLogs= new Click("openLogs",linux(128,253),windows(62,203));
+  final Area list= new Area("list",linux(80,240,3750,170),windows(24,219,1240,130));
+  final Click run= new Click("run",linux(164,111),windows(102,67));
+  final Click firstLog= new Click("firstLog",linux(250,278),windows(100,226));
+  final Click copy= new Click("copy",linux(3739,251),windows(1181,201));
+  final Click delete= new Click("delete",linux(3796,251),windows(1237,201));
+  final At confirmShown= new At("confirmShown",linux(1500),windows(4000));
+  final Click yes= new Click("yes",linux(1933,1150),windows(619,378));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(diary.resolve("diary.fearless"),"\n");

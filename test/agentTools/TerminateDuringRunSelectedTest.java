@@ -13,7 +13,6 @@ import org.opentest4j.AssertionFailedError;
 
 import tools.Fs;
 import utils.Err;
-import utils.OneOr;
 
 /// Terminating the first of the ticked mains that Run selected runs one after the other ends the whole run: the Output says that main was terminated and how it exited, no other ticked main runs, and the manager counts that one run alone.
 ///
@@ -32,17 +31,17 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path chain= data.resolveSibling("chain");
   static final Path console= data.resolve("eclipse").resolve("chain").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Area ticks= new Area("ticks",linux(90,180,210,50));
-  final Click all= new Click("all",linux(112,165));
-  final Area kindButton= new Area("kindButton",linux(80,128,1320,25));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click runSelected= new Click("runSelected",linux(164,111));
-  final Click terminate= new Click("terminate",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At mainsShown= new At("mainsShown",linux(1000),windows(1000));
+  final Area ticks= new Area("ticks",linux(90,180,210,50),windows(22,132,210,48));
+  final Click all= new Click("all",linux(112,165),windows(45,118));
+  final Area kindButton= new Area("kindButton",linux(80,128,1320,25),windows(22,82,600,24));
+  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
+  final Click runSelected= new Click("runSelected",linux(164,111),windows(102,67));
+  final Click terminate= new Click("terminate",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(chain.resolve("chain.fearless"),"\n");
@@ -78,7 +77,7 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
           "mains": ["chain.Show", "chain.Tell"]
         }
       }
-      """.formatted(chain);
+      """.formatted(slashed(chain));
     assertEquals(both,Fs.readUtf8(info));
     look();
     until(()->!Arrays.equals(unticked,pixels(boxes)));
@@ -90,7 +89,7 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     runSelected.go();
     until(()->!Arrays.equals(desk,pixels(window)));
     assertEquals("--- compiling chain ---\n--- compile done ---\n--- running chain.Show ---\n",Fs.readUtf8(console));
-    var program= OneOr.of("program",manager.descendants());
+    var program= program(manager);
     look();
     until(()->!Arrays.equals(idle,pixels(kind)));
     terminate.go();
@@ -104,7 +103,7 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
           "running": "",
           "runs": "1",
           "lastRun": "chain.Show",
-          "exit": "143",
+          "exit": "%s",
           "mains": {
             "chain.Show": "_chain/_rank_app.fear",
             "chain.Tell": "_chain/_rank_app.fear"
@@ -112,14 +111,14 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(chain),Fs.readUtf8(state));
+      """.formatted(escaped(chain),killed),Fs.readUtf8(state));
     Err.strCmp("""
       --- compiling chain ---
       --- compile done ---
       --- running chain.Show ---
       --- terminating chain.Show ---
-      --- chain.Show exited with 143 after [###]s ---
-      """,Fs.readUtf8(console));
+      --- chain.Show exited with %s after [###]s ---
+      """.formatted(killed),Fs.readUtf8(console));
     assertTrue(manager.isAlive());
     assertEquals(both,Fs.readUtf8(info));
     until(()->Arrays.equals(desk,pixels(window)));

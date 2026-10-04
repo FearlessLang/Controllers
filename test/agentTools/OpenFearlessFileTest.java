@@ -13,23 +13,24 @@ import tools.Fs;
 ///
 /// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
 ///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
+/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, nothing is registered for .fearless, and the file manager remembers no place for its windows.
 /// Action 1: run the launcher: the manager window opens with no tile, and the manager remembers no project.
 /// Action 2: choose Quit manager in its Manager menu: the manager ends.
 /// Action 3: open the file manager on helloWorld.
 /// Action 4: double click hello_world.fearless: the manager window opens with one tile, and the manager remembers helloWorld as an idle project.
 /// Action 5: end the manager and close the file manager window.
 final class OpenFearlessFileTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area menuBar= new Area("menuBar",linux(68,69,190,20));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click quitManager= new Click("quitManager",linux(128,191));
-  final At filesShown= new At("filesShown",linux(3000));
-  final DoubleClick openFile= new DoubleClick("openFile",linux(1872,915));
-  final Click closeFiles= new Click("closeFiles",linux(2374,844));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area menuBar= new Area("menuBar",linux(68,69,190,20),windows(0,23,190,22));
+  final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,146));
+  final At filesShown= new At("filesShown",linux(3000),windows(4000));
+  final DoubleClick openFile= new DoubleClick("openFile",linux(1872,915),windows(503,254));
+  final Click closeFiles= new Click("closeFiles",linux(2374,844),windows(1016,58));
   @Override protected void walk() throws Exception{
     clean();
+    forgetWindowPlaces();
     var run= launch();
     managerShown.go();
     look();
@@ -53,7 +54,7 @@ final class OpenFearlessFileTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project),Fs.readUtf8(info));
+      """.formatted(slashed(project)),Fs.readUtf8(info));
     stopManagers();
     closeFiles.go();
   }

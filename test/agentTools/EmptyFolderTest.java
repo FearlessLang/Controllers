@@ -25,11 +25,11 @@ import utils.Err;
 final class EmptyFolderTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path empty= data.resolveSibling("empty");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click compile= new Click("compile",linux(164,111));
-  final At runShown= new At("runShown",linux(1000));
-  final Click run= new Click("run",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At runShown= new At("runShown",linux(1000),windows(1000));
+  final Click run= new Click("run",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     Fs.ensureDir(empty);
@@ -52,7 +52,7 @@ final class EmptyFolderTest extends ManagerTest{
           "kind": "code"
         }
       }
-      """.formatted(empty),Fs.readUtf8(info));
+      """.formatted(slashed(empty)),Fs.readUtf8(info));
     focusTiles.go();
     pilot.chord(KeyEvent.VK_F8);
     pilot.chord(KeyEvent.VK_HOME);
@@ -75,11 +75,11 @@ final class EmptyFolderTest extends ManagerTest{
         }
       }
       """;
-    assertEquals(compiled.formatted(empty,"0","","-1"),Fs.readUtf8(state));
+    assertEquals(compiled.formatted(escaped(empty),"0","","-1"),Fs.readUtf8(state));
     runShown.go();
     run.go();
     until(()->Fs.readUtf8(state).contains("\"exit\": \"0\""));
-    assertEquals(compiled.formatted(empty,"1","empty.Hello","0"),Fs.readUtf8(state));
+    assertEquals(compiled.formatted(escaped(empty),"1","empty.Hello","0"),Fs.readUtf8(state));
     Err.strCmp("""
       --- compiling empty ---
       --- compile done ---

@@ -8,8 +8,6 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
-import tools.Fs;
-
 /// Starting the manager with two arguments is refused: an error shows, and once it is dismissed the launcher ends with exit 1, having started no manager, made no data folder and registered nothing for .fearless.
 ///
 /// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
@@ -18,9 +16,9 @@ import tools.Fs;
 /// Action 1: run the launcher on helloWorld and helloStackTraces together: an error shows in the middle of the screen, the launcher waits for it to be dismissed, and the manager has no data folder.
 /// Action 2: press OK: the launcher ends with exit 1, the desk shows its background again, the manager still has no data folder, and nothing is registered for .fearless.
 final class TooManyArgumentsTest extends ManagerTest{
-  final Area error= new Area("error",linux(1915,1075,10,10));
-  final At errorShown= new At("errorShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1212));
+  final Area error= new Area("error",linux(1915,1075,10,10),windows(635,355,10,10));
+  final At errorShown= new At("errorShown",linux(1000),windows(1000));
+  final Click ok= new Click("ok",linux(1952,1212),windows(639,441));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();
@@ -36,6 +34,6 @@ final class TooManyArgumentsTest extends ManagerTest{
     assertEquals(1,run.exitValue());
     until(()->same(desk,look()));
     assertFalse(Files.exists(data));
-    for (var dir: List.of(share.resolve("applications"),share.resolve("mime").resolve("packages"))){ assertEquals(List.of(),Fs.walk(dir,s->s.filter(p->p.getFileName().toString().contains("earless")).toList())); }
+    assertEquals(List.of(),registered());
   }
 }

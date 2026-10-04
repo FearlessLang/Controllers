@@ -9,13 +9,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 
+import fileAssociations.FileAssociations;
 import resources.ResolveResource;
 import tools.Fs;
 import tools.JavacTool;
-import utils.Bug;
+import utils.OneOr;
 import utils.Push;
 
 /// A test of the manager DeployManagedFearless.java builds. Its setup, repeated when the test ends: no manager runs, the manager has no data folder, helloWorld and testGui1 were never compiled, and nothing is registered for .fearless.
@@ -30,6 +32,14 @@ abstract class ManagerTest extends PilotTest{
   static final Path state= data.resolve("eclipse").resolve("state.info");
   static final Path notes= data.resolve("eclipse").resolve("console.txt");
   static final Path share= Path.of(System.getProperty("user.home"),".local","share");
+  static final String killed= Fs.isWindows() ? "1" : "143";
+  static String slashed(Path p){ return p.toString().replace('\\','/'); }
+  static String escaped(Path p){ return p.toString().replace("\\","\\\\"); }
+  static boolean elevated(){ return Fs.isWindows() && Fs.of(()->new ProcessBuilder("net","session").redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start().onExit().join().exitValue())==0; }
+  static List<String> registered(){
+    if (Fs.isWindows()){ return Fs.of(()->new ProcessBuilder("reg","query","HKCU\\Software\\Classes\\.fearless").redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start().onExit().join().exitValue())==0 ? List.of(".fearless") : List.of(); }
+    return Stream.of(share.resolve("applications"),share.resolve("mime").resolve("packages")).flatMap(d->Fs.walk(d,s->s.filter(p->p.getFileName().toString().contains("earless")).map(Path::toString).toList()).stream()).toList();
+  }
   Process launch(String... args) throws Exception{
     var before= pilot.shot();
     var res= new ProcessBuilder(Push.of(launcher.toString(),List.of(args))).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start();
@@ -54,7 +64,7 @@ abstract class ManagerTest extends PilotTest{
     Fs.rmTree(data);
     Fs.rmTree(project.resolve(".fearless_out"));
     Fs.rmTree(gui.resolve(".fearless_out"));
-    if (Fs.isWindows()){ throw Bug.todo(); }
+    if (Fs.isWindows()){ FileAssociations.eradicateAll(s->s.contains("earless"),RuntimeException::new); return; }
     for (var dir: List.of(share.resolve("applications"),share.resolve("mime").resolve("packages"))){
       Fs.walkV(dir,s->s.filter(p->p.getFileName().toString().contains("earless")).toList().forEach(p->Fs.ofV(()->Files.delete(p))));
     }
@@ -62,5 +72,10 @@ abstract class ManagerTest extends PilotTest{
     assertEquals(0,new ProcessBuilder("update-desktop-database",share.resolve("applications").toString()).start().waitFor());
   }
   static void stopManagers(){ ProcessHandle.allProcesses().filter(p->p.info().command().filter(launcher.toString()::equals).isPresent()).forEach(ManagerTest::kill); }
-  private static void kill(ProcessHandle p){ p.destroyForcibly(); p.onExit().join(); }
+  private static void kill(ProcessHandle p){
+    var all= Stream.concat(p.descendants(),Stream.of(p)).toList();
+    all.forEach(ProcessHandle::destroyForcibly);
+    all.forEach(h->h.onExit().join());
+  }
+  static ProcessHandle program(Process manager){ return OneOr.of("program",manager.descendants().filter(p->p.info().command().filter(c->Path.of(c).getFileName().toString().startsWith("java")).isPresent())); }
 }

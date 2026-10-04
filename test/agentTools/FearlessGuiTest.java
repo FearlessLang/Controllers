@@ -1,11 +1,13 @@
 package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -214,8 +216,14 @@ final class FearlessGuiTest{
     Err.strCmp(expected+"\nmut Pilot.accept(_) error line: 30 in file _pilot/_rank_app.fear",Fs.readUtf8(out).replaceAll("(?m)^Warning \\[t=\\d+ms\\]: \\d+ repaint frame\\(s\\) lost .*\n",""));
   }
   @AfterEach void stop(){
-    run.descendants().forEach(ProcessHandle::destroyForcibly);
-    run.destroyForcibly();
-    Fs.ofV(()->Files.delete(out));
+    var home= ResolveResource.portableFolderOut.resolve(app).toString();
+    var all= ProcessHandle.allProcesses().filter(p->p.info().command().filter(c->c.startsWith(home)).isPresent()).toList();
+    all.forEach(ProcessHandle::destroyForcibly);
+    all.forEach(h->h.onExit().join());
+    for (var tries= 0; Files.exists(out) && tries<100; tries++){
+      try{ Files.delete(out); }
+      catch(IOException e){ Pilot.pause(100); }
+    }
+    assertFalse(Files.exists(out));
   }
 }

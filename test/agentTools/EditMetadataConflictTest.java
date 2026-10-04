@@ -49,26 +49,26 @@ final class EditMetadataConflictTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area buttons= new Area("buttons",linux(2190,1350,170,40));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898));
-  final Area note= new Area("note",linux(1600,1060,700,40));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Click ok= new Click("ok",linux(1953,1136));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final Click close= new Click("close",linux(2317,1370));
-  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79));
-  final Click editMetadataAgain= new Click("editMetadataAgain",linux(128,103));
-  final Click focusTextAgain= new Click("focusTextAgain",linux(1900,1200));
-  final DoubleClick kindIdleAgain= new DoubleClick("kindIdleAgain",linux(1672,898));
-  final Click commitAgain= new Click("commitAgain",linux(2238,1370));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area buttons= new Area("buttons",linux(2190,1350,170,40),windows(884,606,152,26));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click editMetadata= new Click("editMetadata",linux(128,103),windows(61,58));
+  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898),windows(360,123));
+  final Area note= new Area("note",linux(1600,1060,700,40),windows(440,330,400,16));
+  final Click commit= new Click("commit",linux(2238,1370),windows(924,619));
+  final Click ok= new Click("ok",linux(1953,1136),windows(639,369));
+  final Click focusText= new Click("focusText",linux(1900,1200),windows(700,400));
+  final Click close= new Click("close",linux(2317,1370),windows(1003,619));
+  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79),windows(31,33));
+  final Click editMetadataAgain= new Click("editMetadataAgain",linux(128,103),windows(61,58));
+  final Click focusTextAgain= new Click("focusTextAgain",linux(1900,1200),windows(700,400));
+  final DoubleClick kindIdleAgain= new DoubleClick("kindIdleAgain",linux(1672,898),windows(360,123));
+  final Click commitAgain= new Click("commitAgain",linux(2238,1370),windows(924,619));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());
     managerShown.go();
-    assertEquals(one.formatted(project,"idle"),Fs.readUtf8(info));
+    assertEquals(one.formatted(slashed(project),"idle"),Fs.readUtf8(info));
     look();
     var at= buttons.aim();
     var behind= pixels(at);
@@ -80,7 +80,7 @@ final class EditMetadataConflictTest extends ManagerTest{
     var handed= new ProcessBuilder(launcher.toString(),other.toString()).start();
     until(()->!handed.isAlive());
     assertEquals(0,handed.exitValue());
-    var both= two.formatted(project,"idle",other);
+    var both= two.formatted(slashed(project),"idle",slashed(other));
     until(()->Fs.readUtf8(info).equals(both));
     var where= note.aim();
     var edited= pixels(where);
@@ -94,7 +94,7 @@ final class EditMetadataConflictTest extends ManagerTest{
     ok.go();
     until(()->Arrays.equals(edited,pixels(where)));
     focusText.go();
-    assertEquals(one.formatted(project,"code"),copy());
+    assertEquals(one.formatted(slashed(project),"code"),copy());
     close.go();
     until(()->Arrays.equals(behind,pixels(at)));
     managerMenuAgain.go();
@@ -105,7 +105,7 @@ final class EditMetadataConflictTest extends ManagerTest{
     kindIdleAgain.go();
     typeCode();
     commitAgain.go();
-    until(()->Fs.readUtf8(info).equals(two.formatted(project,"code",other)));
+    until(()->Fs.readUtf8(info).equals(two.formatted(slashed(project),"code",slashed(other))));
     until(()->Arrays.equals(behind,pixels(at)));
     stopManagers();
   }

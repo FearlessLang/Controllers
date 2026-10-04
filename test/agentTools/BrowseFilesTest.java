@@ -15,7 +15,7 @@ import tools.Fs;
 ///
 /// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
 ///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, the folder browsed beside the manager holds only its marker and one source file, and nothing is at browsed2 beside it.
+/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, the file manager remembers no place for its windows, the folder browsed beside the manager holds only its marker and one source file, and nothing is at browsed2 beside it.
 /// Action 1: run the launcher on browsed: the manager window opens showing browsed.
 /// Action 2: choose Browse files in its Project menu: the file manager window opens over the manager window.
 /// Action 3: close the file manager window: the manager window is exactly as before action 2.
@@ -28,19 +28,20 @@ import tools.Fs;
 final class BrowseFilesTest extends ManagerTest{
   static final Path browsed= data.resolveSibling("browsed");
   static final Path moved= data.resolveSibling("browsed2");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click browseFiles= new Click("browseFiles",linux(180,149));
-  final At filesShown= new At("filesShown",linux(1000));
-  final Click closeFiles= new Click("closeFiles",linux(2374,843));
-  final Click closeFilesAgain= new Click("closeFilesAgain",linux(2374,843));
-  final Area tile= new Area("tile",linux(74,149,128,88));
-  final Click projectMenuAgain= new Click("projectMenuAgain",linux(158,79));
-  final Click browseFilesAgain= new Click("browseFilesAgain",linux(180,149));
-  final Click ok= new Click("ok",linux(1952,1136));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area window= new Area("window",linux(68,32,3772,2098),windows(470,100,430,300));
+  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
+  final Click browseFiles= new Click("browseFiles",linux(180,149),windows(111,103));
+  final At filesShown= new At("filesShown",linux(1000),windows(4000));
+  final Click closeFiles= new Click("closeFiles",linux(2374,843),windows(1016,58));
+  final Click closeFilesAgain= new Click("closeFilesAgain",linux(2374,843),windows(1016,58));
+  final Area tile= new Area("tile",linux(74,149,128,88),windows(7,101,127,88));
+  final Click projectMenuAgain= new Click("projectMenuAgain",linux(158,79),windows(89,33));
+  final Click browseFilesAgain= new Click("browseFilesAgain",linux(180,149),windows(111,103));
+  final Click ok= new Click("ok",linux(1952,1136),windows(639,369));
   @Override protected void walk() throws Exception{
     clean();
+    forgetWindowPlaces();
     Fs.writeUtf8(browsed.resolve("browsed.fearless"),"\n");
     Fs.writeUtf8(browsed.resolve("_browsed").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"browsed\")}\n");
     launch(browsed.toString());

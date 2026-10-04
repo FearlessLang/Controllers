@@ -27,12 +27,12 @@ final class AliasClashTest extends ManagerTest{
   static final Path twins= data.resolveSibling("twins");
   static final Path first= twins.resolve("a").resolve("twin");
   static final Path second= twins.resolve("b").resolve("twin");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1213));
-  final Click check= new Click("check",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
+  final At noteShown= new At("noteShown",linux(1000),windows(1000));
+  final Click ok= new Click("ok",linux(1952,1213),windows(639,443));
+  final Click check= new Click("check",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     for (var f: List.of(first,second)){
@@ -48,7 +48,7 @@ final class AliasClashTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(first),Fs.readUtf8(info));
+      """.formatted(slashed(first)),Fs.readUtf8(info));
     focusTiles.go();
     pilot.chord(KeyEvent.VK_F8);
     pilot.chord(KeyEvent.VK_HOME);
@@ -83,9 +83,9 @@ final class AliasClashTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(first,second),Fs.readUtf8(info));
+      """.formatted(slashed(first),slashed(second)),Fs.readUtf8(info));
     assertEquals(List.of("a/twin/_twin/_rank_app.fear","a/twin/twin.fearless","b/twin/_twin/_rank_app.fear","b/twin/twin2.fearless"),
-      Fs.walk(twins,s->s.filter(Files::isRegularFile).map(p->twins.relativize(p).toString()).sorted().toList()));
+      Fs.walk(twins,s->s.filter(Files::isRegularFile).map(p->slashed(twins.relativize(p))).sorted().toList()));
     assertEquals("\n",Fs.readUtf8(second.resolve("twin2.fearless")));
     var shown= pixels(at);
     ok.go();

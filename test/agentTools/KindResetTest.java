@@ -29,21 +29,21 @@ final class KindResetTest extends ManagerTest{
       }
     }
     """;
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1132));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click quitManager= new Click("quitManager",linux(128,191));
-  final At managerShown= new At("managerShown",linux(3000));
+  final At noteShown= new At("noteShown",linux(1000),windows(1000));
+  final Click ok= new Click("ok",linux(1952,1132),windows(639,367));
+  final Area tiles= new Area("tiles",linux(68,68,310,180),windows(0,23,310,180));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,146));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
   @Override protected void walk() throws Exception{
     clean();
-    Fs.writeUtf8(info,remembered.formatted(project,"cooked"));
+    Fs.writeUtf8(info,remembered.formatted(slashed(project),"cooked"));
     Fs.writeUtf8(cache.resolve("_map.json"),"{}\n");
     var run= launch();
     until(()->Files.exists(notes) && !Fs.readUtf8(notes).isEmpty());
     noteShown.go();
     assertEquals("In projects.info the \"kind\" of \"hello_world\" was missing or not one of the kinds: \"hello_world\" is now idle, and its compiled cache is deleted.\n",Fs.readUtf8(notes));
-    var idle= remembered.formatted(project,"idle");
+    var idle= remembered.formatted(slashed(project),"idle");
     assertEquals(idle,Fs.readUtf8(info));
     assertFalse(Files.exists(cache));
     ok.go();

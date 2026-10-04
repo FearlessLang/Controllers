@@ -27,12 +27,12 @@ import tools.Fs;
 /// Action 10: press Escape: the dialog goes away.
 /// Action 11: press alt+M, Up and Enter: Quit manager is chosen and the manager ends with exit 0.
 final class KeyboardMenusTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Area dialog= new Area("dialog",linux(1600,850,700,25));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area tiles= new Area("tiles",linux(68,68,310,180),windows(0,23,310,180));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
+  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
+  final Area dialog= new Area("dialog",linux(1600,850,700,25),windows(600,96,300,10));
   @Override protected void walk() throws Exception{
     clean();
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""),null);
@@ -51,7 +51,7 @@ final class KeyboardMenusTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project),Fs.readUtf8(info));
+      """.formatted(slashed(project)),Fs.readUtf8(info));
     focusTiles.go();
     look();
     var at= window.aim();

@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import tools.Fs;
-import utils.OneOr;
 
 /// Quitting the manager while one of its programs runs ends that program too: the window of the program goes away with the window of the manager, and nothing is left running.
 ///
@@ -22,14 +21,14 @@ import utils.OneOr;
 /// Action 6: choose Quit manager in its Manager menu: the manager ends, the program ends, and the desk shows its background again.
 final class QuitWhileRunningTest extends ManagerTest{
   static final Path console= data.resolve("eclipse").resolve("start").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final Click run= new Click("run",linux(164,111));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click quitManager= new Click("quitManager",linux(128,191));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final Click run= new Click("run",linux(164,111),windows(102,67));
+  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,146));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();
@@ -47,7 +46,7 @@ final class QuitWhileRunningTest extends ManagerTest{
           "kind": "code"
         }
       }
-      """.formatted(gui),Fs.readUtf8(info));
+      """.formatted(slashed(gui)),Fs.readUtf8(info));
     compile.go();
     until(()->Fs.readUtf8(console).contains("--- compile "));
     assertEquals("--- compiling testGui1 ---\n--- compile done ---\n",Fs.readUtf8(console));
@@ -57,7 +56,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     run.go();
     until(()->!Arrays.equals(before,pixels(at)));
     assertEquals("--- compiling testGui1 ---\n--- compile done ---\n--- running gui_example.Foo ---\n",Fs.readUtf8(console));
-    var program= OneOr.of("program",manager.descendants());
+    var program= program(manager);
     managerMenu.go();
     quitManager.go();
     until(()->!manager.isAlive());

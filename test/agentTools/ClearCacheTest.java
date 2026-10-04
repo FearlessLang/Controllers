@@ -25,15 +25,15 @@ import tools.Fs;
 final class ClearCacheTest extends ManagerTest{
   static final Path console= data.resolve("eclipse").resolve("hello_world").resolve("console.txt");
   static final Path cache= project.resolve(".fearless_out");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click clearCache= new Click("clearCache",linux(180,128));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final At codeShown= new At("codeShown",linux(1000),windows(1000));
+  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At mainsShown= new At("mainsShown",linux(1000),windows(1000));
+  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
+  final Click clearCache= new Click("clearCache",linux(180,128),windows(111,82));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());
@@ -73,7 +73,7 @@ final class ClearCacheTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(project),Fs.readUtf8(state));
+      """.formatted(escaped(project)),Fs.readUtf8(state));
     mainsShown.go();
     look();
     assertFalse(Arrays.equals(code,pixels(at)));

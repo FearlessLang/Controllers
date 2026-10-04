@@ -25,15 +25,15 @@ import utils.Err;
 /// Action 8: end the manager.
 final class RunSelectedTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Click tickHello4= new Click("tickHello4",linux(99,240));
-  final Click tickHello1= new Click("tickHello1",linux(99,190));
-  final Click runSelected= new Click("runSelected",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final At codeShown= new At("codeShown",linux(1000),windows(1000));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At mainsShown= new At("mainsShown",linux(1000),windows(1000));
+  final Click tickHello4= new Click("tickHello4",linux(99,240),windows(31,190));
+  final Click tickHello1= new Click("tickHello1",linux(99,190),windows(31,142));
+  final Click runSelected= new Click("runSelected",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());
@@ -59,10 +59,10 @@ final class RunSelectedTest extends ManagerTest{
       """;
     tickHello4.go();
     until(()->Fs.readUtf8(info).contains("hello.Hello4"));
-    assertEquals(registry.formatted(project,"\"hello.Hello4\""),Fs.readUtf8(info));
+    assertEquals(registry.formatted(slashed(project),"\"hello.Hello4\""),Fs.readUtf8(info));
     tickHello1.go();
     until(()->Fs.readUtf8(info).contains("hello.Hello1"));
-    assertEquals(registry.formatted(project,"\"hello.Hello1\", \"hello.Hello4\""),Fs.readUtf8(info));
+    assertEquals(registry.formatted(slashed(project),"\"hello.Hello1\", \"hello.Hello4\""),Fs.readUtf8(info));
     runSelected.go();
     until(()->Fs.readUtf8(state).contains("\"runs\": \"2\"") && Fs.readUtf8(state).contains("\"exit\": \"0\""));
     assertEquals("""
@@ -84,7 +84,7 @@ final class RunSelectedTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(project),Fs.readUtf8(state));
+      """.formatted(escaped(project)),Fs.readUtf8(state));
     Err.strCmp("""
       --- compiling helloWorld ---
       --- compile done ---

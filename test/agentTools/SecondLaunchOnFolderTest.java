@@ -17,9 +17,9 @@ import tools.Fs;
 /// Action 2: run the launcher on helloStackTraces: it ends at once, a second tile appears beside helloWorld and takes the selection from it, the manager keeps running, and it remembers helloWorld and helloStackTraces as idle projects.
 /// Action 3: end the manager.
 final class SecondLaunchOnFolderTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Area secondTile= new Area("secondTile",linux(202,149,128,88));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
+  final Area secondTile= new Area("secondTile",linux(202,149,128,88),windows(135,101,127,88));
   @Override protected void walk() throws Exception{
     clean();
     var run= launch(project.toString());
@@ -47,7 +47,7 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project,other),Fs.readUtf8(info));
+      """.formatted(slashed(project),slashed(other)),Fs.readUtf8(info));
     stopManagers();
   }
 }

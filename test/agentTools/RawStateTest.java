@@ -38,16 +38,16 @@ final class RawStateTest extends ManagerTest{
   static final Path notes= data.resolveSibling("notes");
   static final Path tally= data.resolveSibling("tally");
   static final DateTimeFormatter when= DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area dialog= new Area("dialog",linux(1600,850,700,25));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click showRawState= new Click("showRawState",linux(128,124));
-  final Click focusText= new Click("focusText",linux(1970,1100));
-  final Click ok= new Click("ok",linux(1952,1323));
-  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79));
-  final Click showRawStateAgain= new Click("showRawStateAgain",linux(128,124));
-  final Click focusTextAgain= new Click("focusTextAgain",linux(1970,1100));
-  final Click okAgain= new Click("okAgain",linux(1952,1323));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area dialog= new Area("dialog",linux(1600,850,700,25),windows(600,96,300,10));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click showRawState= new Click("showRawState",linux(128,124),windows(61,78));
+  final Click focusText= new Click("focusText",linux(1970,1100),windows(660,300));
+  final Click ok= new Click("ok",linux(1952,1323),windows(639,569));
+  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79),windows(31,33));
+  final Click showRawStateAgain= new Click("showRawStateAgain",linux(128,124),windows(61,78));
+  final Click focusTextAgain= new Click("focusTextAgain",linux(1970,1100),windows(660,300));
+  final Click okAgain= new Click("okAgain",linux(1952,1323),windows(639,569));
   @Override protected void walk() throws Exception{
     clean();
     var changed= FileTime.from(ZonedDateTime.parse("2026-01-02 03:04:05",when).toInstant());
@@ -84,7 +84,7 @@ final class RawStateTest extends ManagerTest{
           "kind": "code"
         }
       }
-      """.formatted(notes,tally),Fs.readUtf8(info));
+      """.formatted(slashed(notes),slashed(tally)),Fs.readUtf8(info));
     var registered= pixels(where);
     managerMenuAgain.go();
     showRawStateAgain.go();
