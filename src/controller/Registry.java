@@ -63,7 +63,7 @@ public final class Registry{
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
   private static final String typeShape= "a Fearless type name: after any leading underscores, it starts with an uppercase letter";
-  public static final String systemShape= "a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\"";
+  public static final String systemShape= "a system extension: 1 to "+Fs.maxExtSeg+" lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\"";
   private final Path dir;
   private List<Entry> all= List.of();
   private List<String> extensions= List.of();
@@ -111,7 +111,7 @@ public final class Registry{
     writeText(extensionsFile(),Info.print(strList(sorted)));
     extensions= sorted;
   }
-  public static boolean isSystem(String ext){ return Fs.isExtSeg(ext) && new Icon("."+ext,null,null).system(); }
+  public static boolean isSystem(String ext){ return Fs.isExtSeg(ext) && Icon.system("."+ext); }
   public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all.stream().filter(e->e.path().equals(folder))); }
   public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all.stream().filter(e->e.alias().equals(alias))); }
   public Optional<Path> overlapping(Path folder){
@@ -189,7 +189,7 @@ public final class Registry{
   private void writeText(Path file, String text){
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,file,ATOMIC_MOVE); }
-    catch(IOException e){ throw Messages.couldNotSaveRegisteredFolders(dir,e); }
+    catch(IOException e){ throw Messages.couldNotSaveManagerFile(file,e); }
   }
   public static List<Entry> fromInfo(String source, Info root, UnaryOperator<Path> identity, Path managerDir){
     if (!(root instanceof Obj top)){

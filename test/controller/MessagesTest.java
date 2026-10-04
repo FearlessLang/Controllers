@@ -212,11 +212,11 @@ using it, or the folder itself may be blocked.
 Reported reason:
 The system cannot find the file specified""", Messages.couldNotDrainMessageFolder(msgDir, cause).getMessage());
   }
-  @Test void couldNotSaveRegisteredFolders(){
-    var managerDir= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager");
+  @Test void couldNotSaveManagerFile(){
+    var file= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager").resolve("extensions.info");
     var cause= new IOException("There is not enough space on the disk");
     same("""
-Fearless could not save what it remembers about your project folders.
+Fearless could not save the file "extensions.info" of its manager folder.
 
 Fearless uses one process (called the manager process)
 to keep track of other Fearless processes (the user processes).
@@ -232,7 +232,7 @@ There is not enough space on the disk
 Programs that may use or block this folder include security software
 (antivirus, ransomware protection, endpoint protection), backup tools,
 sync tools, and file preview tools.
-""", Messages.couldNotSaveRegisteredFolders(managerDir, cause).getMessage());
+""", Messages.couldNotSaveManagerFile(file, cause).getMessage());
   }
   @Test void folderNestedWithRegistered(){
     same("""

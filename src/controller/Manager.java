@@ -177,7 +177,7 @@ public final class Manager{
     var blocked= new HashSet<String>();
     try{ associate(blocked); }
     catch(UserError e){
-      if (blocked.isEmpty() || blocked.stream().anyMatch(b->!new Icon(b,null,null).system())){ throw e; }
+      if (blocked.isEmpty() || !blocked.stream().allMatch(Icon::system)){ throw e; }
       var claimed= Project.claimed(projects());
       blocked.stream().flatMap(b->claimed.get(b.substring(1)).stream()).map(Project.Claimant::folder).distinct().forEach(f->unclaim(f,e.getMessage()));
       associateAtStartUp();
@@ -442,14 +442,14 @@ public final class Manager{
     if (asked.isEmpty()){ compiled(f,l,previous,true,ec); return; }
     l.asking= l.claims;
     l.claims= previous;
-    view.allow(Messages.allowExtensions(asked),yes->post(()->answered(f,l,previous,asked,yes)));
+    view.allow(Messages.allowExtensions(asked),yes->post(()->answered(f,l,asked,yes)));
   }
-  private void answered(Path f, Live l, MainsInfo previous, List<Project.Claimant> asked, boolean yes){
+  private void answered(Path f, Live l, List<Project.Claimant> asked, boolean yes){
     if (live.get(f) != l){ return; }
     l.asking= Project.noClaims;
-    if (!yes){ failed(f,Messages.extensionsRefused(asked)); compiled(f,l,previous,false,0); return; }
+    if (!yes){ failed(f,Messages.extensionsRefused(asked)); compiled(f,l,l.claims,false,0); return; }
     asked.forEach(c->addExtensionNow(c.claim().extension()));
-    compiled(f,l,previous,accept(f),0);
+    compiled(f,l,l.claims,accept(f),0);
   }
   private void compiled(Path f, Live l, MainsInfo previous, boolean accepted, int ec){
     l.job= "";

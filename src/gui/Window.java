@@ -227,9 +227,8 @@ public final class Window implements Manager.View{
   @Override public boolean visible(){ return ticker.isRunning(); }
   private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::ask,this::refuse)); }
   private void render(State s){
-    var listed= state.extensions();
+    if (!s.extensions().equals(state.extensions())){ extensions.setListData(s.extensions().toArray(String[]::new)); }
     state= s;
-    if (!s.extensions().equals(listed)){ extensions.setListData(s.extensions().toArray(String[]::new)); }
     extensions.repaint();
     tiles.render(s);
     panels.keySet().removeIf(f->s.of(f).isEmpty());

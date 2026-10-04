@@ -154,9 +154,7 @@ public final class Messages{
     if (shortcut){ return new UserError(used); }
     var name= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
     var cut= name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
-    var refused= cut.isEmpty() || cut.equals("fearless") || cut.matches("f(app|file)[0-9]{3}");
-    var example= refused ? "ext" : cut;
-    return new UserError(used+" Claim a system extension instead, for example "+claim(false,icon,example)+".");
+    return new UserError(used+" Claim a system extension instead, for example "+claim(false,icon,Registry.isSystem(cut) ? cut : "ext")+".");
   }
   private static String kind(boolean shortcut){ return shortcut ? "Shortcut" : "OpenWith"; }
   private static String claim(boolean shortcut, String icon, String ext){ return "\"base."+kind(shortcut)+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
@@ -182,7 +180,7 @@ public final class Messages{
       "Allow these system extensions in this manager?\n","\n","\n\nThe manager becomes the program opening every file with an allowed extension,\nin place of the program opening it now. Failing the compile changes nothing.");
   }
   public static String notASystemExtension(String typed){ return "The manager was asked to allow "+disp(typed)+", but that is not "+Registry.systemShape+"."; }
-  public static String emptyFile(Path file){ return disp(file.toString())+" is empty: no main runs on an empty file."; }
+  public static String emptyFile(Path file){ return "The manager was asked to open "+disp(file.toString())+", but that file is empty: no main runs on an empty file."; }
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c->disp(c.main())+" of project "+disp(c.alias()))," claimed by "," and ","",""); }
   public static UserError iconRefused(Project.Claimant c, String problem){
     return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
@@ -417,9 +415,9 @@ public final class Messages{
 
       %s""".formatted(path(msgDir.toString()),reported(cause)), cause);
   }
-  public static UserError couldNotSaveRegisteredFolders(Path managerDir, Throwable cause){
+  public static UserError couldNotSaveManagerFile(Path file, Throwable cause){
     return new UserError("""
-      Fearless could not save what it remembers about your project folders.
+      Fearless could not save the file "%s" of its manager folder.
 
       %s
       The manager folder is:
@@ -427,6 +425,6 @@ public final class Messages{
       The change was not recorded, so Fearless will not remember it.
 
       %s
-      %s""".formatted(managerFolderIntro(),path(managerDir.toString()),reported(cause),blockingPrograms()), cause);
+      %s""".formatted(file.getFileName(),managerFolderIntro(),path(file.getParent().toString()),reported(cause),blockingPrograms()), cause);
   }
 }

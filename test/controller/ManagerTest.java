@@ -94,7 +94,7 @@ final class ManagerTest{
       var all= Stream.concat(Stream.of(new Icon(".fearless",null,null)),claimed.stream()).toList();
       var userLocked= all.stream().map(Icon::extension).filter(locked::contains).toList();
       if (!userLocked.isEmpty()){ throw Violation.associationUserLocked(userLocked,claimedBy); }
-      var blocked= all.stream().filter(i->!i.system()).map(Icon::extension).filter(held::containsKey).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
+      var blocked= all.stream().map(Icon::extension).filter(e->!Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw Violation.associationNotOurs(blocked,claimedBy); }
     }
     private static ChildJvm jvm(Consumer<String> out, String... args){
@@ -624,7 +624,7 @@ final class ManagerTest{
     commit(m,"{}",()->{});
     mode(managerDir,"rwxr-xr-x");
     assertEquals(3,failures.size());
-    failures.forEach(f->same("Fearless could not save what it remembers about your project folders.[###]",f.getMessage()));
+    failures.forEach(f->same("Fearless could not save the file \"activity.txt\" of its manager folder.[###]",f.getMessage()));
     failures.clear();
     assertEquals(1,view.notes.size());
     assertEquals(List.of("hello "+hello),listed(dir));
@@ -1769,7 +1769,7 @@ final class ManagerTest{
     Fs.writeUtf8(empty,"");
     send(m,TaggedText.of(empty.toString()));
     idle(m);
-    assertEquals(List.of("\""+empty+"\" is empty: no main runs on an empty file."),view.notes);
+    assertEquals(List.of("The manager was asked to open \""+empty+"\", but that file is empty: no main runs on an empty file."),view.notes);
     assertEquals("",eclipse(dir,"hello","console.txt"));
     assertEquals(List.of("hello "+hello),listed(dir));
   }
