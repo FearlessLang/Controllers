@@ -37,9 +37,11 @@ final class FactsTest{
     Fs.writeUtf8(res.resolve(name.toLowerCase()+".fearless"),"");
     return res;
   }
-  static void cache(Path project, String pkg, long stamp){
-    at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear",stamp);
+  static void cache(Path project, String pkg, long stamp){ cache(project,pkg,stamp,"{}\n"); }
+  static void cache(Path project, String pkg, long stamp, String mainsInfo){
+    at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear\ntop rank",stamp);
     at(project.resolve(".fearless_out").resolve(pkg+".json"),"{}\n",stamp);
+    at(project.resolve(".fearless_out").resolve("mains.info"),mainsInfo,stamp);
   }
   private static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file,content);
@@ -130,6 +132,15 @@ final class FactsTest{
     at(project.resolve("readme"),"edited\n",stamp+5000);
     at(project.resolve("someproject.fearless"),"",stamp+5000);
     assertTrue(Facts.of(project,"someproject",Kind.code).upToDate());
+  }
+  @Test void aShortcutFileAtTheTopLevelKeepsTheCacheUpToDateAndTheProjectValid(@TempDir Path dir){
+    var project= project(dir,"someProject");
+    var stamp= after(project);
+    cache(project,"hello",stamp);
+    at(project.resolve("bar.fapp042"),"",stamp+5000);
+    var facts= Facts.of(project,"someproject",Kind.code);
+    assertTrue(facts.upToDate());
+    assertEquals(Optional.empty(),facts.problem());
   }
   @Test void aFileAddedToAPackageMakesItStaleWhateverItsTime(@TempDir Path dir){
     var project= project(dir,"someProject");

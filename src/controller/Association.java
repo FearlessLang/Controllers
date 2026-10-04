@@ -2,10 +2,12 @@ package controller;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import fileAssociations.FileAssociations;
 import fileAssociations.Icon;
+import tools.Fs;
 import tools.JavacTool;
 import userMessages.Violation;
 
@@ -25,12 +27,11 @@ public final class Association{
     return dot < 0 ? file : file.substring(0,dot);
   }
   public static Path iconFile(){ return JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("icon.png"); }
-  static List<Icon> extensions(Path launcher){ return List.of(new Icon(".fearless",launcher,iconFile())); }
-  static void reconcile(Path launcher, List<Icon> extensions){
+  static void reconcile(Path launcher, List<Icon> extensions, Function<String,String> claimedBy){
     FileAssociations.reconcile(identity(launcher),belongsToFamily,launcher,extensions,launcher,iconFile(),
       reported->Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations",Association::eradicateAll),
-      Violation::associationUserLocked,
-      Violation::associationNotOurs,
+      locked->Fs.isWindows() ? Violation.associationUserLocked(locked,claimedBy) : Violation.associationChosenDefault(locked,claimedBy),
+      held->Violation.associationNotOurs(held,claimedBy),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
   }

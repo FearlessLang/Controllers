@@ -10,7 +10,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import coordinator.MainsInfo;
+import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
 
@@ -110,7 +113,6 @@ public final class Messages{
       replace that file with a PNG image, or remove it.
       """.formatted(path(icon.toString())));
   }
-  public static UserError infoError(String rendered){ return new UserError(rendered); }
   public static String kindReset(String alias, Optional<String> cacheKept){
     return "In projects.info the \"kind\" of \""+alias+"\" was missing or not one of the kinds: \""+alias+"\" is now idle, and its compiled cache is "+cacheKept.map(w->"not deleted: "+w).orElse("deleted")+".";
   }
@@ -146,6 +148,48 @@ public final class Messages{
   }
   public static String dropRefused(String item, String why){ return "The manager was asked to register "+disp(item)+", dropped on its window, but "+why+"."; }
   public static String dropUnreadable(Exception e){ return "The manager was asked to register what was dropped on its window, but the desktop did not hand it over: "+e.getMessage(); }
+  public static UserError noFreeExtension(String main, boolean shortcut, String icon){
+    var prefix= shortcut ? "fapp" : "ffile";
+    var used= "No free extension is left for "+claim(shortcut,icon,"")+" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager.";
+    if (shortcut){ return new UserError(used); }
+    var name= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
+    var cut= name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
+    return new UserError(used+" Claim a system extension instead, for example "+claim(false,icon,Registry.isSystem(cut) ? cut : "ext")+".");
+  }
+  private static String kind(boolean shortcut){ return shortcut ? "Shortcut" : "OpenWith"; }
+  private static String claim(boolean shortcut, String icon, String ext){ return "\"base."+kind(shortcut)+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
+  public static UserError shortcutNoFileName(String main){
+    return new UserError("Main "+disp(main)+" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\".");
+  }
+  public static UserError shortcutBadFileName(String main, String file){
+    return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
+  }
+  public static UserError shortcutMasksFile(String main, String file, String name){
+    return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": the project has the file "+disp(name)+", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file "+disp(name)+".");
+  }
+  public static UserError shortcutsCollide(String main1, String main2, String file){
+    return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" can not both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
+  }
+  public static String iconGone(Path file){ return "The icon file of a claim of this project is gone:\n"+file+"\nThe project claims no extension until it is compiled again."; }
+  public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project can not be saved in its compiled cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
+  private static String notAllowed(Project.Claimant c){ return "The system extension "+disp(c.claim().extension())+" of "+claim(c.shortcut(),c.claim().icon(),c.claim().extension())+" of main "+disp(c.main())+" is not allowed in this manager."; }
+  public static String extensionInactive(Project.Claimant c){ return notAllowed(c)+"\nThe project claims no extension until it is compiled again."; }
+  public static String extensionsRefused(List<Project.Claimant> cs){ return Join.of(cs.stream().map(Messages::notAllowed),"","\n","\nCompile again to be asked again."); }
+  public static String allowExtensions(List<Project.Claimant> cs){
+    return Join.of(cs.stream().map(c->"  "+disp(c.claim().extension())+" for "+claim(c.shortcut(),c.claim().icon(),c.claim().extension())+" of main "+disp(c.main())+" of project "+disp(c.alias())),
+      "Allow these system extensions in this manager?\n","\n","\n\nThe manager becomes the program opening every file with an allowed extension,\nin place of the program opening it now. Failing the compile changes nothing.");
+  }
+  public static String notASystemExtension(String typed){ return "The manager was asked to allow "+disp(typed)+", but that is not "+Registry.systemShape+"."; }
+  public static String emptyFile(Path file){ return "The manager was asked to open "+disp(file.toString())+", but that file is empty: no main runs on an empty file."; }
+  public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c->disp(c.main())+" of project "+disp(c.alias()))," claimed by "," and ","",""); }
+  public static UserError iconRefused(Project.Claimant c, String problem){
+    return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
+  }
+  public static UserError iconUnreadable(Project.Claimant c, String why){
+    return new UserError(icon(c)+" can not be read from "+from(c.claim())+": "+why+"\nCompile the project again.");
+  }
+  private static String icon(Project.Claimant c){ return "The icon "+disp(c.claim().icon())+" in "+claim(c.shortcut(),c.claim().icon(),c.claim().extension())+" of main "+disp(c.main()); }
+  private static String from(MainsInfo.Claim c){ return disp(Join.of(Stream.of(c.diskPath(),c.zipSteps().replace(';','/'),c.zipEntry()).filter(s->!s.isEmpty()),"","/","")); }
   public static UserError tooManyArguments(List<String> args){
     return new UserError("""
       Fearless was started with %d arguments, but it takes at most one.
@@ -371,9 +415,9 @@ public final class Messages{
 
       %s""".formatted(path(msgDir.toString()),reported(cause)), cause);
   }
-  public static UserError couldNotSaveRegisteredFolders(Path managerDir, Throwable cause){
+  public static UserError couldNotSaveManagerFile(Path file, Throwable cause){
     return new UserError("""
-      Fearless could not save what it remembers about your project folders.
+      Fearless could not save the file "%s" of its manager folder.
 
       %s
       The manager folder is:
@@ -381,6 +425,6 @@ public final class Messages{
       The change was not recorded, so Fearless will not remember it.
 
       %s
-      %s""".formatted(managerFolderIntro(),path(managerDir.toString()),reported(cause),blockingPrograms()), cause);
+      %s""".formatted(file.getFileName(),managerFolderIntro(),path(file.getParent().toString()),reported(cause),blockingPrograms()), cause);
   }
 }

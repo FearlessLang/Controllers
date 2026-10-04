@@ -86,7 +86,7 @@ public final class Api{
   }
   @SuppressWarnings("unchecked") private static List<Object> arr(Object o){ return (List<Object>)o; }
   private static String str(Object o){ return (String)o; }
-  /// nested arrays of strings, without escapes or whitespace, as ApiJson writes them, and objects
+  /// nested arrays of strings, a backslash escaping the next character, without whitespace, as ApiJson writes them, and objects
   /// as the _map.json of the compiler has them: a newline after a comma and after the closing brace
   private static final class Json{
     private final String s;
@@ -120,9 +120,10 @@ public final class Api{
       }
     }
     String str(){
-      var j= s.indexOf('"', i+1);
-      check(j > 0);
-      var res= s.substring(i+1, j);
+      var j= i+1;
+      while (j < s.length() && s.charAt(j) != '"'){ j+= s.charAt(j) == '\\' ? 2 : 1; }
+      check(j < s.length());
+      var res= s.substring(i+1, j).replaceAll("\\\\(.)", "$1");
       i= j+1;
       return res;
     }

@@ -9,6 +9,8 @@ import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Taskbar;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.UncheckedIOException;
@@ -26,12 +28,15 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -40,6 +45,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.TransferHandler;
@@ -57,6 +63,7 @@ import tools.Fs;
 import tools.OpenPath;
 import userMessages.UserError;
 import utils.Bug;
+import utils.Join;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
 /// the selected one on the right. It shows the State the Manager hands it and turns every
@@ -73,9 +80,11 @@ public final class Window implements Manager.View{
   private final JMenu running= new JMenu("Running");
   private final JMenu project= new JMenu("Project");
   private final Map<Path,Panel> panels= new HashMap<>();
+  private final JList<String> extensions= named(new JList<>(),"extensions");
+  private final JDialog extensionsView= new JDialog(frame,"System extensions",false);
   private final Instant start= Instant.now();
   private final Timer ticker= new Timer(1000,_->tick());
-  private State state= new State(List.of(),Optional.empty());
+  private State state= new State(List.of(),Optional.empty(),List.of());
   private Optional<Panel> shown= Optional.empty();
   private boolean surfaced;
   private Window(Main main){
@@ -84,6 +93,7 @@ public final class Window implements Manager.View{
     tiles.setBorder(BorderFactory.createTitledBorder("Registered project folders"));
     split.setDividerLocation(320);
     frame.setJMenuBar(menuBar());
+    extensionsView();
     frame.add(split,BorderLayout.CENTER);
     frame.add(status,BorderLayout.SOUTH);
     frame.getRootPane().setTransferHandler(dropHandler());
@@ -132,6 +142,72 @@ public final class Window implements Manager.View{
   @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(()->panel(folder).append(text)); }
   @Override public void note(String text){ SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE)); }
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(()->panel(folder).output.setText("")); }
+  @Override public void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){ SwingUtilities.invokeLater(()->chooser(choices,picked)); }
+  @Override public void allow(String question, Consumer<Boolean> allowed){
+    SwingUtilities.invokeLater(()->allowed.accept(JOptionPane.showOptionDialog(frame,question,"Fearless",JOptionPane.DEFAULT_OPTION,JOptionPane.QUESTION_MESSAGE,null,new Object[]{"Allow","Fail the compile"},"Allow") == 0));
+  }
+  private void extensionsView(){
+    extensions.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    extensions.setCellRenderer(new DefaultListCellRenderer(){
+      @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focused){
+        return super.getListCellRendererComponent(l,extensionRow((String)value,Project.claimed(state.projects())),i,selected,focused);
+      }
+    });
+    var remove= small("Remove",()->main.manager().removeExtension(extensions.getSelectedValue()));
+    remove.setEnabled(false);
+    extensions.addListSelectionListener(_->remove.setEnabled(!extensions.isSelectionEmpty()));
+    var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    buttons.add(small("Add...",this::addExtension));
+    buttons.add(remove);
+    var scroll= new JScrollPane(extensions);
+    scroll.setPreferredSize(new Dimension(520,240));
+    extensionsView.add(scroll,BorderLayout.CENTER);
+    extensionsView.add(buttons,BorderLayout.SOUTH);
+    extensionsView.pack();
+  }
+  private void addExtension(){
+    var typed= JOptionPane.showInputDialog(extensionsView,"System extension to allow, like \"htm\":","Fearless",JOptionPane.PLAIN_MESSAGE);
+    if (typed != null){ main.manager().addExtension(typed); }
+  }
+  static String extensionRow(String ext, Map<String,List<Project.Claimant>> claimed){
+    return "."+ext+"   "+Join.of(claimed.getOrDefault(ext,List.of()).stream().map(Project.Claimant::label),"",", ","","<claimed by no main>");
+  }
+  private void chooser(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){
+    var list= choices(choices);
+    var dialog= new JDialog(frame,"Open with",false);
+    Runnable pick= ()->pick(dialog,list,picked);
+    var run= small("Run",pick);
+    doubleClicked(list,pick);
+    var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    buttons.add(run);
+    dialog.add(new JScrollPane(list),BorderLayout.CENTER);
+    dialog.add(buttons,BorderLayout.SOUTH);
+    dialog.getRootPane().setDefaultButton(run);
+    dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+    dialog.pack();
+    dialog.setLocationRelativeTo(frame);
+    dialog.setVisible(true);
+    list.requestFocusInWindow();
+  }
+  private static void pick(JDialog dialog, JList<Project.Claimant> list, Consumer<Project.Claimant> picked){
+    if (list.isSelectionEmpty()){ return; }
+    dialog.dispose();
+    picked.accept(list.getSelectedValue());
+  }
+  static JList<Project.Claimant> choices(List<Project.Claimant> choices){
+    var icons= choices.stream().map(c->new ImageIcon(Icons.of(c,32))).toList();
+    var res= new JList<>(choices.toArray(Project.Claimant[]::new));
+    res.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    res.setSelectedIndex(0);
+    res.setCellRenderer(new DefaultListCellRenderer(){
+      @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focused){
+        super.getListCellRendererComponent(l,choices.get(i).label(),i,selected,focused);
+        setIcon(icons.get(i));
+        return this;
+      }
+    });
+    return res;
+  }
   private boolean onScreen(){ return frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) == 0; }
   //A desktop that refuses to show a window reports it as iconified and never deiconifies it.
   private void checkSurfaced(){
@@ -139,7 +215,8 @@ public final class Window implements Manager.View{
   }
   public boolean askForget(){
     return onEdt(()->JOptionPane.showConfirmDialog(frame,"""
-      Remove Fearless as the program registered to open Fearless projects?
+      Remove Fearless as the program registered to open Fearless projects
+      and the kinds of file claimed by the mains of its projects?
 
       What your desktop already remembers by hand is left exactly as it is:
       this only removes what Fearless itself registered.""","Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION);
@@ -150,7 +227,9 @@ public final class Window implements Manager.View{
   @Override public boolean visible(){ return ticker.isRunning(); }
   private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::ask,this::refuse)); }
   private void render(State s){
+    if (!s.extensions().equals(state.extensions())){ extensions.setListData(s.extensions().toArray(String[]::new)); }
     state= s;
+    extensions.repaint();
     tiles.render(s);
     panels.keySet().removeIf(f->s.of(f).isEmpty());
     s.shown().ifPresent(p->panel(p.folder()).render(p,s.projects()));
@@ -173,6 +252,7 @@ public final class Window implements Manager.View{
     manager.setMnemonic('M');
     manager.add(item("Edit project metadata...",true,this::editMetadata));
     manager.add(item("Show raw project state...",true,()->showText(frame,rawState(),"Raw project state",JOptionPane.PLAIN_MESSAGE)));
+    manager.add(item("System extensions...",true,()->{ extensionsView.setLocationRelativeTo(frame); extensionsView.setVisible(true); }));
     manager.add(item("Connect Eclipse...",true,()->choose("Select Eclipse: its program, its folder, or the folder it was unzipped into",p->main.manager().connect(p))));
     manager.addSeparator();
     if (!Fs.isMac()){ manager.add(item("Forget association",true,()->main.forgetAssociation(this))); }
@@ -212,7 +292,7 @@ public final class Window implements Manager.View{
     if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return; }
     chosen.accept(chooser.getSelectedFile().toPath());
   }
-  private void register(Path p){ main.manager().message(TaggedText.line(p.toString())); }
+  private void register(Path p){ ask("register",TaggedText.line(p.toString()),""); }
   private TransferHandler dropHandler(){
     return new TransferHandler(){
       @Override public boolean canImport(TransferSupport support){
@@ -255,6 +335,12 @@ public final class Window implements Manager.View{
   }
   static String clock(long seconds){ return "%02d:%02d:%02d".formatted(seconds/3600,(seconds/60)%60,seconds%60); }
   static <T extends JComponent> T named(T c, String name){ c.setName(name); return c; }
+  static <T extends JComponent> T doubleClicked(T c, Runnable r){
+    c.addMouseListener(new MouseAdapter(){
+      @Override public void mouseClicked(MouseEvent e){ if (e.getClickCount() == 2){ r.run(); } }
+    });
+    return c;
+  }
   static JTextArea mono(JTextArea area){ area.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13)); return area; }
   static JButton small(String text, Runnable action){
     var res= new JButton(text);

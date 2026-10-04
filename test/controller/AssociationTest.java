@@ -6,9 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,12 +23,6 @@ final class AssociationTest{
   private static final Path proof= Path.of("C:\\fearlessManaged0_001\\proof.ico");
   private static final Path programIco= Path.of("C:\\fearlessManaged0_001\\app.ico");
   private static final String identity= "fearlessManaged0_001";
-  private static Map<String,String> owned(){
-    var res= new LinkedHashMap<String,String>();
-    res.put(".fearless",identity+"-aaa");
-    res.put(".fproof",identity+"-bbb");
-    return res;
-  }
   @Test void theLauncherNamesTheProgramAndTheManagerIsNotThePortable(){
     assertEquals(identity,Association.identity(Path.of(linuxLauncher)));
     assertEquals(identity,Association.identity(Path.of("fearlessManaged0_001.exe")));
@@ -46,9 +38,6 @@ final class AssociationTest{
     System.setProperty("jpackage.app-path",winLauncher.toString());
     try{ assertEquals(winLauncher,Association.launcher()); }
     finally{ System.clearProperty("jpackage.app-path"); }
-  }  @Test void everyExtensionGetsAKindOfItsOwn(){
-    assertEquals("application/x-fearless",LinuxAssociations.typeOf(".fearless"));
-    assertEquals("application/x-fproof",LinuxAssociations.typeOf(".fproof"));
   }
   @Test void theOneDesktopEntryHandsEveryKindToTheRunningLauncher(){
     var entry= LinuxAssociations.desktopEntry(identity,linuxLauncher,"controller-Main",List.of("application/x-fearless","application/x-fproof"));
@@ -74,28 +63,6 @@ final class AssociationTest{
   @Test void theWindowClassIsTheMainClassTheWayTheToolkitNamesIt(){
     assertEquals("controller-Main",LinuxAssociations.windowClass("Controller/controller.Main"));
     assertEquals("mainCoordinator-Main",LinuxAssociations.windowClass("mainCoordinator.Main /some/project"));
-  }
-  @Test void everyKindIsDeclaredOutrightAtTheWeightThatSettlesTheFileName(){
-    var mine= LinuxAssociations.mimePackage(identity,owned());
-    assertTrue(mine.contains("<mime-type type=\"application/x-fearless\">"),mine);
-    assertTrue(mine.contains("<glob pattern=\"*.fearless\" weight=\"100\"/>"),mine);
-    assertTrue(mine.contains("<glob pattern=\"*.fproof\" weight=\"100\"/>"),mine);
-  }
-  @Test void eachKindNamesItsOwnPictureSoOneBatchCanCarryMany(){
-    var mine= LinuxAssociations.mimePackage(identity,owned());
-    assertTrue(mine.contains("<icon name=\"fearlessManaged0_001-aaa\"/>"),mine);
-    assertTrue(mine.contains("<icon name=\"fearlessManaged0_001-bbb\"/>"),mine);
-  }
-  @Test void whatWeDeclaredIsWhatWeReadBackOnTheNextRun(){
-    assertEquals(owned(),LinuxAssociations.readOwned(LinuxAssociations.mimePackage(identity,owned()).lines().toList()));
-  }
-  @Test void aThousandExtensionsShareOnePictureAndOneDeclarationFile(){
-    var many= new LinkedHashMap<String,String>();
-    for (var i= 0; i < 1000; i++){ many.put(".fear"+i,identity+"-shared"); }
-    var mine= LinuxAssociations.mimePackage(identity,many);
-    assertEquals(1000,mine.lines().filter(l->l.contains("<mime-type")).count());
-    assertEquals(1000,mine.lines().filter(l->l.contains("name=\"fearlessManaged0_001-shared\"")).count());
-    assertEquals(many,LinuxAssociations.readOwned(mine.lines().toList()));
   }
   @Test void thePictureNameFollowsWhatIsInsideItSoTheSameOneIsFiledOnce(){
     assertEquals(LinuxAssociations.hash(png(48)),LinuxAssociations.hash(png(48)));

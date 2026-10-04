@@ -42,7 +42,7 @@ public final class Tiles extends JPanel{
   final JList<Project> list= new JList<>();
   final JComboBox<Sort> sort= new JComboBox<>(Sort.values());
   private final Timer spinner= new Timer(80,_->list.repaint());
-  private State state= new State(List.of(),Optional.empty());
+  private State state= new State(List.of(),Optional.empty(),List.of());
   private Map<Project,Image> images= Map.of();
   public Tiles(Consumer<String> onSelect){
     super(new BorderLayout());

@@ -1,5 +1,6 @@
 package gui;
 
+import static gui.Window.doubleClicked;
 import static gui.Window.mono;
 import static gui.Window.named;
 import static gui.Window.small;
@@ -20,7 +21,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
@@ -50,6 +53,7 @@ final class Panel{
   interface Requests{ void ask(String verb, String name, String arg); }
   private record Link(JTextField field, String was){ boolean typed(){ return !field.getText().strip().equals(was); } }
   private static final int iconSize= 32;
+  private static final int claimSize= 20;
   private final Requests requests;
   private final Consumer<String> refuse;
   final JPanel root= new JPanel(new BorderLayout(8,8));
@@ -62,6 +66,8 @@ final class Panel{
   private final JScrollPane mainsScroll= new JScrollPane(mainsBox);
   private final JPanel mainsPanel= new JPanel(new BorderLayout());
   private final JPanel pick= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
+  private final JPanel claimsBox= new JPanel();
+  private final JScrollPane claimsScroll= named(new JScrollPane(claimsBox),"claims");
   private final JPanel linksBox= new JPanel();
   private final Collapsible links= new Collapsible("Links",new JScrollPane(linksBox),false);
   private final Collapsible information= new Collapsible("Information",new JScrollPane(details),true);
@@ -83,6 +89,9 @@ final class Panel{
     details.setEditable(false);
     mainsBox.setLayout(new BoxLayout(mainsBox,BoxLayout.Y_AXIS));
     linksBox.setLayout(new BoxLayout(linksBox,BoxLayout.Y_AXIS));
+    claimsBox.setLayout(new BoxLayout(claimsBox,BoxLayout.Y_AXIS));
+    claimsScroll.setBorder(BorderFactory.createEtchedBorder());
+    claimsScroll.getVerticalScrollBar().setUnitIncrement(16);
     pick.add(named(small("All",()->requests.ask("mains",project.alias(),String.join(" ",project.knownMains()))),"all"));
     pick.add(named(small("None",()->requests.ask("mains",project.alias(),"")),"none"));
     mainsPanel.add(pick,BorderLayout.NORTH);
@@ -106,6 +115,7 @@ final class Panel{
     top.add(header);
     top.add(kinds);
     top.add(mainsPanel);
+    top.add(claimsScroll);
     top.add(links);
     top.add(information);
     top.add(new Collapsible("Logs",logScroll,false,viewLog,copyLog,deleteLog));
@@ -131,7 +141,9 @@ final class Panel{
     requests.ask(project.action().verb(),project.alias(),"");
   }
   void render(Project p, List<Project> all){
-    var next= List.of(p,all.stream().map(Project::entry).toList());
+    var claimed= Project.claimed(all);
+    var stamps= claimed.values().stream().flatMap(List::stream).map(c->c.icon(".png").toFile().lastModified()).toList();
+    var next= List.of(p,all.stream().map(Project::entry).toList(),claimed,stamps);
     if (next.equals(shown)){ return; }
     shown= next;
     project= p;
@@ -145,6 +157,7 @@ final class Panel{
     details.setCaretPosition(0);
     fillKinds(p);
     fillMains(p);
+    fillClaims(p,claimed);
     fillLinks(p,all);
     var log= logList.getSelectedValue();
     logList.setListData(p.facts().logs().toArray(LogFiles.Entry[]::new));
@@ -189,6 +202,41 @@ final class Panel{
       mainsBox.add(box);
     }
     mainsScroll.setPreferredSize(new Dimension(0,Math.min(3,known.size())*26+8));
+  }
+  private void fillClaims(Project p, Map<String,List<Project.Claimant>> claimed){
+    claimsBox.removeAll();
+    var mine= claimed.values().stream().flatMap(List::stream).filter(c->c.folder().equals(p.folder()))
+      .collect(Collectors.groupingBy(Project.Claimant::main,TreeMap::new,Collectors.toList()));
+    claimsScroll.setVisible(!mine.isEmpty());
+    mine.forEach((main,cs)->fillClaims(main,cs,claimed));
+    claimsScroll.setPreferredSize(new Dimension(0,Math.min(240,claimsBox.getPreferredSize().height+4)));
+  }
+  private void fillClaims(String main, List<Project.Claimant> cs, Map<String,List<Project.Claimant>> claimed){
+    claimsBox.add(row(0,new JLabel(main)));
+    section("Extensions this main opens:",cs.stream().filter(c->others(c,claimed).isEmpty()).map(c->row(16,label("."+c.claim().extension(),c))).toList());
+    section("Conflicting extensions:",cs.stream().filter(c->!others(c,claimed).isEmpty()).map(c->conflict(c,others(c,claimed))).toList());
+    section("Shortcuts (double click to run):",cs.stream().filter(Project.Claimant::shortcut).map(c->row(16,shortcut(c))).toList());
+  }
+  private static List<Project.Claimant> others(Project.Claimant c, Map<String,List<Project.Claimant>> claimed){ return claimed.get(c.claim().extension()).stream().filter(o->!o.equals(c)).toList(); }
+  private void section(String heading, List<JPanel> rows){
+    if (rows.isEmpty()){ return; }
+    claimsBox.add(row(0,new JLabel(heading)));
+    rows.forEach(claimsBox::add);
+  }
+  private static JPanel row(int indent, Component... cs){
+    var res= new JPanel(new FlowLayout(FlowLayout.LEFT,6,1));
+    res.setBorder(BorderFactory.createEmptyBorder(0,indent,0,0));
+    Stream.of(cs).forEach(res::add);
+    return res;
+  }
+  private static JLabel label(String text, Project.Claimant c){ return new JLabel(text,new ImageIcon(Icons.of(c,claimSize)),JLabel.LEADING); }
+  private static JPanel conflict(Project.Claimant c, List<Project.Claimant> others){
+    var res= row(16,label("."+c.claim().extension(),c),new JLabel("also claimed by"),label(others.getFirst().label(),others.getFirst()));
+    if (others.size() > 1){ res.add(new JLabel("and "+(others.size()-1)+" more")); }
+    return res;
+  }
+  private JLabel shortcut(Project.Claimant c){
+    return doubleClicked(named(new JLabel(new ImageIcon(Icons.of(c,iconSize))),"shortcut "+c.main()+" "+c.claim().extension()),()->requests.ask("run",c.alias(),c.main()));
   }
   private String ticked(){ return String.join(" ",Stream.of(mainsBox.getComponents()).map(c->(JCheckBox)c).filter(JCheckBox::isSelected).map(JCheckBox::getText).toList()); }
   private void fillKinds(Project p){

@@ -1,19 +1,25 @@
 package controller;
 
 import static controller.Errs.same;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +28,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -32,9 +43,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 import controller.Manager.State;
 import controller.Registry.Kind;
+import coordinator.MainsInfo;
+import fileAssociations.Icon;
+import fileSupport.Info;
+import mainCoordinator.MakeDemo;
+import resources.LocalResources;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.Report;
+import userMessages.UserError;
+import userMessages.Violation;
 
 /// The whole manager without a window: messages in, Eclipse files and View calls out.
 /// Compiling writes a fresh cache and every job is a real child JVM running Child.
@@ -54,10 +72,12 @@ final class ManagerTest{
       """);
     Fs.runTool("javac",List.of("-d",classes.toString(),src.toString()));
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
-      FactsTest.cache(folder,"hello",FactsTest.after(folder));
+      FactsTest.cache(folder,folder.getFileName().toString(),FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
+      MainsInfo.read(folder).orElseThrow().mains().values().stream().flatMap(m->Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
+        .filter(c->!c.icon().startsWith("base.")).map(c->folder.resolve(c.diskPath())).filter(p->!Files.exists(p)).forEach(p->image(p,64,64,"png"));
       return jvm(out,"compiled","0","0");
     }
     @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
@@ -67,6 +87,16 @@ final class ManagerTest{
       return jvm(out,"ran "+main,"0",main.endsWith("Slow") ? "60000" : "0");
     }
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
+    @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
+    @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
+      claimed.forEach(i->Fs.of(()->Files.readAllBytes(i.png())));
+      associated.add(claimed);
+      var all= Stream.concat(Stream.of(new Icon(".fearless",null,null)),claimed.stream()).toList();
+      var userLocked= all.stream().map(Icon::extension).filter(locked::contains).toList();
+      if (!userLocked.isEmpty()){ throw Violation.associationUserLocked(userLocked,claimedBy); }
+      var blocked= all.stream().map(Icon::extension).filter(e->!Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
+      if (!blocked.isEmpty()){ throw Violation.associationNotOurs(blocked,claimedBy); }
+    }
     private static ChildJvm jvm(Consumer<String> out, String... args){
       return ChildJvm.start(Stream.concat(Stream.of("-cp",classes.toString(),"Child"),Stream.of(args)).toList(),out);
     }
@@ -83,9 +113,25 @@ final class ManagerTest{
     @Override public void clear(Path folder){ cleared.add(folder); }
     boolean visible= true;
     @Override public boolean visible(){ return visible; }
+    final List<List<String>> choices= new ArrayList<>();
+    Consumer<Project.Claimant> picked;
+    List<Project.Claimant> last;
+    @Override public void choose(List<Project.Claimant> cs, Consumer<Project.Claimant> p){ choices.add(cs.stream().map(Project.Claimant::label).toList()); last= cs; picked= p; }
+    final List<String> asked= new ArrayList<>();
+    boolean holding;
+    Consumer<Boolean> allowed;
+    @Override public void allow(String question, Consumer<Boolean> a){
+      asked.add(question);
+      if (holding){ allowed= a; return; }
+      a.accept(true);
+    }
   }
   private final List<Throwable> failures= Collections.synchronizedList(new ArrayList<>());
   private final View view= new View();
+  private final Map<String,String> infos= new HashMap<>();
+  private final List<List<Icon>> associated= Collections.synchronizedList(new ArrayList<>());
+  private final Map<String,List<String>> held= new HashMap<>();
+  private final List<String> locked= new ArrayList<>();
   @AfterEach void nothingFailed(){ assertEquals(List.of(),failures); }
   private Manager manager(Path dir, String... mains){
     var map= new LinkedHashMap<String,String>();
@@ -93,10 +139,15 @@ final class ManagerTest{
     var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
     return manager(dir,_->known);
   }
-  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read),view,failures::add); }
+  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return new Manager(dir.resolve("manager"),new Fake(read,infos,associated,held,locked),view,failures::add); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
+    return res;
+  }
+  private static Path registered(Manager m, Path dir, String name){
+    var res= folder(dir,name);
+    send(m,TaggedText.of(res.toString()));
     return res;
   }
   private static Path data(Path dir){
@@ -131,7 +182,7 @@ final class ManagerTest{
   }
   private static List<String> listed(Path dir){
     var state= (Info.Obj)Info.parse(eclipse(dir,"state.info"),dir.toUri());
-    return state.fields().stream().map(f->f.key()+" "+TaggedText.read(((Info.Str)((Info.Obj)f.value()).field("folder").orElseThrow().value()).value(),Messages::infoError)).toList();
+    return state.fields().stream().map(f->f.key()+" "+TaggedText.read(((Info.Str)((Info.Obj)f.value()).field("folder").orElseThrow().value()).value(),UserError::new)).toList();
   }
   @Test void aMessageWithNoFolderShowsTheWindow(@TempDir Path dir){
     var m= manager(dir);
@@ -148,8 +199,7 @@ final class ManagerTest{
   }
   @Test void selectingAnEmptyFolderMakesItAHelloWorldCodeProject(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     assertEquals(List.of("hello "+hello),listed(dir));
     assertTrue(Files.isRegularFile(hello.resolve("hello.fearless")));
     assertTrue(Files.isRegularFile(hello.resolve("_hello").resolve("_rank_app.fear")));
@@ -195,8 +245,7 @@ final class ManagerTest{
   }
   @Test void aRunMessageCompilesThenRunsTheOnlyMain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     same("""
@@ -214,8 +263,7 @@ final class ManagerTest{
   }
   @Test void compilingAnUpToDateProjectDoesNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     var once= eclipse(dir,"hello","console.txt");
@@ -226,8 +274,7 @@ final class ManagerTest{
   }
   @Test void aBusyProjectRefusesJobsCleaningAndKindChangesThenTerminateEndsTheJob(@TempDir Path dir){
     var m= manager(dir,"hello.Slow");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     assertEquals(Optional.of("hello.Slow"),project(m,hello).running());
@@ -255,8 +302,7 @@ final class ManagerTest{
   }
   @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
     var m= manager(dir,"hello.Slow","hello.Two");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"mains","hello","hello.Two hello.Slow");
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
@@ -266,8 +312,7 @@ final class ManagerTest{
   }
   @Test void theSelectedMainsRunInTheOrderOfTheMains(@TempDir Path dir){
     var m= manager(dir,"hello.One","hello.Two","hello.Three");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     same("[###]--- nothing to run: none of \"hello.One\", \"hello.Two\", \"hello.Three\" is selected ---\n",eclipse(dir,"hello","console.txt"));
@@ -288,8 +333,7 @@ final class ManagerTest{
   }
   @Test void aNamedMainRunsAloneAndAnUnknownOneIsRefused(@TempDir Path dir){
     var m= manager(dir,"hello.One","hello.Two");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     send(m,"clear","hello");
@@ -305,8 +349,7 @@ final class ManagerTest{
   }
   @Test void forgettingARunningProjectEndsItsJobAndForgetsIt(@TempDir Path dir){
     var m= manager(dir,"hello.Slow");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     send(m,"forget","hello");
@@ -318,8 +361,7 @@ final class ManagerTest{
   }
   @Test void aRequestNamesARegisteredProject(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","other");
     send(m,"compile",hello.toString());
     assertEquals(List.of("hello "+hello),listed(dir));
@@ -332,8 +374,7 @@ final class ManagerTest{
   }
   @Test void aRequestTheManagerDoesNotKnowIsRefused(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"build","hello");
     send(m,"kind","hello","library");
     send(m,"link","hello","data sometimes");
@@ -346,16 +387,14 @@ final class ManagerTest{
   }
   @Test void aThirdLineForARequestTakingNoneIsRefusedAndChangesNothing(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"forget","hello","now");
     assertEquals(List.of("hello "+hello),listed(dir));
     assertEquals(List.of("The manager was asked to \"forget\" \"hello\" with the third line \"now\", but only the requests \"run\", \"kind\", \"mains\", \"link\" take a third line."),view.notes);
   }
   @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,TaggedText.of(data(dir).toString()));
     send(m,"kind","data","data:readOnly");
     var info= dir.resolve("manager").resolve("projects.info");
@@ -389,8 +428,7 @@ final class ManagerTest{
   }
   @Test void aFolderInsideARegisteredOneIsRefused(@TempDir Path dir){
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,TaggedText.of(folder(hello,"inner").toString()));
     assertEquals(1,view.notes.size());
     assertEquals(List.of("hello "+hello),listed(dir));
@@ -398,10 +436,8 @@ final class ManagerTest{
   @Test void aLinkToARegisteredFolderOnlySelectsItAndALinkIntoOneIsRefused(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    var other= folder(dir,"other");
-    send(m,TaggedText.of(hello.toString()));
-    send(m,TaggedText.of(other.toString()));
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
     var link= Fs.of(()->Files.createSymbolicLink(dir.resolve("link"),hello));
     var inner= Fs.of(()->Files.createSymbolicLink(dir.resolve("inner"),folder(hello,"inner")));
     send(m,TaggedText.of(link.toString()));
@@ -488,8 +524,7 @@ final class ManagerTest{
     var data= data(dir);
     send(m,TaggedText.of(data.toString()));
     var base= Registry.text(m.state().projects().stream().map(Project::entry).toList());
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var done= new ArrayList<String>();
     m.commit(base,base,()->done.add("stale"));
     m.settle();
@@ -575,8 +610,7 @@ final class ManagerTest{
   @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     var managerDir= dir.resolve("manager");
     var files= List.of(managerDir.resolve("projects.info"),managerDir.resolve("activity.txt"));
     var before= files.stream().map(Fs::readUtf8).toList();
@@ -590,7 +624,7 @@ final class ManagerTest{
     commit(m,"{}",()->{});
     mode(managerDir,"rwxr-xr-x");
     assertEquals(3,failures.size());
-    failures.forEach(f->same("Fearless could not save what it remembers about your project folders.[###]",f.getMessage()));
+    failures.forEach(f->same("Fearless could not save the file \"activity.txt\" of its manager folder.[###]",f.getMessage()));
     failures.clear();
     assertEquals(1,view.notes.size());
     assertEquals(List.of("hello "+hello),listed(dir));
@@ -639,8 +673,7 @@ final class ManagerTest{
   }
   @Test void aMissingOrUnknownKindMakesTheProjectIdleAndClearsItsCache(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     var info= dir.resolve("manager").resolve("projects.info");
@@ -655,8 +688,7 @@ final class ManagerTest{
   @Test void compilingForgetsSelectedMainsThatAreGoneAndRunningRefusesThem(@TempDir Path dir){
     var mains= new ArrayList<>(List.of("hello.One","hello.Two"));
     var m= manager(dir,_->Optional.of(mains.stream().collect(Collectors.toMap(k->k,_->"_hello/_rank_app.fear"))));
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"mains","hello","hello.One hello.Old hello.Two");
     send(m,"compile","hello");
     idle(m);
@@ -671,8 +703,7 @@ final class ManagerTest{
   @Test void mainsThatCanNotBeReadMakeTheProjectInvalidAndOutOfDateAndAreNotReadAgainWhileNothingChanges(@TempDir Path dir){
     var reads= new ArrayList<Path>();
     var m= manager(dir,f->{ reads.add(f); throw Report.launchPathNotFound(dir.resolve("gone")); });
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     send(m,"select","hello");
@@ -687,8 +718,7 @@ final class ManagerTest{
   }
   @Test void aCompileWhoseJvmDoesNotStartIsShownOnItsProject(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var noJvm= folder(dir,"nojvm");
-    send(m,TaggedText.of(noJvm.toString()));
+    var noJvm= registered(m,dir,"nojvm");
     send(m,"run","nojvm");
     assertEquals("--- compiling nojvm ---\n--- compile did not start: io: Cannot run program \"java\": error=2, No such file or directory ---\n",eclipse(dir,"nojvm","console.txt"));
     var p= project(m,noJvm);
@@ -696,8 +726,7 @@ final class ManagerTest{
   }
   @Test void aRunReportsUnderTheNameItsProjectHasNow(@TempDir Path dir){
     var m= manager(dir,"hello.Slow");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     until(m,_->eclipse(dir,"hello","console.txt").contains("ran hello.Slow"));
     commit(m,"{\"other\": {\"path\": \"Str:"+hello.toString().replace('\\','/')+"\", \"kind\": \"code\"}}",()->{});
@@ -711,16 +740,14 @@ final class ManagerTest{
   }
   @Test void aLogTheReportCanNotReadStopsTheReportOnly(@TempDir Path dir){
     var m= manager(dir,"hello.Garbled");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     same("[###]ran hello.Garbled\n--- the report of hello.Garbled stops: malformed input: [###] ---\n--- hello.Garbled exited with 0 after [###]s ---\n",eclipse(dir,"hello","console.txt"));
   }
   @Test void mainsTheCompilerWouldCompileMakeTheProjectOutOfDate(@TempDir Path dir){
     var m= manager(dir,_->Optional.empty());
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     var p= project(m,hello);
@@ -735,8 +762,7 @@ final class ManagerTest{
       Fs.writeUtf8(f.resolve("readme.txt"),"new\n");
       throw Report.launchPathNotFound(f);
     });
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
     var p= project(m,hello);
@@ -753,8 +779,7 @@ final class ManagerTest{
       Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(System.currentTimeMillis()+60_000)));
       return Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear"));
     });
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     view.visible= false;
     send(m,"compile","hello");
     idle(m);
@@ -766,8 +791,7 @@ final class ManagerTest{
   }
   @Test void aNewManagerRemembersTheProjectsAndStartsWithEmptyConsoles(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
-    var hello= folder(dir,"hello");
-    send(m,TaggedText.of(hello.toString()));
+    var hello= registered(m,dir,"hello");
     send(m,"run","hello");
     idle(m);
     var again= manager(dir,"hello.Hello");
@@ -801,5 +825,952 @@ final class ManagerTest{
     var again= manager(dir,"hello.Hello");
     again.settle();
     assertEquals(Project.State.codeCompiled,project(again,hello).state());
+  }
+  private static String claiming(String main, String shortcut, String openWith){
+    return info(main,claim("base.IconsConflict","icons/conflict.png","","",shortcut),claim("hello.IconsFoo","art/foo.png","","",openWith));
+  }
+  private static String info(String main, String shortcuts, String openWiths){ return "{\""+main+"\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], ["+openWiths+"]]}\n"; }
+  private static String claim(String icon, String diskPath, String zipSteps, String zipEntry, String ext){
+    return Stream.of(icon,diskPath,zipSteps,zipEntry,ext).map(t->"\""+t+"\"").collect(Collectors.joining(", ","[","]"));
+  }
+  private static Map<String,List<String>> claimed(Manager m){
+    return Project.claimed(m.state().projects()).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e->e.getValue().stream().map(c->c.label()+(c.shortcut() ? " shortcut " : " openWith ")+c.claim().icon()).toList()));
+  }
+  @Test void aCompileClaimsTheExtensionsOfItsMainsInfoAndANewManagerClaimsThemAgain(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    assertEquals(Map.of(),claimed(m));
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"),fapp("hello","hello.Hello","base.IconsConflict"),List.of("hello::hello.Hello shortcut base.IconsConflict"));
+    assertEquals(foo,claimed(m));
+    assertEquals(MainsInfo.read(hello).orElseThrow(),project(m,hello).claims());
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(foo,claimed(again));
+    var info= dir.resolve("manager").resolve("projects.info");
+    assertEquals(Registry.text(List.of(project(again,hello).entry())),Fs.readUtf8(info));
+    commit(again,Registry.text(List.of(project(again,hello).entry().withKind(Kind.idle))),()->{});
+    assertEquals(Map.of(),claimed(again));
+    assertEquals(Project.noClaims,project(again,hello).claims());
+  }
+  @Test void projectsClaimingTheSameExtensionAreAllItsClaimantsUntilCleanedIdleOrForgotten(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp042","foo"));
+    infos.put("other",claiming("other.Other","fapp010","foo"));
+    send(m,"compile","other");
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Map.of(
+      "fapp042",List.of("hello::hello.Hello shortcut base.IconsConflict"),
+      "fapp010",List.of("other::other.Other shortcut base.IconsConflict"),
+      "foo",List.of("hello::hello.Hello openWith hello.IconsFoo","other::other.Other openWith hello.IconsFoo")),claimed(m));
+    send(m,"clean","hello");
+    assertEquals(Map.of("fapp010",List.of("other::other.Other shortcut base.IconsConflict"),"foo",List.of("other::other.Other openWith hello.IconsFoo")),claimed(m));
+    send(m,"kind","other","idle");
+    assertEquals(Map.of(),claimed(m));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("fapp042","foo"),claimed(m).keySet().stream().sorted().toList());
+    send(m,"forget","hello");
+    assertEquals(Map.of(),claimed(m));
+  }
+  @Test void aProjectWhoseMainsInfoIsMissingOrUnreadableClaimsNothing(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","bar"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    assertEquals(List.of("bar","fapp001","fapp002","foo"),claimed(m).keySet().stream().sorted().toList());
+    Fs.ofV(()->Files.delete(mainsInfo(hello)));
+    Fs.writeUtf8(mainsInfo(other),"{\"other.Other\": []}\n");
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(Map.of(),claimed(again));
+    assertEquals(List.of(),view.notes);
+  }
+  @Test void aKindRequestKeepingCodeKeepsTheAcceptedClaimsAndAKindChangeBackToCodeReadsMainsInfo(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"),"fapp001",List.of("hello::hello.Hello shortcut base.IconsConflict"));
+    assertEquals(foo,claimed(m));
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","fapp001","bar"));
+    send(m,"kind","hello","code");
+    assertEquals(foo,claimed(m));
+    send(m,"kind","hello","idle");
+    assertEquals(Map.of(),claimed(m));
+    m.addExtension("bar");
+    send(m,"kind","hello","code");
+    assertEquals(Map.of("bar",List.of("hello::hello.Hello openWith hello.IconsFoo"),"fapp001",List.of("hello::hello.Hello shortcut base.IconsConflict")),claimed(m));
+  }
+  private static String fapp(String alias, String main, String icon){ return AutoselectTest.fapp(AutoselectTest.start(alias,main,icon)); }
+  private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve("mains.info"); }
+  private static void touch(Path project){
+    var src= project.resolve("_"+project.getFileName()).resolve("_rank_app.fear");
+    Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(Fs.lastModified(src)+60_000)));
+  }
+  @Test void aCompileWritesTheAutoselectedExtensionsIntoMainsInfoAndARecompileKeepsThem(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var auto= fapp("hello","hello.Hello","base.IconsConflict");
+    same("[###][\"base.IconsConflict\", \"icons/conflict.png\", \"\", \"\", \""+auto+"\"][###][\"hello.IconsFoo\", \"art/foo.png\", \"\", \"\", \"foo\"][###]",Fs.readUtf8(mainsInfo(hello)));
+    assertEquals(MainsInfo.read(hello).orElseThrow(),project(m,hello).claims());
+    assertEquals(List.of("hello::hello.Hello shortcut base.IconsConflict"),claimed(m).get(auto));
+    infos.put("other",claiming("other.Other",auto,"bar"));
+    send(m,"compile","other");
+    idle(m);
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("hello::hello.Hello shortcut base.IconsConflict","other::other.Other shortcut base.IconsConflict"),claimed(m).get(auto));
+    same("[###]\""+auto+"\"[###]",Fs.readUtf8(mainsInfo(hello)));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
+  @Test void aMainsInfoWithMissingExtensionsIsFilledAtStartUp(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    send(m,"compile","hello");
+    idle(m);
+    image(hello.resolve("art").resolve("foo.png"),64,64,"png");
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","","foo"));
+    m.addExtension("foo");
+    m.settle();
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    var auto= fapp("hello","hello.Hello","base.IconsConflict");
+    assertEquals(List.of(auto,"foo"),claimed(again).keySet().stream().sorted().toList());
+    assertEquals(project(again,hello).claims(),MainsInfo.read(hello).orElseThrow());
+    assertEquals(Project.State.codeCompiled,project(again,hello).state());
+  }
+  @Test void aMissingExtensionFilledAtStartUpAvoidsTheClaimsOfTheProjectsLoadedAfter(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    var auto= fapp("hello","hello.Hello","base.IconsConflict");
+    image(hello.resolve("art").resolve("foo.png"),64,64,"png");
+    image(other.resolve("art").resolve("foo.png"),64,64,"png");
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","","foo"));
+    Fs.writeUtf8(mainsInfo(other),claiming("other.Other",auto,"bar"));
+    m.addExtension("foo");
+    m.addExtension("bar");
+    m.settle();
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(List.of("hello","other"),again.state().projects().stream().map(Project::alias).toList());
+    assertEquals(List.of("other::other.Other shortcut base.IconsConflict"),claimed(again).get(auto));
+    assertEquals(project(again,hello).claims(),MainsInfo.read(hello).orElseThrow());
+  }
+  @Test void noFreeExtensionLeftFailsTheCompileAndRunsNothing(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    var all= IntStream.range(0,1000).mapToObj(i->"[\"other.IconsO\", \"art/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
+    infos.put("other","{\"other.Other\": [\"_other/_rank_app.fear\", ["+all+"], []]}\n");
+    send(m,"compile","other");
+    idle(m);
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    send(m,"run","hello");
+    idle(m);
+    var error= """
+      No free extension is left for "base.Shortcut[base.IconsConflict]" of main "hello.Hello": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager.
+      """;
+    same("--- compiling hello ---\ncompiled\n"+error+"--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+    var p= project(m,hello);
+    same(error,p.problem().orElseThrow());
+    assertEquals(Project.State.codeInvalid,p.state());
+    assertTrue(p.needsCompiling());
+    assertFalse(Files.exists(mainsInfo(hello)));
+    assertEquals(Project.noClaims,p.claims());
+    assertEquals(1000,claimed(m).size());
+  }
+  private static byte[] image(Path file, int w, int h, String format){
+    var out= new ByteArrayOutputStream();
+    var written= Fs.of(()->ImageIO.write(new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB),format,out));
+    assert written;
+    Fs.ensureDir(file.getParent());
+    Fs.ofV(()->Files.write(file,out.toByteArray()));
+    return out.toByteArray();
+  }
+  private static byte[] zip(String entry, byte[] content){
+    var out= new ByteArrayOutputStream();
+    Fs.ofV(()->{ try(var z= new ZipOutputStream(out)){ z.putNextEntry(new ZipEntry(entry)); z.write(content); } });
+    return out.toByteArray();
+  }
+  private static byte[] bytes(Path file){ return Fs.of(()->Files.readAllBytes(file)); }
+  private static Path icons(Path project){ return project.resolve(Facts.outDir).resolve("icons"); }
+  private static String iconError(String claim, String problem, String from){
+    return "The icon \"hello.IconsFoo\" in \""+claim+"\" of main \"hello.Hello\" "+problem+" (from \""+from+"\"): an icon must be a square PNG image with a side from 64 to 1024 pixels.\n";
+  }
+  @Test void anIconIsASquarePngWithASideFrom64To1024Pixels(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
+    for (var side: List.of(64,1024)){
+      var png= image(hello.resolve("art").resolve("foo.png"),side,side,"png");
+      touch(hello);
+      send(m,"compile","hello");
+      idle(m);
+      assertEquals(Project.State.codeCompiled,project(m,hello).state());
+      assertArrayEquals(png,bytes(icons(hello).resolve("hello.IconsFoo.png")));
+    }
+    var accepted= project(m,hello).claims();
+    for (var size: List.of(List.of(63,63),List.of(1025,1025),List.of(300,200))){
+      image(hello.resolve("art").resolve("foo.png"),size.get(0),size.get(1),"png");
+      touch(hello);
+      send(m,"compile","hello");
+      idle(m);
+      var error= iconError("base.OpenWith[hello.IconsFoo,\\\"foo\\\"]","is "+size.get(0)+"x"+size.get(1)+" pixels","art/foo.png");
+      same("[###]compiled\n"+error+"--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+      same(error,project(m,hello).problem().orElseThrow());
+      assertTrue(project(m,hello).needsCompiling());
+      assertEquals(accepted,project(m,hello).claims());
+      assertArrayEquals(bytes(icons(hello).resolve("hello.IconsFoo.png")),image(dir.resolve("last.png"),1024,1024,"png"));
+    }
+  }
+  @Test void aPngIsMeasuredBeforeItIsDecodedAndMustDecode(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var foo= hello.resolve("art").resolve("foo.png");
+    var png= image(foo,64,64,"png");
+    var huge= ByteBuffer.allocate(33).put(png,0,16).putInt(100000).putInt(100000).put(png,24,9).array();
+    infos.put("hello",info("hello.Hello",claim("hello.IconsFoo","art/foo.png","","",""),""));
+    for (var c: List.of(Map.entry(huge,"is 100000x100000 pixels"),Map.entry(Arrays.copyOf(png,png.length/2),"is not a PNG image"),Map.entry(Arrays.copyOf(png,20),"is not a PNG image"))){
+      Fs.ofV(()->Files.write(foo,c.getKey()));
+      touch(hello);
+      send(m,"compile","hello");
+      idle(m);
+      same(iconError("base.Shortcut[hello.IconsFoo]",c.getValue(),"art/foo.png"),project(m,hello).problem().orElseThrow());
+    }
+  }
+  @Test void anIconThatIsNotAPngFailsTheCompile(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    image(hello.resolve("art").resolve("foo.jpg"),64,64,"jpg");
+    infos.put("hello",info("hello.Hello",claim("hello.IconsFoo","art/foo.jpg","","",""),""));
+    send(m,"compile","hello");
+    idle(m);
+    same(iconError("base.Shortcut[hello.IconsFoo]","is not a PNG image","art/foo.jpg"),project(m,hello).problem().orElseThrow());
+    assertFalse(Files.exists(icons(hello)));
+  }
+  @Test void iconsAreCopiedOutOfZipsAndTheStdLibOnceAndRewrittenOnlyWhenChanged(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var png= image(dir.resolve("foo.png"),128,128,"png");
+    Fs.ensureDir(hello.resolve("art"));
+    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
+    var foo= claim("hello.IconsFoo","art/pics.zip","inner.zip","foo.png","");
+    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","")+", "+foo,foo.replace("\"\"]","\"foo\"]")));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    assertEquals(List.of("base.IconsConflict.png","hello.IconsFoo.png"),Names.list(icons(hello)).stream().map(p->p.getFileName().toString()).sorted().toList());
+    assertArrayEquals(png,bytes(icons(hello).resolve("hello.IconsFoo.png")));
+    assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(icons(hello).resolve("base.IconsConflict.png")));
+    var old= FileTime.fromMillis(1_000_000);
+    Fs.ofV(()->Files.setLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"),old));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(old,Fs.of(()->Files.getLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"))));
+    var other= image(dir.resolve("foo.png"),256,256,"png");
+    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",other))));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertArrayEquals(other,bytes(icons(hello).resolve("hello.IconsFoo.png")));
+  }
+  private static List<String> iconFiles(Path project){ return Names.list(icons(project)).stream().map(p->p.getFileName().toString()).toList(); }
+  @Test void aRecompileRemovesTheIconFilesNoClaimUsesAnyMore(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var bar= claim("hello.IconsBar","art/bar.png","","","bar");
+    var foo= claim("hello.IconsFoo","art/foo.png","","","foo");
+    var qux= claim("hello.IconsFoo","art/foo.png","","","qux");
+    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","fapp001"),bar+", "+foo+", "+qux));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("base.IconsConflict.png","hello.IconsBar.png","hello.IconsFoo.png"),iconFiles(hello));
+    infos.put("hello",info("hello.Hello","",qux));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    assertEquals(List.of("hello.IconsFoo.png"),iconFiles(hello));
+    assertTrue(Files.exists(mainsInfo(hello)));
+  }
+  @Test void aCompileWhoseExtensionsTheDesktopRefusesKeepsTheIconFilesOfTheClaimsBefore(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    locked.add(".bar");
+    infos.put("hello",info("hello.Hello","",claim("hello.IconsBar","art/bar.png","","","bar")));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeInvalid,project(m,hello).state());
+    assertEquals(List.of("base.IconsConflict.png","hello.IconsBar.png","hello.IconsFoo.png"),iconFiles(hello));
+  }
+  @Test void anIconEntryRemovedFromItsZipBeforeStartUpFailsNamingTheIcon(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var png= image(dir.resolve("foo.png"),128,128,"png");
+    Fs.ensureDir(hello.resolve("art"));
+    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
+    infos.put("hello",info("hello.Hello","",claim("hello.IconsFoo","art/pics.zip","inner.zip","foo.png","foo")));
+    send(m,"compile","hello");
+    idle(m);
+    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("bar.png",png))));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/pics.zip/inner.zip/foo.png\": Cannot find entry in zip (that was found before).[###]\"foo.png\"\nCompile the project again.",project(again,hello).problem().orElseThrow());
+    assertEquals(Project.noClaims,project(again,hello).claims());
+  }
+  @Test void anIconRemovedBeforeStartUpFailsThatProjectOnly(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
+    infos.put("other",claiming("other.Other","fapp004","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    Fs.rmTree(hello.resolve("art"));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(Optional.empty(),project(again,other).problem());
+    assertEquals(MainsInfo.read(other).orElseThrow(),project(again,other).claims());
+    assertEquals(List.of("other::other.Other openWith hello.IconsFoo"),claimed(again).get("qux"));
+    same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/foo.png\": no such file: [###]foo.png\nCompile the project again.",project(again,hello).problem().orElseThrow());
+    assertEquals(Project.noClaims,project(again,hello).claims());
+  }
+  private List<String> wanted(Path dir){ return associated.getLast().stream().map(i->i.extension()+" "+shown(dir,i)).toList(); }
+  private static String shown(Path dir, Icon i){
+    assertEquals(i.png().toString().replaceAll("png$",Fs.isWindows() ? "ico" : "png"),i.ico().toString());
+    return dir.relativize(i.png()).toString().replace('\\','/');
+  }
+  private static String userLocked(String... lines){
+    return """
+      Fearless cannot become the program that opens the kinds of file listed
+      below.
+
+      Your system remembers a choice you made by hand for these kinds of file,
+      and no program can change or remove that choice, including this one.
+      Fearless stopped before touching anything: your system is exactly as it
+      was.
+
+      The only way to clear it is Settings, Apps, Default apps, Reset - which
+      resets every app default on your machine, not only this one.
+
+      What is locked:
+      """+String.join("\n",lines);
+  }
+  private static String notOurs(String... lines){
+    return """
+      Fearless cannot become the program that opens the kinds of file listed
+      below.
+
+      Another program already answers for these kinds of file. Fearless
+      stopped before touching anything: your system is exactly as it was.
+
+      What stood in the way:
+      """+String.join("\n",lines);
+  }
+  @Test void theDesktopOpensEachClaimedExtensionWithItsIconOrTheConflictIconWhenSeveralMainsClaimIt(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    assertEquals(List.of(List.of()),associated);
+    assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(dir.resolve("manager").resolve("icons").resolve("base.IconsConflict.png")));
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
+    infos.put("other",claiming("other.Other","fapp004","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    send(m,"compile","other");
+    idle(m);
+    assertEquals(List.of(
+      ".fapp004 other/.fearless_out/icons/base.IconsConflict.png",
+      ".fapp010 hello/.fearless_out/icons/base.IconsConflict.png",
+      ".foo manager/icons/base.IconsConflict.png"),wanted(dir));
+    var calls= associated.size();
+    send(m,"select","hello");
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(calls,associated.size());
+    send(m,"clean","hello");
+    assertEquals(List.of(".fapp004 other/.fearless_out/icons/base.IconsConflict.png",".foo other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    send(m,"forget","other");
+    assertEquals(List.of(),wanted(dir));
+    assertEquals(calls+2,associated.size());
+    assertEquals(List.of(),view.notes);
+  }
+  @Test void aCompileWhoseExtensionsTheDesktopRefusesFailsNamingTheirMainsAndKeepsTheClaimsBefore(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("other",claiming("other.Other","fapp002","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","bar"));
+    send(m,"compile","other");
+    send(m,"compile","hello");
+    idle(m);
+    var accepted= project(m,hello).claims();
+    locked.add(".foo");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    touch(hello);
+    send(m,"run","hello");
+    idle(m);
+    var error= userLocked(".foo claimed by \"hello.Hello\" of project \"hello\" and \"other.Other\" of project \"other\"");
+    same("[###]--- compiling hello ---\ncompiled\n"+error+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+    var p= project(m,hello);
+    same(error,p.problem().orElseThrow());
+    assertTrue(p.needsCompiling());
+    assertFalse(Files.exists(mainsInfo(hello)));
+    assertEquals(accepted,p.claims());
+    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png",".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".foo manager/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals(List.of("hello::hello.Hello openWith hello.IconsFoo"),claimed(m).get("bar"));
+    var calls= associated.size();
+    send(m,"select","other");
+    assertEquals(calls,associated.size());
+    assertEquals(List.of(),view.notes);
+  }
+  @Test void aCleanWhoseExtensionsTheDesktopRefusesIsToldOnce(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    held.put(".fapp002",List.of("vim"));
+    send(m,"clean","hello");
+    send(m,"select","other");
+    same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"),String.join("\n",view.notes));
+    assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    assertEquals(List.of("fapp002","qux"),claimed(m).keySet().stream().sorted().toList());
+  }
+  @Test void aStartUpRefusedASystemExtensionDropsTheClaimsOfItsProjectAndKeepsTheOthers(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    locked.add(".qux");
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    var error= userLocked(".qux claimed by \"other.Other\" of project \"other\"");
+    var p= project(again,other);
+    same(error,p.problem().orElseThrow());
+    same(error+"\n",eclipse(dir,"other","console.txt"));
+    assertEquals(Project.noClaims,p.claims());
+    assertTrue(p.needsCompiling());
+    assertFalse(Files.exists(mainsInfo(other)));
+    assertEquals(Optional.empty(),project(again,hello).problem());
+    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+  }
+  @Test void aStartUpRefusedTheFearlessExtensionFails(@TempDir Path dir){
+    held.put(".fearless",List.of("fearlessBin0_003"));
+    manager(dir).settle();
+    assertEquals(1,failures.size());
+    same(notOurs(".fearless -> fearlessBin0_003"),failures.getFirst().getMessage());
+    failures.clear();
+  }
+  @Test void aStartUpRefusedAFearlessExtensionFailsAsForTheFearlessExtension(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    locked.add(".fapp001");
+    locked.add(".qux");
+    manager(dir,"hello.Hello").settle();
+    locked.clear();
+    held.put(".fapp002",List.of("vim"));
+    manager(dir,"hello.Hello").settle();
+    assertEquals(2,failures.size());
+    same(userLocked(".fapp001 claimed by \"hello.Hello\" of project \"hello\"",".qux claimed by \"other.Other\" of project \"other\""),failures.get(0).getMessage());
+    same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"),failures.get(1).getMessage());
+    failures.clear();
+  }
+  @Test void afterForgettingTheAssociationsTheManagerNeverAssociatesAgain(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var calls= new ArrayList<Integer>();
+    m.forgetAssociation(()->calls.add(associated.size()));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of("fapp001","foo"),claimed(m).keySet().stream().sorted().toList());
+    assertEquals(List.of(1),calls);
+    assertEquals(1,associated.size());
+  }
+  @Test void aRecompileChangingAnIconImageGivesItToTheDesktopAndOneChangingNothingDoesNot(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var calls= associated.size();
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(calls,associated.size());
+    image(hello.resolve("art").resolve("foo.png"),128,128,"png");
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(calls+1,associated.size());
+    assertEquals(associated.get(calls-1),associated.getLast());
+  }
+  @Test void aProjectWhoseIconFilesAreGoneClaimsNothingAndTheOthersKeepTheirClaims(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    Fs.rmTree(hello.resolve(Facts.outDir));
+    send(m,"select","other");
+    var p= project(m,hello);
+    assertEquals("The icon file of a claim of this project is gone:\n"+icons(hello).resolve("base.IconsConflict.png")+"\nThe project claims no extension until it is compiled again.",p.problem().orElseThrow());
+    assertEquals(Project.noClaims,p.claims());
+    assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    assertEquals(List.of(),view.notes);
+  }
+  @Test void aProjectWhoseClaimsFailedIsNotInvalidOnceIdle(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    image(hello.resolve("art").resolve("foo.png"),300,200,"png");
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeInvalid,project(m,hello).state());
+    send(m,"kind","hello","idle");
+    assertEquals(Project.State.idle,project(m,hello).state());
+    assertEquals(Optional.empty(),project(m,hello).problem());
+  }
+  @Test void aShortcutFileTheManagerCanNotCreateIsToldAndTheCompileIsDone(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    send(m,"compile","hello");
+    idle(m);
+    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","fapp010"),""));
+    mode(hello,"r-xr-xr-x");
+    Assumptions.assumeFalse(Files.isWritable(hello));
+    touch(hello);
+    send(m,"clear","hello");
+    send(m,"compile","hello");
+    idle(m);
+    mode(hello,"rwxr-xr-x");
+    assertEquals("--- compiling hello ---\ncompiled\n--- shortcut file not created: access denied: "+hello.resolve("hello.fapp010")+" ---\n--- compile done ---\n",eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
+  @Test void aCompiledCacheTheManagerCanNotWriteAtStartUpFailsThatProjectOnly(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    var out= hello.resolve(Facts.outDir);
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","","foo"));
+    mode(mainsInfo(hello),"r--r--r--");
+    mode(out,"r-xr-xr-x");
+    Assumptions.assumeFalse(Files.isWritable(out));
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    mode(out,"rwxr-xr-x");
+    var p= project(again,hello);
+    assertEquals("The icons and the extensions of the claims of this project can not be saved in its compiled cache: access denied: "+mainsInfo(hello)+"\nGive Fearless access to the folder, then compile the project again.",p.problem().orElseThrow());
+    same("[###]--- mains.info not deleted: access denied: "+mainsInfo(hello)+" ---\n",eclipse(dir,"hello","console.txt"));
+    assertEquals(Project.noClaims,p.claims());
+    assertEquals(List.of("fapp002","qux"),claimed(again).keySet().stream().sorted().toList());
+  }
+  private static List<String> top(Path project){ return Names.list(project).stream().map(p->p.getFileName().toString()).toList(); }
+  @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var shortcuts= claim("base.IconsConflict","icons/conflict.png","","","fapp010")+", "+claim("base.IconsConflict","icons/conflict.png","","","");
+    infos.put("hello","{\"hello.FooBar\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], []], \"hello.Foo'\": [\"_hello/_rank_app.fear\", [], ["+claim("base.IconsConflict","icons/conflict.png","","","foo")+"]]}\n");
+    send(m,"compile","hello");
+    idle(m);
+    var auto= "foo_bar."+fapp("hello","hello.FooBar","base.IconsConflict");
+    assertEquals(List.of(".fearless_out","_hello","foo_bar.fapp010",auto,"hello.fearless"),top(hello));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve(auto)));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    Fs.writeUtf8(hello.resolve("foo_bar.fapp010"),"kept\n");
+    Fs.ofV(()->Files.move(hello.resolve(auto),dir.resolve(auto)));
+    send(m,"select","hello");
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(List.of(".fearless_out","_hello","foo_bar.fapp010",auto,"hello.fearless"),top(hello));
+    assertEquals("kept\n",Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve(auto)));
+    assertTrue(Files.exists(dir.resolve(auto)));
+    Fs.ofV(()->Files.delete(hello.resolve("foo_bar.fapp010")));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
+  @Test void aShortcutMainWithoutAFileNameOrWithAReservedOneOrSharingItsFileFailsTheCompileAndCreatesNothing(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var bar= claim("base.IconsConflict","icons/conflict.png","","","fapp010");
+    infos.put("hello",info("hello.Hello",bar,""));
+    send(m,"compile","hello");
+    idle(m);
+    var accepted= project(m,hello).claims();
+    var before= top(hello);
+    var main= "[\"_hello/_rank_app.fear\", ["+bar+"], []]";
+    for (var c: List.of(
+      Map.entry("{\"hello.Foo'\": "+main+"}\n","Main \"hello.Foo'\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
+      Map.entry("{\"hello.Foo_bar\": "+main+"}\n","Main \"hello.Foo_bar\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
+      Map.entry("{\"hello.Con\": "+main+"}\n","Main \"hello.Con\" can not have the shortcut file \"con.fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
+      Map.entry("{\"b.Bar\": "+main+", \"a.Bar\": "+main+"}\n","Mains \"a.Bar\" and \"b.Bar\" can not both have the shortcut file \"bar.fapp010\": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension."))){
+      infos.put("hello",c.getKey());
+      touch(hello);
+      send(m,"run","hello");
+      idle(m);
+      same("[###]--- compiling hello ---\ncompiled\n"+c.getValue()+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+      same(c.getValue(),project(m,hello).problem().orElseThrow());
+      assertEquals(accepted,project(m,hello).claims());
+      assertEquals(before,top(hello));
+    }
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+  }
+  @Test void aShortcutFileBreakingTheProjectFileRulesFailsTheCompileAndCreatesNothing(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    Fs.writeUtf8(hello.resolve("todo"),"");
+    var calls= associated.size();
+    var bar= claim("base.IconsConflict","icons/conflict.png","","","fapp010");
+    var longName= "hello.L"+"o".repeat(192);
+    for (var c: List.of(
+      Map.entry(info(longName,bar,""),"Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(192)+".fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
+      Map.entry(info("hello.Todo",bar,""),"Main \"hello.Todo\" can not have the shortcut file \"todo.fapp010\": the project has the file \"todo\", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
+      infos.put("hello",c.getKey());
+      touch(hello);
+      send(m,"run","hello");
+      idle(m);
+      same("[###]--- compiling hello ---\ncompiled\n"+c.getValue()+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+      same(c.getValue(),project(m,hello).problem().orElseThrow());
+      assertEquals(List.of(".fearless_out","_hello","hello.fearless","todo"),top(hello));
+    }
+    assertEquals(calls,associated.size());
+    infos.put("hello",info("hello.L"+"o".repeat(191),bar,""));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertTrue(Files.exists(hello.resolve("l"+"o".repeat(191)+".fapp010")));
+    Fs.ofV(()->Files.delete(hello.resolve("todo")));
+    infos.put("hello",info("hello.Todo",bar,""));
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("todo.fapp010")));
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+  }
+  private Manager opening(Path dir){
+    return manager(dir,f->Optional.of(Map.of(f.getFileName()+"."+(f.getFileName().toString().equals("slow") ? "Slow" : "Hello"),"_hello/_rank_app.fear")));
+  }
+  private static Path doc(Path dir, String name){
+    var res= dir.resolve("desk").resolve(name);
+    Fs.writeUtf8(res,"text\n");
+    return res;
+  }
+  private static String running(String main){ return "--- running "+main+" ---\nran "+main+"\n--- "+main+" exited with 0 after [###]s ---\n"; }
+  @Test void aFileWhoseExtensionOneMainClaimsRunsThatMainCompilingFirstWhenNeeded(@TempDir Path dir){
+    var m= opening(dir);
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    send(m,"select","other");
+    var shown= view.shown;
+    send(m,TaggedText.of(doc(dir,"a.foo").toString()));
+    idle(m);
+    same(running("hello.Hello"),eclipse(dir,"hello","console.txt"));
+    assertEquals(Optional.of(hello),m.state().selected());
+    touch(hello);
+    send(m,"clear","hello");
+    send(m,TaggedText.of(doc(dir,"b.fapp001").toString()));
+    idle(m);
+    same("--- compiling hello ---\ncompiled\n--- compile done ---\n"+running("hello.Hello"),eclipse(dir,"hello","console.txt"));
+    assertEquals(shown,view.shown);
+    assertEquals(List.of(),view.choices);
+    assertEquals(List.of("hello "+hello,"other "+other),listed(dir));
+  }
+  @Test void aFileWhoseExtensionSeveralMainsClaimListsThemSortedAndRunsThePickedOne(@TempDir Path dir){
+    var m= opening(dir);
+    var other= registered(m,dir,"other");
+    var hello= registered(m,dir,"hello");
+    infos.put("other",claiming("other.Hello","fapp002","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","other");
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    send(m,"clear","other");
+    var doc= TaggedText.of(doc(dir,"a.foo").toString());
+    var shown= view.shown;
+    send(m,doc);
+    assertEquals(List.of(List.of("hello::hello.Hello","other::other.Hello")),view.choices);
+    assertEquals(shown+1,view.shown);
+    idle(m);
+    assertEquals("",eclipse(dir,"hello","console.txt")+eclipse(dir,"other","console.txt"));
+    view.picked.accept(view.last.get(1));
+    m.settle();
+    idle(m);
+    same(running("other.Hello"),eclipse(dir,"other","console.txt"));
+    assertEquals("",eclipse(dir,"hello","console.txt"));
+    assertEquals(Optional.of(other),m.state().selected());
+    send(m,doc);
+    send(m,"forget","other");
+    view.picked.accept(view.last.get(1));
+    m.settle();
+    idle(m);
+    assertEquals("",eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
+  }
+  @Test void anExtensionMatchesInAnyCaseAsTheDesktopMatchesIt(@TempDir Path dir){
+    var m= opening(dir);
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    send(m,TaggedText.of(doc(dir,"Report.Old.FOO").toString()));
+    idle(m);
+    same(running("hello.Hello"),eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
+  }
+  @Test void aFileOpenedWhileItsMainRunsShowsTheProjectAndRunsNothingMore(@TempDir Path dir){
+    var m= opening(dir);
+    var slow= registered(m,dir,"slow");
+    infos.put("slow",claiming("slow.Slow","fapp003","foo"));
+    send(m,"compile","slow");
+    idle(m);
+    var doc= TaggedText.of(doc(dir,"a.foo").toString());
+    send(m,doc);
+    until(m,_->eclipse(dir,"slow","console.txt").contains("ran slow.Slow"));
+    var shown= view.shown;
+    send(m,"select","slow");
+    send(m,"clear","slow");
+    send(m,TaggedText.of(doc(dir,"b.fapp003").toString()));
+    send(m,doc);
+    assertEquals(shown+3,view.shown);
+    assertEquals(Optional.of("slow.Slow"),project(m,slow).running());
+    assertEquals("",eclipse(dir,"slow","console.txt"));
+    send(m,"terminate","slow");
+    idle(m);
+  }
+  @Test void aFileNobodyClaimsAFearlessFileAndAFolderRegisterAsBeforeAndAClaimedFileRegistersNothing(@TempDir Path dir){
+    var m= opening(dir);
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    var notes= folder(dir,"notes");
+    var proj= folder(dir,"proj");
+    var named= folder(dir,"named.foo");
+    Fs.writeUtf8(notes.resolve("a.txt"),"");
+    Fs.writeUtf8(proj.resolve("proj.fearless"),"");
+    send(m,TaggedText.of(notes.resolve("a.txt").toString()));
+    send(m,TaggedText.of(proj.resolve("proj.fearless").toString()));
+    send(m,TaggedText.of(named.toString()));
+    send(m,TaggedText.of(doc(dir,"a.foo").toString()));
+    idle(m);
+    send(m,TaggedText.of(dir.resolve("desk").resolve("gone.foo").toString()));
+    assertEquals(List.of("hello "+hello,"named_foo "+named,"notes "+notes,"proj "+proj),listed(dir).stream().sorted().toList());
+    same(running("hello.Hello"),eclipse(dir,"hello","console.txt"));
+    same("[###]"+dir.resolve("desk").resolve("gone.foo")+"[###]",String.join("\n",view.notes));
+    assertEquals(List.of(),view.choices);
+  }
+  private static String notAllowed(String ext){ return "The system extension \""+ext+"\" of \"base.OpenWith[hello.IconsFoo,\\\""+ext+"\\\"]\" of main \"hello.Hello\" is not allowed in this manager."; }
+  @Test void aCompileClaimingANewSystemExtensionWaitsForTheDialogAndAllowingSavesItAndGoesOn(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","htm"));
+    view.holding= true;
+    send(m,"run","hello");
+    until(m,_->view.allowed != null);
+    same("""
+      Allow these system extensions in this manager?
+        "htm" for "base.OpenWith[hello.IconsFoo,\\"htm\\"]" of main "hello.Hello" of project "hello"
+
+      The manager becomes the program opening every file with an allowed extension,
+      in place of the program opening it now. Failing the compile changes nothing.""",String.join("\n",view.asked));
+    assertEquals(Project.compiling,project(m,hello).job());
+    send(m,"clean","hello");
+    assertEquals(Map.of(),claimed(m));
+    view.allowed.accept(true);
+    idle(m);
+    same("--- compiling hello ---\ncompiled\n--- clear cache refused: the project is busy with compiling ---\n--- compile done ---\n"+running("hello.Hello"),eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of("htm"),m.state().extensions());
+    assertEquals("[\"htm\"]\n",Fs.readUtf8(dir.resolve("manager").resolve("extensions.info")));
+    assertEquals(List.of("fapp001","htm"),claimed(m).keySet().stream().sorted().toList());
+    touch(hello);
+    send(m,"compile","hello");
+    idle(m);
+    assertEquals(Project.State.codeCompiled,project(m,hello).state());
+    assertEquals(1,view.asked.size());
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    assertEquals(List.of("htm"),again.state().extensions());
+    assertEquals(List.of("fapp001","htm"),claimed(again).keySet().stream().sorted().toList());
+  }
+  @Test void failingTheDialogFailsTheCompileAndKeepsTheClaimsBefore(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    var accepted= project(m,hello).claims();
+    var calls= associated.size();
+    infos.put("hello",info("hello.Hello","",claim("hello.IconsFoo","art/foo.png","","","htm")+", "+claim("hello.IconsFoo","art/foo.png","","","foo")+", "+claim("hello.IconsFoo","art/foo.png","","","pdf")));
+    view.holding= true;
+    touch(hello);
+    send(m,"clear","hello");
+    send(m,"run","hello");
+    until(m,_->view.allowed != null);
+    same("[###]\n  \"htm\" for [###]\n  \"pdf\" for [###]",view.asked.getLast());
+    view.allowed.accept(false);
+    idle(m);
+    var error= notAllowed("htm")+"\n"+notAllowed("pdf")+"\nCompile again to be asked again.";
+    same("--- compiling hello ---\ncompiled\n"+error+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
+    var p= project(m,hello);
+    same(error,p.problem().orElseThrow());
+    assertTrue(p.needsCompiling());
+    assertFalse(Files.exists(mainsInfo(hello)));
+    assertEquals(accepted,p.claims());
+    assertEquals(List.of("foo"),m.state().extensions());
+    assertEquals(calls,associated.size());
+  }
+  @Test void aProjectLeavingCodeWhileItsDialogIsOpenClaimsNothingOnceAllowed(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","htm"));
+    view.holding= true;
+    send(m,"compile","hello");
+    until(m,_->view.allowed != null);
+    commit(m,Registry.text(List.of(project(m,hello).entry().withKind(Kind.idle))),()->{});
+    view.allowed.accept(true);
+    idle(m);
+    assertEquals(Map.of(),claimed(m));
+    assertEquals(Project.noClaims,project(m,hello).claims());
+    assertEquals(List.of(),wanted(dir));
+  }
+  @Test void anExtensionAutoselectedByACompileWaitingOnItsDialogIsNotTakenByAnotherCompile(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    var start= AutoselectTest.start("hello","hello.Hello","base.IconsConflict");
+    var main= IntStream.range(0,100_000).mapToObj(i->"other.O"+i).filter(n->AutoselectTest.start("other",n,"base.IconsConflict") == start).findFirst().orElseThrow();
+    infos.put("hello",claiming("hello.Hello","","htm"));
+    infos.put("other",claiming(main,"","ffile001"));
+    view.holding= true;
+    send(m,"compile","hello");
+    until(m,_->view.allowed != null);
+    send(m,"compile","other");
+    until(m,_->!project(m,other).busy());
+    view.allowed.accept(true);
+    idle(m);
+    assertEquals(List.of("hello::hello.Hello shortcut base.IconsConflict"),claimed(m).get(AutoselectTest.fapp(start)));
+    assertEquals(List.of("other::"+main+" shortcut base.IconsConflict"),claimed(m).get(AutoselectTest.fapp(start+1)));
+  }
+  @Test void removingAnAllowedExtensionMakesItsClaimsInactiveUntilCompiledAgain(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
+    send(m,"compile","hello");
+    send(m,"compile","other");
+    idle(m);
+    assertEquals(List.of("foo","qux"),m.state().extensions());
+    m.removeExtension("foo");
+    m.settle();
+    var inactive= notAllowed("foo")+"\nThe project claims no extension until it is compiled again.";
+    var p= project(m,hello);
+    same(inactive,p.problem().orElseThrow());
+    assertEquals(Project.noClaims,p.claims());
+    assertTrue(p.needsCompiling());
+    assertEquals(Optional.empty(),project(m,other).problem());
+    assertEquals(List.of("qux"),m.state().extensions());
+    assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    view.holding= true;
+    send(m,"compile","hello");
+    until(m,_->view.allowed != null);
+    assertEquals(3,view.asked.size());
+    view.allowed.accept(true);
+    idle(m);
+    assertEquals(List.of("fapp001","fapp002","foo","qux"),claimed(m).keySet().stream().sorted().toList());
+    Fs.writeUtf8(dir.resolve("manager").resolve("extensions.info"),"[\"qux\"]\n");
+    var again= manager(dir,"hello.Hello");
+    again.settle();
+    same(inactive,project(again,hello).problem().orElseThrow());
+    assertEquals(List.of("fapp002","qux"),claimed(again).keySet().stream().sorted().toList());
+    m.addExtension(".htm");
+    m.addExtension("fapp003");
+    m.addExtension("htm");
+    m.settle();
+    assertEquals(List.of("foo","htm","qux"),m.state().extensions());
+    assertEquals(List.of(
+      "The manager was asked to allow \".htm\", but that is not "+Registry.systemShape+".",
+      "The manager was asked to allow \"fapp003\", but that is not "+Registry.systemShape+"."),view.notes);
+  }
+  @Test void anEmptyFileRunsNothingAndIsNoted(@TempDir Path dir){
+    var m= opening(dir);
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    send(m,"compile","hello");
+    idle(m);
+    send(m,"clear","hello");
+    var empty= dir.resolve("desk").resolve("a.foo");
+    Fs.writeUtf8(empty,"");
+    send(m,TaggedText.of(empty.toString()));
+    idle(m);
+    assertEquals(List.of("The manager was asked to open \""+empty+"\", but that file is empty: no main runs on an empty file."),view.notes);
+    assertEquals("",eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of("hello "+hello),listed(dir));
   }
 }

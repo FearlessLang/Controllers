@@ -12,6 +12,10 @@ final class ApiTest{
     same("[Type[name=test.Person, bs=[], supers=[Ty[name=base.OrderHash, args=[Ty[name=test.Person, args=[]]]]], ms=[[###]]]]",t.toString());
     same("[]",Api.parse("[]").toString());
   }
+  @Test void aBackslashEscapesTheNextCharacter(){
+    same("[Type[name=a.B, bs=[], supers=[Ty[name=base.OpenWith, args=[Ty[name=a.IconsB, args=[]], Ty[name=\"b\\\\\", args=[]]]]], ms=[]]]",
+      Api.parse("[[\"a.B\",\"imm\",[],[[\"base.OpenWith\",[\"c\",\"imm\",\"a.IconsB\"],[\"c\",\"imm\",\"\\\"b\\\\\\\\\\\"\"]]],[],\"this\"]]").toString());
+  }
   @Test void aMalformedTextIsAnError(){
     same("Malformed compiled json at offset 0",err(""));
     same("Malformed compiled json at offset 1",err("[x]"));
@@ -19,6 +23,7 @@ final class ApiTest{
     same("Malformed compiled json at offset 2",err("[]]"));
     same("Malformed compiled json at offset 4",err("[\"a\""));
     same("Malformed compiled json at offset 1",err("[\"a]"));
+    same("Malformed compiled json at offset 1",err("[\"a\\\"]"));
   }
   @Test void twoTypesOfTheSameNameAndArityAreAnError(){
     var t= "[\"a.B\",\"imm\",[],[],[],\"this\"]";
