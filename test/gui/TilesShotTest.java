@@ -31,7 +31,7 @@ import utils.ThrowingConsumer;
 final class TilesShotTest{
   private static State ten(Path dir){
     var names= Stream.of("someproject","otherproject","map_editor","webshop","hello","sudoku","payroll","tetris","notes","weather");
-    return new State(names.map(n->IconsTest.project(Fs.of(()->java.nio.file.Files.createDirectories(dir.resolve(n))),Kind.dataReadOnly)).toList(),Optional.of(dir.resolve("hello")));
+    return new State(names.map(n->IconsTest.project(Fs.of(()->java.nio.file.Files.createDirectories(dir.resolve(n))),Kind.dataReadOnly)).toList(),Optional.of(dir.resolve("hello")),List.of());
   }
   @Test void theRegisteredFoldersLookLikeAGridOfTiles(@TempDir Path dir){
     var tiles= onEdt(()->new Tiles(_->{}));

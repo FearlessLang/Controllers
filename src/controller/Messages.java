@@ -174,6 +174,15 @@ public final class Messages{
   }
   public static String iconGone(Path file){ return "The icon file of a claim of this project is gone:\n"+file+"\nThe project claims no extension until it is compiled again."; }
   public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project can not be saved in its compiled cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
+  private static String notAllowed(Project.Claimant c){ return "The system extension "+disp(c.claim().extension())+" of "+claim(c.shortcut(),c.claim().icon(),c.claim().extension())+" of main "+disp(c.main())+" is not allowed in this manager."; }
+  public static String extensionInactive(Project.Claimant c){ return notAllowed(c)+"\nThe project claims no extension until it is compiled again."; }
+  public static String extensionsRefused(List<Project.Claimant> cs){ return Join.of(cs.stream().map(Messages::notAllowed),"","\n","\nCompile again to be asked again."); }
+  public static String allowExtensions(List<Project.Claimant> cs){
+    return Join.of(cs.stream().map(c->"  "+disp(c.claim().extension())+" for "+claim(c.shortcut(),c.claim().icon(),c.claim().extension())+" of main "+disp(c.main())+" of project "+disp(c.alias())),
+      "Allow these system extensions in this manager?\n","\n","\n\nThe manager becomes the program opening every file with an allowed extension,\nin place of the program opening it now. Failing the compile changes nothing.");
+  }
+  public static String notASystemExtension(String typed){ return "The manager was asked to allow "+disp(typed)+", but that is not "+Registry.systemShape+"."; }
+  public static String emptyFile(Path file){ return disp(file.toString())+" is empty: no main runs on an empty file."; }
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c->disp(c.main())+" of project "+disp(c.alias()))," claimed by "," and ","",""); }
   public static UserError iconRefused(Project.Claimant c, String problem){
     return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");

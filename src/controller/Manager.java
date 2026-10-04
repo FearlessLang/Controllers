@@ -46,6 +46,7 @@ import userMessages.UserError;
 import utils.Bug;
 import utils.DistinctBy;
 import utils.OneOr;
+import utils.Push;
 
 /// The manager without its window: the registered projects, their jobs, and every request
 /// made of them, by a message or by the window. Everything runs on one thread, one step at a
@@ -59,6 +60,7 @@ public final class Manager{
     void clear(Path folder);
     boolean visible();
     void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked);
+    void allow(String question, Consumer<Boolean> allowed);
   }
   public interface Tools{
     ChildJvm compile(Path folder, Consumer<String> out);
@@ -67,7 +69,7 @@ public final class Manager{
     Path stdLibBase();
     void associate(List<Icon> claimed, Function<String,String> claimedBy);
   }
-  public record State(List<Project> projects, Optional<Path> selected){
+  public record State(List<Project> projects, Optional<Path> selected, List<String> extensions){
     public Optional<Project> of(Path folder){ return OneOr.opt("project "+folder,projects.stream().filter(p->p.folder().equals(folder))); }
     public Optional<Project> shown(){ return selected.flatMap(this::of); }
     public List<String> running(){ return projects.stream().filter(Project::busy).map(p->p.alias()+" - "+p.job()).toList(); }
@@ -103,7 +105,7 @@ public final class Manager{
   private List<?> wanted= List.of();
   private boolean forgotten;
   private int turn;
-  private volatile State state= new State(List.of(),Optional.empty());
+  private volatile State state= new State(List.of(),Optional.empty(),List.of());
   public Manager(Path dir, Tools tools, View view, Consumer<Throwable> fail){
     this.dir= dir;
     this.tools= tools;
@@ -145,6 +147,8 @@ public final class Manager{
   public void commit(String base, String text, Runnable done){ post(()->commitNow(base,text,done)); }
   public void connect(Path chosen){ post(()->connectNow(chosen)); }
   public void refuse(String text){ post(()->tell(text)); }
+  public void addExtension(String typed){ post(()->addExtensionNow(typed)); }
+  public void removeExtension(String ext){ post(()->registry.extensions(registry.extensions().stream().filter(e->!e.equals(ext)).toList())); }
   public void forgetAssociation(Runnable unassociate){ post(()->{ forgotten= true; unassociate.run(); }); }
   void settle(){
     try{ core.submit(()->{}).get(1,TimeUnit.MINUTES); }
@@ -172,7 +176,7 @@ public final class Manager{
     var blocked= new HashSet<String>();
     try{ associate(blocked); }
     catch(UserError e){
-      if (blocked.isEmpty() || blocked.contains(".fearless")){ throw e; }
+      if (blocked.isEmpty() || blocked.stream().anyMatch(b->!new Icon(b,null,null).system())){ throw e; }
       var claimed= Project.claimed(projects());
       blocked.stream().flatMap(b->claimed.get(b.substring(1)).stream()).map(Project.Claimant::folder).distinct().forEach(f->unclaim(f,e.getMessage()));
       associateAtStartUp();
@@ -187,6 +191,8 @@ public final class Manager{
     if (forgotten){ return; }
     Project.claimed(projects()).values().stream().flatMap(List::stream).filter(c->!Files.isRegularFile(c.icon(".png")))
       .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(c->unclaim(c.folder(),Messages.iconGone(c.icon(".png"))));
+    Project.claimed(projects()).values().stream().flatMap(List::stream).filter(c->!allowed(c))
+      .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(c->unclaim(c.folder(),Messages.extensionInactive(c)));
     var claimed= Project.claimed(projects());
     var suffix= Fs.isWindows() ? ".ico" : ".png";
     var next= claimed.entrySet().stream().map(e->new Icon("."+e.getKey(),icon(e.getValue(),suffix),icon(e.getValue(),".png"))).toList();
@@ -203,6 +209,11 @@ public final class Manager{
   private void reassociate(){
     try{ associate(new HashSet<>()); }
     catch(UserError e){ tell(e.getMessage()); }
+  }
+  private boolean allowed(Project.Claimant c){ return !Registry.isSystem(c.claim().extension()) || registry.extensions().contains(c.claim().extension()); }
+  private void addExtensionNow(String typed){
+    if (!Registry.isSystem(typed)){ tell(Messages.notASystemExtension(typed)); return; }
+    if (!registry.extensions().contains(typed)){ registry.extensions(Push.of(registry.extensions(),typed)); }
   }
   private boolean associated(Path f, MainsInfo previous){
     var before= wanted;
@@ -281,17 +292,19 @@ public final class Manager{
     }
   }
   private void open(String given){
-    var cs= claimants(given);
+    var file= file(given);
+    var cs= file.map(this::claimants).orElse(List.of());
     if (cs.isEmpty()){ register(given); return; }
+    if (file.get().toFile().length() == 0){ tell(Messages.emptyFile(file.get())); return; }
     if (cs.size() == 1){ openWith(cs.getFirst()); return; }
     view.show();
     view.choose(cs,c->post(()->openWith(c)));
   }
-  private List<Project.Claimant> claimants(String given){
-    Path file;
-    try{ file= Path.of(TaggedText.read(given,Registry.Refused::new)); }
-    catch(Registry.Refused|InvalidPathException e){ return List.of(); }
-    if (!Files.isRegularFile(file)){ return List.of(); }
+  private static Optional<Path> file(String given){
+    try{ return Optional.of(Path.of(TaggedText.read(given,Registry.Refused::new))).filter(Files::isRegularFile); }
+    catch(Registry.Refused|InvalidPathException e){ return Optional.empty(); }
+  }
+  private List<Project.Claimant> claimants(Path file){
     var name= file.getFileName().toString();
     var dot= name.lastIndexOf('.');
     return dot < 0 ? List.of() : Project.claimed(projects()).getOrDefault(name.substring(dot+1).toLowerCase(Locale.ROOT),List.of());
@@ -414,24 +427,40 @@ public final class Manager{
     var what= l.job;
     if (!what.equals(Project.compiling) && !l.reporting.isCancelled()){ l.reporting.cancel(false); report(f,l); }
     l.child= null;
+    if (what.equals(Project.compiling)){ compiled(f,l,ec); return; }
     l.job= "";
-    if (what.equals(Project.compiling)){
-      l.failure= ec == 0 ? "" : l.compiled.toString();
-      var previous= l.claims;
-      var done= ec == 0 && accept(f) && associated(f,previous);
-      if (done){
-        Project.shortcuts(Project.claimants(f,alias(f),l.claims)).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->shortcut(f,p));
-        unclaimedIcons(f,l.claims);
-      }
-      output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
-      scan(f);
-      if (l.mains.isPresent()){ forgetStale(f); }
-      l.todo= done && !l.terminated ? l.then.get() : List.of();
-      next(f);
-      return;
-    }
     l.exit= ec;
     output(f,"--- "+what+" exited with "+ec+" after "+Duration.between(l.since,Instant.now()).toSeconds()+"s ---\n");
+    next(f);
+  }
+  private void compiled(Path f, Live l, int ec){
+    l.failure= ec == 0 ? "" : l.compiled.toString();
+    var previous= l.claims;
+    if (ec != 0 || !accept(f)){ compiled(f,l,previous,false,ec); return; }
+    var asked= Project.claimants(f,alias(f),l.claims).filter(c->!allowed(c)).toList();
+    if (asked.isEmpty()){ compiled(f,l,previous,true,ec); return; }
+    var accepted= l.claims;
+    l.claims= previous;
+    view.allow(Messages.allowExtensions(asked),yes->post(()->answered(f,l,accepted,previous,asked,yes)));
+  }
+  private void answered(Path f, Live l, MainsInfo accepted, MainsInfo previous, List<Project.Claimant> asked, boolean yes){
+    if (live.get(f) != l){ return; }
+    if (!yes){ failed(f,Messages.extensionsRefused(asked)); compiled(f,l,previous,false,0); return; }
+    asked.forEach(c->addExtensionNow(c.claim().extension()));
+    l.claims= accepted;
+    compiled(f,l,previous,true,0);
+  }
+  private void compiled(Path f, Live l, MainsInfo previous, boolean accepted, int ec){
+    l.job= "";
+    var done= accepted && associated(f,previous);
+    if (done){
+      Project.shortcuts(Project.claimants(f,alias(f),l.claims)).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->shortcut(f,p));
+      unclaimedIcons(f,l.claims);
+    }
+    output(f,"--- compile "+(done ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
+    scan(f);
+    if (l.mains.isPresent()){ forgetStale(f); }
+    l.todo= done && !l.terminated ? l.then.get() : List.of();
     next(f);
   }
   private void shortcut(Path f, Path file){
@@ -557,7 +586,7 @@ public final class Manager{
   private String alias(Path f){ return registry.of(f).orElseThrow().alias(); }
   private Path console(Path f){ return eclipse.console(alias(f)); }
   private void publish(){
-    var next= new State(projects(),selected);
+    var next= new State(projects(),selected,registry.extensions());
     if (next.equals(state)){ return; }
     var old= state;
     var text= Eclipse.state(next.projects());

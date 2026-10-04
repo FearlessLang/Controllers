@@ -234,6 +234,17 @@ final class RegistryTest{
     Fs.writeUtf8(folder(dir,"manager").resolve("projects.info"),"not info at all");
     err("[###]Expected a string \"...\", a list [...] or an object {...} here.[###]",()->registry(dir).all());
   }
+  @Test void theAllowedSystemExtensionsSurviveAReReadSortedAndAMalformedListRefusesToLoad(@TempDir Path dir){
+    registry(dir).extensions(List.of("pdf","htm"));
+    assertEquals(List.of("htm","pdf"),registry(dir).extensions());
+    var file= folder(dir,"manager").resolve("extensions.info");
+    Fs.writeUtf8(file,"[\"htm\", \"fapp001\"]");
+    err("[###]\"fapp001\" in \"extensions.info\" is not a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\".[###]",()->registry(dir));
+    Fs.writeUtf8(file,"[\"htm\", \"htm\"]");
+    err("[###]\"htm\" is repeated in \"extensions.info\".[###]",()->registry(dir));
+    Fs.writeUtf8(file,"{}");
+    err("[###]\"extensions.info\" must be a list [...] of strings.[###]",()->registry(dir));
+  }
   @Test void commitWritesAValidatedFileAndRejectsLeavingDiskUnchanged(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= registry(dir);

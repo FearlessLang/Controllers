@@ -75,4 +75,10 @@ final class WindowTest{
     var label= (JLabel)list.getCellRenderer().getListCellRendererComponent(list,list.getModel().getElementAt(i),i,false,false);
     return Map.entry(label.getText(),(ImageIcon)label.getIcon());
   }
+  @Test void anAllowedExtensionIsShownWithTheMainsClaimingIt(@TempDir Path dir){
+    var claim= new MainsInfo.Claim("a.IconsFoo","icons/foo.png","","","htm");
+    var claimed= Map.of("htm",List.of(new Project.Claimant(dir.resolve("a"),"a","a.Main",false,claim),new Project.Claimant(dir.resolve("b"),"b","b.Main",false,claim)));
+    assertEquals(".htm   a::a.Main, b::b.Main",Window.extensionRow("htm",claimed));
+    assertEquals(".pdf   <claimed by no main>",Window.extensionRow("pdf",claimed));
+  }
 }

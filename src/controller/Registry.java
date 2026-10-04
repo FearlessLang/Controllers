@@ -24,20 +24,22 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import core.TName;
+import fileAssociations.Icon;
 import fileSupport.Info;
 import fileSupport.Info.Obj;
 import fileSupport.Info.Obj.Field;
 import fileSupport.StringFiles;
 import metaParser.Message;
 import metaParser.Span;
+import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
 import utils.OneOr;
 import utils.Push;
 import utils.Range;
 
-/// The registered projects: read once from `projects.info` and `activity.txt`, then kept
-/// in memory and written back whole on every change.
+/// The registered projects and the allowed system extensions: read once from `projects.info`,
+/// `activity.txt` and `extensions.info`, then kept in memory and written back whole on every change.
 public final class Registry{
   public enum Kind{
     idle("idle"), code("code"), dataReadOnly("data:readOnly"), dataReadWrite("data:readWrite");
@@ -61,11 +63,14 @@ public final class Registry{
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
   private static final String typeShape= "a Fearless type name: after any leading underscores, it starts with an uppercase letter";
+  public static final String systemShape= "a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\"";
   private final Path dir;
   private List<Entry> all= List.of();
+  private List<String> extensions= List.of();
   public final List<Entry> reset;
   public Registry(Path dir){
     this.dir= dir;
+    if (Files.exists(extensionsFile())){ var text= read(extensionsFile()); extensions= names(text,Info.parse(text,extensionsFile().toUri()),"\"extensions.info\"",Registry::isSystem,systemShape); }
     if (!Files.exists(infoFile())){ reset= List.of(); return; }
     var text= read(infoFile());
     var root= Info.parse(text,infoFile().toUri());
@@ -98,7 +103,15 @@ public final class Registry{
   private static boolean overlap(Path a, Path b){ return a.startsWith(b) || b.startsWith(a); }
   private Path infoFile(){ return dir.resolve("projects.info"); }
   private Path activityFile(){ return dir.resolve("activity.txt"); }
+  private Path extensionsFile(){ return dir.resolve("extensions.info"); }
   public List<Entry> all(){ return all; }
+  public List<String> extensions(){ return extensions; }
+  public void extensions(List<String> es){
+    var sorted= es.stream().sorted().toList();
+    writeText(extensionsFile(),Info.print(strList(sorted)));
+    extensions= sorted;
+  }
+  public static boolean isSystem(String ext){ return Fs.isExtSeg(ext) && new Icon("."+ext,null,null).system(); }
   public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all.stream().filter(e->e.path().equals(folder))); }
   public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all.stream().filter(e->e.alias().equals(alias))); }
   public Optional<Path> overlapping(Path folder){
@@ -206,7 +219,7 @@ public final class Registry{
     for (var f: obj.fields()){
       if (!keys.contains(f.key())){ throw Info.err(source,f.keySpan(),"Unknown project attribute \""+f.key()+"\": the attributes of a project are "+Messages.quoted(keys)+"."); }
     }
-    var mains= names(source,obj,"mains","\"mains\"",Registry::isMainName,mainShape);
+    var mains= obj.field("mains").map(f->names(source,f.value(),"\"mains\"",Registry::isMainName,mainShape)).orElse(List.of());
     var reads= aliasMap(source,obj,"reads");
     var edits= aliasMap(source,obj,"edits");
     for (var link: edits.entrySet()){
@@ -237,10 +250,8 @@ public final class Registry{
     if (!(value instanceof Info.Str s)){ throw Info.err(source,value.span(),label+" must be a string \"...\"."); }
     return s.value();
   }
-  private static List<String> names(String source, Obj obj, String key, String label, Predicate<String> ok, String shape){
-    var field= obj.field(key);
-    if (field.isEmpty()){ return List.of(); }
-    if (!(field.get().value() instanceof Info.Lst l)){ throw Info.err(source,field.get().value().span(),label+" must be a list [...] of strings."); }
+  private static List<String> names(String source, Info value, String label, Predicate<String> ok, String shape){
+    if (!(value instanceof Info.Lst l)){ throw Info.err(source,value.span(),label+" must be a list [...] of strings."); }
     var seen= new LinkedHashSet<String>();
     for (var item: l.items()){
       var s= str(source,item,"Every entry in "+label);
@@ -259,7 +270,7 @@ public final class Registry{
     for (var f: o.fields()){
       if (!Names.isName(f.key())){ throw Info.err(source,f.keySpan(),"\""+f.key()+"\" in \""+key+"\" is not a valid project name."); }
       var label= "\""+key+"\".\""+f.key()+"\"";
-      var names= names(source,o,f.key(),label,TName::isTypeName,typeShape);
+      var names= names(source,f.value(),label,TName::isTypeName,typeShape);
       if (names.isEmpty()){ throw Info.err(source,f.value().span(),label+" names no type: a link names the one or more type names the code uses for \""+f.key()+"\"."); }
       out.put(f.key(),names);
     }

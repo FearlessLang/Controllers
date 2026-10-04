@@ -63,6 +63,7 @@ import tools.Fs;
 import tools.OpenPath;
 import userMessages.UserError;
 import utils.Bug;
+import utils.Join;
 
 /// The manager window: the tiles of the registered projects on the left, the Panel of
 /// the selected one on the right. It shows the State the Manager hands it and turns every
@@ -79,9 +80,11 @@ public final class Window implements Manager.View{
   private final JMenu running= new JMenu("Running");
   private final JMenu project= new JMenu("Project");
   private final Map<Path,Panel> panels= new HashMap<>();
+  private final JList<String> extensions= named(new JList<>(),"extensions");
+  private final JDialog extensionsView= new JDialog(frame,"System extensions",false);
   private final Instant start= Instant.now();
   private final Timer ticker= new Timer(1000,_->tick());
-  private State state= new State(List.of(),Optional.empty());
+  private State state= new State(List.of(),Optional.empty(),List.of());
   private Optional<Panel> shown= Optional.empty();
   private boolean surfaced;
   private Window(Main main){
@@ -90,6 +93,7 @@ public final class Window implements Manager.View{
     tiles.setBorder(BorderFactory.createTitledBorder("Registered project folders"));
     split.setDividerLocation(320);
     frame.setJMenuBar(menuBar());
+    extensionsView();
     frame.add(split,BorderLayout.CENTER);
     frame.add(status,BorderLayout.SOUTH);
     frame.getRootPane().setTransferHandler(dropHandler());
@@ -139,6 +143,35 @@ public final class Window implements Manager.View{
   @Override public void note(String text){ SwingUtilities.invokeLater(()->JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE)); }
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(()->panel(folder).output.setText("")); }
   @Override public void choose(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){ SwingUtilities.invokeLater(()->chooser(choices,picked)); }
+  @Override public void allow(String question, Consumer<Boolean> allowed){
+    SwingUtilities.invokeLater(()->allowed.accept(JOptionPane.showOptionDialog(frame,question,"Fearless",JOptionPane.DEFAULT_OPTION,JOptionPane.QUESTION_MESSAGE,null,new Object[]{"Allow","Fail the compile"},"Allow") == 0));
+  }
+  private void extensionsView(){
+    extensions.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    extensions.setCellRenderer(new DefaultListCellRenderer(){
+      @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focused){
+        return super.getListCellRendererComponent(l,extensionRow((String)value,Project.claimed(state.projects())),i,selected,focused);
+      }
+    });
+    var remove= small("Remove",()->main.manager().removeExtension(extensions.getSelectedValue()));
+    remove.setEnabled(false);
+    extensions.addListSelectionListener(_->remove.setEnabled(!extensions.isSelectionEmpty()));
+    var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    buttons.add(small("Add...",this::addExtension));
+    buttons.add(remove);
+    var scroll= new JScrollPane(extensions);
+    scroll.setPreferredSize(new Dimension(520,240));
+    extensionsView.add(scroll,BorderLayout.CENTER);
+    extensionsView.add(buttons,BorderLayout.SOUTH);
+    extensionsView.pack();
+  }
+  private void addExtension(){
+    var typed= JOptionPane.showInputDialog(extensionsView,"System extension to allow, like \"htm\":","Fearless",JOptionPane.PLAIN_MESSAGE);
+    if (typed != null){ main.manager().addExtension(typed); }
+  }
+  static String extensionRow(String ext, Map<String,List<Project.Claimant>> claimed){
+    return "."+ext+"   "+Join.of(claimed.getOrDefault(ext,List.of()).stream().map(Project.Claimant::label),"",", ","","<claimed by no main>");
+  }
   private void chooser(List<Project.Claimant> choices, Consumer<Project.Claimant> picked){
     var list= choices(choices);
     var dialog= new JDialog(frame,"Open with",false);
@@ -194,7 +227,10 @@ public final class Window implements Manager.View{
   @Override public boolean visible(){ return ticker.isRunning(); }
   private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::ask,this::refuse)); }
   private void render(State s){
+    var listed= state.extensions();
     state= s;
+    if (!s.extensions().equals(listed)){ extensions.setListData(s.extensions().toArray(String[]::new)); }
+    extensions.repaint();
     tiles.render(s);
     panels.keySet().removeIf(f->s.of(f).isEmpty());
     s.shown().ifPresent(p->panel(p.folder()).render(p,s.projects()));
@@ -217,6 +253,7 @@ public final class Window implements Manager.View{
     manager.setMnemonic('M');
     manager.add(item("Edit project metadata...",true,this::editMetadata));
     manager.add(item("Show raw project state...",true,()->showText(frame,rawState(),"Raw project state",JOptionPane.PLAIN_MESSAGE)));
+    manager.add(item("System extensions...",true,()->{ extensionsView.setLocationRelativeTo(frame); extensionsView.setVisible(true); }));
     manager.add(item("Connect Eclipse...",true,()->choose("Select Eclipse: its program, its folder, or the folder it was unzipped into",p->main.manager().connect(p))));
     manager.addSeparator();
     if (!Fs.isMac()){ manager.add(item("Forget association",true,()->main.forgetAssociation(this))); }
