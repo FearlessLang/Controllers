@@ -61,7 +61,7 @@ final class WindowTest{
   @Test void theChooserShowsEachMainWithTheIconOfItsClaim(@TempDir Path dir){
     PanelTest.png(dir.resolve("a").resolve(Facts.outDir).resolve("icons").resolve("a.IconsFoo.png"),Color.red);
     var claim= new MainsInfo.Claim("a.IconsFoo","icons/foo.png","","","foo");
-    var choices= List.of(new Project.Claimant(dir.resolve("a"),"a","a.Main",false,claim),new Project.Claimant(dir.resolve("b"),"b","b.Main",true,claim));
+    var choices= List.of(new Project.Claimant(dir.resolve("a"),"a","a.Main",false,claim),new Project.Claimant(dir.resolve("b"),"b","b.Main",false,claim));
     var shown= Window.onEdt(()->{
       var list= Window.choices(choices);
       return IntStream.range(0,choices.size()).mapToObj(i->rendered(list,i)).toList();

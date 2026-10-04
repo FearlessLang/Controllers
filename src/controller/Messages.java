@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import coordinator.MainsInfo;
-import core.WellKnownExtensions;
 import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
@@ -151,11 +150,13 @@ public final class Messages{
   public static String dropUnreadable(Exception e){ return "The manager was asked to register what was dropped on its window, but the desktop did not hand it over: "+e.getMessage(); }
   public static UserError noFreeExtension(String main, boolean shortcut, String icon){
     var prefix= shortcut ? "fapp" : "ffile";
+    var used= "No free extension is left for "+claim(shortcut,icon,"")+" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager.";
+    if (shortcut){ return new UserError(used); }
     var name= main.substring(main.lastIndexOf('.')+1).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]","");
     var cut= name.substring(0,Math.min(name.length(),Fs.maxExtSeg));
-    var refused= cut.isEmpty() || cut.equals("fearless") || cut.matches(prefix+"[0-9]{3}") || shortcut && WellKnownExtensions.all.contains(cut);
+    var refused= cut.isEmpty() || cut.equals("fearless") || cut.matches("f(app|file)[0-9]{3}");
     var example= refused ? "ext" : cut;
-    return new UserError("No free extension is left for "+claim(shortcut,icon,"")+" of main "+disp(main)+": all the 1000 extensions \""+prefix+"000\" to \""+prefix+"999\" are used by the projects of this manager. Give this "+kind(shortcut)+" an explicit extension, for example "+claim(shortcut,icon,example)+".");
+    return new UserError(used+" Claim a system extension instead, for example "+claim(false,icon,example)+".");
   }
   private static String kind(boolean shortcut){ return shortcut ? "Shortcut" : "OpenWith"; }
   private static String claim(boolean shortcut, String icon, String ext){ return "\"base."+kind(shortcut)+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }

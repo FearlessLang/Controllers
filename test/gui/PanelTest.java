@@ -192,12 +192,12 @@ final class PanelTest{
   }
   @Test void eachMainShowsTheExtensionsItOpensItsConflictsAndItsShortcuts(@TempDir Path dir){
     png(dir.resolve("hello").resolve(Facts.outDir).resolve("icons").resolve("hello.IconsFoo.png"),Color.red);
-    var hello= claiming(dir,"hello",List.of(claim("hello.IconsApp","app")),List.of(claim("hello.IconsFoo","foo"),claim("hello.IconsFoo","bar")));
+    var hello= claiming(dir,"hello",List.of(claim("hello.IconsApp","fapp042")),List.of(claim("hello.IconsFoo","foo"),claim("hello.IconsFoo","bar")));
     var others= List.of("d","b","c").stream().map(a->claiming(dir,a,List.of(),List.of(claim(a+".IconsBar","bar")))).toArray(Project[]::new);
     render(hello,others);
-    assertEquals(List.of("hello.Main","Extensions this main opens:",".app",".foo","Conflicting extensions:",".bar","also claimed by","b::b.Main","and 2 more","Shortcuts (double click to run):","<icon>"),claimTexts());
+    assertEquals(List.of("hello.Main","Extensions this main opens:",".fapp042",".foo","Conflicting extensions:",".bar","also claimed by","b::b.Main","and 2 more","Shortcuts (double click to run):","<icon>"),claimTexts());
     assertEquals(List.of(20,20,0xFF0000),shown(".foo"));
-    JLabel shortcut= named("shortcut hello.Main app");
+    JLabel shortcut= named("shortcut hello.Main fapp042");
     onEdt(()->{
       for (var l: shortcut.getMouseListeners()){ l.mouseClicked(new MouseEvent(shortcut,MouseEvent.MOUSE_CLICKED,0,0,1,1,1,false)); }
       for (var l: shortcut.getMouseListeners()){ l.mouseClicked(new MouseEvent(shortcut,MouseEvent.MOUSE_CLICKED,0,0,1,1,2,false)); }
@@ -205,9 +205,9 @@ final class PanelTest{
     });
     asked("run\nhello\nhello.Main");
     render(hello,others[0]);
-    assertEquals(List.of("hello.Main","Extensions this main opens:",".app",".foo","Conflicting extensions:",".bar","also claimed by","d::d.Main","Shortcuts (double click to run):","<icon>"),claimTexts());
+    assertEquals(List.of("hello.Main","Extensions this main opens:",".fapp042",".foo","Conflicting extensions:",".bar","also claimed by","d::d.Main","Shortcuts (double click to run):","<icon>"),claimTexts());
     render(hello);
-    assertEquals(List.of("hello.Main","Extensions this main opens:",".app",".bar",".foo","Shortcuts (double click to run):","<icon>"),claimTexts());
+    assertEquals(List.of("hello.Main","Extensions this main opens:",".bar",".fapp042",".foo","Shortcuts (double click to run):","<icon>"),claimTexts());
     assertTrue(onEdt(this.<Component>named("claims")::isVisible));
     render(code(abc,List.of()));
     assertFalse(onEdt(this.<Component>named("claims")::isVisible));

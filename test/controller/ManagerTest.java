@@ -855,16 +855,16 @@ final class ManagerTest{
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","fapp042","foo"));
-    infos.put("other",claiming("other.Other","bar","foo"));
+    infos.put("other",claiming("other.Other","fapp010","foo"));
     send(m,"compile","other");
     send(m,"compile","hello");
     idle(m);
     assertEquals(Map.of(
       "fapp042",List.of("hello::hello.Hello shortcut base.IconsConflict"),
-      "bar",List.of("other::other.Other shortcut base.IconsConflict"),
+      "fapp010",List.of("other::other.Other shortcut base.IconsConflict"),
       "foo",List.of("hello::hello.Hello openWith hello.IconsFoo","other::other.Other openWith hello.IconsFoo")),claimed(m));
     send(m,"clean","hello");
-    assertEquals(Map.of("bar",List.of("other::other.Other shortcut base.IconsConflict"),"foo",List.of("other::other.Other openWith hello.IconsFoo")),claimed(m));
+    assertEquals(Map.of("fapp010",List.of("other::other.Other shortcut base.IconsConflict"),"foo",List.of("other::other.Other openWith hello.IconsFoo")),claimed(m));
     send(m,"kind","other","idle");
     assertEquals(Map.of(),claimed(m));
     send(m,"compile","hello");
@@ -877,12 +877,12 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
-    infos.put("other",claiming("other.Other","os","bar"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","bar"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
-    assertEquals(List.of("bar","foo","hs","os"),claimed(m).keySet().stream().sorted().toList());
+    assertEquals(List.of("bar","fapp001","fapp002","foo"),claimed(m).keySet().stream().sorted().toList());
     Fs.ofV(()->Files.delete(mainsInfo(hello)));
     Fs.writeUtf8(mainsInfo(other),"{\"other.Other\": []}\n");
     var again= manager(dir,"hello.Hello");
@@ -893,18 +893,18 @@ final class ManagerTest{
   @Test void aKindRequestKeepingCodeKeepsTheAcceptedClaimsAndAKindChangeBackToCodeReadsMainsInfo(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     send(m,"compile","hello");
     idle(m);
-    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"),"hs",List.of("hello::hello.Hello shortcut base.IconsConflict"));
+    var foo= Map.of("foo",List.of("hello::hello.Hello openWith hello.IconsFoo"),"fapp001",List.of("hello::hello.Hello shortcut base.IconsConflict"));
     assertEquals(foo,claimed(m));
-    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","hs","bar"));
+    Fs.writeUtf8(mainsInfo(hello),claiming("hello.Hello","fapp001","bar"));
     send(m,"kind","hello","code");
     assertEquals(foo,claimed(m));
     send(m,"kind","hello","idle");
     assertEquals(Map.of(),claimed(m));
     send(m,"kind","hello","code");
-    assertEquals(Map.of("bar",List.of("hello::hello.Hello openWith hello.IconsFoo"),"hs",List.of("hello::hello.Hello shortcut base.IconsConflict")),claimed(m));
+    assertEquals(Map.of("bar",List.of("hello::hello.Hello openWith hello.IconsFoo"),"fapp001",List.of("hello::hello.Hello shortcut base.IconsConflict")),claimed(m));
   }
   private static String fapp(String alias, String main, String icon){ return AutoselectTest.fapp(AutoselectTest.start(alias,main,icon)); }
   private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve("mains.info"); }
@@ -977,7 +977,7 @@ final class ManagerTest{
     send(m,"run","hello");
     idle(m);
     var error= """
-      No free extension is left for "base.Shortcut[base.IconsConflict]" of main "hello.Hello": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager. Give this Shortcut an explicit extension, for example "base.Shortcut[base.IconsConflict,\\"hello\\"]".
+      No free extension is left for "base.Shortcut[base.IconsConflict]" of main "hello.Hello": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager.
       """;
     same("--- compiling hello ---\ncompiled\n"+error+"--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
     var p= project(m,hello);
@@ -1009,7 +1009,7 @@ final class ManagerTest{
   @Test void anIconIsASquarePngWithASideFrom64To1024Pixels(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
-    infos.put("hello",claiming("hello.Hello","bar","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
     for (var side: List.of(64,1024)){
       var png= image(hello.resolve("art").resolve("foo.png"),side,side,"png");
       touch(hello);
@@ -1091,7 +1091,7 @@ final class ManagerTest{
     var bar= claim("hello.IconsBar","art/bar.png","","","bar");
     var foo= claim("hello.IconsFoo","art/foo.png","","","foo");
     var qux= claim("hello.IconsFoo","art/foo.png","","","qux");
-    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","hs"),bar+", "+foo+", "+qux));
+    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","fapp001"),bar+", "+foo+", "+qux));
     send(m,"compile","hello");
     idle(m);
     assertEquals(List.of("base.IconsConflict.png","hello.IconsBar.png","hello.IconsFoo.png"),iconFiles(hello));
@@ -1106,7 +1106,7 @@ final class ManagerTest{
   @Test void aCompileWhoseExtensionsTheDesktopRefusesKeepsTheIconFilesOfTheClaimsBefore(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     send(m,"compile","hello");
     idle(m);
     held.put(".bar",List.of("vim"));
@@ -1136,8 +1136,8 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","bar","foo"));
-    infos.put("other",claiming("other.Other","baz","qux"));
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
+    infos.put("other",claiming("other.Other","fapp004","qux"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
@@ -1172,16 +1172,16 @@ final class ManagerTest{
     var other= registered(m,dir,"other");
     assertEquals(List.of(List.of()),associated);
     assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(dir.resolve("manager").resolve("icons").resolve("base.IconsConflict.png")));
-    infos.put("hello",claiming("hello.Hello","bar","foo"));
-    infos.put("other",claiming("other.Other","baz","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
+    infos.put("other",claiming("other.Other","fapp004","foo"));
     send(m,"compile","hello");
     idle(m);
-    assertEquals(List.of(".bar hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
     send(m,"compile","other");
     idle(m);
     assertEquals(List.of(
-      ".bar hello/.fearless_out/icons/base.IconsConflict.png",
-      ".baz other/.fearless_out/icons/base.IconsConflict.png",
+      ".fapp004 other/.fearless_out/icons/base.IconsConflict.png",
+      ".fapp010 hello/.fearless_out/icons/base.IconsConflict.png",
       ".foo manager/icons/base.IconsConflict.png"),wanted(dir));
     var calls= associated.size();
     send(m,"select","hello");
@@ -1189,7 +1189,7 @@ final class ManagerTest{
     idle(m);
     assertEquals(calls,associated.size());
     send(m,"clean","hello");
-    assertEquals(List.of(".baz other/.fearless_out/icons/base.IconsConflict.png",".foo other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    assertEquals(List.of(".fapp004 other/.fearless_out/icons/base.IconsConflict.png",".foo other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
     send(m,"forget","other");
     assertEquals(List.of(),wanted(dir));
     assertEquals(calls+2,associated.size());
@@ -1199,28 +1199,28 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("other",claiming("other.Other","os","foo"));
-    infos.put("hello",claiming("hello.Hello","hs","bar"));
+    infos.put("other",claiming("other.Other","fapp002","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","bar"));
     send(m,"compile","other");
     send(m,"compile","hello");
     idle(m);
     var accepted= project(m,hello).claims();
     held.put(".foo",List.of("org.gnome.TextEditor"));
-    held.put(".hs",List.of("vim"));
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    held.put(".fapp001",List.of("vim"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     touch(hello);
     send(m,"run","hello");
     idle(m);
     var error= notOurs(
-      ".foo claimed by \"hello.Hello\" of project \"hello\" and \"other.Other\" of project \"other\" -> org.gnome.TextEditor",
-      ".hs claimed by \"hello.Hello\" of project \"hello\" -> vim");
+      ".fapp001 claimed by \"hello.Hello\" of project \"hello\" -> vim",
+      ".foo claimed by \"hello.Hello\" of project \"hello\" and \"other.Other\" of project \"other\" -> org.gnome.TextEditor");
     same("[###]--- compiling hello ---\ncompiled\n"+error+"\n--- compile failed ---\n",eclipse(dir,"hello","console.txt"));
     var p= project(m,hello);
     same(error,p.problem().orElseThrow());
     assertTrue(p.needsCompiling());
     assertFalse(Files.exists(mainsInfo(hello)));
     assertEquals(accepted,p.claims());
-    assertEquals(List.of(".foo manager/icons/base.IconsConflict.png",".hs hello/.fearless_out/icons/base.IconsConflict.png",".os other/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png",".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".foo manager/icons/base.IconsConflict.png"),wanted(dir));
     assertEquals(List.of("hello::hello.Hello openWith hello.IconsFoo"),claimed(m).get("bar"));
     var calls= associated.size();
     send(m,"select","other");
@@ -1231,8 +1231,8 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
-    infos.put("other",claiming("other.Other","os","qux"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
@@ -1240,15 +1240,15 @@ final class ManagerTest{
     send(m,"clean","hello");
     send(m,"select","other");
     same(notOurs(".qux claimed by \"other.Other\" of project \"other\" -> vim"),String.join("\n",view.notes));
-    assertEquals(List.of(".os other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
-    assertEquals(List.of("os","qux"),claimed(m).keySet().stream().sorted().toList());
+    assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    assertEquals(List.of("fapp002","qux"),claimed(m).keySet().stream().sorted().toList());
   }
   @Test void aStartUpRefusedTheExtensionsOfOneProjectDropsItsClaimsAndKeepsTheOthers(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
-    infos.put("other",claiming("other.Other","os","qux"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
@@ -1263,14 +1263,14 @@ final class ManagerTest{
     assertTrue(p.needsCompiling());
     assertFalse(Files.exists(mainsInfo(other)));
     assertEquals(Optional.empty(),project(again,hello).problem());
-    assertEquals(List.of(".foo hello/.fearless_out/icons/hello.IconsFoo.png",".hs hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
   }
   @Test void anExtensionWhoseTypeOtherFileNamesShareFailsTheCompileAndIsDroppedAtStartUp(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
-    infos.put("other",claiming("other.Other","os","qux"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
@@ -1295,7 +1295,7 @@ final class ManagerTest{
     same(error,p.problem().orElseThrow());
     assertEquals(Project.noClaims,p.claims());
     assertEquals(Optional.empty(),project(again,hello).problem());
-    assertEquals(List.of(".foo hello/.fearless_out/icons/hello.IconsFoo.png",".hs hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png",".foo hello/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
     send(again,"compile","other");
     idle(again);
     same(error,project(again,other).problem().orElseThrow());
@@ -1312,12 +1312,12 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
-    infos.put("other",claiming("other.Other","os","qux"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
-    locked.add(".hs");
+    locked.add(".fapp001");
     held.put(".qux",List.of("vim"));
     var again= manager(dir,"hello.Hello");
     again.settle();
@@ -1334,7 +1334,7 @@ final class ManagerTest{
       resets every app default on your machine, not only this one.
 
       What is locked:
-      .hs claimed by "hello.Hello" of project "hello\"""",project(again,hello).problem().orElseThrow());
+      .fapp001 claimed by "hello.Hello" of project "hello\"""",project(again,hello).problem().orElseThrow());
     same(notOurs(".qux claimed by \"other.Other\" of project \"other\" -> vim"),project(again,other).problem().orElseThrow());
     assertEquals(Project.noClaims,project(again,hello).claims());
     assertEquals(Project.noClaims,project(again,other).claims());
@@ -1345,17 +1345,17 @@ final class ManagerTest{
     var hello= registered(m,dir,"hello");
     var calls= new ArrayList<Integer>();
     m.forgetAssociation(()->calls.add(associated.size()));
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     send(m,"compile","hello");
     idle(m);
-    assertEquals(List.of("foo","hs"),claimed(m).keySet().stream().sorted().toList());
+    assertEquals(List.of("fapp001","foo"),claimed(m).keySet().stream().sorted().toList());
     assertEquals(List.of(1),calls);
     assertEquals(1,associated.size());
   }
   @Test void aRecompileChangingAnIconImageGivesItToTheDesktopAndOneChangingNothingDoesNot(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
-    infos.put("hello",claiming("hello.Hello","bar","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
     send(m,"compile","hello");
     idle(m);
     var calls= associated.size();
@@ -1374,24 +1374,24 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
-    infos.put("other",claiming("other.Other","os","qux"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
     Fs.rmTree(hello.resolve(Facts.outDir));
     send(m,"select","other");
     var p= project(m,hello);
-    assertEquals("The icon file of a claim of this project is gone:\n"+icons(hello).resolve("hello.IconsFoo.png")+"\nThe project claims no extension until it is compiled again.",p.problem().orElseThrow());
+    assertEquals("The icon file of a claim of this project is gone:\n"+icons(hello).resolve("base.IconsConflict.png")+"\nThe project claims no extension until it is compiled again.",p.problem().orElseThrow());
     assertEquals(Project.noClaims,p.claims());
-    assertEquals(List.of(".os other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
+    assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
     assertEquals(List.of(),view.notes);
   }
   @Test void aProjectWhoseClaimsFailedIsNotInvalidOnceIdle(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     image(hello.resolve("art").resolve("foo.png"),300,200,"png");
-    infos.put("hello",claiming("hello.Hello","bar","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp010","foo"));
     send(m,"compile","hello");
     idle(m);
     assertEquals(Project.State.codeInvalid,project(m,hello).state());
@@ -1405,7 +1405,7 @@ final class ManagerTest{
     var hello= registered(m,dir,"hello");
     send(m,"compile","hello");
     idle(m);
-    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","bar"),""));
+    infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","fapp010"),""));
     mode(hello,"r-xr-xr-x");
     Assumptions.assumeFalse(Files.isWritable(hello));
     touch(hello);
@@ -1413,8 +1413,8 @@ final class ManagerTest{
     send(m,"compile","hello");
     idle(m);
     mode(hello,"rwxr-xr-x");
-    assertEquals("--- compiling hello ---\ncompiled\n--- shortcut file not created: access denied: "+hello.resolve("hello.bar")+" ---\n--- compile done ---\n",eclipse(dir,"hello","console.txt"));
-    assertEquals(List.of(".bar hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals("--- compiling hello ---\ncompiled\n--- shortcut file not created: access denied: "+hello.resolve("hello.fapp010")+" ---\n--- compile done ---\n",eclipse(dir,"hello","console.txt"));
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
   }
   @Test void aCompiledCacheTheManagerCanNotWriteAtStartUpFailsThatProjectOnly(@TempDir Path dir){
@@ -1423,7 +1423,7 @@ final class ManagerTest{
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
     infos.put("hello",claiming("hello.Hello","","foo"));
-    infos.put("other",claiming("other.Other","os","qux"));
+    infos.put("other",claiming("other.Other","fapp002","qux"));
     send(m,"compile","hello");
     send(m,"compile","other");
     idle(m);
@@ -1439,43 +1439,43 @@ final class ManagerTest{
     assertEquals("The icons and the extensions of the claims of this project can not be saved in its compiled cache: access denied: "+mainsInfo(hello)+"\nGive Fearless access to the folder, then compile the project again.",p.problem().orElseThrow());
     same("[###]--- mains.info not deleted: access denied: "+mainsInfo(hello)+" ---\n",eclipse(dir,"hello","console.txt"));
     assertEquals(Project.noClaims,p.claims());
-    assertEquals(List.of("os","qux"),claimed(again).keySet().stream().sorted().toList());
+    assertEquals(List.of("fapp002","qux"),claimed(again).keySet().stream().sorted().toList());
   }
   private static List<String> top(Path project){ return Names.list(project).stream().map(p->p.getFileName().toString()).toList(); }
   @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
-    var shortcuts= claim("base.IconsConflict","icons/conflict.png","","","bar")+", "+claim("base.IconsConflict","icons/conflict.png","","","");
+    var shortcuts= claim("base.IconsConflict","icons/conflict.png","","","fapp010")+", "+claim("base.IconsConflict","icons/conflict.png","","","");
     infos.put("hello","{\"hello.FooBar\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], []], \"hello.Foo'\": [\"_hello/_rank_app.fear\", [], ["+claim("base.IconsConflict","icons/conflict.png","","","foo")+"]]}\n");
     send(m,"compile","hello");
     idle(m);
     var auto= "foo_bar."+fapp("hello","hello.FooBar","base.IconsConflict");
-    assertEquals(List.of(".fearless_out","_hello","foo_bar.bar",auto,"hello.fearless"),top(hello));
-    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.bar")));
+    assertEquals(List.of(".fearless_out","_hello","foo_bar.fapp010",auto,"hello.fearless"),top(hello));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
     assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve(auto)));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
-    Fs.writeUtf8(hello.resolve("foo_bar.bar"),"kept\n");
+    Fs.writeUtf8(hello.resolve("foo_bar.fapp010"),"kept\n");
     Fs.ofV(()->Files.move(hello.resolve(auto),dir.resolve(auto)));
     send(m,"select","hello");
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
     touch(hello);
     send(m,"compile","hello");
     idle(m);
-    assertEquals(List.of(".fearless_out","_hello","foo_bar.bar",auto,"hello.fearless"),top(hello));
-    assertEquals("kept\n",Fs.readUtf8(hello.resolve("foo_bar.bar")));
+    assertEquals(List.of(".fearless_out","_hello","foo_bar.fapp010",auto,"hello.fearless"),top(hello));
+    assertEquals("kept\n",Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
     assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve(auto)));
     assertTrue(Files.exists(dir.resolve(auto)));
-    Fs.ofV(()->Files.delete(hello.resolve("foo_bar.bar")));
+    Fs.ofV(()->Files.delete(hello.resolve("foo_bar.fapp010")));
     touch(hello);
     send(m,"compile","hello");
     idle(m);
-    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.bar")));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
   }
   @Test void aShortcutMainWithoutAFileNameOrWithAReservedOneOrSharingItsFileFailsTheCompileAndCreatesNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
-    var bar= claim("base.IconsConflict","icons/conflict.png","","","bar");
+    var bar= claim("base.IconsConflict","icons/conflict.png","","","fapp010");
     infos.put("hello",info("hello.Hello",bar,""));
     send(m,"compile","hello");
     idle(m);
@@ -1485,8 +1485,8 @@ final class ManagerTest{
     for (var c: List.of(
       Map.entry("{\"hello.Foo'\": "+main+"}\n","Main \"hello.Foo'\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
       Map.entry("{\"hello.Foo_bar\": "+main+"}\n","Main \"hello.Foo_bar\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
-      Map.entry("{\"hello.Con\": "+main+"}\n","Main \"hello.Con\" can not have the shortcut file \"con.bar\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
-      Map.entry("{\"b.Bar\": "+main+", \"a.Bar\": "+main+"}\n","Mains \"a.Bar\" and \"b.Bar\" can not both have the shortcut file \"bar.bar\": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension."))){
+      Map.entry("{\"hello.Con\": "+main+"}\n","Main \"hello.Con\" can not have the shortcut file \"con.fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
+      Map.entry("{\"b.Bar\": "+main+", \"a.Bar\": "+main+"}\n","Mains \"a.Bar\" and \"b.Bar\" can not both have the shortcut file \"bar.fapp010\": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension."))){
       infos.put("hello",c.getKey());
       touch(hello);
       send(m,"run","hello");
@@ -1496,18 +1496,18 @@ final class ManagerTest{
       assertEquals(accepted,project(m,hello).claims());
       assertEquals(before,top(hello));
     }
-    assertEquals(List.of(".bar hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
   }
   @Test void aShortcutFileBreakingTheProjectFileRulesFailsTheCompileAndCreatesNothing(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
     Fs.writeUtf8(hello.resolve("todo"),"");
     var calls= associated.size();
-    var bar= claim("base.IconsConflict","icons/conflict.png","","","bar");
-    var longName= "hello.L"+"o".repeat(196);
+    var bar= claim("base.IconsConflict","icons/conflict.png","","","fapp010");
+    var longName= "hello.L"+"o".repeat(192);
     for (var c: List.of(
-      Map.entry(info(longName,bar,""),"Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(196)+".bar\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
-      Map.entry(info("hello.Todo",bar,""),"Main \"hello.Todo\" can not have the shortcut file \"todo.bar\": the project has the file \"todo\", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
+      Map.entry(info(longName,bar,""),"Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(192)+".fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
+      Map.entry(info("hello.Todo",bar,""),"Main \"hello.Todo\" can not have the shortcut file \"todo.fapp010\": the project has the file \"todo\", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
       infos.put("hello",c.getKey());
       touch(hello);
       send(m,"run","hello");
@@ -1517,17 +1517,17 @@ final class ManagerTest{
       assertEquals(List.of(".fearless_out","_hello","hello.fearless","todo"),top(hello));
     }
     assertEquals(calls,associated.size());
-    infos.put("hello",info("hello.L"+"o".repeat(195),bar,""));
+    infos.put("hello",info("hello.L"+"o".repeat(191),bar,""));
     touch(hello);
     send(m,"compile","hello");
     idle(m);
-    assertTrue(Files.exists(hello.resolve("l"+"o".repeat(195)+".bar")));
+    assertTrue(Files.exists(hello.resolve("l"+"o".repeat(191)+".fapp010")));
     Fs.ofV(()->Files.delete(hello.resolve("todo")));
     infos.put("hello",info("hello.Todo",bar,""));
     touch(hello);
     send(m,"compile","hello");
     idle(m);
-    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("todo.bar")));
+    assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("todo.fapp010")));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
   }
   private Manager opening(Path dir){
@@ -1543,7 +1543,7 @@ final class ManagerTest{
     var m= opening(dir);
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     send(m,"compile","hello");
     idle(m);
     send(m,"clear","hello");
@@ -1555,7 +1555,7 @@ final class ManagerTest{
     assertEquals(Optional.of(hello),m.state().selected());
     touch(hello);
     send(m,"clear","hello");
-    send(m,TaggedText.of(doc(dir,"b.hs").toString()));
+    send(m,TaggedText.of(doc(dir,"b.fapp001").toString()));
     idle(m);
     same("--- compiling hello ---\ncompiled\n--- compile done ---\n"+running("hello.Hello"),eclipse(dir,"hello","console.txt"));
     assertEquals(shown,view.shown);
@@ -1566,8 +1566,8 @@ final class ManagerTest{
     var m= opening(dir);
     var other= registered(m,dir,"other");
     var hello= registered(m,dir,"hello");
-    infos.put("other",claiming("other.Hello","os","foo"));
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("other",claiming("other.Hello","fapp002","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     send(m,"compile","other");
     send(m,"compile","hello");
     idle(m);
@@ -1597,7 +1597,7 @@ final class ManagerTest{
   @Test void anExtensionMatchesInAnyCaseAsTheDesktopMatchesIt(@TempDir Path dir){
     var m= opening(dir);
     var hello= registered(m,dir,"hello");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     send(m,"compile","hello");
     idle(m);
     send(m,"clear","hello");
@@ -1609,7 +1609,7 @@ final class ManagerTest{
   @Test void aFileOpenedWhileItsMainRunsShowsTheProjectAndRunsNothingMore(@TempDir Path dir){
     var m= opening(dir);
     var slow= registered(m,dir,"slow");
-    infos.put("slow",claiming("slow.Slow","ss","foo"));
+    infos.put("slow",claiming("slow.Slow","fapp003","foo"));
     send(m,"compile","slow");
     idle(m);
     var doc= TaggedText.of(doc(dir,"a.foo").toString());
@@ -1618,7 +1618,7 @@ final class ManagerTest{
     var shown= view.shown;
     send(m,"select","slow");
     send(m,"clear","slow");
-    send(m,TaggedText.of(doc(dir,"b.ss").toString()));
+    send(m,TaggedText.of(doc(dir,"b.fapp003").toString()));
     send(m,doc);
     assertEquals(shown+3,view.shown);
     assertEquals(Optional.of("slow.Slow"),project(m,slow).running());
@@ -1629,7 +1629,7 @@ final class ManagerTest{
   @Test void aFileNobodyClaimsAFearlessFileAndAFolderRegisterAsBeforeAndAClaimedFileRegistersNothing(@TempDir Path dir){
     var m= opening(dir);
     var hello= registered(m,dir,"hello");
-    infos.put("hello",claiming("hello.Hello","hs","foo"));
+    infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     send(m,"compile","hello");
     idle(m);
     send(m,"clear","hello");
