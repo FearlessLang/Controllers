@@ -79,6 +79,7 @@ public final class Manager{
     Facts facts;
     Optional<Map<String,String>> mains= Optional.empty();
     MainsInfo claims= Project.noClaims;
+    MainsInfo asking= Project.noClaims;
     String job= "";
     Instant since= Instant.EPOCH;
     int runs;
@@ -248,7 +249,7 @@ public final class Manager{
     var read= read(f);
     try{
       var icons= ClaimIcons.read(tools.stdLibBase(),Project.claimants(f,alias(f),read));
-      var filled= Project.filled(read,l.claims,alias(f),live.values().stream().map(o->o.claims));
+      var filled= Project.filled(read,l.claims,alias(f),live.values().stream().flatMap(o->Stream.of(o.claims,o.asking)));
       Project.shortcuts(Project.claimants(f,alias(f),filled));
       icons.forEach((icon,bytes)->ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"),icon,bytes));
       if (!filled.equals(read)){ Fs.writeUtf8(f.resolve(Facts.outDir).resolve("mains.info"),filled.print()); }
@@ -439,16 +440,16 @@ public final class Manager{
     if (ec != 0 || !accept(f)){ compiled(f,l,previous,false,ec); return; }
     var asked= Project.claimants(f,alias(f),l.claims).filter(c->!allowed(c)).toList();
     if (asked.isEmpty()){ compiled(f,l,previous,true,ec); return; }
-    var accepted= l.claims;
+    l.asking= l.claims;
     l.claims= previous;
-    view.allow(Messages.allowExtensions(asked),yes->post(()->answered(f,l,accepted,previous,asked,yes)));
+    view.allow(Messages.allowExtensions(asked),yes->post(()->answered(f,l,previous,asked,yes)));
   }
-  private void answered(Path f, Live l, MainsInfo accepted, MainsInfo previous, List<Project.Claimant> asked, boolean yes){
+  private void answered(Path f, Live l, MainsInfo previous, List<Project.Claimant> asked, boolean yes){
     if (live.get(f) != l){ return; }
+    l.asking= Project.noClaims;
     if (!yes){ failed(f,Messages.extensionsRefused(asked)); compiled(f,l,previous,false,0); return; }
     asked.forEach(c->addExtensionNow(c.claim().extension()));
-    l.claims= accepted;
-    compiled(f,l,previous,true,0);
+    compiled(f,l,previous,accept(f),0);
   }
   private void compiled(Path f, Live l, MainsInfo previous, boolean accepted, int ec){
     l.job= "";

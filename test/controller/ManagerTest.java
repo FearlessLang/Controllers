@@ -1685,6 +1685,38 @@ final class ManagerTest{
     assertEquals(List.of("foo"),m.state().extensions());
     assertEquals(calls,associated.size());
   }
+  @Test void aProjectLeavingCodeWhileItsDialogIsOpenClaimsNothingOnceAllowed(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    var hello= registered(m,dir,"hello");
+    infos.put("hello",claiming("hello.Hello","fapp001","htm"));
+    view.holding= true;
+    send(m,"compile","hello");
+    until(m,_->view.allowed != null);
+    commit(m,Registry.text(List.of(project(m,hello).entry().withKind(Kind.idle))),()->{});
+    view.allowed.accept(true);
+    idle(m);
+    assertEquals(Map.of(),claimed(m));
+    assertEquals(Project.noClaims,project(m,hello).claims());
+    assertEquals(List.of(),wanted(dir));
+  }
+  @Test void anExtensionAutoselectedByACompileWaitingOnItsDialogIsNotTakenByAnotherCompile(@TempDir Path dir){
+    var m= manager(dir,"hello.Hello");
+    registered(m,dir,"hello");
+    var other= registered(m,dir,"other");
+    var start= AutoselectTest.start("hello","hello.Hello","base.IconsConflict");
+    var main= IntStream.range(0,100_000).mapToObj(i->"other.O"+i).filter(n->AutoselectTest.start("other",n,"base.IconsConflict") == start).findFirst().orElseThrow();
+    infos.put("hello",claiming("hello.Hello","","htm"));
+    infos.put("other",claiming(main,"","ffile001"));
+    view.holding= true;
+    send(m,"compile","hello");
+    until(m,_->view.allowed != null);
+    send(m,"compile","other");
+    until(m,_->!project(m,other).busy());
+    view.allowed.accept(true);
+    idle(m);
+    assertEquals(List.of("hello::hello.Hello shortcut base.IconsConflict"),claimed(m).get(AutoselectTest.fapp(start)));
+    assertEquals(List.of("other::"+main+" shortcut base.IconsConflict"),claimed(m).get(AutoselectTest.fapp(start+1)));
+  }
   @Test void removingAnAllowedExtensionMakesItsClaimsInactiveUntilCompiledAgain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= registered(m,dir,"hello");
