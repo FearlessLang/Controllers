@@ -39,8 +39,9 @@ final class FactsTest{
   }
   static void cache(Path project, String pkg, long stamp){ cache(project,pkg,stamp,"{}\n"); }
   static void cache(Path project, String pkg, long stamp, String mainsInfo){
-    at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear\ntop rank",stamp);
+    at(project.resolve(".fearless_out").resolve(pkg+".built"),"fear:/_"+pkg+"/_rank_app.fear",stamp);
     at(project.resolve(".fearless_out").resolve(pkg+".json"),"{}\n",stamp);
+    at(project.resolve(".fearless_out").resolve(pkg+".mains.info"),mainsInfo,stamp);
     at(project.resolve(".fearless_out").resolve("mains.info"),mainsInfo,stamp);
   }
   private static void at(Path file, String content, long stamp){
@@ -121,6 +122,7 @@ final class FactsTest{
     cache(project,"hello",2000);
     at(project.resolve(".fearless_out").resolve("lib.built"),"fear:/_lib/_rank_core.fear",3000);
     at(project.resolve(".fearless_out").resolve("lib.json"),"{}\n",3000);
+    at(project.resolve(".fearless_out").resolve("lib.mains.info"),"{}\n",3000);
     assertFalse(Facts.of(project,"someproject",Kind.code).upToDate());
     cache(project,"hello",4000);
     assertTrue(Facts.of(project,"someproject",Kind.code).upToDate());
