@@ -87,6 +87,7 @@ public final class Window implements Manager.View{
   private State state= new State(List.of(),Optional.empty(),List.of());
   private Optional<Panel> shown= Optional.empty();
   private boolean surfaced;
+  private boolean closeIconifies;
   private Window(Main main){
     this.main= main;
     status.setBorder(BorderFactory.createEmptyBorder(4,8,4,8));
@@ -99,7 +100,11 @@ public final class Window implements Manager.View{
     frame.getRootPane().setTransferHandler(dropHandler());
     frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
     frame.addWindowListener(new WindowAdapter(){
-      @Override public void windowClosing(WindowEvent e){ frame.setVisible(false); ticker.stop(); }
+      @Override public void windowClosing(WindowEvent e){
+        if (closeIconifies){ frame.setExtendedState(frame.getExtendedState() | Frame.ICONIFIED); return; }
+        frame.setVisible(false);
+        ticker.stop();
+      }
       @Override public void windowIconified(WindowEvent e){ ticker.stop(); }
       @Override public void windowDeiconified(WindowEvent e){ ticker.start(); surfaced= true; }
       @Override public void windowActivated(WindowEvent e){ surfaced= true; }
@@ -112,6 +117,7 @@ public final class Window implements Manager.View{
     frame.setExtendedState(Frame.MAXIMIZED_BOTH);
     tick();
   }
+  void iconifyOnClose(){ closeIconifies= true; }
   public static Window create(Main main){ return onEdt(()->new Window(main)); }
   static <T> T onEdt(Supplier<T> make){
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }

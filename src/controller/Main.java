@@ -54,6 +54,7 @@ public final class Main{
   private Path msgDir(){ return managerDir.resolve("messages"); }
   public static void main(String[] args){
     NativeLocaleForcer.forceEnglish();
+    if (System.getenv("SWAYSOCK") != null){ NativeLocaleForcer.setEnv("_JAVA_AWT_WM_NONREPARENTING","1"); }
     var exitCode= 0;
     try{ run(message(args)); }
     catch(UserError e){ exitCode= 1; display(wiped(e)); }
