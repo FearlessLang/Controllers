@@ -25,22 +25,22 @@ import utils.OneOr;
 /// Action 12: open the Running menu: it looks exactly as it did before the run.
 /// Action 13: end the manager.
 final class RunningMenuTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click runningMenu= new Click("runningMenu",linux(218,79));
-  final At menuShown= new At("menuShown",linux(500));
-  final Area menu= new Area("menu",linux(187,69,137,47));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click run= new Click("run",linux(164,111));
-  final Click runningMenuAgain= new Click("runningMenuAgain",linux(218,79));
-  final Click chooseProgram= new Click("chooseProgram",linux(260,103));
-  final Click terminate= new Click("terminate",linux(164,111));
-  final Click runningMenuLast= new Click("runningMenuLast",linux(218,79));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Area window= new Area("window",on("ubuntu-gnome",68,32,3772,2098));
+  final Click runningMenu= new Click("runningMenu",on("ubuntu-gnome",218,79));
+  final At menuShown= new At("menuShown",on("ubuntu-gnome",500));
+  final Area menu= new Area("menu",on("ubuntu-gnome",187,69,137,47));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainShown= new At("mainShown",on("ubuntu-gnome",1000));
+  final Area head= new Area("head",on("ubuntu-gnome",80,94,1320,78));
+  final Area programWindow= new Area("programWindow",on("ubuntu-gnome",1915,1075,10,10));
+  final Click run= new Click("run",on("ubuntu-gnome",164,111));
+  final Click runningMenuAgain= new Click("runningMenuAgain",on("ubuntu-gnome",218,79));
+  final Click chooseProgram= new Click("chooseProgram",on("ubuntu-gnome",260,103));
+  final Click terminate= new Click("terminate",on("ubuntu-gnome",164,111));
+  final Click runningMenuLast= new Click("runningMenuLast",on("ubuntu-gnome",218,79));
   @Override protected void walk() throws Exception{
     clean();
     var manager= launch(gui.toString());

@@ -27,12 +27,12 @@ import tools.Fs;
 /// Action 10: press Escape: the dialog goes away.
 /// Action 11: press alt+M, Up and Enter: Quit manager is chosen and the manager ends with exit 0.
 final class KeyboardMenusTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Area dialog= new Area("dialog",linux(1600,850,700,25));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000),on("debian-mate",2500),on("void-i3",3000),on("omarchy-hyprland",2000),on("debian-gnome-x11",2500),on("xubuntu-xfce",2500),on("debian-cinnamon",2500));
+  final Area tiles= new Area("tiles",on("ubuntu-gnome",68,68,310,180),on("debian-mate",2,59,310,180),on("void-i3",2,18,310,180),on("omarchy-hyprland",13,91,300,180),on("debian-gnome-x11",2,69,310,180),on("xubuntu-xfce",2,120,310,180),on("debian-cinnamon",2,37,310,180));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500),on("debian-mate",200,800),on("void-i3",200,759),on("omarchy-hyprland",160,450),on("debian-gnome-x11",200,810),on("xubuntu-xfce",200,791),on("debian-cinnamon",200,778));
+  final Area window= new Area("window",on("ubuntu-gnome",68,32,3772,2098),on("debian-mate",0,28,1920,990),on("void-i3",0,0,1920,1030),on("omarchy-hyprland",6,19,948,485),on("debian-gnome-x11",0,32,1920,1022),on("xubuntu-xfce",0,27,1920,1022),on("debian-cinnamon",0,0,1920,1012));
+  final Click projectMenu= new Click("projectMenu",on("ubuntu-gnome",158,79),on("debian-mate",92,70),on("void-i3",92,29),on("omarchy-hyprland",95,28),on("debian-gnome-x11",92,80),on("xubuntu-xfce",105,60),on("debian-cinnamon",92,47));
+  final Area dialog= new Area("dialog",on("ubuntu-gnome",1600,850,700,25),on("debian-mate",860,530,200,25),on("void-i3",860,520,200,25),on("omarchy-hyprland",380,260,200,25),on("debian-gnome-x11",860,545,200,25),on("xubuntu-xfce",860,545,200,25),on("debian-cinnamon",860,509,200,25));
   @Override protected void walk() throws Exception{
     clean();
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""),null);

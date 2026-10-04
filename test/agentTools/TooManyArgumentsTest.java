@@ -18,9 +18,9 @@ import tools.Fs;
 /// Action 1: run the launcher on helloWorld and helloStackTraces together: an error shows in the middle of the screen, the launcher waits for it to be dismissed, and the manager has no data folder.
 /// Action 2: press OK: the launcher ends with exit 1, the desk shows its background again, the manager still has no data folder, and nothing is registered for .fearless.
 final class TooManyArgumentsTest extends ManagerTest{
-  final Area error= new Area("error",linux(1915,1075,10,10));
-  final At errorShown= new At("errorShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1212));
+  final Area error= new Area("error",on("ubuntu-gnome",1915,1075,10,10));
+  final At errorShown= new At("errorShown",on("ubuntu-gnome",1000));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1952,1212));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();

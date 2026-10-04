@@ -24,26 +24,26 @@ import java.awt.image.BufferedImage;
 ///
 /// A file manager keeps the icon it first drew for a file even after the desk learns a new one, so every look starts by reloading the window.
 final class FileAssociationTest extends ManagerTest{
-  final At filesShown= new At("filesShown",linux(3000),windows(0));
-  final Click focusFiles= new Click("focusFiles",linux(2200,1200),windows(0,0));
-  final At genericShown= new At("genericShown",linux(3000),windows(0));
-  final Area fileIcon= new Area("fileIcon",linux(1836,880,72,60),windows(0,0,0,0));
-  final At managerShown= new At("managerShown",linux(2000),windows(0));
-  final Click sendManagerAway= new Click("sendManagerAway",linux(3754,48),windows(0,0));
-  final At managerAway= new At("managerAway",linux(2000),windows(0));
-  final At iconChanged= new At("iconChanged",linux(3000),windows(0));
-  final Click bringManagerBack= new Click("bringManagerBack",linux(32,386),windows(0,0));
-  final At managerBack= new At("managerBack",linux(3000),windows(0));
-  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(0,0));
-  final Click forgetAssociation= new Click("forgetAssociation",linux(128,170),windows(0,0));
-  final At dialogShown= new At("dialogShown",linux(3000),windows(0));
-  final Click yes= new Click("yes",linux(1928,1154),windows(0,0));
-  final At iconReverted= new At("iconReverted",linux(3000),windows(0));
-  final At managerShownAgain= new At("managerShownAgain",linux(2000),windows(0));
-  final Click sendManagerAwayAgain= new Click("sendManagerAwayAgain",linux(3754,48),windows(0,0));
-  final At managerAwayAgain= new At("managerAwayAgain",linux(2000),windows(0));
-  final At iconChangedAgain= new At("iconChangedAgain",linux(3000),windows(0));
-  final Click closeFiles= new Click("closeFiles",linux(2374,842),windows(0,0));
+  final At filesShown= new At("filesShown",on("ubuntu-gnome",3000),on("windows",0));
+  final Click focusFiles= new Click("focusFiles",on("ubuntu-gnome",2200,1200),on("windows",0,0));
+  final At genericShown= new At("genericShown",on("ubuntu-gnome",3000),on("windows",0));
+  final Area fileIcon= new Area("fileIcon",on("ubuntu-gnome",1836,880,72,60),on("windows",0,0,0,0));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",2000),on("windows",0));
+  final Click sendManagerAway= new Click("sendManagerAway",on("ubuntu-gnome",3754,48),on("windows",0,0));
+  final At managerAway= new At("managerAway",on("ubuntu-gnome",2000),on("windows",0));
+  final At iconChanged= new At("iconChanged",on("ubuntu-gnome",3000),on("windows",0));
+  final Click bringManagerBack= new Click("bringManagerBack",on("ubuntu-gnome",32,386),on("windows",0,0));
+  final At managerBack= new At("managerBack",on("ubuntu-gnome",3000),on("windows",0));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79),on("windows",0,0));
+  final Click forgetAssociation= new Click("forgetAssociation",on("ubuntu-gnome",128,191),on("windows",0,0));
+  final At dialogShown= new At("dialogShown",on("ubuntu-gnome",3000),on("windows",0));
+  final Click yes= new Click("yes",on("ubuntu-gnome",1928,1154),on("windows",0,0));
+  final At iconReverted= new At("iconReverted",on("ubuntu-gnome",3000),on("windows",0));
+  final At managerShownAgain= new At("managerShownAgain",on("ubuntu-gnome",2000),on("windows",0));
+  final Click sendManagerAwayAgain= new Click("sendManagerAwayAgain",on("ubuntu-gnome",3754,48),on("windows",0,0));
+  final At managerAwayAgain= new At("managerAwayAgain",on("ubuntu-gnome",2000),on("windows",0));
+  final At iconChangedAgain= new At("iconChangedAgain",on("ubuntu-gnome",3000),on("windows",0));
+  final Click closeFiles= new Click("closeFiles",on("ubuntu-gnome",2374,842),on("windows",0,0));
   @Override protected void walk() throws Exception{
     clean();
     Desktop.getDesktop().open(project.toFile());

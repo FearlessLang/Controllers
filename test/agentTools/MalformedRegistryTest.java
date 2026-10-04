@@ -34,9 +34,9 @@ final class MalformedRegistryTest extends ManagerTest{
       }
     }
     """.formatted(project);
-  final Area error= new Area("error",linux(1915,1075,10,10));
-  final At errorShown= new At("errorShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1279));
+  final Area error= new Area("error",on("ubuntu-gnome",1915,1075,10,10));
+  final At errorShown= new At("errorShown",on("ubuntu-gnome",1000));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1952,1279));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();

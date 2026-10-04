@@ -32,17 +32,17 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path chain= data.resolveSibling("chain");
   static final Path console= data.resolve("eclipse").resolve("chain").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Area ticks= new Area("ticks",linux(90,180,210,50));
-  final Click all= new Click("all",linux(112,165));
-  final Area kindButton= new Area("kindButton",linux(80,128,1320,25));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click runSelected= new Click("runSelected",linux(164,111));
-  final Click terminate= new Click("terminate",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainsShown= new At("mainsShown",on("ubuntu-gnome",1000));
+  final Area ticks= new Area("ticks",on("ubuntu-gnome",90,180,210,50));
+  final Click all= new Click("all",on("ubuntu-gnome",112,165));
+  final Area kindButton= new Area("kindButton",on("ubuntu-gnome",80,128,1320,25));
+  final Area programWindow= new Area("programWindow",on("ubuntu-gnome",1915,1075,10,10));
+  final Click runSelected= new Click("runSelected",on("ubuntu-gnome",164,111));
+  final Click terminate= new Click("terminate",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(chain.resolve("chain.fearless"),"\n");

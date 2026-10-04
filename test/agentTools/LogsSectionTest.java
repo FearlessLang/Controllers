@@ -36,19 +36,19 @@ final class LogsSectionTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path diary= data.resolveSibling("diary");
   static final Path logs= diary.resolve(".out").resolve("logs").resolve("diary");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,140));
-  final Click compile= new Click("compile",linux(164,111));
-  final At compileShown= new At("compileShown",linux(1000));
-  final Click openLogs= new Click("openLogs",linux(128,253));
-  final Area list= new Area("list",linux(80,240,3750,170));
-  final Click run= new Click("run",linux(164,111));
-  final Click firstLog= new Click("firstLog",linux(250,278));
-  final Click copy= new Click("copy",linux(3739,251));
-  final Click delete= new Click("delete",linux(3796,251));
-  final At confirmShown= new At("confirmShown",linux(1500));
-  final Click yes= new Click("yes",linux(1933,1150));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,140));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At compileShown= new At("compileShown",on("ubuntu-gnome",1000));
+  final Click openLogs= new Click("openLogs",on("ubuntu-gnome",128,253));
+  final Area list= new Area("list",on("ubuntu-gnome",80,240,3750,170));
+  final Click run= new Click("run",on("ubuntu-gnome",164,111));
+  final Click firstLog= new Click("firstLog",on("ubuntu-gnome",250,278));
+  final Click copy= new Click("copy",on("ubuntu-gnome",3739,251));
+  final Click delete= new Click("delete",on("ubuntu-gnome",3796,251));
+  final At confirmShown= new At("confirmShown",on("ubuntu-gnome",1500));
+  final Click yes= new Click("yes",on("ubuntu-gnome",1933,1150));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(diary.resolve("diary.fearless"),"\n");

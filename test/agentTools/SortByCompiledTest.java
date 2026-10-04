@@ -27,12 +27,12 @@ final class SortByCompiledTest extends ManagerTest{
   static final Path order= data.resolveSibling("order");
   static final Path zeta= order.resolve("zeta");
   static final Path alpha= order.resolve("alpha");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Area secondTile= new Area("secondTile",linux(202,149,128,88));
-  final Click orderBy= new Click("orderBy",linux(165,130));
-  final Click compiled= new Click("compiled",linux(150,191));
-  final Click compile= new Click("compile",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area firstTile= new Area("firstTile",on("ubuntu-gnome",74,149,128,88));
+  final Area secondTile= new Area("secondTile",on("ubuntu-gnome",202,149,128,88));
+  final Click orderBy= new Click("orderBy",on("ubuntu-gnome",165,130));
+  final Click compiled= new Click("compiled",on("ubuntu-gnome",150,191));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     Fs.ensureDir(zeta);

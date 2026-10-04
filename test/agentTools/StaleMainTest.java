@@ -44,16 +44,16 @@ final class StaleMainTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Click tickSecond= new Click("tickSecond",linux(99,215));
-  final Click tickThird= new Click("tickThird",linux(99,240));
-  final Area rows= new Area("rows",linux(90,180,210,50));
-  final Click compileEdited= new Click("compileEdited",linux(164,111));
-  final Click runSelected= new Click("runSelected",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainsShown= new At("mainsShown",on("ubuntu-gnome",1000));
+  final Click tickSecond= new Click("tickSecond",on("ubuntu-gnome",99,215));
+  final Click tickThird= new Click("tickThird",on("ubuntu-gnome",99,240));
+  final Area rows= new Area("rows",on("ubuntu-gnome",90,180,210,50));
+  final Click compileEdited= new Click("compileEdited",on("ubuntu-gnome",164,111));
+  final Click runSelected= new Click("runSelected",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(menu.resolve("menu.fearless"),"\n");

@@ -32,16 +32,16 @@ final class CloseProgramWindowTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path shut= data.resolveSibling("shut");
   static final Path console= data.resolve("eclipse").resolve("shut").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click run= new Click("run",linux(164,111));
-  final At programShown= new At("programShown",linux(1000));
-  final Click closeProgram= new Click("closeProgram",linux(1996,1075));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainShown= new At("mainShown",on("ubuntu-gnome",1000));
+  final Area head= new Area("head",on("ubuntu-gnome",80,94,1320,78));
+  final Area programWindow= new Area("programWindow",on("ubuntu-gnome",1915,1075,10,10));
+  final Click run= new Click("run",on("ubuntu-gnome",164,111));
+  final At programShown= new At("programShown",on("ubuntu-gnome",1000));
+  final Click closeProgram= new Click("closeProgram",on("ubuntu-gnome",1996,1075));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(shut.resolve("shut.fearless"),"\n");

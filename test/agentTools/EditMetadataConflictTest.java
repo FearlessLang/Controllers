@@ -49,21 +49,21 @@ final class EditMetadataConflictTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area buttons= new Area("buttons",linux(2190,1350,170,40));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898));
-  final Area note= new Area("note",linux(1600,1060,700,40));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Click ok= new Click("ok",linux(1953,1136));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final Click close= new Click("close",linux(2317,1370));
-  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79));
-  final Click editMetadataAgain= new Click("editMetadataAgain",linux(128,103));
-  final Click focusTextAgain= new Click("focusTextAgain",linux(1900,1200));
-  final DoubleClick kindIdleAgain= new DoubleClick("kindIdleAgain",linux(1672,898));
-  final Click commitAgain= new Click("commitAgain",linux(2238,1370));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area buttons= new Area("buttons",on("ubuntu-gnome",2190,1350,170,40));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click editMetadata= new Click("editMetadata",on("ubuntu-gnome",128,103));
+  final DoubleClick kindIdle= new DoubleClick("kindIdle",on("ubuntu-gnome",1672,898));
+  final Area note= new Area("note",on("ubuntu-gnome",1600,1060,700,40));
+  final Click commit= new Click("commit",on("ubuntu-gnome",2238,1370));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1953,1136));
+  final Click focusText= new Click("focusText",on("ubuntu-gnome",1900,1200));
+  final Click close= new Click("close",on("ubuntu-gnome",2317,1370));
+  final Click managerMenuAgain= new Click("managerMenuAgain",on("ubuntu-gnome",98,79));
+  final Click editMetadataAgain= new Click("editMetadataAgain",on("ubuntu-gnome",128,103));
+  final Click focusTextAgain= new Click("focusTextAgain",on("ubuntu-gnome",1900,1200));
+  final DoubleClick kindIdleAgain= new DoubleClick("kindIdleAgain",on("ubuntu-gnome",1672,898));
+  final Click commitAgain= new Click("commitAgain",on("ubuntu-gnome",2238,1370));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());

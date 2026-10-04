@@ -35,23 +35,23 @@ final class EditMetadataForgetTest extends ManagerTest{
       }
     }
     """.formatted(project);
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Area secondTile= new Area("secondTile",linux(202,149,128,88));
-  final Area buttons= new Area("buttons",linux(2190,1350,170,40));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Area side= new Area("side",linux(1400,94,2430,2030));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
-  final Area menu= new Area("menu",linux(132,90,177,160));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final At menuShown= new At("menuShown",linux(300));
-  final At managerShownAgain= new At("managerShownAgain",linux(3000));
-  final Click projectMenuAgain= new Click("projectMenuAgain",linux(158,79));
-  final Click forgetProject= new Click("forgetProject",linux(180,237));
-  final Click projectMenuOnceMore= new Click("projectMenuOnceMore",linux(158,79));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area firstTile= new Area("firstTile",on("ubuntu-gnome",74,149,128,88));
+  final Area secondTile= new Area("secondTile",on("ubuntu-gnome",202,149,128,88));
+  final Area buttons= new Area("buttons",on("ubuntu-gnome",2190,1350,170,40));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click editMetadata= new Click("editMetadata",on("ubuntu-gnome",128,103));
+  final Click focusText= new Click("focusText",on("ubuntu-gnome",1900,1200));
+  final Click commit= new Click("commit",on("ubuntu-gnome",2238,1370));
+  final Area side= new Area("side",on("ubuntu-gnome",1400,94,2430,2030));
+  final Area tiles= new Area("tiles",on("ubuntu-gnome",68,68,310,180));
+  final Area menu= new Area("menu",on("ubuntu-gnome",132,90,177,160));
+  final Click projectMenu= new Click("projectMenu",on("ubuntu-gnome",158,79));
+  final At menuShown= new At("menuShown",on("ubuntu-gnome",300));
+  final At managerShownAgain= new At("managerShownAgain",on("ubuntu-gnome",3000));
+  final Click projectMenuAgain= new Click("projectMenuAgain",on("ubuntu-gnome",158,79));
+  final Click forgetProject= new Click("forgetProject",on("ubuntu-gnome",180,237));
+  final Click projectMenuOnceMore= new Click("projectMenuOnceMore",on("ubuntu-gnome",158,79));
   @Override protected void walk() throws Exception{
     clean();
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(only),null);

@@ -38,16 +38,16 @@ final class RawStateTest extends ManagerTest{
   static final Path notes= data.resolveSibling("notes");
   static final Path tally= data.resolveSibling("tally");
   static final DateTimeFormatter when= DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area dialog= new Area("dialog",linux(1600,850,700,25));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click showRawState= new Click("showRawState",linux(128,124));
-  final Click focusText= new Click("focusText",linux(1970,1100));
-  final Click ok= new Click("ok",linux(1952,1323));
-  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79));
-  final Click showRawStateAgain= new Click("showRawStateAgain",linux(128,124));
-  final Click focusTextAgain= new Click("focusTextAgain",linux(1970,1100));
-  final Click okAgain= new Click("okAgain",linux(1952,1323));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area dialog= new Area("dialog",on("ubuntu-gnome",1600,850,700,25));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click showRawState= new Click("showRawState",on("ubuntu-gnome",128,124));
+  final Click focusText= new Click("focusText",on("ubuntu-gnome",1970,1100));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1952,1323));
+  final Click managerMenuAgain= new Click("managerMenuAgain",on("ubuntu-gnome",98,79));
+  final Click showRawStateAgain= new Click("showRawStateAgain",on("ubuntu-gnome",128,124));
+  final Click focusTextAgain= new Click("focusTextAgain",on("ubuntu-gnome",1970,1100));
+  final Click okAgain= new Click("okAgain",on("ubuntu-gnome",1952,1323));
   @Override protected void walk() throws Exception{
     clean();
     var changed= FileTime.from(ZonedDateTime.parse("2026-01-02 03:04:05",when).toInstant());

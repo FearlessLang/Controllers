@@ -38,19 +38,19 @@ final class EditMetadataAddProjectTest extends ManagerTest{
       }
     }
     """.formatted(project,other);
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area buttons= new Area("buttons",linux(2190,1350,170,40));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Area secondTile= new Area("secondTile",linux(202,149,128,88));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Click selectSecond= new Click("selectSecond",linux(265,190));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click check= new Click("check",linux(164,111));
-  final At managerShownAgain= new At("managerShownAgain",linux(3000));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area buttons= new Area("buttons",on("ubuntu-gnome",2190,1350,170,40));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click editMetadata= new Click("editMetadata",on("ubuntu-gnome",128,103));
+  final Click focusText= new Click("focusText",on("ubuntu-gnome",1900,1200));
+  final Area firstTile= new Area("firstTile",on("ubuntu-gnome",74,149,128,88));
+  final Area secondTile= new Area("secondTile",on("ubuntu-gnome",202,149,128,88));
+  final Click commit= new Click("commit",on("ubuntu-gnome",2238,1370));
+  final Click selectSecond= new Click("selectSecond",on("ubuntu-gnome",265,190));
+  final Area tiles= new Area("tiles",on("ubuntu-gnome",68,68,310,180));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click check= new Click("check",on("ubuntu-gnome",164,111));
+  final At managerShownAgain= new At("managerShownAgain",on("ubuntu-gnome",3000));
   @Override protected void walk() throws Exception{
     clean();
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(both),null);

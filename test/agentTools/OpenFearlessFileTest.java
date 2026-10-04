@@ -20,14 +20,14 @@ import tools.Fs;
 /// Action 4: double click hello_world.fearless: the manager window opens with one tile, and the manager remembers helloWorld as an idle project.
 /// Action 5: end the manager and close the file manager window.
 final class OpenFearlessFileTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area menuBar= new Area("menuBar",linux(68,69,190,20));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click quitManager= new Click("quitManager",linux(128,191));
-  final At filesShown= new At("filesShown",linux(3000));
-  final DoubleClick openFile= new DoubleClick("openFile",linux(1872,915));
-  final Click closeFiles= new Click("closeFiles",linux(2374,844));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area menuBar= new Area("menuBar",on("ubuntu-gnome",68,69,190,20));
+  final Area firstTile= new Area("firstTile",on("ubuntu-gnome",74,149,128,88));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click quitManager= new Click("quitManager",on("ubuntu-gnome",128,212));
+  final At filesShown= new At("filesShown",on("ubuntu-gnome",3000));
+  final DoubleClick openFile= new DoubleClick("openFile",on("ubuntu-gnome",1872,915));
+  final Click closeFiles= new Click("closeFiles",on("ubuntu-gnome",2374,844));
   @Override protected void walk() throws Exception{
     clean();
     var run= launch();

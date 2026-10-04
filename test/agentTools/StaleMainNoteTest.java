@@ -40,19 +40,19 @@ final class StaleMainNoteTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Area buttons= new Area("buttons",linux(2190,1350,170,40));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Click runSelected= new Click("runSelected",linux(164,111));
-  final Click runSelectedAgain= new Click("runSelectedAgain",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final At codeShown= new At("codeShown",on("ubuntu-gnome",1000));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainsShown= new At("mainsShown",on("ubuntu-gnome",1000));
+  final Area buttons= new Area("buttons",on("ubuntu-gnome",2190,1350,170,40));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click editMetadata= new Click("editMetadata",on("ubuntu-gnome",128,103));
+  final Click focusText= new Click("focusText",on("ubuntu-gnome",1900,1200));
+  final Click commit= new Click("commit",on("ubuntu-gnome",2238,1370));
+  final Click runSelected= new Click("runSelected",on("ubuntu-gnome",164,111));
+  final Click runSelectedAgain= new Click("runSelectedAgain",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     var both= registry.formatted(project,"\"hello.Hello1\", \"hello.Nope\"");

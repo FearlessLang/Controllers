@@ -23,17 +23,17 @@ import utils.OneOr;
 /// Action 7: choose Forget project in the Project menu: the program ends and its window goes away, the manager still runs and remembers no project, and its window is exactly as before testGui1 was registered.
 /// Action 8: end the manager.
 final class ForgetRunningProjectTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(78,32,3762,2098));
-  final At panelShown= new At("panelShown",linux(300));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click run= new Click("run",linux(164,111));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click forgetProject= new Click("forgetProject",linux(180,237));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Area window= new Area("window",on("ubuntu-gnome",78,32,3762,2098));
+  final At panelShown= new At("panelShown",on("ubuntu-gnome",300));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainShown= new At("mainShown",on("ubuntu-gnome",1000));
+  final Area programWindow= new Area("programWindow",on("ubuntu-gnome",1915,1075,10,10));
+  final Click run= new Click("run",on("ubuntu-gnome",164,111));
+  final Click projectMenu= new Click("projectMenu",on("ubuntu-gnome",158,79));
+  final Click forgetProject= new Click("forgetProject",on("ubuntu-gnome",180,237));
   @Override protected void walk() throws Exception{
     clean();
     var manager= launch();

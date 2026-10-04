@@ -22,14 +22,14 @@ import utils.OneOr;
 /// Action 6: choose Quit manager in its Manager menu: the manager ends, the program ends, and the desk shows its background again.
 final class QuitWhileRunningTest extends ManagerTest{
   static final Path console= data.resolve("eclipse").resolve("start").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final Click run= new Click("run",linux(164,111));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click quitManager= new Click("quitManager",linux(128,191));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final Click run= new Click("run",on("ubuntu-gnome",164,111));
+  final Area programWindow= new Area("programWindow",on("ubuntu-gnome",1915,1075,10,10));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click quitManager= new Click("quitManager",on("ubuntu-gnome",128,212));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();

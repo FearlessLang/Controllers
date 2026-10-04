@@ -33,20 +33,20 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path talk= data.resolveSibling("talk");
   static final Path console= data.resolve("eclipse").resolve("talk").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click run= new Click("run",linux(164,111));
-  final At programShown= new At("programShown",linux(1000));
-  final Click clearOutput= new Click("clearOutput",linux(3784,289));
-  final Area output= new Area("output",linux(91,319,3734,1806));
-  final Area rest= new Area("rest",linux(91,360,3734,1765));
-  final Click bringProgramBack= new Click("bringProgramBack",linux(32,450));
-  final At programBack= new At("programBack",linux(1000));
-  final Click closeProgram= new Click("closeProgram",linux(1997,1074));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainShown= new At("mainShown",on("ubuntu-gnome",1000));
+  final Area programWindow= new Area("programWindow",on("ubuntu-gnome",1915,1075,10,10));
+  final Click run= new Click("run",on("ubuntu-gnome",164,111));
+  final At programShown= new At("programShown",on("ubuntu-gnome",1000));
+  final Click clearOutput= new Click("clearOutput",on("ubuntu-gnome",3784,289));
+  final Area output= new Area("output",on("ubuntu-gnome",91,319,3734,1806));
+  final Area rest= new Area("rest",on("ubuntu-gnome",91,360,3734,1765));
+  final Click bringProgramBack= new Click("bringProgramBack",on("ubuntu-gnome",32,450));
+  final At programBack= new At("programBack",on("ubuntu-gnome",1000));
+  final Click closeProgram= new Click("closeProgram",on("ubuntu-gnome",1997,1074));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(talk.resolve("talk.fearless"),"\n");

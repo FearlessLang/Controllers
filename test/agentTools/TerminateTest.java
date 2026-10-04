@@ -30,15 +30,15 @@ import utils.OneOr;
 final class TerminateTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path console= data.resolve("eclipse").resolve("start").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click run= new Click("run",linux(164,111));
-  final Click terminate= new Click("terminate",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainShown= new At("mainShown",on("ubuntu-gnome",1000));
+  final Area head= new Area("head",on("ubuntu-gnome",80,94,1320,78));
+  final Area programWindow= new Area("programWindow",on("ubuntu-gnome",1915,1075,10,10));
+  final Click run= new Click("run",on("ubuntu-gnome",164,111));
+  final Click terminate= new Click("terminate",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     var manager= launch(gui.toString());

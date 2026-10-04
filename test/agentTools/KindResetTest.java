@@ -29,12 +29,12 @@ final class KindResetTest extends ManagerTest{
       }
     }
     """;
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1132));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click quitManager= new Click("quitManager",linux(128,191));
-  final At managerShown= new At("managerShown",linux(3000));
+  final At noteShown= new At("noteShown",on("ubuntu-gnome",1000));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1952,1132));
+  final Area tiles= new Area("tiles",on("ubuntu-gnome",68,68,310,180));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click quitManager= new Click("quitManager",on("ubuntu-gnome",128,212));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(info,remembered.formatted(project,"cooked"));

@@ -27,12 +27,12 @@ final class AliasClashTest extends ManagerTest{
   static final Path twins= data.resolveSibling("twins");
   static final Path first= twins.resolve("a").resolve("twin");
   static final Path second= twins.resolve("b").resolve("twin");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1213));
-  final Click check= new Click("check",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Area window= new Area("window",on("ubuntu-gnome",68,32,3772,2098));
+  final At noteShown= new At("noteShown",on("ubuntu-gnome",1000));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1952,1213));
+  final Click check= new Click("check",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     for (var f: List.of(first,second)){

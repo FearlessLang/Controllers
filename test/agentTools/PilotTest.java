@@ -7,7 +7,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
@@ -22,17 +22,16 @@ import utils.OneOr;
 
 public abstract class PilotTest{
   public record On(String desk, long... values){}
-  protected static On linux(long... values){ return new On("linux",values); }
-  protected static On windows(long... values){ return new On("windows",values); }
+  protected static On on(String desk, long... values){ return new On(desk,values); }
   private static final Optional<Path> channel= Optional.ofNullable(System.getProperty("pilot")).map(Path::of);
-  private static final String os= System.getProperty("os.name").toLowerCase(Locale.ROOT);
+  private static final String desk= Objects.requireNonNull(System.getProperty("desk"));
   protected final Pilot pilot= new Pilot();
   private final ArrayList<Aim> aims= new ArrayList<>();
   private long last;
   protected abstract void walk() throws Exception;
   @Test void walks() throws Exception{
     var unrecorded= channel.isEmpty() && aims.stream().anyMatch(a->a.recorded().isEmpty());
-    if (unrecorded){ Assumptions.abort("This desk has no recording yet: walk the test here in agent mode and write down where each aim lands."); }
+    if (unrecorded){ Assumptions.abort("The desk \""+desk+"\" has no recording yet: walk the test here in agent mode and write down where each aim lands."); }
     channel.ifPresent(Fs::cleanDir);
     last= System.currentTimeMillis();
     walk();
@@ -53,7 +52,7 @@ public abstract class PilotTest{
       assert this.ons.stream().allMatch(o->o.values().length==arity);
       aims.add(this);
     }
-    private Optional<On> recorded(){ return OneOr.opt(name,ons.stream().filter(o->os.contains(o.desk()))); }
+    private Optional<On> recorded(){ return OneOr.opt(name,ons.stream().filter(o->o.desk().equals(desk))); }
     long[] take(){ return channel.map(this::ask).orElseGet(()->recorded().orElseThrow().values()); }
     int[] aim(){ return Arrays.stream(take()).mapToInt(Math::toIntExact).toArray(); }
     private long[] ask(Path channel){

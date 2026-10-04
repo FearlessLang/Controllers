@@ -43,13 +43,13 @@ final class RecompileAfterEditTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Area rows= new Area("rows",linux(80,128,1320,45));
-  final Click compile= new Click("compile",linux(164,111));
-  final Click compileEdited= new Click("compileEdited",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final At codeShown= new At("codeShown",on("ubuntu-gnome",1000));
+  final Area rows= new Area("rows",on("ubuntu-gnome",80,128,1320,45));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final Click compileEdited= new Click("compileEdited",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(draft.resolve("draft.fearless"),"\n");

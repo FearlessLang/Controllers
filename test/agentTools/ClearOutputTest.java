@@ -24,14 +24,14 @@ import tools.Fs;
 final class ClearOutputTest extends ManagerTest{
   static final Path console= data.resolve("eclipse").resolve("hello_world").resolve("console.txt");
   static final String ok= "--- ok: no problem found ---\n";
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click closeInformation= new Click("closeInformation",linux(150,167));
-  final Area output= new Area("output",linux(91,264,3734,1861));
-  final Click check= new Click("check",linux(164,111));
-  final Click checkAgain= new Click("checkAgain",linux(164,111));
-  final Click clearOutput= new Click("clearOutput",linux(3785,233));
-  final Click checkAfterClear= new Click("checkAfterClear",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click closeInformation= new Click("closeInformation",on("ubuntu-gnome",150,167));
+  final Area output= new Area("output",on("ubuntu-gnome",91,264,3734,1861));
+  final Click check= new Click("check",on("ubuntu-gnome",164,111));
+  final Click checkAgain= new Click("checkAgain",on("ubuntu-gnome",164,111));
+  final Click clearOutput= new Click("clearOutput",on("ubuntu-gnome",3785,233));
+  final Click checkAfterClear= new Click("checkAfterClear",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());

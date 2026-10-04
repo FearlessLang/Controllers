@@ -23,13 +23,13 @@ import tools.Fs;
 /// Action 7: end the manager.
 final class RefusedFolderTest extends ManagerTest{
   static final Path gone= data.resolveSibling("gone");
-  final At noteShown= new At("noteShown",linux(3000));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click ok= new Click("ok",linux(1952,1146));
-  final At noteShownAgain= new At("noteShownAgain",linux(1000));
-  final Click okAgain= new Click("okAgain",linux(1952,1194));
-  final At rootNoteShown= new At("rootNoteShown",linux(1000));
-  final Click rootOk= new Click("rootOk",linux(1952,1184));
+  final At noteShown= new At("noteShown",on("ubuntu-gnome",3000));
+  final Area window= new Area("window",on("ubuntu-gnome",68,32,3772,2098));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1952,1146));
+  final At noteShownAgain= new At("noteShownAgain",on("ubuntu-gnome",1000));
+  final Click okAgain= new Click("okAgain",on("ubuntu-gnome",1952,1194));
+  final At rootNoteShown= new At("rootNoteShown",on("ubuntu-gnome",1000));
+  final Click rootOk= new Click("rootOk",on("ubuntu-gnome",1952,1184));
   int[] at;
   int[] before;
   @Override protected void walk() throws Exception{

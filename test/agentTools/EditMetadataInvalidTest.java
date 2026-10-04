@@ -33,18 +33,18 @@ final class EditMetadataInvalidTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final At editorShown= new At("editorShown",linux(2000));
-  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1183));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final Click close= new Click("close",linux(2317,1370));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Area window= new Area("window",on("ubuntu-gnome",68,32,3772,2098));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click editMetadata= new Click("editMetadata",on("ubuntu-gnome",128,103));
+  final At editorShown= new At("editorShown",on("ubuntu-gnome",2000));
+  final DoubleClick kindIdle= new DoubleClick("kindIdle",on("ubuntu-gnome",1672,898));
+  final Click commit= new Click("commit",on("ubuntu-gnome",2238,1370));
+  final At noteShown= new At("noteShown",on("ubuntu-gnome",1000));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1952,1183));
+  final Click focusText= new Click("focusText",on("ubuntu-gnome",1900,1200));
+  final Click close= new Click("close",on("ubuntu-gnome",2317,1370));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());

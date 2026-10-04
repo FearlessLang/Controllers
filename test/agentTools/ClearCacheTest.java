@@ -25,15 +25,15 @@ import tools.Fs;
 final class ClearCacheTest extends ManagerTest{
   static final Path console= data.resolve("eclipse").resolve("hello_world").resolve("console.txt");
   static final Path cache= project.resolve(".fearless_out");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click clearCache= new Click("clearCache",linux(180,128));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000),on("omarchy-hyprland",2000),on("debian-gnome-x11",2500),on("kubuntu-plasma",2500),on("xubuntu-xfce",2500),on("debian-cinnamon",2500));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500),on("omarchy-hyprland",200,450),on("debian-gnome-x11",200,810),on("kubuntu-plasma",200,769),on("xubuntu-xfce",200,791),on("debian-cinnamon",200,778));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139),on("omarchy-hyprland",338,89),on("debian-gnome-x11",334,140),on("kubuntu-plasma",334,99),on("xubuntu-xfce",381,119),on("debian-cinnamon",334,108));
+  final At codeShown= new At("codeShown",on("ubuntu-gnome",1000),on("omarchy-hyprland",1500),on("debian-gnome-x11",1000),on("kubuntu-plasma",1000),on("xubuntu-xfce",1000),on("debian-cinnamon",1000));
+  final Area head= new Area("head",on("ubuntu-gnome",80,94,1320,78),on("omarchy-hyprland",18,44,900,78),on("debian-gnome-x11",14,95,1320,78),on("kubuntu-plasma",14,54,1320,78),on("xubuntu-xfce",20,75,1320,78),on("debian-cinnamon",14,63,1320,78));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111),on("omarchy-hyprland",102,61),on("debian-gnome-x11",98,112),on("kubuntu-plasma",98,71),on("xubuntu-xfce",105,92),on("debian-cinnamon",98,80));
+  final At mainsShown= new At("mainsShown",on("ubuntu-gnome",1000),on("omarchy-hyprland",2000),on("debian-gnome-x11",1500),on("kubuntu-plasma",1500),on("xubuntu-xfce",1500),on("debian-cinnamon",1500));
+  final Click projectMenu= new Click("projectMenu",on("ubuntu-gnome",158,79),on("omarchy-hyprland",96,30),on("debian-gnome-x11",92,80),on("kubuntu-plasma",92,39),on("xubuntu-xfce",105,60),on("debian-cinnamon",92,47));
+  final Click clearCache= new Click("clearCache",on("ubuntu-gnome",180,128),on("omarchy-hyprland",118,78),on("debian-gnome-x11",114,129),on("kubuntu-plasma",114,88),on("xubuntu-xfce",120,105),on("debian-cinnamon",114,97));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());

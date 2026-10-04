@@ -23,16 +23,16 @@ import tools.Fs;
 /// Action 6: press Back to idle: the manager remembers helloWorld as an idle project exactly as before the commit, and the top of the panel is back exactly as it was then.
 /// Action 7: end the manager.
 final class EditMetadataCommitTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final At editorShown= new At("editorShown",linux(2000));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Click backToIdle= new Click("backToIdle",linux(138,140));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Area head= new Area("head",on("ubuntu-gnome",80,94,1320,78));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click editMetadata= new Click("editMetadata",on("ubuntu-gnome",128,103));
+  final At editorShown= new At("editorShown",on("ubuntu-gnome",2000));
+  final Click focusText= new Click("focusText",on("ubuntu-gnome",1900,1200));
+  final DoubleClick kindIdle= new DoubleClick("kindIdle",on("ubuntu-gnome",1672,898));
+  final Click commit= new Click("commit",on("ubuntu-gnome",2238,1370));
+  final Click backToIdle= new Click("backToIdle",on("ubuntu-gnome",138,140));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());

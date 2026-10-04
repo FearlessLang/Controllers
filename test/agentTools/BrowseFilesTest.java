@@ -28,17 +28,17 @@ import tools.Fs;
 final class BrowseFilesTest extends ManagerTest{
   static final Path browsed= data.resolveSibling("browsed");
   static final Path moved= data.resolveSibling("browsed2");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click browseFiles= new Click("browseFiles",linux(180,149));
-  final At filesShown= new At("filesShown",linux(1000));
-  final Click closeFiles= new Click("closeFiles",linux(2374,843));
-  final Click closeFilesAgain= new Click("closeFilesAgain",linux(2374,843));
-  final Area tile= new Area("tile",linux(74,149,128,88));
-  final Click projectMenuAgain= new Click("projectMenuAgain",linux(158,79));
-  final Click browseFilesAgain= new Click("browseFilesAgain",linux(180,149));
-  final Click ok= new Click("ok",linux(1952,1136));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area window= new Area("window",on("ubuntu-gnome",68,32,3772,2098));
+  final Click projectMenu= new Click("projectMenu",on("ubuntu-gnome",158,79));
+  final Click browseFiles= new Click("browseFiles",on("ubuntu-gnome",180,149));
+  final At filesShown= new At("filesShown",on("ubuntu-gnome",1000));
+  final Click closeFiles= new Click("closeFiles",on("ubuntu-gnome",2374,843));
+  final Click closeFilesAgain= new Click("closeFilesAgain",on("ubuntu-gnome",2374,843));
+  final Area tile= new Area("tile",on("ubuntu-gnome",74,149,128,88));
+  final Click projectMenuAgain= new Click("projectMenuAgain",on("ubuntu-gnome",158,79));
+  final Click browseFilesAgain= new Click("browseFilesAgain",on("ubuntu-gnome",180,149));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1952,1136));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(browsed.resolve("browsed.fearless"),"\n");

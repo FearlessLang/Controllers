@@ -32,17 +32,17 @@ final class SecondMarkerTest extends ManagerTest{
   static final Path twice= data.resolveSibling("twice");
   static final Path second= twice.resolve("other.fearless");
   static final Path console= data.resolve("eclipse").resolve("twice").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area rows= new Area("rows",linux(80,128,1320,212));
-  final Area dialog= new Area("dialog",linux(1600,840,700,30));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click errorReport= new Click("errorReport",linux(180,212));
-  final Click focusReport= new Click("focusReport",linux(1970,1100));
-  final Click ok= new Click("ok",linux(1953,1330));
-  final Click check= new Click("check",linux(164,111));
-  final Click openInformation= new Click("openInformation",linux(150,167));
-  final Click checkAgain= new Click("checkAgain",linux(164,111));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Area rows= new Area("rows",on("ubuntu-gnome",80,128,1320,212));
+  final Area dialog= new Area("dialog",on("ubuntu-gnome",1600,840,700,30));
+  final Click projectMenu= new Click("projectMenu",on("ubuntu-gnome",158,79));
+  final Click errorReport= new Click("errorReport",on("ubuntu-gnome",180,212));
+  final Click focusReport= new Click("focusReport",on("ubuntu-gnome",1970,1100));
+  final Click ok= new Click("ok",on("ubuntu-gnome",1953,1330));
+  final Click check= new Click("check",on("ubuntu-gnome",164,111));
+  final Click openInformation= new Click("openInformation",on("ubuntu-gnome",150,167));
+  final Click checkAgain= new Click("checkAgain",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(twice.resolve("twice.fearless"),"\n");
