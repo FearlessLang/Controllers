@@ -43,13 +43,13 @@ final class RecompileAfterEditTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Area rows= new Area("rows",linux(80,128,1320,45));
-  final Click compile= new Click("compile",linux(164,111));
-  final Click compileEdited= new Click("compileEdited",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final At codeShown= new At("codeShown",linux(1000),windows(1000));
+  final Area rows= new Area("rows",linux(80,128,1320,45),windows(22,82,600,48));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final Click compileEdited= new Click("compileEdited",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(draft.resolve("draft.fearless"),"\n");
@@ -68,7 +68,7 @@ final class RecompileAfterEditTest extends ManagerTest{
     compile.go();
     until(()->Fs.readUtf8(state).contains("draft.First"));
     assertEquals(compiled,Fs.readUtf8(console));
-    assertEquals(states.formatted(draft,"""
+    assertEquals(states.formatted(escaped(draft),"""
       {
             "draft.First": "_draft/_rank_app.fear"
           }"""),Fs.readUtf8(state));
@@ -77,14 +77,14 @@ final class RecompileAfterEditTest extends ManagerTest{
     var one= pixels(at);
     Fs.writeUtf8(source,first+"Second:Main{s->base.Debug#(\"second\")}\n");
     until(()->!Fs.readUtf8(state).contains("draft.First"));
-    assertEquals(states.formatted(draft,"{}"),Fs.readUtf8(state));
+    assertEquals(states.formatted(escaped(draft),"{}"),Fs.readUtf8(state));
     assertEquals(compiled,Fs.readUtf8(console));
     look();
     until(()->Arrays.equals(code,pixels(at)));
     compileEdited.go();
     until(()->Fs.readUtf8(state).contains("draft.Second"));
     assertEquals(compiled+compiled,Fs.readUtf8(console));
-    assertEquals(states.formatted(draft,"""
+    assertEquals(states.formatted(escaped(draft),"""
       {
             "draft.First": "_draft/_rank_app.fear",
             "draft.Second": "_draft/_rank_app.fear"

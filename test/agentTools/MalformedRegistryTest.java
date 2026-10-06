@@ -6,10 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import tools.Fs;
 
@@ -33,10 +31,10 @@ final class MalformedRegistryTest extends ManagerTest{
         "kind": "idle"
       }
     }
-    """.formatted(project);
-  final Area error= new Area("error",linux(1915,1075,10,10));
-  final At errorShown= new At("errorShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1279));
+    """.formatted(slashed(project));
+  final Area error= new Area("error",linux(1915,1075,10,10),windows(635,355,10,10));
+  final At errorShown= new At("errorShown",linux(1000),windows(1000));
+  final Click ok= new Click("ok",linux(1952,1279),windows(639,506));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();
@@ -61,6 +59,5 @@ final class MalformedRegistryTest extends ManagerTest{
     assertEquals("{}\n",Fs.readUtf8(state));
     stopManagers();
   }
-  private static List<Path> registered(){ return Stream.of(share.resolve("applications"),share.resolve("mime").resolve("packages")).flatMap(d->Fs.walk(d,s->s.filter(p->p.getFileName().toString().contains("earless")).toList()).stream()).toList(); }
   private static int[] pixels(BufferedImage img, int[] at){ return img.getRGB(at[0],at[1],at[2],at[3],null,0,at[2]); }
 }

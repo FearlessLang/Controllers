@@ -24,18 +24,18 @@ import tools.Fs;
 /// Action 6: bring the desk back to the Setup state and run the launcher on helloWorld: the manager window opens with exactly the tiles it had before, and the manager remembers exactly what it remembered before.
 /// Action 7: end the manager.
 final class AddFolderTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click addFolder= new Click("addFolder",linux(180,103));
-  final At chooserShown= new At("chooserShown",linux(1500));
-  final Click cancel= new Click("cancel",linux(2155,1252));
-  final Click projectMenuAgain= new Click("projectMenuAgain",linux(158,79));
-  final Click addFolderAgain= new Click("addFolderAgain",linux(180,103));
-  final At chooserShownAgain= new At("chooserShownAgain",linux(1500));
-  final Click fileName= new Click("fileName",linux(2000,1180));
-  final At tileShown= new At("tileShown",linux(1000));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
+  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
+  final Click addFolder= new Click("addFolder",linux(180,103),windows(111,57));
+  final At chooserShown= new At("chooserShown",linux(1500),windows(4000));
+  final Click cancel= new Click("cancel",linux(2155,1252),windows(841,487));
+  final Click projectMenuAgain= new Click("projectMenuAgain",linux(158,79),windows(89,33));
+  final Click addFolderAgain= new Click("addFolderAgain",linux(180,103),windows(111,57));
+  final At chooserShownAgain= new At("chooserShownAgain",linux(1500),windows(4000));
+  final Click fileName= new Click("fileName",linux(2000,1180),windows(685,416));
+  final At tileShown= new At("tileShown",linux(1000),windows(1000));
+  final Area tiles= new Area("tiles",linux(68,68,310,180),windows(0,23,310,180));
   @Override protected void walk() throws Exception{
     clean();
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(project.toString()),null);
@@ -64,7 +64,7 @@ final class AddFolderTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project);
+      """.formatted(slashed(project));
     until(()->Files.exists(info) && Fs.readUtf8(info).equals(remembered));
     tileShown.go();
     look();

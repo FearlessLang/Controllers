@@ -33,22 +33,22 @@ final class ConnectEclipseTest extends ManagerTest{
   static final Path ide= data.resolveSibling("ide");
   static final Path dropins= ide.resolve("dropins");
   static final Path fearless= dropins.resolve("fearless");
-  static final Path lib= app.resolve("lib").resolve("app");
+  static final Path lib= Fs.isWindows() ? app.resolve("app") : app.resolve("lib").resolve("app");
   static final Path shipped= lib.resolve("eclipsePlugin");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click connectEclipse= new Click("connectEclipse",linux(128,145));
-  final At chooserShown= new At("chooserShown",linux(1500));
-  final Click fileName= new Click("fileName",linux(2000,1180));
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1164));
-  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79));
-  final Click connectEclipseAgain= new Click("connectEclipseAgain",linux(128,145));
-  final At chooserShownAgain= new At("chooserShownAgain",linux(1500));
-  final Click fileNameAgain= new Click("fileNameAgain",linux(2000,1180));
-  final At noteShownAgain= new At("noteShownAgain",linux(1000));
-  final Click okAgain= new Click("okAgain",linux(1952,1174));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click connectEclipse= new Click("connectEclipse",linux(128,145),windows(61,121));
+  final At chooserShown= new At("chooserShown",linux(1500),windows(4000));
+  final Click fileName= new Click("fileName",linux(2000,1180),windows(685,416));
+  final At noteShown= new At("noteShown",linux(1000),windows(1000));
+  final Click ok= new Click("ok",linux(1952,1164),windows(639,396));
+  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79),windows(31,33));
+  final Click connectEclipseAgain= new Click("connectEclipseAgain",linux(128,145),windows(61,121));
+  final At chooserShownAgain= new At("chooserShownAgain",linux(1500),windows(4000));
+  final Click fileNameAgain= new Click("fileNameAgain",linux(2000,1180),windows(685,416));
+  final At noteShownAgain= new At("noteShownAgain",linux(1000),windows(1000));
+  final Click okAgain= new Click("okAgain",linux(1952,1174),windows(639,405));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(ide.resolve(".eclipseproduct"),"name=Eclipse Platform\n");
@@ -103,13 +103,13 @@ final class ConnectEclipseTest extends ManagerTest{
         "manager": "Str:%s",
         "baseCache": "Str:%s"
       }
-      """.formatted(data,lib.resolve("stdLib").resolve("baseCache")),Fs.readUtf8(fearless.resolve("manager.info")));
+      """.formatted(escaped(data),escaped(lib.resolve("stdLib").resolve("baseCache"))),Fs.readUtf8(fearless.resolve("manager.info")));
     okAgain.go();
     look();
     until(()->Arrays.equals(before,pixels(at)));
     stopManagers();
   }
-  private static List<String> files(){ return Fs.walk(ide,s->s.filter(Files::isRegularFile).map(p->ide.relativize(p).toString()).sorted().toList()); }
+  private static List<String> files(){ return Fs.walk(ide,s->s.filter(Files::isRegularFile).map(p->slashed(ide.relativize(p))).sorted().toList()); }
   @Override @AfterEach void clean() throws Exception{
     super.clean();
     Fs.rmTree(ide);

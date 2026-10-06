@@ -44,16 +44,16 @@ final class StaleMainTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Click tickSecond= new Click("tickSecond",linux(99,215));
-  final Click tickThird= new Click("tickThird",linux(99,240));
-  final Area rows= new Area("rows",linux(90,180,210,50));
-  final Click compileEdited= new Click("compileEdited",linux(164,111));
-  final Click runSelected= new Click("runSelected",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At mainsShown= new At("mainsShown",linux(1000),windows(1000));
+  final Click tickSecond= new Click("tickSecond",linux(99,215),windows(31,166));
+  final Click tickThird= new Click("tickThird",linux(99,240),windows(31,190));
+  final Area rows= new Area("rows",linux(90,180,210,50),windows(22,132,210,48));
+  final Click compileEdited= new Click("compileEdited",linux(164,111),windows(102,67));
+  final Click runSelected= new Click("runSelected",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(menu.resolve("menu.fearless"),"\n");
@@ -70,10 +70,10 @@ final class StaleMainTest extends ManagerTest{
     mainsShown.go();
     tickSecond.go();
     until(()->Fs.readUtf8(info).contains("menu.Second"));
-    assertEquals(registry.formatted(menu,"\"menu.Second\""),Fs.readUtf8(info));
+    assertEquals(registry.formatted(slashed(menu),"\"menu.Second\""),Fs.readUtf8(info));
     tickThird.go();
     until(()->Fs.readUtf8(info).contains("menu.Third"));
-    var both= registry.formatted(menu,"\"menu.Second\", \"menu.Third\"");
+    var both= registry.formatted(slashed(menu),"\"menu.Second\", \"menu.Third\"");
     assertEquals(both,Fs.readUtf8(info));
     look();
     var at= rows.aim();
@@ -85,7 +85,7 @@ final class StaleMainTest extends ManagerTest{
     compileEdited.go();
     until(()->Fs.readUtf8(state).contains("menu.Second"));
     assertEquals(compiled+compiled,Fs.readUtf8(console));
-    assertEquals(registry.formatted(menu,"\"menu.Second\""),Fs.readUtf8(info));
+    assertEquals(registry.formatted(slashed(menu),"\"menu.Second\""),Fs.readUtf8(info));
     look();
     until(()->Arrays.equals(ticked,pixels(at)));
     runSelected.go();
@@ -106,7 +106,7 @@ final class StaleMainTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(menu),Fs.readUtf8(state));
+      """.formatted(escaped(menu)),Fs.readUtf8(state));
     Err.strCmp(compiled+compiled+"""
       --- running menu.Second ---
       Second

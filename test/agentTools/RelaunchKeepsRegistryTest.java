@@ -22,17 +22,17 @@ import tools.Fs;
 /// Action 7: click the empty space below the tiles, and move the divider as far left as it goes with the keyboard: the panel shows helloWorld exactly as it did before the manager ended.
 /// Action 8: end the manager.
 final class RelaunchKeepsRegistryTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Area panel= new Area("panel",linux(80,94,1320,340));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click quitManager= new Click("quitManager",linux(128,191));
-  final At managerShownAgain= new At("managerShownAgain",linux(3000));
-  final Click selectTile= new Click("selectTile",linux(138,190));
-  final Click focusTilesAgain= new Click("focusTilesAgain",linux(200,1500));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final At codeShown= new At("codeShown",linux(1000),windows(1000));
+  final Area panel= new Area("panel",linux(80,94,1320,340),windows(22,50,600,340));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
+  final At managerShownAgain= new At("managerShownAgain",linux(3000),windows(3000));
+  final Click selectTile= new Click("selectTile",linux(138,190),windows(71,145));
+  final Click focusTilesAgain= new Click("focusTilesAgain",linux(200,1500),windows(200,400));
   @Override protected void walk() throws Exception{
     clean();
     var run= launch(project.toString());
@@ -53,7 +53,7 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
           "kind": "code"
         }
       }
-      """.formatted(project),remembered);
+      """.formatted(slashed(project)),remembered);
     codeShown.go();
     look();
     var at= panel.aim();

@@ -23,16 +23,16 @@ import tools.Fs;
 /// Action 6: press Back to idle: the manager remembers helloWorld as an idle project exactly as before the commit, and the top of the panel is back exactly as it was then.
 /// Action 7: end the manager.
 final class EditMetadataCommitTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final At editorShown= new At("editorShown",linux(2000));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Click backToIdle= new Click("backToIdle",linux(138,140));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click editMetadata= new Click("editMetadata",linux(128,103),windows(61,58));
+  final At editorShown= new At("editorShown",linux(2000),windows(2000));
+  final Click focusText= new Click("focusText",linux(1900,1200),windows(700,400));
+  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898),windows(360,123));
+  final Click commit= new Click("commit",linux(2238,1370),windows(924,619));
+  final Click backToIdle= new Click("backToIdle",linux(138,140),windows(70,94));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());
@@ -51,7 +51,7 @@ final class EditMetadataCommitTest extends ManagerTest{
         }
       }
       """;
-    assertEquals(registry.formatted(project,"idle"),Fs.readUtf8(info));
+    assertEquals(registry.formatted(slashed(project),"idle"),Fs.readUtf8(info));
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
@@ -63,12 +63,12 @@ final class EditMetadataCommitTest extends ManagerTest{
     IntStream.of(KeyEvent.VK_C,KeyEvent.VK_O,KeyEvent.VK_D,KeyEvent.VK_E).forEach(pilot::chord);
     commit.go();
     until(()->Fs.readUtf8(info).contains("\"code\""));
-    assertEquals(registry.formatted(project,"code"),Fs.readUtf8(info));
+    assertEquals(registry.formatted(slashed(project),"code"),Fs.readUtf8(info));
     look();
     until(()->!Arrays.equals(idle,pixels(at)));
     backToIdle.go();
     until(()->Fs.readUtf8(info).contains("\"idle\""));
-    assertEquals(registry.formatted(project,"idle"),Fs.readUtf8(info));
+    assertEquals(registry.formatted(slashed(project),"idle"),Fs.readUtf8(info));
     look();
     until(()->Arrays.equals(idle,pixels(at)));
     stopManagers();

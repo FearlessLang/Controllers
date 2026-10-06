@@ -35,14 +35,14 @@ import tools.Fs;
 final class ProjectIconTest extends ManagerTest{
   static final Path pic= data.resolveSibling("pic");
   static final Path icons= pic.resolve(".config").resolve("icon");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area icon= new Area("icon",linux(114,159,28,28));
-  final Area tile= new Area("tile",linux(74,149,128,88));
-  final Area dialog= new Area("dialog",linux(1600,840,700,30));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click errorReport= new Click("errorReport",linux(180,212));
-  final Click focusReport= new Click("focusReport",linux(1970,1100));
-  final Click ok= new Click("ok",linux(1953,1323));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area icon= new Area("icon",linux(114,159,28,28),windows(47,111,28,28));
+  final Area tile= new Area("tile",linux(74,149,128,88),windows(7,101,127,88));
+  final Area dialog= new Area("dialog",linux(1600,840,700,30),windows(600,76,300,20));
+  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
+  final Click errorReport= new Click("errorReport",linux(180,212),windows(111,166));
+  final Click focusReport= new Click("focusReport",linux(1970,1100),windows(660,300));
+  final Click ok= new Click("ok",linux(1953,1323),windows(639,568));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(pic.resolve("pic.fearless"),"\n");

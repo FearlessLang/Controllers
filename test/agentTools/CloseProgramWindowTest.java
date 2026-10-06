@@ -14,7 +14,6 @@ import org.opentest4j.AssertionFailedError;
 
 import tools.Fs;
 import utils.Err;
-import utils.OneOr;
 
 /// Closing the only window of a program the manager runs ends the program by itself: the manager counts the run as ended with exit 0, the Output says so with no word of terminating, and the top of the panel offers Run again exactly as before the run.
 ///
@@ -32,16 +31,16 @@ final class CloseProgramWindowTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path shut= data.resolveSibling("shut");
   static final Path console= data.resolve("eclipse").resolve("shut").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click run= new Click("run",linux(164,111));
-  final At programShown= new At("programShown",linux(1000));
-  final Click closeProgram= new Click("closeProgram",linux(1996,1075));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At mainShown= new At("mainShown",linux(1000),windows(1000));
+  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
+  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
+  final Click run= new Click("run",linux(164,111),windows(102,67));
+  final At programShown= new At("programShown",linux(1000),windows(1000));
+  final Click closeProgram= new Click("closeProgram",linux(1996,1075),windows(678,312));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(shut.resolve("shut.fearless"),"\n");
@@ -72,7 +71,7 @@ final class CloseProgramWindowTest extends ManagerTest{
     run.go();
     until(()->!Arrays.equals(desk,pixels(window)));
     assertEquals("--- compiling shut ---\n--- compile done ---\n--- running shut.Show ---\n",Fs.readUtf8(console));
-    var program= OneOr.of("program",manager.descendants());
+    var program= program(manager);
     look();
     assertFalse(Arrays.equals(ready,pixels(at)));
     programShown.go();
@@ -94,7 +93,7 @@ final class CloseProgramWindowTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(shut),Fs.readUtf8(state));
+      """.formatted(escaped(shut)),Fs.readUtf8(state));
     Err.strCmp("""
       --- compiling shut ---
       --- compile done ---

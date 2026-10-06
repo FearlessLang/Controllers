@@ -13,7 +13,6 @@ import org.opentest4j.AssertionFailedError;
 
 import tools.Fs;
 import utils.Err;
-import utils.OneOr;
 
 /// Clear output while a program runs empties the Output and the console file of its project at once, and what the program and the manager print afterwards lands in the emptied Output and console file, from the top.
 ///
@@ -33,20 +32,20 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path talk= data.resolveSibling("talk");
   static final Path console= data.resolve("eclipse").resolve("talk").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10));
-  final Click run= new Click("run",linux(164,111));
-  final At programShown= new At("programShown",linux(1000));
-  final Click clearOutput= new Click("clearOutput",linux(3784,289));
-  final Area output= new Area("output",linux(91,319,3734,1806));
-  final Area rest= new Area("rest",linux(91,360,3734,1765));
-  final Click bringProgramBack= new Click("bringProgramBack",linux(32,450));
-  final At programBack= new At("programBack",linux(1000));
-  final Click closeProgram= new Click("closeProgram",linux(1997,1074));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At mainShown= new At("mainShown",linux(1000),windows(1000));
+  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
+  final Click run= new Click("run",linux(164,111),windows(102,67));
+  final At programShown= new At("programShown",linux(1000),windows(1000));
+  final Click clearOutput= new Click("clearOutput",linux(3784,289),windows(1227,237));
+  final Area output= new Area("output",linux(91,319,3734,1806),windows(26,268,1238,366));
+  final Area rest= new Area("rest",linux(91,360,3734,1765),windows(26,305,1238,332));
+  final Click bringProgramBack= new Click("bringProgramBack",linux(32,450),windows(880,696));
+  final At programBack= new At("programBack",linux(1000),windows(1000));
+  final Click closeProgram= new Click("closeProgram",linux(1997,1074),windows(678,312));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(talk.resolve("talk.fearless"),"\n");
@@ -75,7 +74,7 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
     until(()->!Arrays.equals(desk,pixels(window)));
     until(()->Fs.readUtf8(console).endsWith("before\n"));
     assertEquals("--- compiling talk ---\n--- compile done ---\n--- running talk.Show ---\nbefore\n",Fs.readUtf8(console));
-    var program= OneOr.of("program",manager.descendants());
+    var program= program(manager);
     programShown.go();
     clearOutput.go();
     until(()->Fs.readUtf8(console).isEmpty());

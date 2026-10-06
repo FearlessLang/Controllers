@@ -13,11 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Action 3: run the launcher again: it ends at once, and the manager window comes back showing what it showed before.
 /// Action 4: choose Quit manager in its Manager menu: the manager ends.
 final class WindowCloseTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(2000));
-  final Click closeManager= new Click("closeManager",linux(3822,50));
-  final At managerBack= new At("managerBack",linux(1000));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click quitManager= new Click("quitManager",linux(128,191));
+  final At managerShown= new At("managerShown",linux(2000),windows(2000));
+  final Click closeManager= new Click("closeManager",linux(3822,50),windows(1255,11));
+  final At managerBack= new At("managerBack",linux(1000),windows(1000));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();

@@ -26,13 +26,13 @@ final class NestedFolderTest extends ManagerTest{
   static final Path nest= data.resolveSibling("nest");
   static final Path inner= nest.resolve("inner");
   static final Path source= inner.resolve("_inner");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1223));
-  final At noteShownAgain= new At("noteShownAgain",linux(1000));
-  final Click okAgain= new Click("okAgain",linux(1952,1223));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
+  final At noteShown= new At("noteShown",linux(1000),windows(1000));
+  final Click ok= new Click("ok",linux(1952,1223),windows(639,453));
+  final At noteShownAgain= new At("noteShownAgain",linux(1000),windows(1000));
+  final Click okAgain= new Click("okAgain",linux(1952,1223),windows(639,453));
   static final String remembered= """
     {
       "inner": {
@@ -40,7 +40,7 @@ final class NestedFolderTest extends ManagerTest{
         "kind": "idle"
       }
     }
-    """.formatted(inner);
+    """.formatted(slashed(inner));
   List<Path> files;
   int[] at;
   int[] before;

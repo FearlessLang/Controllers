@@ -32,17 +32,17 @@ final class SecondMarkerTest extends ManagerTest{
   static final Path twice= data.resolveSibling("twice");
   static final Path second= twice.resolve("other.fearless");
   static final Path console= data.resolve("eclipse").resolve("twice").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area rows= new Area("rows",linux(80,128,1320,212));
-  final Area dialog= new Area("dialog",linux(1600,840,700,30));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click errorReport= new Click("errorReport",linux(180,212));
-  final Click focusReport= new Click("focusReport",linux(1970,1100));
-  final Click ok= new Click("ok",linux(1953,1330));
-  final Click check= new Click("check",linux(164,111));
-  final Click openInformation= new Click("openInformation",linux(150,167));
-  final Click checkAgain= new Click("checkAgain",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Area rows= new Area("rows",linux(80,128,1320,212),windows(22,82,600,212));
+  final Area dialog= new Area("dialog",linux(1600,840,700,30),windows(600,76,300,20));
+  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
+  final Click errorReport= new Click("errorReport",linux(180,212),windows(111,166));
+  final Click focusReport= new Click("focusReport",linux(1970,1100),windows(660,300));
+  final Click ok= new Click("ok",linux(1953,1330),windows(639,568));
+  final Click check= new Click("check",linux(164,111),windows(102,67));
+  final Click openInformation= new Click("openInformation",linux(150,167),windows(79,120));
+  final Click checkAgain= new Click("checkAgain",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(twice.resolve("twice.fearless"),"\n");

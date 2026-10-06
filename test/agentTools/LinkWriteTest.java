@@ -33,20 +33,20 @@ final class LinkWriteTest extends ManagerTest{
   static final Path ledger= data.resolveSibling("ledger");
   static final Path vault= ledger.resolve("vault");
   static final Path teller= ledger.resolve("teller");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeEditableData= new Click("becomeEditableData",linux(272,140));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final At tellerShown= new At("tellerShown",linux(500));
-  final Click becomeCode= new Click("becomeCode",linux(400,140));
-  final Area below= new Area("below",linux(80,180,1320,100));
-  final Click openLinks= new Click("openLinks",linux(130,191));
-  final Click writeField= new Click("writeField",linux(442,233));
-  final Click readField= new Click("readField",linux(240,233));
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1183));
-  final Click readFieldAgain= new Click("readFieldAgain",linux(240,233));
-  final Click writeFieldAgain= new Click("writeFieldAgain",linux(442,233));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeEditableData= new Click("becomeEditableData",linux(272,140),windows(202,94));
+  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
+  final At tellerShown= new At("tellerShown",linux(500),windows(500));
+  final Click becomeCode= new Click("becomeCode",linux(400,140),windows(332,94));
+  final Area below= new Area("below",linux(80,180,1320,100),windows(22,128,600,100));
+  final Click openLinks= new Click("openLinks",linux(130,191),windows(62,144));
+  final Click writeField= new Click("writeField",linux(442,233),windows(327,183));
+  final Click readField= new Click("readField",linux(240,233),windows(158,183));
+  final At noteShown= new At("noteShown",linux(1000),windows(1000));
+  final Click ok= new Click("ok",linux(1952,1183),windows(639,414));
+  final Click readFieldAgain= new Click("readFieldAgain",linux(240,233),windows(158,183));
+  final Click writeFieldAgain= new Click("writeFieldAgain",linux(442,233),windows(327,183));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(vault.resolve("vault.fearless"),"\n");
@@ -135,7 +135,7 @@ final class LinkWriteTest extends ManagerTest{
           "kind": "code"%s
         }
       }
-      """.formatted(vault,teller,links);
+      """.formatted(slashed(vault),slashed(teller),links);
   }
   @Override @AfterEach void clean() throws Exception{
     super.clean();

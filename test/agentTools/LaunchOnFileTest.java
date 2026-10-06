@@ -16,8 +16,8 @@ import tools.Fs;
 /// Action 3: run the launcher on hello_world.fearless in helloWorld: the manager window opens with exactly the tiles it had before, and the manager remembers exactly what it remembered before.
 /// Action 4: end the manager.
 final class LaunchOnFileTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area tiles= new Area("tiles",linux(68,68,310,180),windows(0,23,310,180));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());
@@ -33,7 +33,7 @@ final class LaunchOnFileTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project),remembered);
+      """.formatted(slashed(project)),remembered);
     clean();
     launch(project.resolve("hello_world.fearless").toString());
     until(()->Arrays.equals(shown,pixels(at)));

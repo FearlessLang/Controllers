@@ -19,11 +19,11 @@ import tools.Fs;
 /// Action 3: choose Forget project in its Project menu: the second tile goes away, the helloWorld tile stays as it was, not selected, the manager keeps running and remembers only helloWorld, and every file and folder of helloStackTraces is still there, unchanged.
 /// Action 4: end the manager.
 final class ForgetProjectTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Area secondTile= new Area("secondTile",linux(202,149,128,88));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click forgetProject= new Click("forgetProject",linux(180,237));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
+  final Area secondTile= new Area("secondTile",linux(202,149,128,88),windows(135,101,127,88));
+  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
+  final Click forgetProject= new Click("forgetProject",linux(180,237),windows(111,191));
   @Override protected void walk() throws Exception{
     clean();
     var run= launch(project.toString());
@@ -50,7 +50,7 @@ final class ForgetProjectTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(project),Fs.readUtf8(info));
+      """.formatted(slashed(project)),Fs.readUtf8(info));
     assertEquals(files,files());
     stopManagers();
   }

@@ -26,17 +26,17 @@ import utils.Err;
 /// Action 8: end the manager.
 final class AllMainsRunTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Click compile= new Click("compile",linux(164,111));
-  final At mainsShown= new At("mainsShown",linux(1000));
-  final Area ticks= new Area("ticks",linux(90,180,210,70));
-  final Area runButton= new Area("runButton",linux(134,98,114,30));
-  final Click all= new Click("all",linux(112,165));
-  final Click runSelected= new Click("runSelected",linux(164,111));
-  final Click none= new Click("none",linux(162,165));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final At codeShown= new At("codeShown",linux(1000),windows(1000));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final At mainsShown= new At("mainsShown",linux(1000),windows(1000));
+  final Area ticks= new Area("ticks",linux(90,180,210,70),windows(22,132,210,72));
+  final Area runButton= new Area("runButton",linux(134,98,114,30),windows(66,53,112,28));
+  final Click all= new Click("all",linux(112,165),windows(45,118));
+  final Click runSelected= new Click("runSelected",linux(164,111),windows(102,67));
+  final Click none= new Click("none",linux(162,165),windows(93,118));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());
@@ -67,7 +67,7 @@ final class AllMainsRunTest extends ManagerTest{
           "mains": ["hello.Hello1", "hello.Hello3", "hello.Hello4", "hello.Hello5", "hello.Hello6"]
         }
       }
-      """.formatted(project),Fs.readUtf8(info));
+      """.formatted(slashed(project)),Fs.readUtf8(info));
     look();
     until(()->!Arrays.equals(unticked,pixels(boxes)));
     runSelected.go();
@@ -91,7 +91,7 @@ final class AllMainsRunTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(project),Fs.readUtf8(state));
+      """.formatted(escaped(project)),Fs.readUtf8(state));
     Err.strCmp("""
       --- compiling helloWorld ---
       --- compile done ---

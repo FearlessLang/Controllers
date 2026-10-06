@@ -35,24 +35,24 @@ final class EditMetadataRenameTest extends ManagerTest{
   static final Path old= data.resolveSibling("old");
   static final Path console= data.resolve("eclipse").resolve("fresh").resolve("console.txt");
   static final String fine= "--- ok: no problem found ---\n";
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final Area output= new Area("output",linux(91,264,3734,1861));
-  final Area dialog= new Area("dialog",linux(1600,840,700,30));
-  final Click check= new Click("check",linux(164,111));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final At editorShown= new At("editorShown",linux(2000));
-  final DoubleClick nameOld= new DoubleClick("nameOld",linux(1589,864));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Click projectMenu= new Click("projectMenu",linux(158,79));
-  final Click errorReport= new Click("errorReport",linux(180,212));
-  final Click focusReport= new Click("focusReport",linux(1970,1100));
-  final Click ok= new Click("ok",linux(1953,1323));
-  final Click openInformation= new Click("openInformation",linux(150,167));
-  final Area information= new Area("information",linux(80,160,1320,180));
-  final Click checkAgain= new Click("checkAgain",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
+  final Area output= new Area("output",linux(91,264,3734,1861),windows(26,214,1238,422));
+  final Area dialog= new Area("dialog",linux(1600,840,700,30),windows(600,76,300,20));
+  final Click check= new Click("check",linux(164,111),windows(102,67));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click editMetadata= new Click("editMetadata",linux(128,103),windows(61,58));
+  final At editorShown= new At("editorShown",linux(2000),windows(2000));
+  final DoubleClick nameOld= new DoubleClick("nameOld",linux(1589,864),windows(274,87));
+  final Click commit= new Click("commit",linux(2238,1370),windows(924,619));
+  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
+  final Click errorReport= new Click("errorReport",linux(180,212),windows(111,166));
+  final Click focusReport= new Click("focusReport",linux(1970,1100),windows(660,300));
+  final Click ok= new Click("ok",linux(1953,1323),windows(639,568));
+  final Click openInformation= new Click("openInformation",linux(150,167),windows(79,120));
+  final Area information= new Area("information",linux(80,160,1320,180),windows(22,134,600,180));
+  final Click checkAgain= new Click("checkAgain",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(old.resolve("old.fearless"),"\n");
@@ -83,7 +83,7 @@ final class EditMetadataRenameTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(old),Fs.readUtf8(info));
+      """.formatted(slashed(old)),Fs.readUtf8(info));
     until(()->Files.exists(console) && Fs.readUtf8(console).equals(fine));
     look();
     until(()->!Arrays.equals(named,pixels(top)));

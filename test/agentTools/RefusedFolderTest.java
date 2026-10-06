@@ -23,13 +23,13 @@ import tools.Fs;
 /// Action 7: end the manager.
 final class RefusedFolderTest extends ManagerTest{
   static final Path gone= data.resolveSibling("gone");
-  final At noteShown= new At("noteShown",linux(3000));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click ok= new Click("ok",linux(1952,1146));
-  final At noteShownAgain= new At("noteShownAgain",linux(1000));
-  final Click okAgain= new Click("okAgain",linux(1952,1194));
-  final At rootNoteShown= new At("rootNoteShown",linux(1000));
-  final Click rootOk= new Click("rootOk",linux(1952,1184));
+  final At noteShown= new At("noteShown",linux(3000),windows(3000));
+  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
+  final Click ok= new Click("ok",linux(1952,1146),windows(639,378));
+  final At noteShownAgain= new At("noteShownAgain",linux(1000),windows(1000));
+  final Click okAgain= new Click("okAgain",linux(1952,1194),windows(639,425));
+  final At rootNoteShown= new At("rootNoteShown",linux(1000),windows(1000));
+  final Click rootOk= new Click("rootOk",linux(1952,1184),windows(639,414));
   int[] at;
   int[] before;
   @Override protected void walk() throws Exception{
@@ -60,15 +60,16 @@ final class RefusedFolderTest extends ManagerTest{
       """.formatted(data,data);
     refused(data,noteShownAgain,manager);
     dismissed(okAgain);
-    refused(Path.of("/"),rootNoteShown,manager+"""
+    var root= Path.of("/").toAbsolutePath();
+    refused(root,rootNoteShown,manager+"""
       Fearless cannot keep track of the root of a drive or of the file system as a
       project.
 
       The folder is:
-        /
+        %s
       Put the project in a folder inside it, and make that folder the project
       folder.
-      """);
+      """.formatted(root));
     dismissed(rootOk);
     stopManagers();
   }

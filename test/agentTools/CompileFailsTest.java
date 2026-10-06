@@ -27,14 +27,14 @@ final class CompileFailsTest extends ManagerTest{
   static final Path broken= data.resolveSibling("broken");
   static final Path source= broken.resolve("_broken").resolve("_rank_app.fear");
   static final Path console= data.resolve("eclipse").resolve("broken").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeCode= new Click("becomeCode",linux(400,139));
-  final At codeShown= new At("codeShown",linux(1000));
-  final Area rows= new Area("rows",linux(80,128,1320,45));
-  final Click compile= new Click("compile",linux(164,111));
-  final Click compileFixed= new Click("compileFixed",linux(164,111));
-  final At mainShown= new At("mainShown",linux(1000));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
+  final At codeShown= new At("codeShown",linux(1000),windows(1000));
+  final Area rows= new Area("rows",linux(80,128,1320,45),windows(22,82,600,48));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
+  final Click compileFixed= new Click("compileFixed",linux(164,111),windows(102,67));
+  final At mainShown= new At("mainShown",linux(1000),windows(1000));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(broken.resolve("broken.fearless"),"\n");
@@ -83,7 +83,7 @@ final class CompileFailsTest extends ManagerTest{
           }
         }
       }
-      """.formatted(broken),Fs.readUtf8(state));
+      """.formatted(escaped(broken)),Fs.readUtf8(state));
     look();
     until(()->!Arrays.equals(code,pixels(at)));
     var invalid= pixels(at);
@@ -106,7 +106,7 @@ final class CompileFailsTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(broken),Fs.readUtf8(state));
+      """.formatted(escaped(broken)),Fs.readUtf8(state));
     mainShown.go();
     look();
     assertFalse(Arrays.equals(code,pixels(at)));

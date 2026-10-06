@@ -37,20 +37,20 @@ final class EditMetadataAddProjectTest extends ManagerTest{
         "kind": "idle"
       }
     }
-    """.formatted(project,other);
-  final At managerShown= new At("managerShown",linux(3000));
-  final Area buttons= new Area("buttons",linux(2190,1350,170,40));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88));
-  final Area secondTile= new Area("secondTile",linux(202,149,128,88));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final Click selectSecond= new Click("selectSecond",linux(265,190));
-  final Area tiles= new Area("tiles",linux(68,68,310,180));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click check= new Click("check",linux(164,111));
-  final At managerShownAgain= new At("managerShownAgain",linux(3000));
+    """.formatted(slashed(project),slashed(other));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Area buttons= new Area("buttons",linux(2190,1350,170,40),windows(884,606,152,26));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click editMetadata= new Click("editMetadata",linux(128,103),windows(61,58));
+  final Click focusText= new Click("focusText",linux(1900,1200),windows(700,400));
+  final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
+  final Area secondTile= new Area("secondTile",linux(202,149,128,88),windows(135,101,127,88));
+  final Click commit= new Click("commit",linux(2238,1370),windows(924,619));
+  final Click selectSecond= new Click("selectSecond",linux(265,190),windows(199,145));
+  final Area tiles= new Area("tiles",linux(68,68,310,180),windows(0,23,310,180));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click check= new Click("check",linux(164,111),windows(102,67));
+  final At managerShownAgain= new At("managerShownAgain",linux(3000),windows(3000));
   @Override protected void walk() throws Exception{
     clean();
     Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(both),null);

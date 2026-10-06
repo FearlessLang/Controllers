@@ -33,23 +33,23 @@ final class EditMetadataInvalidTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Area window= new Area("window",linux(68,32,3772,2098));
-  final Click managerMenu= new Click("managerMenu",linux(98,79));
-  final Click editMetadata= new Click("editMetadata",linux(128,103));
-  final At editorShown= new At("editorShown",linux(2000));
-  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898));
-  final Click commit= new Click("commit",linux(2238,1370));
-  final At noteShown= new At("noteShown",linux(1000));
-  final Click ok= new Click("ok",linux(1952,1183));
-  final Click focusText= new Click("focusText",linux(1900,1200));
-  final Click close= new Click("close",linux(2317,1370));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
+  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
+  final Click editMetadata= new Click("editMetadata",linux(128,103),windows(61,58));
+  final At editorShown= new At("editorShown",linux(2000),windows(2000));
+  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898),windows(360,123));
+  final Click commit= new Click("commit",linux(2238,1370),windows(924,619));
+  final At noteShown= new At("noteShown",linux(1000),windows(1000));
+  final Click ok= new Click("ok",linux(1952,1183),windows(639,414));
+  final Click focusText= new Click("focusText",linux(1900,1200),windows(700,400));
+  final Click close= new Click("close",linux(2317,1370),windows(1003,619));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());
     managerShown.go();
-    var idle= registry.formatted(project,"idle");
+    var idle= registry.formatted(slashed(project),"idle");
     assertEquals(idle,Fs.readUtf8(info));
     focusTiles.go();
     look();
@@ -78,7 +78,7 @@ final class EditMetadataInvalidTest extends ManagerTest{
     focusText.go();
     pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
     pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
-    assertEquals(registry.formatted(project,"lazy"),Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor));
+    assertEquals(registry.formatted(slashed(project),"lazy"),Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor));
     close.go();
     look();
     until(()->Arrays.equals(before,pixels(at)));

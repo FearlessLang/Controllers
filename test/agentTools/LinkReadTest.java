@@ -35,19 +35,19 @@ final class LinkReadTest extends ManagerTest{
   static final Path store= links.resolve("store");
   static final Path reader= links.resolve("reader");
   static final Path console= data.resolve("eclipse").resolve("reader").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500));
-  final Click becomeData= new Click("becomeData",linux(141,140));
-  final Area head= new Area("head",linux(80,94,1320,78));
-  final At readerShown= new At("readerShown",linux(500));
-  final Click becomeCode= new Click("becomeCode",linux(400,140));
-  final Area below= new Area("below",linux(80,180,1320,100));
-  final Click openLinks= new Click("openLinks",linux(130,191));
-  final Click readField= new Click("readField",linux(240,233));
-  final At storeShown= new At("storeShown",linux(500));
-  final Click backToIdle= new Click("backToIdle",linux(138,140));
-  final At readerShownAgain= new At("readerShownAgain",linux(500));
-  final Click compile= new Click("compile",linux(164,111));
+  final At managerShown= new At("managerShown",linux(3000),windows(3000));
+  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
+  final Click becomeData= new Click("becomeData",linux(141,140),windows(74,94));
+  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
+  final At readerShown= new At("readerShown",linux(500),windows(500));
+  final Click becomeCode= new Click("becomeCode",linux(400,140),windows(332,94));
+  final Area below= new Area("below",linux(80,180,1320,100),windows(22,128,600,100));
+  final Click openLinks= new Click("openLinks",linux(130,191),windows(62,144));
+  final Click readField= new Click("readField",linux(240,233),windows(158,183));
+  final At storeShown= new At("storeShown",linux(500),windows(500));
+  final Click backToIdle= new Click("backToIdle",linux(138,140),windows(70,94));
+  final At readerShownAgain= new At("readerShownAgain",linux(500),windows(500));
+  final Click compile= new Click("compile",linux(164,111),windows(102,67));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(store.resolve("store.fearless"),"\n");
@@ -113,7 +113,7 @@ final class LinkReadTest extends ManagerTest{
           }
         }
       }
-      """.formatted(store,storeKind,reader);
+      """.formatted(slashed(store),storeKind,slashed(reader));
   }
   @Override @AfterEach void clean() throws Exception{
     super.clean();
