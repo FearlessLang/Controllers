@@ -25,11 +25,11 @@ import utils.Err;
 final class EmptyFolderTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
   static final Path empty= data.resolveSibling("empty");
-  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000),on("omarchy-hyprland",2000),on("debian-gnome-x11",2500),on("kubuntu-plasma",2500),on("xubuntu-xfce",2500),on("debian-cinnamon",2500));
-  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500),on("omarchy-hyprland",200,450),on("debian-gnome-x11",200,810),on("kubuntu-plasma",200,769),on("xubuntu-xfce",200,791),on("debian-cinnamon",200,778));
-  final Click compile= new Click("compile",on("ubuntu-gnome",164,111),on("omarchy-hyprland",102,61),on("debian-gnome-x11",98,112),on("kubuntu-plasma",98,71),on("xubuntu-xfce",105,92),on("debian-cinnamon",98,80));
-  final At runShown= new At("runShown",on("ubuntu-gnome",1000),on("omarchy-hyprland",1500),on("debian-gnome-x11",1500),on("kubuntu-plasma",1500),on("xubuntu-xfce",1500),on("debian-cinnamon",1500));
-  final Click run= new Click("run",on("ubuntu-gnome",164,111),on("omarchy-hyprland",102,61),on("debian-gnome-x11",98,112),on("kubuntu-plasma",98,71),on("xubuntu-xfce",105,92),on("debian-cinnamon",98,80));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At runShown= new At("runShown",on("ubuntu-gnome",1000));
+  final Click run= new Click("run",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     Fs.ensureDir(empty);

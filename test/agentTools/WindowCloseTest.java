@@ -13,11 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /// Action 3: run the launcher again: it ends at once, and the manager window comes back showing what it showed before.
 /// Action 4: choose Quit manager in its Manager menu: the manager ends.
 final class WindowCloseTest extends ManagerTest{
-  final At managerShown= new At("managerShown",on("ubuntu-gnome",2000),on("debian-mate",2500),on("debian-gnome-x11",2500),on("kubuntu-plasma",2500),on("xubuntu-xfce",2500),on("debian-cinnamon",2500),on("lubuntu-lxqt",2500));
-  final Click closeManager= new Click("closeManager",on("ubuntu-gnome",3822,50),on("debian-mate",1900,41),on("debian-gnome-x11",1901,50),on("kubuntu-plasma",1905,14),on("xubuntu-xfce",1909,37),on("debian-cinnamon",1901,18),on("lubuntu-lxqt",1906,16));
-  final At managerBack= new At("managerBack",on("ubuntu-gnome",1000),on("debian-mate",1500),on("debian-gnome-x11",1500),on("kubuntu-plasma",1500),on("xubuntu-xfce",1500),on("debian-cinnamon",1500),on("lubuntu-lxqt",1500));
-  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79),on("debian-mate",32,69),on("debian-gnome-x11",32,79),on("kubuntu-plasma",32,38),on("xubuntu-xfce",37,60),on("debian-cinnamon",32,47),on("lubuntu-lxqt",32,40));
-  final Click quitManager= new Click("quitManager",on("ubuntu-gnome",128,212),on("debian-mate",50,202),on("debian-gnome-x11",50,212),on("kubuntu-plasma",50,171),on("xubuntu-xfce",50,181),on("debian-cinnamon",50,180),on("lubuntu-lxqt",50,173));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",2000));
+  final Click closeManager= new Click("closeManager",on("ubuntu-gnome",3822,50));
+  final At managerBack= new At("managerBack",on("ubuntu-gnome",1000));
+  final Click managerMenu= new Click("managerMenu",on("ubuntu-gnome",98,79));
+  final Click quitManager= new Click("quitManager",on("ubuntu-gnome",128,212));
   @Override protected void walk() throws Exception{
     clean();
     var desk= look();

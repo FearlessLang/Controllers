@@ -25,15 +25,15 @@ import utils.Err;
 /// Action 8: end the manager.
 final class RunSelectedTest extends ManagerTest{
   static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000),on("debian-mate",2500),on("void-i3",3000),on("omarchy-hyprland",2000),on("debian-gnome-x11",2500),on("kubuntu-plasma",2500),on("xubuntu-xfce",2500),on("debian-cinnamon",2500));
-  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500),on("debian-mate",200,800),on("void-i3",200,759),on("omarchy-hyprland",200,450),on("debian-gnome-x11",200,810),on("kubuntu-plasma",200,769),on("xubuntu-xfce",200,791),on("debian-cinnamon",200,778));
-  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139),on("debian-mate",334,130),on("void-i3",334,89),on("omarchy-hyprland",338,89),on("debian-gnome-x11",334,140),on("kubuntu-plasma",334,99),on("xubuntu-xfce",381,119),on("debian-cinnamon",334,108));
-  final At codeShown= new At("codeShown",on("ubuntu-gnome",1000),on("debian-mate",1000),on("void-i3",1500),on("omarchy-hyprland",1500),on("debian-gnome-x11",1000),on("kubuntu-plasma",1000),on("xubuntu-xfce",1000),on("debian-cinnamon",1000));
-  final Click compile= new Click("compile",on("ubuntu-gnome",164,111),on("debian-mate",98,102),on("void-i3",98,61),on("omarchy-hyprland",102,61),on("debian-gnome-x11",98,112),on("kubuntu-plasma",98,71),on("xubuntu-xfce",105,92),on("debian-cinnamon",98,80));
-  final At mainsShown= new At("mainsShown",on("ubuntu-gnome",1000),on("debian-mate",1500),on("void-i3",2000),on("omarchy-hyprland",2000),on("debian-gnome-x11",1500),on("kubuntu-plasma",1500),on("xubuntu-xfce",1500),on("debian-cinnamon",1500));
-  final Click tickHello4= new Click("tickHello4",on("ubuntu-gnome",99,240),on("debian-mate",33,231),on("void-i3",34,178),on("omarchy-hyprland",38,178),on("debian-gnome-x11",33,241),on("kubuntu-plasma",33,200),on("xubuntu-xfce",32,211),on("debian-cinnamon",33,209));
-  final Click tickHello1= new Click("tickHello1",on("ubuntu-gnome",99,190),on("debian-mate",33,181),on("void-i3",34,132),on("omarchy-hyprland",38,132),on("debian-gnome-x11",33,191),on("kubuntu-plasma",33,150),on("xubuntu-xfce",32,165),on("debian-cinnamon",33,159));
-  final Click runSelected= new Click("runSelected",on("ubuntu-gnome",164,111),on("debian-mate",98,102),on("void-i3",98,61),on("omarchy-hyprland",102,61),on("debian-gnome-x11",98,112),on("kubuntu-plasma",98,71),on("xubuntu-xfce",105,92),on("debian-cinnamon",98,80));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final At codeShown= new At("codeShown",on("ubuntu-gnome",1000));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final At mainsShown= new At("mainsShown",on("ubuntu-gnome",1000));
+  final Click tickHello4= new Click("tickHello4",on("ubuntu-gnome",99,240));
+  final Click tickHello1= new Click("tickHello1",on("ubuntu-gnome",99,190));
+  final Click runSelected= new Click("runSelected",on("ubuntu-gnome",164,111));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());

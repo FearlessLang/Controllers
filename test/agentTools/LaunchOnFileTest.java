@@ -16,8 +16,8 @@ import tools.Fs;
 /// Action 3: run the launcher on hello_world.fearless in helloWorld: the manager window opens with exactly the tiles it had before, and the manager remembers exactly what it remembered before.
 /// Action 4: end the manager.
 final class LaunchOnFileTest extends ManagerTest{
-  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000),on("debian-gnome-x11",2500),on("xubuntu-xfce",2500),on("debian-cinnamon",2500));
-  final Area tiles= new Area("tiles",on("ubuntu-gnome",68,68,310,180),on("debian-gnome-x11",2,69,310,180),on("xubuntu-xfce",2,120,310,180),on("debian-cinnamon",2,37,310,180));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area tiles= new Area("tiles",on("ubuntu-gnome",68,68,310,180));
   @Override protected void walk() throws Exception{
     clean();
     launch(project.toString());

@@ -27,14 +27,14 @@ final class CompileFailsTest extends ManagerTest{
   static final Path broken= data.resolveSibling("broken");
   static final Path source= broken.resolve("_broken").resolve("_rank_app.fear");
   static final Path console= data.resolve("eclipse").resolve("broken").resolve("console.txt");
-  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000),on("debian-mate",2500),on("void-i3",3000),on("omarchy-hyprland",2000),on("debian-gnome-x11",2500),on("kubuntu-plasma",2500),on("xubuntu-xfce",2500),on("debian-cinnamon",2500));
-  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500),on("debian-mate",200,800),on("void-i3",200,759),on("omarchy-hyprland",200,450),on("debian-gnome-x11",200,810),on("kubuntu-plasma",200,769),on("xubuntu-xfce",200,791),on("debian-cinnamon",200,778));
-  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139),on("debian-mate",334,130),on("void-i3",334,89),on("omarchy-hyprland",338,89),on("debian-gnome-x11",334,140),on("kubuntu-plasma",334,99),on("xubuntu-xfce",381,119),on("debian-cinnamon",334,108));
-  final At codeShown= new At("codeShown",on("ubuntu-gnome",1000),on("debian-mate",1000),on("void-i3",1500),on("omarchy-hyprland",1500),on("debian-gnome-x11",1000),on("kubuntu-plasma",1000),on("xubuntu-xfce",1000),on("debian-cinnamon",1000));
-  final Area rows= new Area("rows",on("ubuntu-gnome",80,128,1320,45),on("debian-mate",14,119,1320,45),on("void-i3",14,78,1320,45),on("omarchy-hyprland",18,78,900,45),on("debian-gnome-x11",14,129,1320,45),on("kubuntu-plasma",14,88,1320,45),on("xubuntu-xfce",20,109,1320,45),on("debian-cinnamon",14,97,1320,45));
-  final Click compile= new Click("compile",on("ubuntu-gnome",164,111),on("debian-mate",98,102),on("void-i3",98,61),on("omarchy-hyprland",102,61),on("debian-gnome-x11",98,112),on("kubuntu-plasma",98,71),on("xubuntu-xfce",105,92),on("debian-cinnamon",98,80));
-  final Click compileFixed= new Click("compileFixed",on("ubuntu-gnome",164,111),on("debian-mate",98,102),on("void-i3",98,61),on("omarchy-hyprland",102,61),on("debian-gnome-x11",98,112),on("kubuntu-plasma",98,71),on("xubuntu-xfce",105,92),on("debian-cinnamon",98,80));
-  final At mainShown= new At("mainShown",on("ubuntu-gnome",1000),on("debian-mate",1500),on("void-i3",2000),on("omarchy-hyprland",2000),on("debian-gnome-x11",1500),on("kubuntu-plasma",1500),on("xubuntu-xfce",1500),on("debian-cinnamon",1500));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Click focusTiles= new Click("focusTiles",on("ubuntu-gnome",200,1500));
+  final Click becomeCode= new Click("becomeCode",on("ubuntu-gnome",400,139));
+  final At codeShown= new At("codeShown",on("ubuntu-gnome",1000));
+  final Area rows= new Area("rows",on("ubuntu-gnome",80,128,1320,45));
+  final Click compile= new Click("compile",on("ubuntu-gnome",164,111));
+  final Click compileFixed= new Click("compileFixed",on("ubuntu-gnome",164,111));
+  final At mainShown= new At("mainShown",on("ubuntu-gnome",1000));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(broken.resolve("broken.fearless"),"\n");

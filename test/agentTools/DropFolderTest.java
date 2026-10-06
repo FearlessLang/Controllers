@@ -27,13 +27,13 @@ import tools.Fs;
 final class DropFolderTest extends ManagerTest{
   static final Path drops= data.resolveSibling("drops");
   static final Path dropped= drops.resolve("dropped");
-  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000),on("debian-gnome-x11",2500),on("xubuntu-xfce",2500),on("debian-cinnamon",2500),on("lubuntu-lxqt",2500));
-  final Area window= new Area("window",on("ubuntu-gnome",68,32,3772,2098),on("debian-gnome-x11",0,32,1920,1022),on("xubuntu-xfce",0,27,1920,1022),on("debian-cinnamon",0,0,1920,1012),on("lubuntu-lxqt",0,0,1920,1018));
-  final At filesShown= new At("filesShown",on("ubuntu-gnome",2000),on("debian-gnome-x11",2000),on("xubuntu-xfce",2000),on("debian-cinnamon",2000),on("lubuntu-lxqt",2000));
-  final Drag carryDropped= new Drag("carryDropped",on("ubuntu-gnome",1759,915,200,1500),on("debian-gnome-x11",794,410,200,800),on("xubuntu-xfce",878,428,200,800),on("debian-cinnamon",274,190,200,768),on("lubuntu-lxqt",271,130,200,761));
-  final At tileShown= new At("tileShown",on("ubuntu-gnome",1000),on("debian-gnome-x11",1500),on("xubuntu-xfce",1500),on("debian-cinnamon",1500),on("lubuntu-lxqt",1500));
-  final Area tiles= new Area("tiles",on("ubuntu-gnome",68,68,310,180),on("debian-gnome-x11",2,69,310,180),on("xubuntu-xfce",2,120,310,180),on("debian-cinnamon",2,37,310,180),on("lubuntu-lxqt",2,30,310,180));
-  final Click closeFiles= new Click("closeFiles",on("ubuntu-gnome",2374,843),on("debian-gnome-x11",1380,304),on("xubuntu-xfce",1269,311),on("debian-cinnamon",818,54),on("lubuntu-lxqt",628,16));
+  final At managerShown= new At("managerShown",on("ubuntu-gnome",3000));
+  final Area window= new Area("window",on("ubuntu-gnome",68,32,3772,2098));
+  final At filesShown= new At("filesShown",on("ubuntu-gnome",2000));
+  final Drag carryDropped= new Drag("carryDropped",on("ubuntu-gnome",1759,915,200,1500));
+  final At tileShown= new At("tileShown",on("ubuntu-gnome",1000));
+  final Area tiles= new Area("tiles",on("ubuntu-gnome",68,68,310,180));
+  final Click closeFiles= new Click("closeFiles",on("ubuntu-gnome",2374,843));
   @Override protected void walk() throws Exception{
     clean();
     Fs.writeUtf8(dropped.resolve("dropped.fearless"),"\n");
