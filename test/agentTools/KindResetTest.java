@@ -1,26 +1,13 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 
 import tools.Fs;
 
-/// A project remembered with a kind that is not one of the kinds is loaded as an idle project: the manager says so in a note when it starts, deletes the compiled cache of the project, and remembers the project as idle, so the next start shows it the same way with no note.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the data folder of the manager holds only the file of the projects it remembers, naming helloWorld as hello_world with the kind "cooked", helloWorld holds a compiled cache, and nothing is registered for .fearless.
-/// Action 1: run the launcher: the manager window opens with a note saying hello_world is now idle and its compiled cache is deleted; the manager remembers helloWorld as idle and the cache is gone.
-/// Action 2: press OK: the note goes away and the window shows the tile of hello_world, not selected.
-/// Action 3: choose Quit manager in its Manager menu: the manager ends.
-/// Action 4: run the launcher: the manager window opens with no note, showing the tile of hello_world exactly as before, and the manager remembers exactly what it remembered before.
-/// Action 5: end the manager.
 final class KindResetTest extends ManagerTest{
-  static final Path cache= project.resolve(".fearless_out");
   static final String remembered= """
     {
       "hello_world": {
@@ -29,37 +16,65 @@ final class KindResetTest extends ManagerTest{
       }
     }
     """;
-  final At noteShown= new At("noteShown",linux(1000),windows(1000));
-  final Click ok= new Click("ok",linux(1952,1132),windows(639,367));
-  final Area tiles= new Area("tiles",linux(68,68,310,180),windows(0,23,310,180));
-  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  @Override protected void walk() throws Exception{
-    clean();
-    Fs.writeUtf8(info,remembered.formatted(slashed(project),"cooked"));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action noteShown= action("noteShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(19000))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1952),val(1132))),
+    on("windows",()->click(val(639),val(367))));
+  final Action managerMenu= action("managerMenu",
+    on("ubuntu_gnome",()->click(val(98),val(79))),
+    on("windows",()->click(val(31),val(33))));
+  final Action quitManager= action("quitManager",
+    on("ubuntu_gnome",()->click(val(116),val(212))),
+    on("windows",()->click(val(61),val(167))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(25000))));
+  final Action appsShownAgain= action("appsShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(26500))));
+  final Action terminalShownAgain= action("terminalShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(30000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(43000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(44500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(48000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(58000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    var cache= project.resolve(".fearless_out");
+    Fs.writeUtf8(filesIOFolder.resolve(data).resolve("projects.info"),remembered.formatted(slashed(project),"cooked"));
     Fs.writeUtf8(cache.resolve("_map.json"),"{}\n");
-    var run= launch();
-    until(()->Files.exists(notes) && !Fs.readUtf8(notes).isEmpty());
+    launchScript("first");
+    runInTerminal(appsShown,terminalShown);
     noteShown.go();
-    assertEquals("In projects.info the \"kind\" of \"hello_world\" was missing or not one of the kinds: \"hello_world\" is now idle, and its compiled cache is deleted.\n",Fs.readUtf8(notes));
+    stabilize();
+    checkContent(notes,"In projects.info the \"kind\" of \"hello_world\" was missing or not one of the kinds: \"hello_world\" is now idle, and its compiled cache is deleted.\n");
     var idle= remembered.formatted(slashed(project),"idle");
-    assertEquals(idle,Fs.readUtf8(info));
+    checkContent(info,idle);
     assertFalse(Files.exists(cache));
     ok.go();
-    look();
-    var at= tiles.aim();
-    var shown= pixels(at);
     managerMenu.go();
     quitManager.go();
-    until(()->!run.isAlive());
-    assertEquals(0,run.exitValue());
-    launch();
+    managerQuit.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"0\n");
+    launchScript("second");
+    runInTerminal(appsShownAgain,terminalShownAgain);
     managerShown.go();
-    assertEquals("",Fs.readUtf8(notes));
-    assertEquals(idle,Fs.readUtf8(info));
-    look();
-    until(()->Arrays.equals(shown,pixels(at)));
-    stopManagers();
+    stabilize();
+    checkContent(notes,"");
+    checkContent(info,idle);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("second.exit"),"137\n");
   }
 }

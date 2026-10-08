@@ -1,61 +1,75 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.Desktop;
 import java.nio.file.Files;
-import java.util.Arrays;
+import java.util.List;
 
-import tools.Fs;
-
-/// Once the manager has made the desk open .fearless files with it, opening a Fearless file from the file manager starts the manager on the project folder holding that file, even with no manager running.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, nothing is registered for .fearless, and the file manager remembers no place for its windows.
-/// Action 1: run the launcher: the manager window opens with no tile, and the manager remembers no project.
-/// Action 2: choose Quit manager in its Manager menu: the manager ends.
-/// Action 3: open the file manager on helloWorld.
-/// Action 4: double click hello_world.fearless: the manager window opens with one tile, and the manager remembers helloWorld as an idle project.
-/// Action 5: end the manager and close the file manager window.
 final class OpenFearlessFileTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Area menuBar= new Area("menuBar",linux(68,69,190,20),windows(0,23,190,22));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
-  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
-  final At filesShown= new At("filesShown",linux(3000),windows(4000));
-  final DoubleClick openFile= new DoubleClick("openFile",linux(1872,915),windows(503,254));
-  final Click closeFiles= new Click("closeFiles",linux(2374,844),windows(1016,58));
-  @Override protected void walk() throws Exception{
-    clean();
-    forgetWindowPlaces();
-    var run= launch();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action managerMenu= action("managerMenu",
+    on("ubuntu_gnome",()->click(val(98),val(79))),
+    on("windows",()->click(val(31),val(33))));
+  final Action quitManager= action("quitManager",
+    on("ubuntu_gnome",()->click(val(116),val(212))),
+    on("windows",()->click(val(61),val(167))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
+  final Action appsShownFiles= action("appsShownFiles",
+    on("ubuntu_gnome",()->waitUntilTime(val(23000))));
+  final Action terminalShownFiles= action("terminalShownFiles",
+    on("ubuntu_gnome",()->waitUntilTime(val(26500))));
+  final Action filesShown= action("filesShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(38500))));
+  final Action openFile= action("openFile",
+    on("ubuntu_gnome",()->doubleClick(val(1872),val(915))),
+    on("windows",()->doubleClick(val(503),val(254))));
+  final Action managerOpened= action("managerOpened",
+    on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(53500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(57000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(67000))));
+  final Action closeFiles= action("closeFiles",
+    on("ubuntu_gnome",()->click(val(2374),val(844))),
+    on("windows",()->click(val(1016),val(58))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    launchScript("first");
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    look();
-    var menu= menuBar.aim();
-    var tile= firstTile.aim();
-    var bar= pixels(menu);
-    var empty= pixels(tile);
-    assertFalse(Files.exists(info));
+    stabilize();
+    assertFalse(Files.exists(filesIOFolder.resolve(data).resolve("projects.info")));
     managerMenu.go();
     quitManager.go();
-    until(()->!run.isAlive());
-    assertEquals(0,run.exitValue());
-    Desktop.getDesktop().open(project.toFile());
+    managerQuit.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"0\n");
+    shell("xdg-open \""+project+"\"\n");
+    runInTerminal(appsShownFiles,terminalShownFiles);
     filesShown.go();
     openFile.go();
-    until(()->Arrays.equals(bar,pixels(menu)) && !Arrays.equals(empty,pixels(tile)));
-    assertEquals("""
+    managerOpened.go();
+    stabilize();
+    checkContent(info,"""
       {
         "hello_world": {
           "path": "Str:%s",
           "kind": "idle"
         }
       }
-      """.formatted(slashed(project)),Fs.readUtf8(info));
-    stopManagers();
+      """.formatted(slashed(project)));
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
     closeFiles.go();
   }
 }

@@ -1,71 +1,68 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.awt.event.KeyEvent;
-import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
-
-import tools.Fs;
-import utils.Err;
-
-/// Terminating a program the manager runs ends that program alone: its window goes away, the Output says it was terminated and how it exited, the manager keeps running, and the top of the panel offers Run again exactly as before the run.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld and testGui1 were never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on testGui1: the manager window opens showing testGui1, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers testGui1 as a code project.
-/// Action 4: press Compile: the Output says the compile is done, and the manager knows the main of testGui1.
-/// Action 5: press Run: the Output says the program runs, the window of the program opens, and the top of the panel changes.
-/// Action 6: press Terminate: the program ends, the manager knows its run ended and how it exited, the Output says it was terminated and how it exited, the manager still runs, the window of the program goes away, and the top of the panel is back exactly as before the run.
-/// Action 7: end the manager.
 final class TerminateTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  static final Path console= data.resolve("eclipse").resolve("start").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At mainShown= new At("mainShown",linux(1000),windows(1000));
-  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
-  final Click run= new Click("run",linux(164,111),windows(102,67));
-  final Click terminate= new Click("terminate",linux(164,111),windows(102,67));
-  @Override protected void walk() throws Exception{
-    clean();
-    var manager= launch(gui.toString());
+  static final List<String> console= List.of(data,"eclipse","start","console.txt");
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action mainShown= action("mainShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action run= action("run",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action programShown= action("programShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(41000))));
+  final Action terminate= action("terminate",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action terminated= action("terminated",
+    on("ubuntu_gnome",()->waitUntilTime(val(44000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(45500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(49000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(59000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var gui= project("testGui1");
+    launchScript("first",gui);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
+    codeShown.go();
     compile.go();
-    until(()->Fs.readUtf8(state).contains("gui_example.Foo"));
-    assertEquals("--- compiling testGui1 ---\n--- compile done ---\n",Fs.readUtf8(console));
     mainShown.go();
-    look();
-    var at= head.aim();
-    var ready= pixels(at);
-    var window= programWindow.aim();
-    var desk= pixels(window);
+    stabilize();
+    checkContent(console,"--- compiling testGui1 ---\n--- compile done ---\n");
     run.go();
-    until(()->!Arrays.equals(desk,pixels(window)));
-    assertEquals("--- compiling testGui1 ---\n--- compile done ---\n--- running gui_example.Foo ---\n",Fs.readUtf8(console));
-    var program= program(manager);
-    look();
-    assertFalse(Arrays.equals(ready,pixels(at)));
+    programShown.go();
+    stabilize();
+    checkContent(console,"--- compiling testGui1 ---\n--- compile done ---\n--- running gui_example.Foo ---\n");
     terminate.go();
-    until(()->!program.isAlive());
-    until(()->Fs.readUtf8(state).contains("\"running\": \"\""));
-    assertEquals("""
+    terminated.go();
+    stabilize();
+    checkContent(state,"""
       {
         "start": {
           "folder": "Str:%s",
@@ -73,25 +70,25 @@ final class TerminateTest extends ManagerTest{
           "running": "",
           "runs": "1",
           "lastRun": "gui_example.Foo",
-          "exit": "%s",
+          "exit": "143",
           "mains": {
             "gui_example.Foo": "_gui_example/_rank_app.fear"
           },
           "problem": {}
         }
       }
-      """.formatted(escaped(gui),killed),Fs.readUtf8(state));
-    Err.strCmp("""
+      """.formatted(escaped(gui)));
+    checkContent(console,"""
       --- compiling testGui1 ---
       --- compile done ---
       --- running gui_example.Foo ---
       --- terminating gui_example.Foo ---
-      --- gui_example.Foo exited with %s after [###]s ---
-      """.formatted(killed),Fs.readUtf8(console));
-    assertTrue(manager.isAlive());
-    until(()->Arrays.equals(desk,pixels(window)));
-    look();
-    until(()->Arrays.equals(ready,pixels(at)));
-    stopManagers();
+      --- gui_example.Foo exited with 143 after [###]s ---
+      """);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

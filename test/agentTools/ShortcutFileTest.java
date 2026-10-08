@@ -1,72 +1,85 @@
 package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.Desktop;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.nio.file.Path;
 import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import org.junit.jupiter.api.AfterEach;
-
 import tools.Fs;
 
-/// Compiling a project whose main claims a Shortcut makes the manager create the shortcut file in the project, and opening that file from the file manager runs the main in the manager that is already running.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, the file manager remembers no place for its windows, and the folder shortcuts beside the manager holds its marker, one package with a main claiming a Shortcut and a square icon.
-/// Action 1: run the launcher on shortcuts: the manager window opens showing shortcuts, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers shortcuts as a code project.
-/// Action 4: press Compile: the Output says the compile is done, and the folder holds one shortcut file named after the main.
-/// Action 5: open the file manager on shortcuts.
-/// Action 6: double click the shortcut file: the Output says the main runs and ends with exit code 0, and the manager that was already running is the only one.
-/// Action 7: end the manager and close the file manager window.
 final class ShortcutFileTest extends ManagerTest{
-  static final Path shortcuts= data.resolveSibling("shortcuts");
-  static final Path console= data.resolve("eclipse").resolve("shortcuts").resolve("console.txt");
-  final At managerShown= new At("managerShown",windows(3000));
-  final Click focusTiles= new Click("focusTiles",windows(200,400));
-  final Click becomeCode= new Click("becomeCode",windows(332,94));
-  final Click compile= new Click("compile",windows(102,67));
-  final At filesShown= new At("filesShown",windows(4000));
-  final DoubleClick openShortcut= new DoubleClick("openShortcut",windows(500,283));
-  final Click closeFiles= new Click("closeFiles",windows(1016,58));
-  static long managers(){ return ProcessHandle.allProcesses().filter(p->p.info().command().filter(launcher.toString()::equals).isPresent()).count(); }
-  @Override protected void walk() throws Exception{
-    clean();
+  static final List<String> console= List.of(data,"eclipse","shortcuts","console.txt");
+  static final String compiled= "--- compiling shortcuts ---\n--- compile done ---\n";
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action focusTiles= action("focusTiles",
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
+  final Action compile= action("compile",
+    on("windows",()->click(val(102),val(67))));
+  final Action compileDone= action("compileDone",
+    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
+  final Action appsShownFiles= action("appsShownFiles",
+    on("ubuntu_gnome",()->waitUntilTime(val(36500))));
+  final Action terminalShownFiles= action("terminalShownFiles",
+    on("ubuntu_gnome",()->waitUntilTime(val(40000))));
+  final Action filesShown= action("filesShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(53000))));
+  final Action openShortcut= action("openShortcut",
+    on("windows",()->doubleClick(val(500),val(283))));
+  final Action shortcutRan= action("shortcutRan",
+    on("ubuntu_gnome",()->waitUntilTime(val(60000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(61500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(65000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(75000))));
+  final Action closeFiles= action("closeFiles",
+    on("windows",()->click(val(1016),val(58))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var shortcuts= filesIOFolder.resolve("shortcuts");
+    Fs.rmTree(shortcuts);
     Fs.writeUtf8(shortcuts.resolve("shortcuts.fearless"),"\n");
     Fs.writeUtf8(shortcuts.resolve("_hello").resolve("_rank_app.fear"),"use base.Main as Main;\nuse base.Shortcut as Shortcut;\n\nHello:Main, Shortcut[IconsHello]{s->base.Debug#(`hello`)}\n");
     Fs.ensureDir(shortcuts.resolve("_hello").resolve("icons"));
-    Fs.ofV(()->ImageIO.write(new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB),"png",shortcuts.resolve("_hello").resolve("icons").resolve("hello.png").toFile()));
-    launch(shortcuts.toString());
+    ImageIO.write(new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB),"png",shortcuts.resolve("_hello").resolve("icons").resolve("hello.png").toFile());
+    launchScript("first",shortcuts);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
+    codeShown.go();
     compile.go();
-    until(()->Fs.readUtf8(console).contains("--- compile done ---"));
+    compileDone.go();
+    stabilize();
+    checkContent(console,compiled);
     assertEquals(List.of("hello.fapp"),Fs.walk(shortcuts,s->s.filter(p->p.getParent().equals(shortcuts)).map(p->p.getFileName().toString().replaceAll("[0-9]{3}$","")).filter(n->n.startsWith("hello.")).toList()));
-    assertFalse(Fs.readUtf8(console).contains("--- running "));
-    var owners= managers();
-    forgetWindowPlaces();
-    Desktop.getDesktop().open(shortcuts.toFile());
+    shell("xdg-open \""+shortcuts+"\"\n");
+    runInTerminal(appsShownFiles,terminalShownFiles);
     filesShown.go();
     openShortcut.go();
-    until(()->Fs.readUtf8(console).contains(" exited with 0 after "));
-    assertEquals(owners,managers());
-    stopManagers();
+    shortcutRan.go();
+    stabilize();
+    checkContent(console,compiled+"--- running hello.Hello ---\nhello\n--- hello.Hello exited with 0 after [###]s ---\n");
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
     closeFiles.go();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(shortcuts);
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

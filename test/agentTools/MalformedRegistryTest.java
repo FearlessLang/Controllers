@@ -1,63 +1,89 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.awt.image.BufferedImage;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
 
 import tools.Fs;
 
-/// A file of the remembered projects that is not well formed stops the manager at start: before the error shows, the manager deletes its data folder and every file association of Fearless, and once the error is dismissed the launcher ends with exit 1. The next start is the start of a fresh copy.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on helloWorld: the manager window opens, remembers hello_world as an idle project, and registers .fearless.
-/// Action 2: end the manager: the desk shows its background again.
-/// Action 3: remove the last closing brace of the file of the remembered projects.
-/// Action 4: run the launcher: an error shows in the middle of the screen, the launcher waits for it to be dismissed, the manager has no data folder, and nothing is registered for .fearless.
-/// Action 5: press OK: the launcher ends with exit 1, and the desk shows its background again.
-/// Action 6: run the launcher: the manager window opens remembering no project, and registers .fearless again.
-/// Action 7: end the manager.
 final class MalformedRegistryTest extends ManagerTest{
-  static final String remembered= """
-    {
-      "hello_world": {
-        "path": "Str:%s",
-        "kind": "idle"
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(20000))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(23500))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(33500))));
+  final Action appsShownMalformed= action("appsShownMalformed",
+    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
+  final Action terminalShownMalformed= action("terminalShownMalformed",
+    on("ubuntu_gnome",()->waitUntilTime(val(38500))));
+  final Action errorShown= action("errorShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(52500))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1952),val(1279))),
+    on("windows",()->click(val(639),val(506))));
+  final Action errorDismissed= action("errorDismissed",
+    on("ubuntu_gnome",()->waitUntilTime(val(54600))));
+  final Action appsShownFresh= action("appsShownFresh",
+    on("ubuntu_gnome",()->waitUntilTime(val(56100))));
+  final Action terminalShownFresh= action("terminalShownFresh",
+    on("ubuntu_gnome",()->waitUntilTime(val(59600))));
+  final Action freshShown= action("freshShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(72600))));
+  final Action appsShownToEndFresh= action("appsShownToEndFresh",
+    on("ubuntu_gnome",()->waitUntilTime(val(74100))));
+  final Action terminalShownToEndFresh= action("terminalShownToEndFresh",
+    on("ubuntu_gnome",()->waitUntilTime(val(77600))));
+  final Action freshEnded= action("freshEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(87600))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    var remembered= """
+      {
+        "hello_world": {
+          "path": "Str:%s",
+          "kind": "idle"
+        }
       }
-    }
-    """.formatted(slashed(project));
-  final Area error= new Area("error",linux(1915,1075,10,10),windows(635,355,10,10));
-  final At errorShown= new At("errorShown",linux(1000),windows(1000));
-  final Click ok= new Click("ok",linux(1952,1279),windows(639,506));
-  @Override protected void walk() throws Exception{
-    clean();
-    var desk= look();
-    launch(project.toString());
-    until(()->Files.exists(info) && Fs.readUtf8(info).equals(remembered) && !registered().isEmpty());
-    stopManagers();
-    until(()->same(desk,look()));
-    Fs.writeUtf8(info,remembered.substring(0,remembered.length()-2));
-    var at= error.aim();
-    var run= new ProcessBuilder(launcher.toString()).start();
-    until(()->!Arrays.equals(pixels(desk,at),pixels(at)));
+      """.formatted(slashed(project));
+    launchScript("first",project);
+    runInTerminal(appsShown,terminalShown);
+    managerShown.go();
+    stabilize();
+    checkContent(info,remembered);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
+    Fs.writeUtf8(filesIOFolder.resolve(data).resolve("projects.info"),remembered.substring(0,remembered.length()-2));
+    launchScript("second");
+    runInTerminal(appsShownMalformed,terminalShownMalformed);
     errorShown.go();
-    assertTrue(run.isAlive());
-    assertFalse(Files.exists(data));
-    assertEquals(List.of(),registered());
+    stabilize();
+    assertFalse(Files.exists(filesIOFolder.resolve("second.exit")));
+    assertFalse(Files.exists(filesIOFolder.resolve(data)));
     ok.go();
-    until(()->!run.isAlive());
-    assertEquals(1,run.exitValue());
-    until(()->same(desk,look()));
-    launch();
-    until(()->Files.exists(state) && !registered().isEmpty());
-    assertEquals("{}\n",Fs.readUtf8(state));
-    stopManagers();
+    errorDismissed.go();
+    stabilize();
+    checkContent(List.of("second.exit"),"1\n");
+    launchScript("third");
+    runInTerminal(appsShownFresh,terminalShownFresh);
+    freshShown.go();
+    stabilize();
+    checkContent(state,"{}\n");
+    endScript();
+    runInTerminal(appsShownToEndFresh,terminalShownToEndFresh);
+    freshEnded.go();
+    stabilize();
+    checkContent(List.of("third.exit"),"137\n");
   }
-  private static int[] pixels(BufferedImage img, int[] at){ return img.getRGB(at[0],at[1],at[2],at[3],null,0,at[2]); }
 }

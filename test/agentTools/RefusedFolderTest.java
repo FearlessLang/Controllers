@@ -1,53 +1,61 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 
 import tools.Fs;
 
-/// The launcher run on a folder that cannot be a project starts the manager, or hands the folder to the running one, and the manager refuses it with a note saying why: nothing exists there, it is the manager folder, or it is the root of the file system. Nothing is registered and nothing is created, and once a note is dismissed the window is exactly as before.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, and nothing exists at gone beside the manager.
-/// Action 1: run the launcher on gone: the manager window opens with a note saying nothing exists there, the manager remembers no project, and nothing exists at gone.
-/// Action 2: press OK: the note goes away.
-/// Action 3: run the launcher on the data folder of the manager: it ends at once, a note shows saying that folder is the manager folder, and the manager remembers no project.
-/// Action 4: press OK: the note goes away and the window is exactly as before.
-/// Action 5: run the launcher on the root of the file system: it ends at once, a note shows saying the root cannot be a project, and the manager remembers no project.
-/// Action 6: press OK: the note goes away and the window is exactly as before.
-/// Action 7: end the manager.
 final class RefusedFolderTest extends ManagerTest{
-  static final Path gone= data.resolveSibling("gone");
-  final At noteShown= new At("noteShown",linux(3000),windows(3000));
-  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
-  final Click ok= new Click("ok",linux(1952,1146),windows(639,378));
-  final At noteShownAgain= new At("noteShownAgain",linux(1000),windows(1000));
-  final Click okAgain= new Click("okAgain",linux(1952,1194),windows(639,425));
-  final At rootNoteShown= new At("rootNoteShown",linux(1000),windows(1000));
-  final Click rootOk= new Click("rootOk",linux(1952,1184),windows(639,414));
-  int[] at;
-  int[] before;
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action noteShown= action("noteShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(19000))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1952),val(1146))),
+    on("windows",()->click(val(639),val(378))));
+  final Action appsShownAgain= action("appsShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
+  final Action terminalShownAgain= action("terminalShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(25000))));
+  final Action noteShownAgain= action("noteShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(37500))));
+  final Action okAgain= action("okAgain",
+    on("ubuntu_gnome",()->click(val(1952),val(1194))),
+    on("windows",()->click(val(639),val(425))));
+  final Action appsShownRoot= action("appsShownRoot",
+    on("ubuntu_gnome",()->waitUntilTime(val(40000))));
+  final Action terminalShownRoot= action("terminalShownRoot",
+    on("ubuntu_gnome",()->waitUntilTime(val(43500))));
+  final Action rootNoteShown= action("rootNoteShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(56000))));
+  final Action rootOk= action("rootOk",
+    on("ubuntu_gnome",()->click(val(1952),val(1184))),
+    on("windows",()->click(val(639),val(414))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(58500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(62000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(72000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var gone= filesIOFolder.resolve("gone");
+    var folder= filesIOFolder.resolve(data);
     Fs.rmTree(gone);
     var missing= "The manager was asked to register\n"+gone+"\nbut nothing exists there: register an existing folder, or a file inside one.\n";
-    launch(gone.toString());
-    until(()->Files.exists(notes) && Fs.readUtf8(notes).equals(missing));
+    launchScript("first",gone);
+    runInTerminal(appsShown,terminalShown);
     noteShown.go();
-    assertFalse(Files.exists(info));
+    stabilize();
+    checkContent(notes,missing);
+    assertFalse(Files.exists(folder.resolve("projects.info")));
     assertFalse(Files.exists(gone));
-    look();
-    at= window.aim();
-    var noted= pixels(at);
     ok.go();
-    look();
-    until(()->!Arrays.equals(noted,pixels(at)));
-    before= pixels(at);
     var manager= missing+"""
       Fearless cannot keep track of this folder as a project.
 
@@ -57,11 +65,11 @@ final class RefusedFolderTest extends ManagerTest{
         %s
       The manager folder holds what Fearless remembers about your projects: it is
       never part of a project, and no project is inside it.
-      """.formatted(data,data);
-    refused(data,noteShownAgain,manager);
-    dismissed(okAgain);
+      """.formatted(folder,folder);
+    refused("second",folder,appsShownAgain,terminalShownAgain,noteShownAgain,manager);
+    okAgain.go();
     var root= Path.of("/").toAbsolutePath();
-    refused(root,rootNoteShown,manager+"""
+    refused("third",root,appsShownRoot,terminalShownRoot,rootNoteShown,manager+"""
       Fearless cannot keep track of the root of a drive or of the file system as a
       project.
 
@@ -70,21 +78,20 @@ final class RefusedFolderTest extends ManagerTest{
       Put the project in a folder inside it, and make that folder the project
       folder.
       """.formatted(root));
-    dismissed(rootOk);
-    stopManagers();
+    rootOk.go();
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
-  private void refused(Path folder, At shown, String said) throws Exception{
-    var run= new ProcessBuilder(launcher.toString(),folder.toString()).start();
-    until(()->!run.isAlive());
-    assertEquals(0,run.exitValue());
-    until(()->!Arrays.equals(before,pixels(at)));
+  void refused(String exit, Path folder, Action appsShown, Action terminalShown, Action shown, String said) throws Throwable{
+    launchScript(exit,folder);
+    runInTerminal(appsShown,terminalShown);
     shown.go();
-    assertEquals(said,Fs.readUtf8(notes));
-    assertFalse(Files.exists(info));
-  }
-  private void dismissed(Click dismiss){
-    dismiss.go();
-    look();
-    until(()->Arrays.equals(before,pixels(at)));
+    stabilize();
+    checkContent(List.of(exit+".exit"),"0\n");
+    checkContent(notes,said);
+    assertFalse(Files.exists(filesIOFolder.resolve(data).resolve("projects.info")));
   }
 }

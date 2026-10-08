@@ -1,91 +1,105 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.event.KeyEvent;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
+import java.util.List;
 
 import tools.Fs;
 
-/// A second marker file put into a registered folder makes the project invalid: the manager notices it by itself, and its Error report and Check say why; once that file is gone the manager notices it by itself again, shows the project exactly as before, and Check finds no problem.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, and the folder twice beside the manager holds only its marker and one source file.
-/// Action 1: run the launcher on twice: the manager window opens showing twice, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: put a second marker file into twice: the Information section of the panel changes by itself.
-/// Action 4: choose Error report in its Project menu: a dialog opens.
-/// Action 5: click in its text, select all of it and copy it: the text copied says the folder holds more than one marker and names the one to keep.
-/// Action 6: press OK: the dialog goes away.
-/// Action 7: press Check: the Output says exactly what the Error report says.
-/// Action 8: delete the second marker file, and open the Information section again: the kind buttons and the Information section are back by themselves exactly as they were before the second marker.
-/// Action 9: press Check: the Output says no problem was found.
-/// Action 10: end the manager.
 final class SecondMarkerTest extends ManagerTest{
-  static final Path twice= data.resolveSibling("twice");
-  static final Path second= twice.resolve("other.fearless");
-  static final Path console= data.resolve("eclipse").resolve("twice").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Area rows= new Area("rows",linux(80,128,1320,212),windows(22,82,600,212));
-  final Area dialog= new Area("dialog",linux(1600,840,700,30),windows(600,76,300,20));
-  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
-  final Click errorReport= new Click("errorReport",linux(180,212),windows(111,166));
-  final Click focusReport= new Click("focusReport",linux(1970,1100),windows(660,300));
-  final Click ok= new Click("ok",linux(1953,1330),windows(639,568));
-  final Click check= new Click("check",linux(164,111),windows(102,67));
-  final Click openInformation= new Click("openInformation",linux(150,167),windows(79,120));
-  final Click checkAgain= new Click("checkAgain",linux(164,111),windows(102,67));
-  @Override protected void walk() throws Exception{
-    clean();
+  static final List<String> console= List.of(data,"eclipse","twice","console.txt");
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action secondNoticed= action("secondNoticed",
+    on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action projectMenu= action("projectMenu",
+    on("ubuntu_gnome",()->click(val(158),val(79))),
+    on("windows",()->click(val(89),val(33))));
+  final Action errorReport= action("errorReport",
+    on("ubuntu_gnome",()->click(val(180),val(212))),
+    on("windows",()->click(val(111),val(166))));
+  final Action reportShown= action("reportShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(23700))));
+  final Action focusReport= action("focusReport",
+    on("ubuntu_gnome",()->click(val(1970),val(1100))),
+    on("windows",()->click(val(660),val(300))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1953),val(1330))),
+    on("windows",()->click(val(639),val(568))));
+  final Action reportClosed= action("reportClosed",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action check= action("check",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action checked= action("checked",
+    on("ubuntu_gnome",()->waitUntilTime(val(28500))));
+  final Action openInformation= action("openInformation",
+    on("ubuntu_gnome",()->click(val(150),val(167))),
+    on("windows",()->click(val(79),val(120))));
+  final Action secondGone= action("secondGone",
+    on("ubuntu_gnome",()->waitUntilTime(val(31000))));
+  final Action checkAgain= action("checkAgain",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action checkedAgain= action("checkedAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(33500))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(38500))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(48500))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var twice= filesIOFolder.resolve("twice");
+    var second= twice.resolve("other.fearless");
+    Fs.rmTree(twice);
     Fs.writeUtf8(twice.resolve("twice.fearless"),"\n");
     Fs.writeUtf8(twice.resolve("_twice").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"twice\")}\n");
-    launch(twice.toString());
+    launchScript("first",twice);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
-    look();
-    var at= rows.aim();
-    var valid= pixels(at);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     Fs.writeUtf8(second,"\n");
-    until(()->!Arrays.equals(valid,pixels(at)));
-    var where= dialog.aim();
-    var behind= pixels(where);
+    stabilize();
+    secondNoticed.go();
     projectMenu.go();
     errorReport.go();
-    until(()->!Arrays.equals(behind,pixels(where)));
+    reportShown.go();
     focusReport.go();
-    pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    ok.go();
+    reportClosed.go();
+    check.go();
+    checked.go();
     var problem= """
       More than one .fearless marker file was found in
       %s
       A project folder holds exactly one, and its name is the project name: keep only "twice.fearless".""".formatted(twice);
-    assertEquals(problem,Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor));
-    ok.go();
-    until(()->Arrays.equals(behind,pixels(where)));
-    check.go();
-    until(()->!Fs.readUtf8(console).isEmpty());
-    assertEquals(problem+"\n",Fs.readUtf8(console));
+    stabilize();
+    checkContent(console,problem+"\n");
     Files.delete(second);
+    stabilize();
     openInformation.go();
-    look();
-    until(()->Arrays.equals(valid,pixels(at)));
+    secondGone.go();
     checkAgain.go();
-    until(()->Fs.readUtf8(console).length()>problem.length()+1);
-    assertEquals(problem+"\n--- ok: no problem found ---\n",Fs.readUtf8(console));
-    stopManagers();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(twice);
+    checkedAgain.go();
+    stabilize();
+    checkContent(console,problem+"\n--- ok: no problem found ---\n");
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

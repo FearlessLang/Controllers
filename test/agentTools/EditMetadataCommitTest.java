@@ -1,48 +1,57 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.event.KeyEvent;
-import java.util.Arrays;
-import java.util.stream.IntStream;
+import java.util.List;
 
-import tools.Fs;
-
-/// Editing the kind of a project in the metadata editor and committing it changes the project as its kind button would: the manager remembers the new kind and the panel shows the project as that kind, and the kind button it then offers brings the project back exactly as it was.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on helloWorld: the manager window opens showing helloWorld selected, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: choose Edit project metadata... in its Manager menu: the metadata editor opens.
-/// Action 4: click in its text, select all of it and copy it: the text copied is exactly what the manager remembers.
-/// Action 5: double click the kind idle in the text, type code over it and press Commit: the manager remembers helloWorld as a code project, and the top of the panel changes.
-/// Action 6: press Back to idle: the manager remembers helloWorld as an idle project exactly as before the commit, and the top of the panel is back exactly as it was then.
-/// Action 7: end the manager.
 final class EditMetadataCommitTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
-  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click editMetadata= new Click("editMetadata",linux(128,103),windows(61,58));
-  final At editorShown= new At("editorShown",linux(2000),windows(2000));
-  final Click focusText= new Click("focusText",linux(1900,1200),windows(700,400));
-  final DoubleClick kindIdle= new DoubleClick("kindIdle",linux(1672,898),windows(360,123));
-  final Click commit= new Click("commit",linux(2238,1370),windows(924,619));
-  final Click backToIdle= new Click("backToIdle",linux(138,140),windows(70,94));
-  @Override protected void walk() throws Exception{
-    clean();
-    launch(project.toString());
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action managerMenu= action("managerMenu",
+    on("ubuntu_gnome",()->click(val(98),val(79))),
+    on("windows",()->click(val(31),val(33))));
+  final Action editMetadata= action("editMetadata",
+    on("ubuntu_gnome",()->click(val(128),val(103))),
+    on("windows",()->click(val(61),val(58))));
+  final Action editorShown= action("editorShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(23000))));
+  final Action focusText= action("focusText",
+    on("ubuntu_gnome",()->click(val(1900),val(1200))),
+    on("windows",()->click(val(700),val(400))));
+  final Action kindIdle= action("kindIdle",
+    on("ubuntu_gnome",()->doubleClick(val(1672),val(898))),
+    on("windows",()->doubleClick(val(360),val(123))));
+  final Action commit= action("commit",
+    on("ubuntu_gnome",()->click(val(2238),val(1370))),
+    on("windows",()->click(val(924),val(619))));
+  final Action codeSaved= action("codeSaved",
+    on("ubuntu_gnome",()->waitUntilTime(val(27500))));
+  final Action backToIdle= action("backToIdle",
+    on("ubuntu_gnome",()->click(val(138),val(140))),
+    on("windows",()->click(val(70),val(94))));
+  final Action idleSaved= action("idleSaved",
+    on("ubuntu_gnome",()->waitUntilTime(val(30000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(31500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    launchScript("first",project);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
-    look();
-    var at= head.aim();
-    var idle= pixels(at);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     var registry= """
       {
         "hello_world": {
@@ -51,26 +60,28 @@ final class EditMetadataCommitTest extends ManagerTest{
         }
       }
       """;
-    assertEquals(registry.formatted(slashed(project),"idle"),Fs.readUtf8(info));
+    stabilize();
+    checkContent(info,registry.formatted(slashed(project),"idle"));
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
     focusText.go();
-    pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
-    assertEquals(Fs.readUtf8(info),Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor));
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
     kindIdle.go();
-    IntStream.of(KeyEvent.VK_C,KeyEvent.VK_O,KeyEvent.VK_D,KeyEvent.VK_E).forEach(pilot::chord);
+    type("code");
     commit.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
-    assertEquals(registry.formatted(slashed(project),"code"),Fs.readUtf8(info));
-    look();
-    until(()->!Arrays.equals(idle,pixels(at)));
+    codeSaved.go();
+    stabilize();
+    checkContent(info,registry.formatted(slashed(project),"code"));
     backToIdle.go();
-    until(()->Fs.readUtf8(info).contains("\"idle\""));
-    assertEquals(registry.formatted(slashed(project),"idle"),Fs.readUtf8(info));
-    look();
-    until(()->Arrays.equals(idle,pixels(at)));
-    stopManagers();
+    idleSaved.go();
+    stabilize();
+    checkContent(info,registry.formatted(slashed(project),"idle"));
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

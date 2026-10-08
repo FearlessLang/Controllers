@@ -1,79 +1,91 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
 import java.awt.event.KeyEvent;
-import java.util.Arrays;
+import java.util.List;
 
-import tools.Fs;
-
-/// The manager remembers its projects across a restart: launched again with no argument after Quit manager, it shows every project it remembers with the kind it had, none of them selected, and choosing one shows its panel exactly as before the restart.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on helloWorld: the manager window opens showing helloWorld selected, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers helloWorld as a code project, and the panel shows it as one.
-/// Action 4: choose Quit manager in its Manager menu: the manager ends.
-/// Action 5: run the launcher: the manager window opens with the helloWorld tile not selected, and the manager remembers exactly what it remembered before.
-/// Action 6: click the helloWorld tile: it is selected.
-/// Action 7: click the empty space below the tiles, and move the divider as far left as it goes with the keyboard: the panel shows helloWorld exactly as it did before the manager ended.
-/// Action 8: end the manager.
 final class RelaunchKeepsRegistryTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
-  final At codeShown= new At("codeShown",linux(1000),windows(1000));
-  final Area panel= new Area("panel",linux(80,94,1320,340),windows(22,50,600,340));
-  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click quitManager= new Click("quitManager",linux(128,191),windows(61,167));
-  final At managerShownAgain= new At("managerShownAgain",linux(3000),windows(3000));
-  final Click selectTile= new Click("selectTile",linux(138,190),windows(71,145));
-  final Click focusTilesAgain= new Click("focusTilesAgain",linux(200,1500),windows(200,400));
-  @Override protected void walk() throws Exception{
-    clean();
-    var run= launch(project.toString());
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
+  final Action managerMenu= action("managerMenu",
+    on("ubuntu_gnome",()->click(val(98),val(79))),
+    on("windows",()->click(val(31),val(33))));
+  final Action quitManager= action("quitManager",
+    on("ubuntu_gnome",()->click(val(116),val(212))),
+    on("windows",()->click(val(61),val(167))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(24500))));
+  final Action appsShownAgain= action("appsShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(26500))));
+  final Action terminalShownAgain= action("terminalShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(30000))));
+  final Action managerShownAgain= action("managerShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(43000))));
+  final Action selectTile= action("selectTile",
+    on("ubuntu_gnome",()->click(val(138),val(190))),
+    on("windows",()->click(val(71),val(145))));
+  final Action tileSelected= action("tileSelected",
+    on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+  final Action focusTilesAgain= action("focusTilesAgain",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(47500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(51000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(61000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    launchScript("first",project);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    look();
-    var tile= firstTile.aim();
-    var selected= pixels(tile)[0];
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
-    var remembered= Fs.readUtf8(info);
-    assertEquals("""
+    codeShown.go();
+    var remembered= """
       {
         "hello_world": {
           "path": "Str:%s",
           "kind": "code"
         }
       }
-      """.formatted(slashed(project)),remembered);
-    codeShown.go();
-    look();
-    var at= panel.aim();
-    var code= pixels(at);
+      """.formatted(slashed(project));
+    stabilize();
+    checkContent(info,remembered);
     managerMenu.go();
     quitManager.go();
-    until(()->!run.isAlive());
-    assertEquals(0,run.exitValue());
-    launch();
+    managerQuit.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"0\n");
+    launchScript("second");
+    runInTerminal(appsShownAgain,terminalShownAgain);
     managerShownAgain.go();
-    look();
-    assertNotEquals(selected,pixels(tile)[0]);
-    assertEquals(remembered,Fs.readUtf8(info));
+    stabilize();
+    checkContent(info,remembered);
     selectTile.go();
-    until(()->pixels(tile)[0]==selected);
+    tileSelected.go();
     focusTilesAgain.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
-    look();
-    until(()->Arrays.equals(code,pixels(at)));
-    stopManagers();
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("second.exit"),"137\n");
   }
 }

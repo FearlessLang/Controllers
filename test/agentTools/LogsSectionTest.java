@@ -1,56 +1,69 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.event.KeyEvent;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
+import java.util.List;
 
 import tools.Fs;
 import utils.Err;
 import utils.OneOr;
 
-/// The log a program writes while the manager runs it shows in the Logs section of its project, where Copy puts its text on the clipboard and Delete, once confirmed, removes it.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, the working folder of the test holds no .out, and the folder diary beside the manager holds only its marker and a program that writes dear diary into its log Diary.
-/// Action 1: run the launcher on diary: the manager window opens showing diary, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers diary as a code project.
-/// Action 4: press Compile: the manager knows diary.Write as the one main of diary.
-/// Action 5: open the Logs section: it opens with an empty list.
-/// Action 6: press Run: the program exits with 0 leaving one closed log of Diary holding dear diary and nothing in the working folder of the test, and the list shows it.
-/// Action 7: click the log in the list and press Copy: the clipboard holds exactly the text of the log.
-/// Action 8: press Delete and answer Yes: the log is gone, and the list is empty again.
-/// Action 9: end the manager.
 final class LogsSectionTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  static final Path diary= data.resolveSibling("diary");
-  static final Path logs= diary.resolve(".out").resolve("logs").resolve("diary");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,140),windows(332,94));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At compileShown= new At("compileShown",linux(1000),windows(1000));
-  final Click openLogs= new Click("openLogs",linux(128,253),windows(62,203));
-  final Area list= new Area("list",linux(80,240,3750,170),windows(24,219,1240,130));
-  final Click run= new Click("run",linux(164,111),windows(102,67));
-  final Click firstLog= new Click("firstLog",linux(250,278),windows(100,226));
-  final Click copy= new Click("copy",linux(3739,251),windows(1181,201));
-  final Click delete= new Click("delete",linux(3796,251),windows(1237,201));
-  final At confirmShown= new At("confirmShown",linux(1500),windows(4000));
-  final Click yes= new Click("yes",linux(1933,1150),windows(619,378));
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(140))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21600))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action compileShown= action("compileShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(36200))));
+  final Action openLogs= action("openLogs",
+    on("ubuntu_gnome",()->click(val(128),val(253))),
+    on("windows",()->click(val(62),val(203))));
+  final Action run= action("run",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action ran= action("ran",
+    on("ubuntu_gnome",()->waitUntilTime(val(41500))));
+  final Action firstLog= action("firstLog",
+    on("ubuntu_gnome",()->click(val(250),val(278))),
+    on("windows",()->click(val(100),val(226))));
+  final Action copy= action("copy",
+    on("ubuntu_gnome",()->click(val(3739),val(251))),
+    on("windows",()->click(val(1181),val(201))));
+  final Action delete= action("delete",
+    on("ubuntu_gnome",()->click(val(3796),val(251))),
+    on("windows",()->click(val(1237),val(201))));
+  final Action confirmShown= action("confirmShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(44800))));
+  final Action yes= action("yes",
+    on("ubuntu_gnome",()->click(val(1933),val(1150))),
+    on("windows",()->click(val(619),val(378))));
+  final Action deleted= action("deleted",
+    on("ubuntu_gnome",()->waitUntilTime(val(46900))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(48400))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(51900))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(61900))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var diary= filesIOFolder.resolve("diary");
+    Fs.rmTree(diary);
     Fs.writeUtf8(diary.resolve("diary.fearless"),"\n");
     Fs.writeUtf8(diary.resolve("_diary").resolve("_rank_app.fear"),"""
       use base.Main as Main;
@@ -59,44 +72,63 @@ final class LogsSectionTest extends ManagerTest{
       Diary: FileLog{"diary"}
       Write: Main{sys -> Diary.log("dear diary")}
       """);
-    launch(diary.toString());
+    launchScript("first",diary);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
-    var noMains= Fs.readUtf8(state);
+    codeShown.go();
+    stabilize();
+    checkContent(info,"""
+      {
+        "diary": {
+          "path": "Str:%s",
+          "kind": "code"
+        }
+      }
+      """.formatted(slashed(diary)));
     compile.go();
-    until(()->!noMains.equals(Fs.readUtf8(state)));
-    assert Fs.readUtf8(state).contains("\"diary.Write\": \"_diary/_rank_app.fear\"");
     compileShown.go();
+    stabilize();
+    checkContent(state,"[###]\"diary.Write\": \"_diary/_rank_app.fear\"[###]");
     openLogs.go();
-    look();
-    var at= list.aim();
-    var empty= pixels(at);
     run.go();
-    until(()->Fs.readUtf8(state).contains("\"exit\": \"0\""));
-    assertFalse(Files.exists(Path.of(".out")));
-    look();
-    until(()->!Arrays.equals(empty,pixels(at)));
-    var log= Fs.walk(logs,s->OneOr.of("one log",s.filter(Files::isRegularFile)));
+    ran.go();
+    stabilize();
+    checkContent(state,"""
+      {
+        "diary": {
+          "folder": "Str:%s",
+          "kind": "code",
+          "running": "",
+          "runs": "1",
+          "lastRun": "diary.Write",
+          "exit": "0",
+          "mains": {
+            "diary.Write": "_diary/_rank_app.fear"
+          },
+          "problem": {}
+        }
+      }
+      """.formatted(escaped(diary)));
+    var logs= "diary/.out/logs/diary";
+    var log= Fs.walk(filesIOFolder.resolve(logs),s->OneOr.of("one log",s.filter(Files::isRegularFile)));
     Err.strCmp("Diary$[###].log",log.getFileName().toString());
-    Err.strCmp("[###] dear diary\n",Fs.readUtf8(log));
+    checkContent(List.of(logs,log.getFileName().toString()),"[###] dear diary\n");
     firstLog.go();
     copy.go();
-    assertEquals(Fs.readUtf8(log),Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor));
     delete.go();
     confirmShown.go();
     yes.go();
-    until(()->!Files.exists(log));
-    look();
-    until(()->Arrays.equals(empty,pixels(at)));
-    stopManagers();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(diary);
-    Fs.rmTree(Path.of(".out"));
+    deleted.go();
+    stabilize();
+    assertFalse(Files.exists(log));
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

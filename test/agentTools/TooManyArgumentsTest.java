@@ -1,39 +1,36 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.List;
 
-/// Starting the manager with two arguments is refused: an error shows, and once it is dismissed the launcher ends with exit 1, having started no manager, made no data folder and registered nothing for .fearless.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on helloWorld and helloStackTraces together: an error shows in the middle of the screen, the launcher waits for it to be dismissed, and the manager has no data folder.
-/// Action 2: press OK: the launcher ends with exit 1, the desk shows its background again, the manager still has no data folder, and nothing is registered for .fearless.
 final class TooManyArgumentsTest extends ManagerTest{
-  final Area error= new Area("error",linux(1915,1075,10,10),windows(635,355,10,10));
-  final At errorShown= new At("errorShown",linux(1000),windows(1000));
-  final Click ok= new Click("ok",linux(1952,1212),windows(639,441));
-  @Override protected void walk() throws Exception{
-    clean();
-    var desk= look();
-    var at= error.aim();
-    var before= pixels(at);
-    var run= new ProcessBuilder(launcher.toString(),project.toString(),other.toString()).start();
-    until(()->!Arrays.equals(before,pixels(at)));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action errorShown= action("errorShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(19500))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1952),val(1212))),
+    on("windows",()->click(val(639),val(441))));
+  final Action launcherEnded= action("launcherEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(23000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    var other= project("helloStackTraces");
+    launchScript("first",project,other);
+    runInTerminal(appsShown,terminalShown);
     errorShown.go();
-    assertTrue(run.isAlive());
-    assertFalse(Files.exists(data));
+    stabilize();
+    assertFalse(Files.exists(filesIOFolder.resolve("first.exit")));
+    assertFalse(Files.exists(filesIOFolder.resolve(data)));
     ok.go();
-    until(()->!run.isAlive());
-    assertEquals(1,run.exitValue());
-    until(()->same(desk,look()));
-    assertFalse(Files.exists(data));
-    assertEquals(List.of(),registered());
+    launcherEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"1\n");
+    assertFalse(Files.exists(filesIOFolder.resolve(data)));
   }
 }

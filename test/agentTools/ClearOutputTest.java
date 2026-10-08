@@ -1,66 +1,81 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.awt.event.KeyEvent;
-import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 
-import tools.Fs;
-
-/// Clear output empties the Output of a project and the console file the manager keeps for it, and what is printed afterwards starts again from the top of the empty Output.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on helloWorld: the manager window opens showing helloWorld, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: close the Information section: the Output is empty.
-/// Action 4: press Check: the Output says no problem was found.
-/// Action 5: press Check again: the Output says it twice.
-/// Action 6: press Clear output: the Output is empty again, exactly as before the first Check, and so is its console file.
-/// Action 7: press Check: the Output says no problem was found once, exactly as after the first Check.
-/// Action 8: end the manager.
 final class ClearOutputTest extends ManagerTest{
-  static final Path console= data.resolve("eclipse").resolve("hello_world").resolve("console.txt");
-  static final String ok= "--- ok: no problem found ---\n";
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click closeInformation= new Click("closeInformation",linux(150,167),windows(79,120));
-  final Area output= new Area("output",linux(91,264,3734,1861),windows(26,214,1238,422));
-  final Click check= new Click("check",linux(164,111),windows(102,67));
-  final Click checkAgain= new Click("checkAgain",linux(164,111),windows(102,67));
-  final Click clearOutput= new Click("clearOutput",linux(3785,233),windows(1227,184));
-  final Click checkAfterClear= new Click("checkAfterClear",linux(164,111),windows(102,67));
-  @Override protected void walk() throws Exception{
-    clean();
-    launch(project.toString());
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action closeInformation= action("closeInformation",
+    on("ubuntu_gnome",()->click(val(150),val(167))),
+    on("windows",()->click(val(79),val(120))));
+  final Action check= action("check",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action checked= action("checked",
+    on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action checkAgain= action("checkAgain",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action checkedAgain= action("checkedAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(48000))));
+  final Action clearOutput= action("clearOutput",
+    on("ubuntu_gnome",()->click(val(3785),val(233))),
+    on("windows",()->click(val(1227),val(184))));
+  final Action outputCleared= action("outputCleared",
+    on("ubuntu_gnome",()->waitUntilTime(val(50500))));
+  final Action checkAfterClear= action("checkAfterClear",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action checkedAfterClear= action("checkedAfterClear",
+    on("ubuntu_gnome",()->waitUntilTime(val(64500))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(66000))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(69500))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(79500))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    var console= List.of(data,"eclipse","hello_world","console.txt");
+    var ok= "--- ok: no problem found ---\n";
+    launchScript("first",project);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     closeInformation.go();
-    look();
-    var at= output.aim();
-    var empty= pixels(at);
-    assertEquals("",Fs.readUtf8(console));
+    stabilize();
+    checkContent(console,"");
     check.go();
-    until(()->Fs.readUtf8(console).equals(ok));
-    look();
-    until(()->!Arrays.equals(empty,pixels(at)));
-    var once= pixels(at);
+    checked.go();
+    stabilize();
+    checkContent(console,ok);
     checkAgain.go();
-    until(()->Fs.readUtf8(console).equals(ok+ok));
-    look();
-    until(()->!Arrays.equals(once,pixels(at)));
+    checkedAgain.go();
+    stabilize();
+    checkContent(console,ok+ok);
     clearOutput.go();
-    until(()->Fs.readUtf8(console).isEmpty());
-    look();
-    until(()->Arrays.equals(empty,pixels(at)));
+    outputCleared.go();
+    stabilize();
+    checkContent(console,"");
     checkAfterClear.go();
-    until(()->Fs.readUtf8(console).equals(ok));
-    look();
-    until(()->Arrays.equals(once,pixels(at)));
-    stopManagers();
+    checkedAfterClear.go();
+    stabilize();
+    checkContent(console,ok);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

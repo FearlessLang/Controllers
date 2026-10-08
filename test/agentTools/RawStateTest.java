@@ -1,79 +1,103 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.event.KeyEvent;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
-
-import org.junit.jupiter.api.AfterEach;
 
 import tools.Fs;
 
-/// Show raw project state says <nothing registered> while no project is registered, and once projects are registered it lists the information of each, in the order they were registered, separated by a blank line: folder, name, kind, the count, total size and last change of its files, and for a code project also its cache, compile and run times, packages, mains and links, then its job and problems.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, the folder notes beside the manager holds only its marker and one source file, both last changed at 2026-01-02 03:04:05, and the folder tally beside the manager exists and holds nothing.
-/// Action 1: run the launcher: the manager window opens with no tile.
-/// Action 2: choose Show raw project state... in its Manager menu: a dialog opens.
-/// Action 3: click in its text, select all of it and copy it: the text copied is <nothing registered>.
-/// Action 4: press OK: the dialog goes away.
-/// Action 5: run the launcher on notes, then on tally: each ends at once, and the manager remembers notes as an idle project and tally as a code project.
-/// Action 6: choose Show raw project state... in its Manager menu: a dialog opens.
-/// Action 7: click in its text, select all of it and copy it: the text copied is the information of notes, a blank line, then the information of tally.
-/// Action 8: press OK: the dialog goes away.
-/// Action 9: end the manager.
 final class RawStateTest extends ManagerTest{
-  static final Path notes= data.resolveSibling("notes");
-  static final Path tally= data.resolveSibling("tally");
-  static final DateTimeFormatter when= DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Area dialog= new Area("dialog",linux(1600,850,700,25),windows(600,96,300,10));
-  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click showRawState= new Click("showRawState",linux(128,124),windows(61,78));
-  final Click focusText= new Click("focusText",linux(1970,1100),windows(660,300));
-  final Click ok= new Click("ok",linux(1952,1323),windows(639,569));
-  final Click managerMenuAgain= new Click("managerMenuAgain",linux(98,79),windows(31,33));
-  final Click showRawStateAgain= new Click("showRawStateAgain",linux(128,124),windows(61,78));
-  final Click focusTextAgain= new Click("focusTextAgain",linux(1970,1100),windows(660,300));
-  final Click okAgain= new Click("okAgain",linux(1952,1323),windows(639,569));
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action managerMenu= action("managerMenu",
+    on("ubuntu_gnome",()->click(val(98),val(79))),
+    on("windows",()->click(val(31),val(33))));
+  final Action showRawState= action("showRawState",
+    on("ubuntu_gnome",()->click(val(128),val(124))),
+    on("windows",()->click(val(61),val(78))));
+  final Action dialogShown= action("dialogShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21200))));
+  final Action focusText= action("focusText",
+    on("ubuntu_gnome",()->click(val(1970),val(1100))),
+    on("windows",()->click(val(660),val(300))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1952),val(1323))),
+    on("windows",()->click(val(639),val(569))));
+  final Action appsShownNotes= action("appsShownNotes",
+    on("ubuntu_gnome",()->waitUntilTime(val(24300))));
+  final Action terminalShownNotes= action("terminalShownNotes",
+    on("ubuntu_gnome",()->waitUntilTime(val(27800))));
+  final Action notesHanded= action("notesHanded",
+    on("ubuntu_gnome",()->waitUntilTime(val(38800))));
+  final Action appsShownTally= action("appsShownTally",
+    on("ubuntu_gnome",()->waitUntilTime(val(40300))));
+  final Action terminalShownTally= action("terminalShownTally",
+    on("ubuntu_gnome",()->waitUntilTime(val(43800))));
+  final Action tallyHanded= action("tallyHanded",
+    on("ubuntu_gnome",()->waitUntilTime(val(54800))));
+  final Action managerMenuAgain= action("managerMenuAgain",
+    on("ubuntu_gnome",()->click(val(98),val(79))),
+    on("windows",()->click(val(31),val(33))));
+  final Action showRawStateAgain= action("showRawStateAgain",
+    on("ubuntu_gnome",()->click(val(128),val(124))),
+    on("windows",()->click(val(61),val(78))));
+  final Action dialogShownAgain= action("dialogShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(57500))));
+  final Action focusTextAgain= action("focusTextAgain",
+    on("ubuntu_gnome",()->click(val(1970),val(1100))),
+    on("windows",()->click(val(660),val(300))));
+  final Action okAgain= action("okAgain",
+    on("ubuntu_gnome",()->click(val(1952),val(1323))),
+    on("windows",()->click(val(639),val(569))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(60600))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(64100))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(74100))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var notesFolder= filesIOFolder.resolve("notes");
+    var tally= filesIOFolder.resolve("tally");
+    Fs.rmTree(notesFolder);
+    Fs.rmTree(tally);
+    var when= DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
     var changed= FileTime.from(ZonedDateTime.parse("2026-01-02 03:04:05",when).toInstant());
-    var marker= notes.resolve("notes.fearless");
-    var source= notes.resolve("_notes").resolve("_rank_app.fear");
+    var marker= notesFolder.resolve("notes.fearless");
+    var source= notesFolder.resolve("_notes").resolve("_rank_app.fear");
     Fs.writeUtf8(marker,"\n");
     Fs.writeUtf8(source,"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"notes\")}\n");
     for (var p: List.of(marker,source)){ Files.setLastModifiedTime(p,changed); }
     Fs.ensureDir(tally);
-    launch();
+    launchScript("first");
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    var where= dialog.aim();
-    var behind= pixels(where);
     managerMenu.go();
     showRawState.go();
-    until(()->!Arrays.equals(behind,pixels(where)));
+    dialogShown.go();
     focusText.go();
-    assertEquals("<nothing registered>",copied());
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
     ok.go();
-    until(()->Arrays.equals(behind,pixels(where)));
-    for (var f: List.of(notes,tally)){
-      var run= launch(f.toString());
-      until(()->!run.isAlive());
-      assertEquals(0,run.exitValue());
-    }
-    assertEquals("""
+    launchScript("second",notesFolder);
+    runInTerminal(appsShownNotes,terminalShownNotes);
+    notesHanded.go();
+    stabilize();
+    checkContent(List.of("second.exit"),"0\n");
+    launchScript("third",tally);
+    runInTerminal(appsShownTally,terminalShownTally);
+    tallyHanded.go();
+    stabilize();
+    checkContent(List.of("third.exit"),"0\n");
+    checkContent(info,"""
       {
         "notes": {
           "path": "Str:%s",
@@ -84,50 +108,18 @@ final class RawStateTest extends ManagerTest{
           "kind": "code"
         }
       }
-      """.formatted(slashed(notes),slashed(tally)),Fs.readUtf8(info));
-    var registered= pixels(where);
+      """.formatted(slashed(notesFolder),slashed(tally)));
     managerMenuAgain.go();
     showRawStateAgain.go();
-    until(()->!Arrays.equals(registered,pixels(where)));
+    dialogShownAgain.go();
     focusTextAgain.go();
-    var written= when.format(Instant.ofEpochMilli(Stream.of(tally.resolve("tally.fearless"),tally.resolve("_tally").resolve("_rank_app.fear")).mapToLong(Fs::lastModified).max().getAsLong()));
-    assertEquals("""
-      Folder          %s
-      Name            notes
-      Kind            idle
-      Files           2
-      Total size      61 bytes
-      Last modified   2026-01-02 03:04:05
-      Job             none
-      Problems        none
-
-      Folder          %s
-      Name            tally
-      Kind            code
-      Files           2
-      Total size      169 bytes
-      Last modified   %s
-      Compiled cache  needs compiling
-      Last compile    never
-      Last run        never
-      Packages        tally
-      Mains selected  <none>
-      Reads           <none>
-      Edits           <none>
-      Job             none
-      Problems        none""".formatted(notes,tally,written),copied());
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
     okAgain.go();
-    until(()->Arrays.equals(registered,pixels(where)));
-    stopManagers();
-  }
-  private Object copied() throws Exception{
-    pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
-    return Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(notes);
-    Fs.rmTree(tally);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

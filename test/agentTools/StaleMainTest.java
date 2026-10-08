@@ -1,38 +1,12 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.awt.event.KeyEvent;
-import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
+import java.util.List;
 
 import tools.Fs;
-import utils.Err;
 
-/// A ticked main that the source no longer declares stays selected until the next compile, which drops it from the selected mains without a word while the other ticked main stays ticked, and Run selected then runs only that one.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, and the folder menu beside the manager holds only its marker and one source file with three mains, First, Second and Third, each printing its own name.
-/// Action 1: run the launcher on menu: the manager window opens showing menu, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers menu as a code project.
-/// Action 4: press Compile: the manager knows the three mains of menu, and the panel shows them, none ticked.
-/// Action 5: tick menu.Second: the manager remembers it as the one selected main.
-/// Action 6: tick menu.Third: the manager remembers menu.Second then menu.Third as the selected mains.
-/// Action 7: save the source file without Third: the manager by itself knows no main of menu any more, still remembers menu.Second and menu.Third as selected, and the Output says nothing new.
-/// Action 8: press Compile: the Output says a second compile is done and nothing else, the manager knows menu.First and menu.Second and remembers only menu.Second as selected, and the panel shows those two mains exactly as the first two were shown before, menu.Second ticked.
-/// Action 9: press Run selected: the Output shows menu.Second running, printing its name and exiting with 0, and nothing about menu.Third, and the manager counts one run, of menu.Second, exited with 0.
-/// Action 10: end the manager.
 final class StaleMainTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  static final Path menu= data.resolveSibling("menu");
-  static final Path source= menu.resolve("_menu").resolve("_rank_app.fear");
-  static final Path console= data.resolve("eclipse").resolve("menu").resolve("console.txt");
+  static final List<String> console= List.of(data,"eclipse","menu","console.txt");
   static final String mains= "use base.Main as Main;\n\nFirst: Main{sys -> sys.out.println \"First\"}\nSecond: Main{sys -> sys.out.println \"Second\"}\n";
   static final String compiled= "--- compiling menu ---\n--- compile done ---\n";
   static final String registry= """
@@ -44,53 +18,94 @@ final class StaleMainTest extends ManagerTest{
       }
     }
     """;
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At mainsShown= new At("mainsShown",linux(1000),windows(1000));
-  final Click tickSecond= new Click("tickSecond",linux(99,215),windows(31,166));
-  final Click tickThird= new Click("tickThird",linux(99,240),windows(31,190));
-  final Area rows= new Area("rows",linux(90,180,210,50),windows(22,132,210,48));
-  final Click compileEdited= new Click("compileEdited",linux(164,111),windows(102,67));
-  final Click runSelected= new Click("runSelected",linux(164,111),windows(102,67));
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action mainsShown= action("mainsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
+  final Action tickSecond= action("tickSecond",
+    on("ubuntu_gnome",()->click(val(99),val(215))),
+    on("windows",()->click(val(31),val(166))));
+  final Action secondSaved= action("secondSaved",
+    on("ubuntu_gnome",()->waitUntilTime(val(37000))));
+  final Action tickThird= action("tickThird",
+    on("ubuntu_gnome",()->click(val(99),val(240))),
+    on("windows",()->click(val(31),val(190))));
+  final Action thirdSaved= action("thirdSaved",
+    on("ubuntu_gnome",()->waitUntilTime(val(39000))));
+  final Action mainsForgotten= action("mainsForgotten",
+    on("ubuntu_gnome",()->waitUntilTime(val(42000))));
+  final Action compileEdited= action("compileEdited",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action editedCompiled= action("editedCompiled",
+    on("ubuntu_gnome",()->waitUntilTime(val(56000))));
+  final Action runSelected= action("runSelected",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action runDone= action("runDone",
+    on("ubuntu_gnome",()->waitUntilTime(val(61000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(62500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(66000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(76000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var menu= filesIOFolder.resolve("menu");
+    var source= menu.resolve("_menu").resolve("_rank_app.fear");
+    Fs.rmTree(menu);
     Fs.writeUtf8(menu.resolve("menu.fearless"),"\n");
     Fs.writeUtf8(source,mains+"Third: Main{sys -> sys.out.println \"Third\"}\n");
-    launch(menu.toString());
+    launchScript("first",menu);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
+    codeShown.go();
     compile.go();
-    until(()->Fs.readUtf8(state).contains("menu.Third"));
     mainsShown.go();
     tickSecond.go();
-    until(()->Fs.readUtf8(info).contains("menu.Second"));
-    assertEquals(registry.formatted(slashed(menu),"\"menu.Second\""),Fs.readUtf8(info));
+    secondSaved.go();
+    stabilize();
+    checkContent(info,registry.formatted(slashed(menu),"\"menu.Second\""));
     tickThird.go();
-    until(()->Fs.readUtf8(info).contains("menu.Third"));
+    thirdSaved.go();
     var both= registry.formatted(slashed(menu),"\"menu.Second\", \"menu.Third\"");
-    assertEquals(both,Fs.readUtf8(info));
-    look();
-    var at= rows.aim();
-    var ticked= pixels(at);
+    stabilize();
+    checkContent(info,both);
     Fs.writeUtf8(source,mains);
-    until(()->!Fs.readUtf8(state).contains("menu.First"));
-    assertEquals(both,Fs.readUtf8(info));
-    assertEquals(compiled,Fs.readUtf8(console));
+    stabilize();
+    mainsForgotten.go();
+    stabilize();
+    checkContent(info,both);
+    checkContent(console,compiled);
     compileEdited.go();
-    until(()->Fs.readUtf8(state).contains("menu.Second"));
-    assertEquals(compiled+compiled,Fs.readUtf8(console));
-    assertEquals(registry.formatted(slashed(menu),"\"menu.Second\""),Fs.readUtf8(info));
-    look();
-    until(()->Arrays.equals(ticked,pixels(at)));
+    editedCompiled.go();
+    stabilize();
+    checkContent(console,compiled+compiled);
+    checkContent(info,registry.formatted(slashed(menu),"\"menu.Second\""));
     runSelected.go();
-    until(()->Fs.readUtf8(state).contains("\"exit\": \"0\""));
-    assertEquals("""
+    runDone.go();
+    stabilize();
+    checkContent(state,"""
       {
         "menu": {
           "folder": "Str:%s",
@@ -106,16 +121,16 @@ final class StaleMainTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(escaped(menu)),Fs.readUtf8(state));
-    Err.strCmp(compiled+compiled+"""
+      """.formatted(escaped(menu)));
+    checkContent(console,compiled+compiled+"""
       --- running menu.Second ---
       Second
       --- menu.Second exited with 0 after [###]s ---
-      """,Fs.readUtf8(console));
-    stopManagers();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(menu);
+      """);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

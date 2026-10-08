@@ -2,80 +2,126 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.awt.Toolkit;
-import java.awt.image.BufferedImage;
-import java.lang.ProcessBuilder.Redirect;
-import java.nio.file.Files;
+import java.awt.event.KeyEvent;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
-import fileAssociations.FileAssociations;
 import resources.ResolveResource;
 import tools.Fs;
 import tools.JavacTool;
+import utils.Bug;
+import utils.Err;
 import utils.OneOr;
-import utils.Push;
 
-/// A test of the manager DeployManagedFearless.java builds. Its setup, repeated when the test ends: no manager runs, the manager has no data folder, helloWorld and testGui1 were never compiled, and nothing is registered for .fearless.
-abstract class ManagerTest extends PilotTest{
-  static final Path app= ResolveResource.managedFolderOut.resolve("fearlessManaged"+ResolveResource.versionId);
-  static final Path launcher= Fs.isWindows() ? app.resolve(app.getFileName()+".exe") : app.resolve("bin").resolve(app.getFileName().toString());
-  static final Path project= ResolveResource.integrationTests.resolve("helloWorld");
-  static final Path other= ResolveResource.integrationTests.resolve("helloStackTraces");
-  static final Path gui= ResolveResource.integrationTests.resolve("testGui1");
-  static final Path data= app.resolveSibling(JavacTool.dataDirNameFor(ResolveResource.versionId));
-  static final Path info= data.resolve("projects.info");
-  static final Path state= data.resolve("eclipse").resolve("state.info");
-  static final Path notes= data.resolve("eclipse").resolve("console.txt");
-  static final Path share= Path.of(System.getProperty("user.home"),".local","share");
-  static final String killed= Fs.isWindows() ? "1" : "143";
-  static String slashed(Path p){ return p.toString().replace('\\','/'); }
-  static String escaped(Path p){ return p.toString().replace("\\","\\\\"); }
-  static boolean elevated(){ return Fs.isWindows() && Fs.of(()->new ProcessBuilder("net","session").redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start().onExit().join().exitValue())==0; }
-  static List<String> registered(){
-    if (Fs.isWindows()){ return Fs.of(()->new ProcessBuilder("reg","query","HKCU\\Software\\Classes\\.fearless").redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start().onExit().join().exitValue())==0 ? List.of(".fearless") : List.of(); }
-    return Stream.of(share.resolve("applications"),share.resolve("mime").resolve("packages")).flatMap(d->Fs.walk(d,s->s.filter(p->p.getFileName().toString().contains("earless")).map(Path::toString).toList()).stream()).toList();
+abstract class ManagerTest{
+  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
+  final String desk= System.getProperty("desk");
+  final boolean agent= Boolean.getBoolean("agent");
+  final Path channel= Path.of(System.getProperty("channelFolder"));
+  final Path filesIOFolder= Path.of(System.getProperty("filesIOFolder"));
+  final Pilot pilot= new Pilot();
+  long start;
+  int inputIndex;
+  List<Object> inputs;
+  abstract void walk() throws Throwable;
+  @Test void test() throws Throwable{
+    start= System.currentTimeMillis();
+    walk();
   }
-  Process launch(String... args) throws Exception{
-    var before= pilot.shot();
-    var res= new ProcessBuilder(Push.of(launcher.toString(),List.of(args))).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD).start();
-    until(()->!same(before,pilot.shot()));
+  Action action(String name, On... ons){ return new Action(this,name,OneOr.of(name+" on "+desk,Stream.of(ons).filter(o->o.desk().equals(desk))).steps()); }
+  static On on(String desk, Run steps){ return new On(desk,steps); }
+  record Action(ManagerTest m, String name, Run run){
+    void go() throws Throwable{
+      if (!m.agent){ run.run(); return; }
+      m.inputIndex= 0;
+      Fs.cleanDir(m.channel);
+      var file= m.channel.resolve(name);
+      Fs.writeUtf8(file,"");
+      var text= Fs.readUtf8(file).strip();
+      for (; !text.endsWith(";"); text= Fs.readUtf8(file).strip()){ Pilot.pause(100); }
+      m.inputs= text.substring(0,text.length()-1).lines().map(String::strip).map(Action::input).toList();
+      run.run();
+    }
+    static Object input(String s){ return s.startsWith("\"") ? s.substring(1,s.length()-1) : Integer.valueOf(s); }
+  }
+  interface Run{ void run() throws Throwable; }
+  record On(String desk, Run steps){}
+  @SuppressWarnings("unchecked")
+  <T> T val(T recorded){ return agent ? (T)inputs.get(inputIndex++) : recorded; }
+  void waitUntilTime(int time){
+    var left= start+time-System.currentTimeMillis();
+    if (left>0){ Pilot.pause((int)left); }
+  }
+  void click(int x, int y){ pilot.click(x,y); }
+  void doubleClick(int x, int y){ pilot.doubleClick(x,y); }
+  void drag(int x0, int y0, int x1, int y1){ pilot.drag(x0,y0,x1,y1); }
+  void type(String text){ text.chars().forEach(this::type); }
+  void type(int c){
+    var i= "~!@#$%^&*()_+{}|:\"<>?".indexOf(c);
+    if (i>=0){ pilot.chord(KeyEvent.VK_SHIFT,KeyEvent.getExtendedKeyCodeForChar("`1234567890-=[]\\;',./".charAt(i))); return; }
+    var code= KeyEvent.getExtendedKeyCodeForChar(c);
+    if (Character.isUpperCase(c)){ pilot.chord(KeyEvent.VK_SHIFT,code); return; }
+    pilot.chord(code);
+  }
+  void keys(int... codes){ pilot.chord(codes); }
+  void stabilize(){
+    if (!Fs.isLinux()){ return; }
+    OneOr.opt("one guest alive",virsh("list","--name").lines().filter(l->!l.isBlank())).ifPresent(ManagerTest::flush);
+  }
+  static void flush(String guest){
+    var pid= virsh("qemu-agent-command",guest,"{\"execute\":\"guest-exec\",\"arguments\":{\"path\":\"/bin/sh\",\"arg\":[\"-c\",\"sync; echo 3 >/proc/sys/vm/drop_caches\"]}}").replaceAll("\\D","");
+    var status= "{\"execute\":\"guest-exec-status\",\"arguments\":{\"pid\":"+pid+"}}";
+    var done= virsh("qemu-agent-command",guest,status);
+    for (; !done.contains("\"exited\":true"); done= virsh("qemu-agent-command",guest,status)){ Pilot.pause(100); }
+    assert done.contains("\"exitcode\":0");
+  }
+  static String virsh(String... args){
+    var p= Fs.of(()->new ProcessBuilder(Stream.concat(Stream.of("virsh","-c","qemu:///system"),Stream.of(args)).toList()).redirectErrorStream(true).start());
+    var out= Fs.of(()->new String(p.getInputStream().readAllBytes(),StandardCharsets.UTF_8));
+    assertEquals(0,p.onExit().join().exitValue(),out);
+    return out;
+  }
+  void checkContent(List<String> path, String expected){ Err.strCmp(expected,Fs.readUtf8(filesIOFolder.resolve(String.join("/",path)))); }
+  static final String data= JavacTool.dataDirNameFor(ResolveResource.versionId);
+  static final List<String> info= List.of(data,"projects.info");
+  static final List<String> state= List.of(data,"eclipse","state.info");
+  static final List<String> notes= List.of(data,"eclipse","console.txt");
+  final Path app= filesIOFolder.resolve("fearlessManaged"+ResolveResource.versionId);
+  final Action showApps= action("showApps",on("ubuntu_gnome",()->click(val(34),val(16))),on("windows",ManagerTest::unrecorded));
+  final Action openTerminal= action("openTerminal",on("ubuntu_gnome",()->type("terminal\n")),on("windows",ManagerTest::unrecorded));
+  final Action runShell= action("runShell",on("ubuntu_gnome",()->type("sh "+filesIOFolder.resolve("run.sh")+"; exit\n")),on("windows",ManagerTest::unrecorded));
+  static void unrecorded(){ throw Bug.todo(); }
+  Path project(String name){
+    var res= filesIOFolder.resolve(name);
+    Fs.copyFresh(ResolveResource.integrationTests.resolve(name),res);
+    Fs.rmTree(res.resolve(".fearless_out"));
     return res;
   }
-  BufferedImage look(){
-    var s= Toolkit.getDefaultToolkit().getScreenSize();
-    pilot.glide(s.width-1,s.height/2,Pilot.none,s.width-1,s.height/2,Pilot.none);
-    return pilot.shot();
+  void noManagerData(){ Fs.rmTree(filesIOFolder.resolve(data)); }
+  void shell(String script){
+    Fs.writeUtf8(filesIOFolder.resolve("run.sh"),script);
+    stabilize();
   }
-  int[] pixels(int[] at){ return pilot.shot().getRGB(at[0],at[1],at[2],at[3],null,0,at[2]); }
-  static boolean same(BufferedImage a, BufferedImage b){
-    var pa= a.getRGB(0,0,a.getWidth(),a.getHeight(),null,0,a.getWidth());
-    var pb= b.getRGB(0,0,b.getWidth(),b.getHeight(),null,0,b.getWidth());
-    assert pa.length==pb.length;
-    var diff= IntStream.range(0,pa.length).filter(i->Math.abs((pa[i]&0xff)-(pb[i]&0xff))+Math.abs((pa[i]>>8&0xff)-(pb[i]>>8&0xff))+Math.abs((pa[i]>>16&0xff)-(pb[i]>>16&0xff))>30).count();
-    return diff*20<pa.length;
+  void launchScript(String exit, Object... args){
+    Fs.rmTree(filesIOFolder.resolve(exit+".exit"));
+    var line= Stream.concat(Stream.of(app.resolve("bin").resolve(app.getFileName().toString())),Stream.of(args)).map(a->"\""+a+"\"").collect(Collectors.joining(" "));
+    shell("nohup setsid -f sh -c '"+line+"; echo $? >"+filesIOFolder.resolve(exit+".exit")+"' >/dev/null 2>&1\n");
   }
-  @AfterEach void clean() throws Exception{
-    stopManagers();
-    Fs.rmTree(data);
-    Fs.rmTree(project.resolve(".fearless_out"));
-    Fs.rmTree(gui.resolve(".fearless_out"));
-    if (Fs.isWindows()){ FileAssociations.eradicateAll(s->s.contains("earless"),RuntimeException::new); return; }
-    for (var dir: List.of(share.resolve("applications"),share.resolve("mime").resolve("packages"))){
-      Fs.walkV(dir,s->s.filter(p->p.getFileName().toString().contains("earless")).toList().forEach(p->Fs.ofV(()->Files.delete(p))));
-    }
-    assertEquals(0,new ProcessBuilder("update-mime-database",share.resolve("mime").toString()).start().waitFor());
-    assertEquals(0,new ProcessBuilder("update-desktop-database",share.resolve("applications").toString()).start().waitFor());
+  void endScript(){ shell("pkill -KILL -f '^"+app+"/'\n"); }
+  void runInTerminal(Action appsShown, Action terminalShown) throws Throwable{
+    showApps.go();
+    appsShown.go();
+    openTerminal.go();
+    terminalShown.go();
+    runShell.go();
   }
-  static void stopManagers(){ ProcessHandle.allProcesses().filter(p->p.info().command().filter(launcher.toString()::equals).isPresent()).forEach(ManagerTest::kill); }
-  private static void kill(ProcessHandle p){
-    var all= Stream.concat(p.descendants(),Stream.of(p)).toList();
-    all.forEach(ProcessHandle::destroyForcibly);
-    all.forEach(h->h.onExit().join());
-  }
-  static ProcessHandle program(Process manager){ return OneOr.of("program",manager.descendants().filter(p->p.info().command().filter(c->Path.of(c).getFileName().toString().startsWith("java")).isPresent())); }
+  static String slashed(Path p){ return p.toString().replace('\\','/'); }
+  static String escaped(Path p){ return p.toString().replace("\\","\\\\"); }
 }
