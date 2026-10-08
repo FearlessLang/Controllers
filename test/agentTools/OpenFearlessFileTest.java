@@ -24,7 +24,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(2000))),
     on("omarchy_hyprland",()->waitUntilTime(val(2000))),
     on("fedora_gnome",()->waitUntilTime(val(2000))),
-    on("opensuse_plasma",()->waitUntilTime(val(2000))));
+    on("opensuse_plasma",()->waitUntilTime(val(2000))),
+    on("fedora_cosmic",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -37,7 +38,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(6500))),
     on("omarchy_hyprland",()->waitUntilTime(val(6500))),
     on("fedora_gnome",()->waitUntilTime(val(6500))),
-    on("opensuse_plasma",()->waitUntilTime(val(7000))));
+    on("opensuse_plasma",()->waitUntilTime(val(7000))),
+    on("fedora_cosmic",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -50,7 +52,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(20000))),
     on("omarchy_hyprland",()->waitUntilTime(val(20000))),
     on("fedora_gnome",()->waitUntilTime(val(20000))),
-    on("opensuse_plasma",()->waitUntilTime(val(21000))));
+    on("opensuse_plasma",()->waitUntilTime(val(21000))),
+    on("fedora_cosmic",()->waitUntilTime(val(20000))));
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->click(val(98),val(79))),
     on("debian_gnome_x11",()->click(val(32),val(80))),
@@ -64,6 +67,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("omarchy_hyprland",()->click(val(146),val(112))),
     on("fedora_gnome",()->click(val(32),val(80))),
     on("opensuse_plasma",()->click(val(30),val(39))),
+    on("fedora_cosmic",()->click(val(66),val(156))),
     on("windows",()->click(val(31),val(33))));
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome",()->click(val(116),val(212))),
@@ -78,6 +82,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("omarchy_hyprland",()->click(val(206),val(596))),
     on("fedora_gnome",()->click(val(60),val(212))),
     on("opensuse_plasma",()->click(val(60),val(171))),
+    on("fedora_cosmic",()->click(val(110),val(423))),
     on("windows",()->click(val(61),val(167))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
@@ -91,7 +96,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(26000))),
     on("omarchy_hyprland",()->waitUntilTime(val(26000))),
     on("fedora_gnome",()->waitUntilTime(val(24500))),
-    on("opensuse_plasma",()->waitUntilTime(val(26500))));
+    on("opensuse_plasma",()->waitUntilTime(val(26500))),
+    on("fedora_cosmic",()->waitUntilTime(val(24500))));
   final Action appsShownFiles= action("appsShownFiles",
     on("ubuntu_gnome",()->waitUntilTime(val(24500))),
     on("debian_gnome_x11",()->waitUntilTime(val(26000))),
@@ -104,7 +110,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(28000))),
     on("omarchy_hyprland",()->waitUntilTime(val(28000))),
     on("fedora_gnome",()->waitUntilTime(val(33000))),
-    on("opensuse_plasma",()->waitUntilTime(val(34000))));
+    on("opensuse_plasma",()->waitUntilTime(val(34000))),
+    on("fedora_cosmic",()->waitUntilTime(val(33000))));
   final Action terminalShownFiles= action("terminalShownFiles",
     on("ubuntu_gnome",()->waitUntilTime(val(28000))),
     on("debian_gnome_x11",()->waitUntilTime(val(30500))),
@@ -117,7 +124,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(32500))),
     on("omarchy_hyprland",()->waitUntilTime(val(32500))),
     on("fedora_gnome",()->waitUntilTime(val(39000))),
-    on("opensuse_plasma",()->waitUntilTime(val(40000))));
+    on("opensuse_plasma",()->waitUntilTime(val(40000))),
+    on("fedora_cosmic",()->waitUntilTime(val(39000))));
   final Action filesShown= action("filesShown",
     on("ubuntu_gnome",()->waitUntilTime(val(40000))),
     on("debian_gnome_x11",()->waitUntilTime(val(44000))),
@@ -130,7 +138,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(46000))),
     on("omarchy_hyprland",()->waitUntilTime(val(46000))),
     on("fedora_gnome",()->waitUntilTime(val(54000))),
-    on("opensuse_plasma",()->waitUntilTime(val(53000))));
+    on("opensuse_plasma",()->waitUntilTime(val(53000))),
+    on("fedora_cosmic",()->waitUntilTime(val(54000))));
   final Action openFile= action("openFile",
     on("ubuntu_gnome",()->doubleClick(val(1872),val(915))),
     on("debian_gnome_x11",()->doubleClick(val(1925),val(939))),
@@ -144,6 +153,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("omarchy_hyprland",()->doubleClick(val(1020),val(310))),
     on("fedora_gnome",()->doubleClick(val(1925),val(939))),
     on("opensuse_plasma",()->doubleClick(val(1894),val(849))),
+    on("fedora_cosmic",()->doubleClick(val(1568),val(686))),
     on("windows",()->doubleClick(val(503),val(254))));
   final Action managerOpened= action("managerOpened",
     on("ubuntu_gnome",()->waitUntilTime(val(52000))),
@@ -157,7 +167,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(62000))),
     on("omarchy_hyprland",()->waitUntilTime(val(62000))),
     on("fedora_gnome",()->waitUntilTime(val(70000))),
-    on("opensuse_plasma",()->waitUntilTime(val(69000))));
+    on("opensuse_plasma",()->waitUntilTime(val(69000))),
+    on("fedora_cosmic",()->waitUntilTime(val(70000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(53500))),
     on("debian_gnome_x11",()->waitUntilTime(val(61500))),
@@ -170,7 +181,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(64000))),
     on("omarchy_hyprland",()->waitUntilTime(val(64000))),
     on("fedora_gnome",()->waitUntilTime(val(77000))),
-    on("opensuse_plasma",()->waitUntilTime(val(70500))));
+    on("opensuse_plasma",()->waitUntilTime(val(70500))),
+    on("fedora_cosmic",()->waitUntilTime(val(77000))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(57000))),
     on("debian_gnome_x11",()->waitUntilTime(val(66000))),
@@ -183,7 +195,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(68500))),
     on("omarchy_hyprland",()->waitUntilTime(val(68500))),
     on("fedora_gnome",()->waitUntilTime(val(83000))),
-    on("opensuse_plasma",()->waitUntilTime(val(76500))));
+    on("opensuse_plasma",()->waitUntilTime(val(76500))),
+    on("fedora_cosmic",()->waitUntilTime(val(83000))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(67000))),
     on("debian_gnome_x11",()->waitUntilTime(val(76000))),
@@ -196,7 +209,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(80000))),
     on("omarchy_hyprland",()->waitUntilTime(val(80000))),
     on("fedora_gnome",()->waitUntilTime(val(95000))),
-    on("opensuse_plasma",()->waitUntilTime(val(88000))));
+    on("opensuse_plasma",()->waitUntilTime(val(88000))),
+    on("fedora_cosmic",()->waitUntilTime(val(95000))));
   final Action closeFiles= action("closeFiles",
     on("ubuntu_gnome",()->click(val(2374),val(844))),
     on("debian_gnome_x11",()->click(val(2341),val(844))),
@@ -210,6 +224,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("omarchy_hyprland",()->keys(KeyEvent.VK_ALT,KeyEvent.VK_SHIFT,KeyEvent.VK_Q)),
     on("fedora_gnome",()->click(val(2341),val(844))),
     on("opensuse_plasma",()->click(val(2285),val(742))),
+    on("fedora_cosmic",()->click(val(2894),val(352))),
     on("windows",()->click(val(1016),val(58))));
   final Action filesClosed= action("filesClosed",
     on("ubuntu_gnome",()->waitUntilTime(val(70000))),
@@ -223,7 +238,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(83000))),
     on("omarchy_hyprland",()->waitUntilTime(val(83000))),
     on("fedora_gnome",()->waitUntilTime(val(98000))),
-    on("opensuse_plasma",()->waitUntilTime(val(92000))));
+    on("opensuse_plasma",()->waitUntilTime(val(92000))),
+    on("fedora_cosmic",()->waitUntilTime(val(98000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
@@ -234,10 +250,11 @@ final class OpenFearlessFileTest extends ManagerTest{
     assertFalse(Files.exists(filesIOFolder.resolve(data).resolve("projects.info")));
     managerMenu.go();
     quitManager.go();
+    park();
     managerQuit.go();
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
-    var bare= parkedShot();
+    var bare= pilot.shot();
     shell("nohup setsid -f xdg-open \""+project+"\" >/dev/null 2>&1\n");
     runInTerminal(appsShownFiles,terminalShownFiles);
     filesShown.go();
@@ -257,15 +274,15 @@ final class OpenFearlessFileTest extends ManagerTest{
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();
     closeFiles.go();
+    park();
     filesClosed.go();
     var before= pixels(bare,files);
-    var after= pixels(parkedShot(),files);
+    var after= pixels(pilot.shot(),files);
     assertEquals(0L,IntStream.range(0,before.length).filter(i->!near(before[i],after[i])).count());
   }
-  BufferedImage parkedShot(){
+  void park(){
     var s= Toolkit.getDefaultToolkit().getScreenSize();
     pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
-    return pilot.shot();
   }
   static int[] pixels(BufferedImage img, Rectangle r){ return img.getRGB(r.x,r.y,r.width,r.height,null,0,r.width); }
   static boolean near(int p, int q){ return IntStream.of(0,8,16).allMatch(s->Math.abs((p>>s&255)-(q>>s&255))<=16); }
