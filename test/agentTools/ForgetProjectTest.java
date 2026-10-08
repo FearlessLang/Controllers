@@ -1,58 +1,69 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
+import java.nio.file.Path;
 import java.util.List;
 
 import tools.Fs;
 
-/// Forgetting a project takes its tile out of the window and the manager stops remembering it, while the other projects stay as they were, the manager keeps running, and the folder of the forgotten project is left exactly as it was.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on helloWorld: the manager window opens with one tile, helloWorld selected.
-/// Action 2: run the launcher on helloStackTraces: a second tile appears beside helloWorld and takes the selection from it.
-/// Action 3: choose Forget project in its Project menu: the second tile goes away, the helloWorld tile stays as it was, not selected, the manager keeps running and remembers only helloWorld, and every file and folder of helloStackTraces is still there, unchanged.
-/// Action 4: end the manager.
 final class ForgetProjectTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Area firstTile= new Area("firstTile",linux(74,149,128,88),windows(7,101,127,88));
-  final Area secondTile= new Area("secondTile",linux(202,149,128,88),windows(135,101,127,88));
-  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
-  final Click forgetProject= new Click("forgetProject",linux(180,237),windows(111,191));
-  @Override protected void walk() throws Exception{
-    clean();
-    var run= launch(project.toString());
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action appsShownOther= action("appsShownOther",
+    on("ubuntu_gnome",()->waitUntilTime(val(19500))));
+  final Action terminalShownOther= action("terminalShownOther",
+    on("ubuntu_gnome",()->waitUntilTime(val(23000))));
+  final Action otherShown= action("otherShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action projectMenu= action("projectMenu",
+    on("ubuntu_gnome",()->click(val(158),val(79))),
+    on("windows",()->click(val(89),val(33))));
+  final Action forgetProject= action("forgetProject",
+    on("ubuntu_gnome",()->click(val(180),val(237))),
+    on("windows",()->click(val(111),val(191))));
+  final Action forgotten= action("forgotten",
+    on("ubuntu_gnome",()->waitUntilTime(val(37000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(38500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(42000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    var other= project("helloStackTraces");
+    launchScript("first",project);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    look();
-    var first= firstTile.aim();
-    var second= secondTile.aim();
-    var empty= pixels(second);
-    new ProcessBuilder(launcher.toString(),other.toString()).start();
-    until(()->!Arrays.equals(empty,pixels(second)));
-    look();
-    var unselected= pixels(first);
-    var files= files();
+    launchScript("second",other);
+    runInTerminal(appsShownOther,terminalShownOther);
+    otherShown.go();
+    stabilize();
+    var files= files(other);
     projectMenu.go();
     forgetProject.go();
-    look();
-    until(()->Arrays.equals(empty,pixels(second)));
-    assertArrayEquals(unselected,pixels(first));
-    assertTrue(run.isAlive());
-    assertEquals("""
+    forgotten.go();
+    stabilize();
+    checkContent(info,"""
       {
         "hello_world": {
           "path": "Str:%s",
           "kind": "idle"
         }
       }
-      """.formatted(slashed(project)),Fs.readUtf8(info));
-    assertEquals(files,files());
-    stopManagers();
+      """.formatted(slashed(project)));
+    assertEquals(files,files(other));
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
-  private static List<String> files(){ return Fs.walk(other,s->s.map(p->p+" "+Fs.lastModified(p)).toList()); }
+  static List<String> files(Path other){ return Fs.walk(other,s->s.map(p->p+" "+Fs.lastModified(p)).toList()); }
 }

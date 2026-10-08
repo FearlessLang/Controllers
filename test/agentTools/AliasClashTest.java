@@ -4,63 +4,73 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.awt.event.KeyEvent;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
-
-import org.junit.jupiter.api.AfterEach;
 
 import tools.Fs;
 
-/// A folder whose marker names it as a project already registered is registered under a free name: the launcher run on it ends at once, the manager renames the marker in that folder to the new name and shows a note saying so, and the project then works under that name.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, and the folder twins beside the manager holds only the folders a/twin and b/twin, each holding only the marker twin.fearless and one source file.
-/// Action 1: run the launcher on a/twin: the manager window opens showing twin, and the manager remembers a/twin as the idle project twin.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: run the launcher on b/twin: it ends at once, a note shows saying b/twin is kept as twin2, the manager remembers b/twin as the idle project twin2 besides twin, and the marker of b/twin is now twin2.fearless while a/twin is untouched.
-/// Action 4: press OK: the note goes away.
-/// Action 5: press Check: the Output of twin2 says no problem was found, and the Output of twin stays empty.
-/// Action 6: end the manager.
 final class AliasClashTest extends ManagerTest{
-  static final Path twins= data.resolveSibling("twins");
-  static final Path first= twins.resolve("a").resolve("twin");
-  static final Path second= twins.resolve("b").resolve("twin");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Area window= new Area("window",linux(68,32,3772,2098),windows(0,24,1280,624));
-  final At noteShown= new At("noteShown",linux(1000),windows(1000));
-  final Click ok= new Click("ok",linux(1952,1213),windows(639,443));
-  final Click check= new Click("check",linux(164,111),windows(102,67));
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action appsShownSecond= action("appsShownSecond",
+    on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action terminalShownSecond= action("terminalShownSecond",
+    on("ubuntu_gnome",()->waitUntilTime(val(24500))));
+  final Action noteShown= action("noteShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(36500))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1952),val(1213))),
+    on("windows",()->click(val(639),val(443))));
+  final Action noteGone= action("noteGone",
+    on("ubuntu_gnome",()->waitUntilTime(val(38000))));
+  final Action check= action("check",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action checked= action("checked",
+    on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(53500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(57000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(67000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var twins= filesIOFolder.resolve("twins");
+    var first= twins.resolve("a").resolve("twin");
+    var second= twins.resolve("b").resolve("twin");
+    Fs.rmTree(twins);
     for (var f: List.of(first,second)){
       Fs.writeUtf8(f.resolve("twin.fearless"),"\n");
       Fs.writeUtf8(f.resolve("_twin").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"twin\")}\n");
     }
-    launch(first.toString());
+    launchScript("first",first);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    assertEquals("""
+    stabilize();
+    checkContent(info,"""
       {
         "twin": {
           "path": "Str:%s",
           "kind": "idle"
         }
       }
-      """.formatted(slashed(first)),Fs.readUtf8(info));
+      """.formatted(slashed(first)));
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
-    look();
-    var at= window.aim();
-    var before= pixels(at);
-    var run= new ProcessBuilder(launcher.toString(),second.toString()).start();
-    until(()->!run.isAlive());
-    assertEquals(0,run.exitValue());
-    until(()->!Arrays.equals(before,pixels(at)));
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
+    launchScript("second",second);
+    runInTerminal(appsShownSecond,terminalShownSecond);
     noteShown.go();
-    assertEquals("""
+    stabilize();
+    checkContent(List.of("second.exit"),"0\n");
+    checkContent(notes,"""
       Fearless keeps track of this project folder as "twin2", not as "twin".
 
       The manager registered:
@@ -71,8 +81,8 @@ final class AliasClashTest extends ManagerTest{
       and is not the name of another project Fearless keeps track of.
 
       The marker file "twin2.fearless" in that folder holds the name: rename it to change the name.
-      """.formatted(second),Fs.readUtf8(data.resolve("eclipse").resolve("console.txt")));
-    assertEquals("""
+      """.formatted(second));
+    checkContent(info,"""
       {
         "twin": {
           "path": "Str:%s",
@@ -83,23 +93,21 @@ final class AliasClashTest extends ManagerTest{
           "kind": "idle"
         }
       }
-      """.formatted(slashed(first),slashed(second)),Fs.readUtf8(info));
+      """.formatted(slashed(first),slashed(second)));
     assertEquals(List.of("a/twin/_twin/_rank_app.fear","a/twin/twin.fearless","b/twin/_twin/_rank_app.fear","b/twin/twin2.fearless"),
       Fs.walk(twins,s->s.filter(Files::isRegularFile).map(p->slashed(twins.relativize(p))).sorted().toList()));
-    assertEquals("\n",Fs.readUtf8(second.resolve("twin2.fearless")));
-    var shown= pixels(at);
+    checkContent(List.of("twins","b","twin","twin2.fearless"),"\n");
     ok.go();
-    look();
-    until(()->!Arrays.equals(shown,pixels(at)));
+    noteGone.go();
     check.go();
-    var console= data.resolve("eclipse").resolve("twin2").resolve("console.txt");
-    until(()->!Fs.readUtf8(console).isEmpty());
-    assertEquals("--- ok: no problem found ---\n",Fs.readUtf8(console));
-    assertEquals("",Fs.readUtf8(data.resolve("eclipse").resolve("twin").resolve("console.txt")));
-    stopManagers();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(twins);
+    checked.go();
+    stabilize();
+    checkContent(List.of(data,"eclipse","twin2","console.txt"),"--- ok: no problem found ---\n");
+    checkContent(List.of(data,"eclipse","twin","console.txt"),"");
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

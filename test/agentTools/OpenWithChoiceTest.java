@@ -1,85 +1,113 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-import java.awt.Desktop;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.nio.file.Path;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
-
 import tools.Fs;
-import utils.Err;
 
-/// Opening a file whose extension is claimed by two mains asks which one to run, and runs only the one picked.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, the file manager remembers no place for its windows, and the folder choice beside the manager holds its marker, one package with two mains both claiming OpenWith for ffile123, a square icon, and a file note.ffile123.
-/// Action 1: run the launcher on choice: the manager window opens showing choice, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers choice as a code project.
-/// Action 4: press Compile: the Output says the compile is done.
-/// Action 5: open the file manager on choice.
-/// Action 6: double click note.ffile123: a window lists the two mains.
-/// Action 7: select the second main and press Run: the Output says the second main runs and ends with exit code 0, and the first main did not run.
-/// Action 8: end the manager and close the file manager window.
 final class OpenWithChoiceTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  static final Path choice= data.resolveSibling("choice");
-  static final Path console= data.resolve("eclipse").resolve("choice").resolve("console.txt");
-  final At managerShown= new At("managerShown",windows(3000));
-  final Click focusTiles= new Click("focusTiles",windows(200,400));
-  final Click becomeCode= new Click("becomeCode",windows(332,94));
-  final Click compile= new Click("compile",windows(102,67));
-  final At filesShown= new At("filesShown",windows(4000));
-  final DoubleClick openNote= new DoubleClick("openNote",windows(480,312));
-  final At chooserShown= new At("chooserShown",windows(2000));
-  final Click pickSecond= new Click("pickSecond",windows(650,247));
-  final Click runPicked= new Click("runPicked",windows(698,485));
-  final Click closeFiles= new Click("closeFiles",windows(1016,58));
-  @Override protected void walk() throws Exception{
-    clean();
+  final List<String> console= List.of(data,"eclipse","choice","console.txt");
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21600))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("windows",()->click(val(102),val(67))));
+  final Action compiled= action("compiled",
+    on("ubuntu_gnome",()->waitUntilTime(val(35200))));
+  final Action appsShownFiles= action("appsShownFiles",
+    on("ubuntu_gnome",()->waitUntilTime(val(36700))));
+  final Action terminalShownFiles= action("terminalShownFiles",
+    on("ubuntu_gnome",()->waitUntilTime(val(40200))));
+  final Action filesShown= action("filesShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(53200))));
+  final Action openNote= action("openNote",
+    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("windows",()->doubleClick(val(480),val(312))));
+  final Action chooserShown= action("chooserShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(55700))));
+  final Action pickSecond= action("pickSecond",
+    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("windows",()->click(val(650),val(247))));
+  final Action runPicked= action("runPicked",
+    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("windows",()->click(val(698),val(485))));
+  final Action ranSecond= action("ranSecond",
+    on("ubuntu_gnome",()->waitUntilTime(val(60900))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(62400))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(65900))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(75900))));
+  final Action closeFiles= action("closeFiles",
+    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("windows",()->click(val(1016),val(58))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var choice= filesIOFolder.resolve("choice");
+    Fs.rmTree(choice);
     Fs.writeUtf8(choice.resolve("choice.fearless"),"\n");
     Fs.writeUtf8(choice.resolve("_hello").resolve("_rank_app.fear"),"use base.Main as Main;\nuse base.OpenWith as OpenWith;\n\nFirst:Main, OpenWith[IconsHello,`ffile123`]{s->base.Debug#(`first`)}\nSecond:Main, OpenWith[IconsHello,`ffile123`]{s->base.Debug#(`second`)}\n");
     Fs.ensureDir(choice.resolve("_hello").resolve("icons"));
     Fs.ofV(()->ImageIO.write(new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB),"png",choice.resolve("_hello").resolve("icons").resolve("hello.png").toFile()));
     Fs.writeUtf8(choice.resolve("note.ffile123"),"dear reader\n");
-    launch(choice.toString());
+    launchScript("first",choice);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
+    codeShown.go();
+    stabilize();
+    checkContent(info,"""
+      {
+        "choice": {
+          "path": "Str:%s",
+          "kind": "code"
+        }
+      }
+      """.formatted(slashed(choice)));
     compile.go();
-    until(()->Fs.readUtf8(console).contains("--- compile done ---"));
-    assertFalse(Fs.readUtf8(console).contains("--- running "));
-    forgetWindowPlaces();
-    Desktop.getDesktop().open(choice.toFile());
+    compiled.go();
+    stabilize();
+    checkContent(console,"--- compiling choice ---\n--- compile done ---\n");
+    shell("xdg-open \""+choice+"\"\n");
+    runInTerminal(appsShownFiles,terminalShownFiles);
     filesShown.go();
     openNote.go();
     chooserShown.go();
     pickSecond.go();
     runPicked.go();
-    until(()->Fs.readUtf8(console).contains(" exited with 0 after "));
-    Err.strCmp("""
+    ranSecond.go();
+    stabilize();
+    checkContent(console,"""
       --- compiling choice ---
       --- compile done ---
       --- running hello.Second ---
       second
       --- hello.Second exited with 0 after [###]s ---
-      """,Fs.readUtf8(console));
-    stopManagers();
+      """);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
     closeFiles.go();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(choice);
   }
 }

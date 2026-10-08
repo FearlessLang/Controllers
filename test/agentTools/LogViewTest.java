@@ -2,63 +2,88 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.awt.Toolkit;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.event.KeyEvent;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
+import java.util.List;
 
 import tools.Fs;
 import utils.Err;
 
-/// The Logs section lists the logs of two runs newest first, and View shows the whole text of the log chosen in the list, in a dialog that goes away with OK.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, the working folder of the test holds no .out, and the folder journal beside the manager holds only its marker and a program that writes dear diary then good night into its log Diary.
-/// Action 1: run the launcher on journal: the manager window opens showing journal, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers journal as a code project.
-/// Action 4: press Compile: the manager knows journal.Write as the one main of journal.
-/// Action 5: open the Logs section: it opens with an empty list.
-/// Action 6: press Run: the program exits with 0 leaving one closed log of Diary holding its two lines, and the list shows it.
-/// Action 7: press Run again: the program exits with 0 leaving a second closed log, and the list changes to show both.
-/// Action 8: click the second log in the list and press View: a dialog opens.
-/// Action 9: click in its text and copy all of it: the clipboard holds exactly the text of the older log.
-/// Action 10: press OK: the dialog goes away.
-/// Action 11: click the first log in the list and press View: a dialog opens.
-/// Action 12: click in its text and copy all of it: the clipboard holds exactly the text of the newer log.
-/// Action 13: press OK: the dialog goes away.
-/// Action 14: end the manager.
 final class LogViewTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  static final Path journal= data.resolveSibling("journal");
-  static final Path logs= journal.resolve(".out").resolve("logs").resolve("journal");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,140),windows(332,94));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At compileShown= new At("compileShown",linux(1000),windows(1000));
-  final Click openLogs= new Click("openLogs",linux(128,253),windows(62,203));
-  final Area list= new Area("list",linux(80,240,3750,170),windows(24,219,1240,130));
-  final Area dialog= new Area("dialog",linux(1600,865,700,25),windows(600,88,300,18));
-  final Click run= new Click("run",linux(164,111),windows(102,67));
-  final Click runAgain= new Click("runAgain",linux(164,111),windows(102,67));
-  final Click olderLog= new Click("olderLog",linux(250,296),windows(100,244));
-  final Click view= new Click("view",linux(3688,251),windows(1129,201));
-  final Click focusText= new Click("focusText",linux(1958,1100),windows(640,350));
-  final Click ok= new Click("ok",linux(1958,1340),windows(644,579));
-  final Click newerLog= new Click("newerLog",linux(250,278),windows(100,226));
-  final Click viewNewer= new Click("viewNewer",linux(3688,251),windows(1129,201));
-  final Click focusNewerText= new Click("focusNewerText",linux(1958,1100),windows(640,350));
-  final Click okNewer= new Click("okNewer",linux(1958,1340),windows(644,579));
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(140))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21600))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action compileShown= action("compileShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(36200))));
+  final Action openLogs= action("openLogs",
+    on("ubuntu_gnome",()->click(val(128),val(253))),
+    on("windows",()->click(val(62),val(203))));
+  final Action run= action("run",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action ranOnce= action("ranOnce",
+    on("ubuntu_gnome",()->waitUntilTime(val(41500))));
+  final Action runAgain= action("runAgain",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action ranTwice= action("ranTwice",
+    on("ubuntu_gnome",()->waitUntilTime(val(46100))));
+  final Action olderLog= action("olderLog",
+    on("ubuntu_gnome",()->click(val(250),val(296))),
+    on("windows",()->click(val(100),val(244))));
+  final Action view= action("view",
+    on("ubuntu_gnome",()->click(val(3688),val(251))),
+    on("windows",()->click(val(1129),val(201))));
+  final Action dialogShown= action("dialogShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(48800))));
+  final Action focusText= action("focusText",
+    on("ubuntu_gnome",()->click(val(1958),val(1100))),
+    on("windows",()->click(val(640),val(350))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1958),val(1340))),
+    on("windows",()->click(val(644),val(579))));
+  final Action dialogGone= action("dialogGone",
+    on("ubuntu_gnome",()->waitUntilTime(val(51400))));
+  final Action newerLog= action("newerLog",
+    on("ubuntu_gnome",()->click(val(250),val(278))),
+    on("windows",()->click(val(100),val(226))));
+  final Action viewNewer= action("viewNewer",
+    on("ubuntu_gnome",()->click(val(3688),val(251))),
+    on("windows",()->click(val(1129),val(201))));
+  final Action newerDialogShown= action("newerDialogShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(54100))));
+  final Action focusNewerText= action("focusNewerText",
+    on("ubuntu_gnome",()->click(val(1958),val(1100))),
+    on("windows",()->click(val(640),val(350))));
+  final Action okNewer= action("okNewer",
+    on("ubuntu_gnome",()->click(val(1958),val(1340))),
+    on("windows",()->click(val(644),val(579))));
+  final Action newerDialogGone= action("newerDialogGone",
+    on("ubuntu_gnome",()->waitUntilTime(val(56700))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(58200))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(61700))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(71700))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var journal= filesIOFolder.resolve("journal");
+    Fs.rmTree(journal);
     Fs.writeUtf8(journal.resolve("journal.fearless"),"\n");
     Fs.writeUtf8(journal.resolve("_journal").resolve("_rank_app.fear"),"""
       use base.Main as Main;
@@ -68,61 +93,79 @@ final class LogViewTest extends ManagerTest{
       Diary: FileLog{"diary"}
       Write: Main{sys -> Block#.do{Diary.log("dear diary")}.do{Diary.log("good night")}.done}
       """);
-    launch(journal.toString());
+    launchScript("first",journal);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
+    codeShown.go();
+    stabilize();
+    checkContent(info,"""
+      {
+        "journal": {
+          "path": "Str:%s",
+          "kind": "code"
+        }
+      }
+      """.formatted(slashed(journal)));
     compile.go();
-    until(()->Fs.readUtf8(state).contains("\"journal.Write\": \"_journal/_rank_app.fear\""));
     compileShown.go();
+    stabilize();
+    checkContent(state,"[###]\"journal.Write\": \"_journal/_rank_app.fear\"[###]");
     openLogs.go();
-    look();
-    var at= list.aim();
-    var empty= pixels(at);
-    var where= dialog.aim();
-    var behind= pixels(where);
+    var ran= """
+      {
+        "journal": {
+          "folder": "Str:%s",
+          "kind": "code",
+          "running": "",
+          "runs": "%s",
+          "lastRun": "journal.Write",
+          "exit": "0",
+          "mains": {
+            "journal.Write": "_journal/_rank_app.fear"
+          },
+          "problem": {}
+        }
+      }
+      """;
     run.go();
-    until(()->Fs.readUtf8(state).contains("\"exit\": \"0\""));
-    look();
-    until(()->!Arrays.equals(empty,pixels(at)));
-    var one= pixels(at);
+    ranOnce.go();
+    stabilize();
+    checkContent(state,ran.formatted(escaped(journal),"1"));
     runAgain.go();
-    until(()->Fs.readUtf8(state).contains("\"runs\": \"2\"") && Fs.readUtf8(state).contains("\"exit\": \"0\""));
-    look();
-    until(()->!Arrays.equals(one,pixels(at)));
-    var both= Fs.walk(logs,s->s.filter(Files::isRegularFile).sorted().toList());
+    ranTwice.go();
+    stabilize();
+    checkContent(state,ran.formatted(escaped(journal),"2"));
+    var logs= "journal/.out/logs/journal";
+    var both= Fs.walk(filesIOFolder.resolve(logs),s->s.filter(Files::isRegularFile).map(p->p.getFileName().toString()).sorted().toList());
     assertEquals(2,both.size());
     for (var log: both){
-      Err.strCmp("Diary$[###].log",log.getFileName().toString());
-      Err.strCmp("[###] dear diary\n[###] good night\n",Fs.readUtf8(log));
+      Err.strCmp("Diary$[###].log",log);
+      checkContent(List.of(logs,log),"[###] dear diary\n[###] good night\n");
     }
     olderLog.go();
     view.go();
-    until(()->!Arrays.equals(behind,pixels(where)));
+    dialogShown.go();
     focusText.go();
-    assertEquals(Fs.readUtf8(both.getFirst()),copied());
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
     ok.go();
-    until(()->Arrays.equals(behind,pixels(where)));
+    dialogGone.go();
     newerLog.go();
     viewNewer.go();
-    until(()->!Arrays.equals(behind,pixels(where)));
+    newerDialogShown.go();
     focusNewerText.go();
-    assertEquals(Fs.readUtf8(both.getLast()),copied());
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
     okNewer.go();
-    until(()->Arrays.equals(behind,pixels(where)));
-    stopManagers();
-  }
-  private Object copied() throws Exception{
-    pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    pilot.chord(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
-    return Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(journal);
-    Fs.rmTree(Path.of(".out"));
+    newerDialogGone.go();
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

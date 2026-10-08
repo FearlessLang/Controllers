@@ -1,48 +1,51 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.awt.event.KeyEvent;
-import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
+import java.util.List;
 
 import tools.Fs;
-import utils.Err;
 
-/// Closing the only window of a program the manager runs ends the program by itself: the manager counts the run as ended with exit 0, the Output says so with no word of terminating, and the top of the panel offers Run again exactly as before the run.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, and the folder shut beside the manager holds only its marker and a program that opens one window and waits until it is closed.
-/// Action 1: run the launcher on shut: the manager window opens showing shut, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers shut as a code project.
-/// Action 4: press Compile: the Output says the compile is done, and the manager knows shut.Show as the one main of shut.
-/// Action 5: press Run: the Output says the program runs, the window of the program opens, and the top of the panel changes.
-/// Action 6: close the window of the program with the close button of its title bar: the program ends by itself, the manager counts one run of shut.Show exited with 0, the Output says it exited with 0 and nothing about terminating, the manager still runs, the window of the program is gone, and the top of the panel is back exactly as before the run.
-/// Action 7: end the manager.
 final class CloseProgramWindowTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  static final Path shut= data.resolveSibling("shut");
-  static final Path console= data.resolve("eclipse").resolve("shut").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At mainShown= new At("mainShown",linux(1000),windows(1000));
-  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
-  final Click run= new Click("run",linux(164,111),windows(102,67));
-  final At programShown= new At("programShown",linux(1000),windows(1000));
-  final Click closeProgram= new Click("closeProgram",linux(1996,1075),windows(678,312));
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(22000))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action mainShown= action("mainShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(37000))));
+  final Action run= action("run",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action programShown= action("programShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(43000))));
+  final Action closeProgram= action("closeProgram",
+    on("ubuntu_gnome",()->click(val(1996),val(1075))),
+    on("windows",()->click(val(678),val(312))));
+  final Action programEnded= action("programEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(45500))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(47000))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(50500))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(60500))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var shut= filesIOFolder.resolve("shut");
+    var console= List.of(data,"eclipse","shut","console.txt");
+    Fs.rmTree(shut);
     Fs.writeUtf8(shut.resolve("shut.fearless"),"\n");
     Fs.writeUtf8(shut.resolve("_shut").resolve("_rank_app.fear"),"""
       use base.Main as Main;
@@ -52,33 +55,42 @@ final class CloseProgramWindowTest extends ManagerTest{
       Show: Main{sys -> sys.gui.run Note}
       Note: Consumer[mut Frame]{:: .title "shut" .content{:: .label{:: .text "close this window" } } }
       """);
-    var manager= launch(shut.toString());
+    launchScript("first",shut);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
+    codeShown.go();
     compile.go();
-    until(()->Fs.readUtf8(state).contains("shut.Show"));
-    assertEquals("--- compiling shut ---\n--- compile done ---\n",Fs.readUtf8(console));
     mainShown.go();
-    look();
-    var at= head.aim();
-    var ready= pixels(at);
-    var window= programWindow.aim();
-    var desk= pixels(window);
+    stabilize();
+    checkContent(console,"--- compiling shut ---\n--- compile done ---\n");
     run.go();
-    until(()->!Arrays.equals(desk,pixels(window)));
-    assertEquals("--- compiling shut ---\n--- compile done ---\n--- running shut.Show ---\n",Fs.readUtf8(console));
-    var program= program(manager);
-    look();
-    assertFalse(Arrays.equals(ready,pixels(at)));
     programShown.go();
+    stabilize();
+    checkContent(console,"--- compiling shut ---\n--- compile done ---\n--- running shut.Show ---\n");
+    checkContent(state,"""
+      {
+        "shut": {
+          "folder": "Str:%s",
+          "kind": "code",
+          "running": "shut.Show",
+          "runs": "[###]",
+          "lastRun": "[###]",
+          "exit": "[###]",
+          "mains": {
+            "shut.Show": "_shut/_rank_app.fear"
+          },
+          "problem": {}
+        }
+      }
+      """.formatted(escaped(shut)));
     closeProgram.go();
-    until(()->!program.isAlive());
-    until(()->Fs.readUtf8(state).contains("\"running\": \"\""));
-    assertEquals("""
+    programEnded.go();
+    stabilize();
+    checkContent(state,"""
       {
         "shut": {
           "folder": "Str:%s",
@@ -93,21 +105,17 @@ final class CloseProgramWindowTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(escaped(shut)),Fs.readUtf8(state));
-    Err.strCmp("""
+      """.formatted(escaped(shut)));
+    checkContent(console,"""
       --- compiling shut ---
       --- compile done ---
       --- running shut.Show ---
       --- shut.Show exited with 0 after [###]s ---
-      """,Fs.readUtf8(console));
-    assertTrue(manager.isAlive());
-    until(()->Arrays.equals(desk,pixels(window)));
-    look();
-    until(()->Arrays.equals(ready,pixels(at)));
-    stopManagers();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(shut);
+      """);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

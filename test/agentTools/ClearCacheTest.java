@@ -1,60 +1,65 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.event.KeyEvent;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 
-import tools.Fs;
-
-/// Clearing the cache of a compiled project deletes what the compile wrote into its folder, and the manager shows the project needing a compile again, as it did before the compile, while the Output of the compile stays.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on helloWorld: the manager window opens showing helloWorld selected, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers helloWorld as a code project.
-/// Action 4: press Compile: the Output says the compile is done, helloWorld holds the compiled cache, the manager knows the mains of helloWorld, and the panel shows them.
-/// Action 5: choose Clear cache in its Project menu: the compiled cache is gone from helloWorld, the manager knows no mains of helloWorld, the top of the panel offers Compile and says helloWorld needs compiling exactly as before the compile, and the Output still says the compile is done.
-/// Action 6: end the manager.
 final class ClearCacheTest extends ManagerTest{
-  static final Path console= data.resolve("eclipse").resolve("hello_world").resolve("console.txt");
-  static final Path cache= project.resolve(".fearless_out");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
-  final At codeShown= new At("codeShown",linux(1000),windows(1000));
-  final Area head= new Area("head",linux(80,94,1320,78),windows(22,50,600,60));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At mainsShown= new At("mainsShown",linux(1000),windows(1000));
-  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
-  final Click clearCache= new Click("clearCache",linux(180,128),windows(111,82));
-  @Override protected void walk() throws Exception{
-    clean();
-    launch(project.toString());
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(22000))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action mainsShown= action("mainsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(36500))));
+  final Action projectMenu= action("projectMenu",
+    on("ubuntu_gnome",()->click(val(158),val(79))),
+    on("windows",()->click(val(89),val(33))));
+  final Action clearCache= action("clearCache",
+    on("ubuntu_gnome",()->click(val(180),val(128))),
+    on("windows",()->click(val(111),val(82))));
+  final Action cacheCleared= action("cacheCleared",
+    on("ubuntu_gnome",()->waitUntilTime(val(39500))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(41000))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(44500))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(54500))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    var console= List.of(data,"eclipse","hello_world","console.txt");
+    var compiled= "--- compiling helloWorld ---\n--- compile done ---\n";
+    launchScript("first",project);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
     codeShown.go();
-    look();
-    var at= head.aim();
-    var code= pixels(at);
-    var noMains= Fs.readUtf8(state);
     compile.go();
-    until(()->Fs.readUtf8(console).contains("--- compile "));
-    var compiled= "--- compiling helloWorld ---\n--- compile done ---\n";
-    assertEquals(compiled,Fs.readUtf8(console));
-    assertTrue(Files.isDirectory(cache));
-    until(()->!noMains.equals(Fs.readUtf8(state)));
-    assertEquals("""
+    mainsShown.go();
+    stabilize();
+    checkContent(console,compiled);
+    assertTrue(Files.isDirectory(project.resolve(".fearless_out")));
+    checkContent(state,"""
       {
         "hello_world": {
           "folder": "Str:%s",
@@ -73,17 +78,31 @@ final class ClearCacheTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(escaped(project)),Fs.readUtf8(state));
-    mainsShown.go();
-    look();
-    assertFalse(Arrays.equals(code,pixels(at)));
+      """.formatted(escaped(project)));
     projectMenu.go();
     clearCache.go();
-    until(()->noMains.equals(Fs.readUtf8(state)));
-    assertFalse(Files.exists(cache));
-    look();
-    until(()->Arrays.equals(code,pixels(at)));
-    assertEquals(compiled,Fs.readUtf8(console));
-    stopManagers();
+    cacheCleared.go();
+    stabilize();
+    checkContent(state,"""
+      {
+        "hello_world": {
+          "folder": "Str:%s",
+          "kind": "code",
+          "running": "",
+          "runs": "0",
+          "lastRun": "",
+          "exit": "-1",
+          "mains": {},
+          "problem": {}
+        }
+      }
+      """.formatted(escaped(project)));
+    assertFalse(Files.exists(project.resolve(".fearless_out")));
+    checkContent(console,compiled);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

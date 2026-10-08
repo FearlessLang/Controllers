@@ -1,70 +1,83 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.awt.event.KeyEvent;
-import java.util.Arrays;
+import java.util.List;
 
-import tools.Fs;
-
-/// Forgetting a project while one of its programs runs ends that program: its window goes away, the manager keeps running and remembers no project, and its window is exactly as before the project was registered.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld and testGui1 were never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher: the manager window opens with no tile.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: run the launcher on testGui1: the window shows testGui1, an idle project.
-/// Action 4: press Become code: the manager remembers testGui1 as a code project.
-/// Action 5: press Compile: the manager knows the main of testGui1.
-/// Action 6: press Run: the window of the program opens.
-/// Action 7: choose Forget project in the Project menu: the program ends and its window goes away, the manager still runs and remembers no project, and its window is exactly as before testGui1 was registered.
-/// Action 8: end the manager.
 final class ForgetRunningProjectTest extends ManagerTest{
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Area window= new Area("window",linux(78,32,3762,2098),windows(12,24,1258,622));
-  final At panelShown= new At("panelShown",linux(300),windows(300));
-  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At mainShown= new At("mainShown",linux(1000),windows(1000));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
-  final Click run= new Click("run",linux(164,111),windows(102,67));
-  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
-  final Click forgetProject= new Click("forgetProject",linux(180,237),windows(111,191));
-  @Override protected void walk() throws Exception{
-    clean();
-    var manager= launch();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action appsShownGui= action("appsShownGui",
+    on("ubuntu_gnome",()->waitUntilTime(val(20500))));
+  final Action terminalShownGui= action("terminalShownGui",
+    on("ubuntu_gnome",()->waitUntilTime(val(24000))));
+  final Action panelShown= action("panelShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(35500))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(38000))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action mainShown= action("mainShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(53000))));
+  final Action run= action("run",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action programShown= action("programShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(58000))));
+  final Action projectMenu= action("projectMenu",
+    on("ubuntu_gnome",()->click(val(158),val(79))),
+    on("windows",()->click(val(89),val(33))));
+  final Action forgetProject= action("forgetProject",
+    on("ubuntu_gnome",()->click(val(180),val(237))),
+    on("windows",()->click(val(111),val(191))));
+  final Action forgotten= action("forgotten",
+    on("ubuntu_gnome",()->waitUntilTime(val(61000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(62500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(66000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(76000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var gui= project("testGui1");
+    launchScript("first");
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
-    look();
-    var all= window.aim();
-    var empty= pixels(all);
-    var handover= launch(gui.toString());
-    until(()->!handover.isAlive());
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
+    launchScript("second",gui);
+    runInTerminal(appsShownGui,terminalShownGui);
     panelShown.go();
+    stabilize();
+    checkContent(List.of("second.exit"),"0\n");
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
+    codeShown.go();
     compile.go();
-    until(()->Fs.readUtf8(state).contains("gui_example.Foo"));
     mainShown.go();
-    look();
-    var shown= programWindow.aim();
-    var desk= pixels(shown);
     run.go();
-    until(()->!Arrays.equals(desk,pixels(shown)));
-    var program= program(manager);
+    programShown.go();
     projectMenu.go();
     forgetProject.go();
-    until(()->!program.isAlive());
-    until(()->Fs.readUtf8(state).equals("{}\n"));
-    assertEquals("{}\n",Fs.readUtf8(info));
-    assertTrue(manager.isAlive());
-    look();
-    until(()->Arrays.equals(empty,pixels(all)));
-    stopManagers();
+    forgotten.go();
+    stabilize();
+    checkContent(state,"{}\n");
+    checkContent(info,"{}\n");
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

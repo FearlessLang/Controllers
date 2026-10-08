@@ -1,53 +1,61 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.awt.event.KeyEvent;
-import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
+import java.util.List;
 
 import tools.Fs;
-import utils.Err;
 
-/// Clear output while a program runs empties the Output and the console file of its project at once, and what the program and the manager print afterwards lands in the emptied Output and console file, from the top.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, and the folder talk beside the manager holds only its marker and a program that prints before, opens one window, and prints after once that window is closed.
-/// Action 1: run the launcher on talk: the manager window opens showing talk, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers talk as a code project.
-/// Action 4: press Compile: the Output says the compile is done, and the manager knows talk.Show as the one main of talk.
-/// Action 5: press Run: the window of the program opens, and the Output says the program runs and what it printed.
-/// Action 6: press Clear output: the Output is empty, and so is its console file, while the program still runs.
-/// Action 7: bring the window of the program back from the bar of open windows.
-/// Action 8: close the window of the program with the close button of its title bar: the program ends by itself, and the Output and its console file hold only what the program printed after the clear and the line saying it exited with 0.
-/// Action 9: end the manager.
 final class ClearOutputWhileRunningTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  static final Path talk= data.resolveSibling("talk");
-  static final Path console= data.resolve("eclipse").resolve("talk").resolve("console.txt");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At mainShown= new At("mainShown",linux(1000),windows(1000));
-  final Area programWindow= new Area("programWindow",linux(1915,1075,10,10),windows(635,355,10,10));
-  final Click run= new Click("run",linux(164,111),windows(102,67));
-  final At programShown= new At("programShown",linux(1000),windows(1000));
-  final Click clearOutput= new Click("clearOutput",linux(3784,289),windows(1227,237));
-  final Area output= new Area("output",linux(91,319,3734,1806),windows(26,268,1238,366));
-  final Area rest= new Area("rest",linux(91,360,3734,1765),windows(26,305,1238,332));
-  final Click bringProgramBack= new Click("bringProgramBack",linux(32,450),windows(880,696));
-  final At programBack= new At("programBack",linux(1000),windows(1000));
-  final Click closeProgram= new Click("closeProgram",linux(1997,1074),windows(678,312));
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(22000))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action mainShown= action("mainShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(37000))));
+  final Action run= action("run",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action programShown= action("programShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(43000))));
+  final Action clearOutput= action("clearOutput",
+    on("ubuntu_gnome",()->click(val(3784),val(289))),
+    on("windows",()->click(val(1227),val(237))));
+  final Action outputCleared= action("outputCleared",
+    on("ubuntu_gnome",()->waitUntilTime(val(45500))));
+  final Action bringProgramBack= action("bringProgramBack",
+    on("ubuntu_gnome",()->click(val(32),val(450))),
+    on("windows",()->click(val(880),val(696))));
+  final Action programBack= action("programBack",
+    on("ubuntu_gnome",()->waitUntilTime(val(47500))));
+  final Action closeProgram= action("closeProgram",
+    on("ubuntu_gnome",()->click(val(1997),val(1074))),
+    on("windows",()->click(val(678),val(312))));
+  final Action programEnded= action("programEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(50000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(51500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(55000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(65000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var talk= filesIOFolder.resolve("talk");
+    var console= List.of(data,"eclipse","talk","console.txt");
+    Fs.rmTree(talk);
     Fs.writeUtf8(talk.resolve("talk.fearless"),"\n");
     Fs.writeUtf8(talk.resolve("_talk").resolve("_rank_app.fear"),"""
       use base.Main as Main;
@@ -58,50 +66,69 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
       Show: Main{sys -> Block#(sys.out.println "before", sys.gui.run Note, sys.out.println "after")}
       Note: Consumer[mut Frame]{:: .title "talk" .content{:: .label{:: .text "close this window" } } }
       """);
-    var manager= launch(talk.toString());
+    launchScript("first",talk);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
+    codeShown.go();
     compile.go();
-    until(()->Fs.readUtf8(state).contains("talk.Show"));
     mainShown.go();
-    var window= programWindow.aim();
-    var desk= pixels(window);
     run.go();
-    until(()->!Arrays.equals(desk,pixels(window)));
-    until(()->Fs.readUtf8(console).endsWith("before\n"));
-    assertEquals("--- compiling talk ---\n--- compile done ---\n--- running talk.Show ---\nbefore\n",Fs.readUtf8(console));
-    var program= program(manager);
     programShown.go();
+    stabilize();
+    checkContent(console,"--- compiling talk ---\n--- compile done ---\n--- running talk.Show ---\nbefore\n");
     clearOutput.go();
-    until(()->Fs.readUtf8(console).isEmpty());
-    look();
-    var at= output.aim();
-    until(()->Arrays.stream(pixels(at)).distinct().count()==1);
-    var below= rest.aim();
-    var blank= pixels(below);
-    assertTrue(program.isAlive());
+    outputCleared.go();
+    stabilize();
+    checkContent(console,"");
+    checkContent(state,"""
+      {
+        "talk": {
+          "folder": "Str:%s",
+          "kind": "code",
+          "running": "talk.Show",
+          "runs": "[###]",
+          "lastRun": "[###]",
+          "exit": "[###]",
+          "mains": {
+            "talk.Show": "_talk/_rank_app.fear"
+          },
+          "problem": {}
+        }
+      }
+      """.formatted(escaped(talk)));
     bringProgramBack.go();
-    until(()->!Arrays.equals(desk,pixels(window)));
     programBack.go();
     closeProgram.go();
-    until(()->!program.isAlive());
-    until(()->Fs.readUtf8(state).contains("\"exit\": \"0\""));
-    Err.strCmp("""
+    programEnded.go();
+    stabilize();
+    checkContent(state,"""
+      {
+        "talk": {
+          "folder": "Str:%s",
+          "kind": "code",
+          "running": "",
+          "runs": "1",
+          "lastRun": "talk.Show",
+          "exit": "0",
+          "mains": {
+            "talk.Show": "_talk/_rank_app.fear"
+          },
+          "problem": {}
+        }
+      }
+      """.formatted(escaped(talk)));
+    checkContent(console,"""
       after
       --- talk.Show exited with 0 after [###]s ---
-      """,Fs.readUtf8(console));
-    until(()->Arrays.equals(desk,pixels(window)));
-    look();
-    until(()->Arrays.stream(pixels(at)).distinct().count()>1);
-    assertTrue(Arrays.equals(blank,pixels(below)));
-    stopManagers();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(talk);
+      """);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

@@ -1,42 +1,47 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.awt.event.KeyEvent;
-import java.nio.file.Path;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
+import java.util.List;
 
 import tools.Fs;
-import utils.Err;
 
-/// Registering an empty folder makes it a code project holding a marker named after the folder and a hello program, which compiles to one main that Run runs with no choice to make.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, and the folder empty beside the manager exists and holds nothing.
-/// Action 1: run the launcher on empty: the manager window opens showing empty selected, empty now holds the marker empty.fearless and a hello program, and the manager remembers empty as a code project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Compile: the Output says the compile is done, and the manager knows empty.Hello as the one main of empty.
-/// Action 4: press Run: the Output shows empty.Hello running, printing Hello World! and exiting with 0, and the manager counts one run of empty.Hello, exited with 0.
-/// Action 5: end the manager.
 final class EmptyFolderTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  static final Path empty= data.resolveSibling("empty");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At runShown= new At("runShown",linux(1000),windows(1000));
-  final Click run= new Click("run",linux(164,111),windows(102,67));
-  @Override protected void walk() throws Exception{
-    clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action compiled= action("compiled",
+    on("ubuntu_gnome",()->waitUntilTime(val(34500))));
+  final Action run= action("run",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action runDone= action("runDone",
+    on("ubuntu_gnome",()->waitUntilTime(val(39500))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(41000))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(44500))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(54500))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var empty= filesIOFolder.resolve("empty");
+    Fs.rmTree(empty);
     Fs.ensureDir(empty);
-    launch(empty.toString());
+    launchScript("first",empty);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    assertEquals("\n",Fs.readUtf8(empty.resolve("empty.fearless")));
-    assertEquals("""
+    stabilize();
+    checkContent(List.of("empty","empty.fearless"),"\n");
+    checkContent(List.of("empty","_empty","_rank_app.fear"),"""
       use base.Main as Main;
       use base.Lists as List;
       use base.Num as Num;
@@ -44,22 +49,21 @@ final class EmptyFolderTest extends ManagerTest{
       use base.Str as Str;
 
       Hello: Main { sys -> sys.out.println("Hello World!") }
-      """,Fs.readUtf8(empty.resolve("_empty").resolve("_rank_app.fear")));
-    assertEquals("""
+      """);
+    checkContent(info,"""
       {
         "empty": {
           "path": "Str:%s",
           "kind": "code"
         }
       }
-      """.formatted(slashed(empty)),Fs.readUtf8(info));
+      """.formatted(slashed(empty)));
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
-    var noMains= Fs.readUtf8(state);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     compile.go();
-    until(()->!noMains.equals(Fs.readUtf8(state)));
-    var compiled= """
+    compiled.go();
+    var known= """
       {
         "empty": {
           "folder": "Str:%s",
@@ -75,22 +79,23 @@ final class EmptyFolderTest extends ManagerTest{
         }
       }
       """;
-    assertEquals(compiled.formatted(escaped(empty),"0","","-1"),Fs.readUtf8(state));
-    runShown.go();
+    stabilize();
+    checkContent(state,known.formatted(escaped(empty),"0","","-1"));
     run.go();
-    until(()->Fs.readUtf8(state).contains("\"exit\": \"0\""));
-    assertEquals(compiled.formatted(escaped(empty),"1","empty.Hello","0"),Fs.readUtf8(state));
-    Err.strCmp("""
+    runDone.go();
+    stabilize();
+    checkContent(state,known.formatted(escaped(empty),"1","empty.Hello","0"));
+    checkContent(List.of(data,"eclipse","empty","console.txt"),"""
       --- compiling empty ---
       --- compile done ---
       --- running empty.Hello ---
       Hello World!
       --- empty.Hello exited with 0 after [###]s ---
-      """,Fs.readUtf8(data.resolve("eclipse").resolve("empty").resolve("console.txt")));
-    stopManagers();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
-    Fs.rmTree(empty);
+      """);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

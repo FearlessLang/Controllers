@@ -1,52 +1,61 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.awt.event.KeyEvent;
+import java.util.List;
 
-import org.junit.jupiter.api.Assertions;
-import org.opentest4j.AssertionFailedError;
-
-import tools.Fs;
-import utils.Err;
-
-/// Ticking mains of a compiled project saves them in the order the project lists them, whatever order they were ticked in, and Run selected runs each ticked main once, in that order, one after the other, with its output in the Output.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, and nothing is registered for .fearless.
-/// Action 1: run the launcher on helloWorld: the manager window opens showing helloWorld selected, an idle project.
-/// Action 2: click the empty space below the tiles, and move the divider between tiles and panel as far left as it goes with the keyboard.
-/// Action 3: press Become code: the manager remembers helloWorld as a code project.
-/// Action 4: press Compile: the manager knows the mains of helloWorld, and the panel shows them, none ticked.
-/// Action 5: tick hello.Hello4: the manager remembers it as the one selected main.
-/// Action 6: tick hello.Hello1: the manager remembers hello.Hello1 then hello.Hello4 as the selected mains.
-/// Action 7: press Run selected: the Output shows hello.Hello1 running, printing its line and exiting with 0, then hello.Hello4 doing the same, and the manager counts two runs, the last of hello.Hello4, exited with 0.
-/// Action 8: end the manager.
 final class RunSelectedTest extends ManagerTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Click focusTiles= new Click("focusTiles",linux(200,1500),windows(200,400));
-  final Click becomeCode= new Click("becomeCode",linux(400,139),windows(332,94));
-  final At codeShown= new At("codeShown",linux(1000),windows(1000));
-  final Click compile= new Click("compile",linux(164,111),windows(102,67));
-  final At mainsShown= new At("mainsShown",linux(1000),windows(1000));
-  final Click tickHello4= new Click("tickHello4",linux(99,240),windows(31,190));
-  final Click tickHello1= new Click("tickHello1",linux(99,190),windows(31,142));
-  final Click runSelected= new Click("runSelected",linux(164,111),windows(102,67));
-  @Override protected void walk() throws Exception{
-    clean();
-    launch(project.toString());
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action focusTiles= action("focusTiles",
+    on("ubuntu_gnome",()->click(val(200),val(1500))),
+    on("windows",()->click(val(200),val(400))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("windows",()->click(val(332),val(94))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action mainsShown= action("mainsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
+  final Action tickHello4= action("tickHello4",
+    on("ubuntu_gnome",()->click(val(99),val(240))),
+    on("windows",()->click(val(31),val(190))));
+  final Action hello4Saved= action("hello4Saved",
+    on("ubuntu_gnome",()->waitUntilTime(val(37000))));
+  final Action tickHello1= action("tickHello1",
+    on("ubuntu_gnome",()->click(val(99),val(190))),
+    on("windows",()->click(val(31),val(142))));
+  final Action hello1Saved= action("hello1Saved",
+    on("ubuntu_gnome",()->waitUntilTime(val(39000))));
+  final Action runSelected= action("runSelected",
+    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("windows",()->click(val(102),val(67))));
+  final Action runsDone= action("runsDone",
+    on("ubuntu_gnome",()->waitUntilTime(val(46000))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(47500))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(51000))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(61000))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    launchScript("first",project);
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     focusTiles.go();
-    pilot.chord(KeyEvent.VK_F8);
-    pilot.chord(KeyEvent.VK_HOME);
+    keys(KeyEvent.VK_F8);
+    keys(KeyEvent.VK_HOME);
     becomeCode.go();
-    until(()->Fs.readUtf8(info).contains("\"code\""));
     codeShown.go();
-    var noMains= Fs.readUtf8(state);
     compile.go();
-    until(()->!noMains.equals(Fs.readUtf8(state)));
     mainsShown.go();
     var registry= """
       {
@@ -58,14 +67,17 @@ final class RunSelectedTest extends ManagerTest{
       }
       """;
     tickHello4.go();
-    until(()->Fs.readUtf8(info).contains("hello.Hello4"));
-    assertEquals(registry.formatted(slashed(project),"\"hello.Hello4\""),Fs.readUtf8(info));
+    hello4Saved.go();
+    stabilize();
+    checkContent(info,registry.formatted(slashed(project),"\"hello.Hello4\""));
     tickHello1.go();
-    until(()->Fs.readUtf8(info).contains("hello.Hello1"));
-    assertEquals(registry.formatted(slashed(project),"\"hello.Hello1\", \"hello.Hello4\""),Fs.readUtf8(info));
+    hello1Saved.go();
+    stabilize();
+    checkContent(info,registry.formatted(slashed(project),"\"hello.Hello1\", \"hello.Hello4\""));
     runSelected.go();
-    until(()->Fs.readUtf8(state).contains("\"runs\": \"2\"") && Fs.readUtf8(state).contains("\"exit\": \"0\""));
-    assertEquals("""
+    runsDone.go();
+    stabilize();
+    checkContent(state,"""
       {
         "hello_world": {
           "folder": "Str:%s",
@@ -84,8 +96,8 @@ final class RunSelectedTest extends ManagerTest{
           "problem": {}
         }
       }
-      """.formatted(escaped(project)),Fs.readUtf8(state));
-    Err.strCmp("""
+      """.formatted(escaped(project)));
+    checkContent(List.of(data,"eclipse","hello_world","console.txt"),"""
       --- compiling helloWorld ---
       --- compile done ---
       --- running hello.Hello1 ---
@@ -94,7 +106,11 @@ final class RunSelectedTest extends ManagerTest{
       --- running hello.Hello4 ---
       [1, 2, 3, 4]
       --- hello.Hello4 exited with 0 after [###]s ---
-      """,Fs.readUtf8(data.resolve("eclipse").resolve("hello_world").resolve("console.txt")));
-    stopManagers();
+      """);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

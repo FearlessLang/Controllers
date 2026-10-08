@@ -2,86 +2,83 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.Desktop;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
+import java.util.List;
 
 import tools.Fs;
 
-/// Browse files in the Project menu opens the file manager on the folder of the shown project, looking exactly as the file manager opened on that folder from the desk; with the folder gone it opens nothing and a note says nothing exists there.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, nothing is registered for .fearless, the file manager remembers no place for its windows, the folder browsed beside the manager holds only its marker and one source file, and nothing is at browsed2 beside it.
-/// Action 1: run the launcher on browsed: the manager window opens showing browsed.
-/// Action 2: choose Browse files in its Project menu: the file manager window opens over the manager window.
-/// Action 3: close the file manager window: the manager window is exactly as before action 2.
-/// Action 4: open the file manager on browsed: its window shows exactly as after action 2.
-/// Action 5: close the file manager window: the manager window is exactly as before action 2 again.
-/// Action 6: rename the folder browsed to browsed2: the tile of browsed changes by itself.
-/// Action 7: choose Browse files in its Project menu again: a note shows saying nothing exists at browsed, and the manager notes file holds exactly that text.
-/// Action 8: press OK: the window is exactly as after action 6, with no file manager window, and nothing was made at browsed.
-/// Action 9: end the manager.
 final class BrowseFilesTest extends ManagerTest{
-  static final Path browsed= data.resolveSibling("browsed");
-  static final Path moved= data.resolveSibling("browsed2");
-  final At managerShown= new At("managerShown",linux(3000),windows(3000));
-  final Area window= new Area("window",linux(68,32,3772,2098),windows(470,100,430,300));
-  final Click projectMenu= new Click("projectMenu",linux(158,79),windows(89,33));
-  final Click browseFiles= new Click("browseFiles",linux(180,149),windows(111,103));
-  final At filesShown= new At("filesShown",linux(1000),windows(4000));
-  final Click closeFiles= new Click("closeFiles",linux(2374,843),windows(1016,58));
-  final Click closeFilesAgain= new Click("closeFilesAgain",linux(2374,843),windows(1016,58));
-  final Area tile= new Area("tile",linux(74,149,128,88),windows(7,101,127,88));
-  final Click projectMenuAgain= new Click("projectMenuAgain",linux(158,79),windows(89,33));
-  final Click browseFilesAgain= new Click("browseFilesAgain",linux(180,149),windows(111,103));
-  final Click ok= new Click("ok",linux(1952,1136),windows(639,369));
-  @Override protected void walk() throws Exception{
-    clean();
-    forgetWindowPlaces();
-    Fs.writeUtf8(browsed.resolve("browsed.fearless"),"\n");
-    Fs.writeUtf8(browsed.resolve("_browsed").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"browsed\")}\n");
-    launch(browsed.toString());
-    managerShown.go();
-    look();
-    var at= window.aim();
-    var before= pixels(at);
-    projectMenu.go();
-    browseFiles.go();
-    look();
-    until(()->!Arrays.equals(before,pixels(at)));
-    filesShown.go();
-    var files= pixels(at);
-    closeFiles.go();
-    look();
-    until(()->Arrays.equals(before,pixels(at)));
-    Desktop.getDesktop().open(browsed.toFile());
-    until(()->Arrays.equals(files,pixels(at)));
-    closeFilesAgain.go();
-    look();
-    until(()->Arrays.equals(before,pixels(at)));
-    var cell= tile.aim();
-    var first= pixels(cell);
-    Files.move(browsed,moved);
-    until(()->!Arrays.equals(first,pixels(cell)));
-    var gone= pixels(at);
-    projectMenuAgain.go();
-    browseFilesAgain.go();
-    until(()->Files.exists(notes) && Fs.readUtf8(notes).equals("Nothing is opened: nothing exists at\n"+browsed+"\n"));
-    look();
-    until(()->!Arrays.equals(gone,pixels(at)));
-    ok.go();
-    look();
-    until(()->Arrays.equals(gone,pixels(at)));
-    assertFalse(Files.exists(browsed));
-    stopManagers();
-  }
-  @Override @AfterEach void clean() throws Exception{
-    super.clean();
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
+  final Action projectMenu= action("projectMenu",
+    on("ubuntu_gnome",()->click(val(158),val(79))),
+    on("windows",()->click(val(89),val(33))));
+  final Action browseFiles= action("browseFiles",
+    on("ubuntu_gnome",()->click(val(180),val(149))),
+    on("windows",()->click(val(111),val(103))));
+  final Action filesShown= action("filesShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(22500))));
+  final Action closeFiles= action("closeFiles",
+    on("ubuntu_gnome",()->click(val(2374),val(843))),
+    on("windows",()->click(val(1016),val(58))));
+  final Action filesClosed= action("filesClosed",
+    on("ubuntu_gnome",()->waitUntilTime(val(24000))));
+  final Action tileChanged= action("tileChanged",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action projectMenuAgain= action("projectMenuAgain",
+    on("ubuntu_gnome",()->click(val(158),val(79))),
+    on("windows",()->click(val(89),val(33))));
+  final Action browseFilesAgain= action("browseFilesAgain",
+    on("ubuntu_gnome",()->click(val(180),val(149))),
+    on("windows",()->click(val(111),val(103))));
+  final Action noteShown= action("noteShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(29000))));
+  final Action ok= action("ok",
+    on("ubuntu_gnome",()->click(val(1952),val(1136))),
+    on("windows",()->click(val(639),val(369))));
+  final Action noteGone= action("noteGone",
+    on("ubuntu_gnome",()->waitUntilTime(val(30500))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(32000))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(35500))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(45500))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var browsed= filesIOFolder.resolve("browsed");
+    var moved= filesIOFolder.resolve("browsed2");
     Fs.rmTree(browsed);
     Fs.rmTree(moved);
+    Fs.writeUtf8(browsed.resolve("browsed.fearless"),"\n");
+    Fs.writeUtf8(browsed.resolve("_browsed").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"browsed\")}\n");
+    launchScript("first",browsed);
+    runInTerminal(appsShown,terminalShown);
+    managerShown.go();
+    projectMenu.go();
+    browseFiles.go();
+    filesShown.go();
+    closeFiles.go();
+    filesClosed.go();
+    Files.move(browsed,moved);
+    tileChanged.go();
+    projectMenuAgain.go();
+    browseFilesAgain.go();
+    noteShown.go();
+    stabilize();
+    checkContent(notes,"Nothing is opened: nothing exists at\n"+browsed+"\n");
+    ok.go();
+    noteGone.go();
+    stabilize();
+    assertFalse(Files.exists(browsed));
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"137\n");
   }
 }

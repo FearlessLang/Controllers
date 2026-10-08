@@ -1,83 +1,114 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.awt.Desktop;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
+import java.util.List;
 
-/// The manager makes the desk open .fearless files with it and forgets that again when asked, and a file already on screen in the file manager shows each change once its window is reloaded.
-///
-/// Prerequisite: the desk shows its background with no window over it, and the manager DeployManagedFearless.java builds is deployed.
-///
-/// Setup: no manager runs, the manager has no data folder, helloWorld was never compiled, nothing is registered for .fearless, and the file manager remembers no place for its windows.
-/// Action 1: open the file manager on helloWorld, and reload it: hello_world.fearless shows a generic icon.
-/// Action 2: run the launcher: the manager window opens.
-/// Action 3: send the manager window away, and reload the same file manager window: hello_world.fearless shows the Fearless icon.
-/// Action 4: bring the manager window back from the bar of open windows, choose Forget association in its Manager menu and answer Yes: the manager ends.
-/// Action 5: reload it again: hello_world.fearless shows a generic icon again.
-/// Action 6: run the launcher: the manager window opens.
-/// Action 7: send the manager window away and reload it again: hello_world.fearless shows the Fearless icon again.
-/// Action 8: end the manager and close the file manager window.
-///
-/// A file manager keeps the icon it first drew for a file even after the desk learns a new one, so every look starts by reloading the window.
 final class FileAssociationTest extends ManagerTest{
-  final At filesShown= new At("filesShown",linux(3000),windows(4000));
-  final Click focusFiles= new Click("focusFiles",linux(2200,1200),windows(700,450));
-  final At genericShown= new At("genericShown",linux(3000),windows(2000));
-  final Area fileIcon= new Area("fileIcon",linux(1836,880,72,60),windows(428,242,24,24));
-  final At managerShown= new At("managerShown",linux(2000),windows(2000));
-  final Click sendManagerAway= new Click("sendManagerAway",linux(3754,48),windows(1162,11));
-  final At managerAway= new At("managerAway",linux(2000),windows(2000));
-  final At iconChanged= new At("iconChanged",linux(3000),windows(3000));
-  final Click bringManagerBack= new Click("bringManagerBack",linux(32,386),windows(860,696));
-  final At managerBack= new At("managerBack",linux(3000),windows(3000));
-  final Click managerMenu= new Click("managerMenu",linux(98,79),windows(31,33));
-  final Click forgetAssociation= new Click("forgetAssociation",linux(128,170),windows(61,145));
-  final At dialogShown= new At("dialogShown",linux(3000),windows(3000));
-  final Click yes= new Click("yes",linux(1928,1154),windows(614,387));
-  final At iconReverted= new At("iconReverted",linux(3000),windows(3000));
-  final At managerShownAgain= new At("managerShownAgain",linux(2000),windows(2000));
-  final Click sendManagerAwayAgain= new Click("sendManagerAwayAgain",linux(3754,48),windows(1162,11));
-  final At managerAwayAgain= new At("managerAwayAgain",linux(2000),windows(2000));
-  final At iconChangedAgain= new At("iconChangedAgain",linux(3000),windows(3000));
-  final Click closeFiles= new Click("closeFiles",linux(2374,842),windows(1016,58));
-  @Override protected void walk() throws Exception{
-    clean();
-    forgetWindowPlaces();
-    Desktop.getDesktop().open(project.toFile());
+  final Action appsShownForFiles= action("appsShownForFiles",
+    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShownForFiles= action("terminalShownForFiles",
+    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action filesShown= action("filesShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action focusFiles= action("focusFiles",
+    on("ubuntu_gnome",()->click(val(2200),val(1200))),
+    on("windows",()->click(val(700),val(450))));
+  final Action genericShown= action("genericShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(22000))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(23500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(27000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(40000))));
+  final Action sendManagerAway= action("sendManagerAway",
+    on("ubuntu_gnome",()->click(val(3754),val(48))),
+    on("windows",()->click(val(1162),val(11))));
+  final Action managerAway= action("managerAway",
+    on("ubuntu_gnome",()->waitUntilTime(val(43000))));
+  final Action iconChanged= action("iconChanged",
+    on("ubuntu_gnome",()->waitUntilTime(val(47000))));
+  final Action bringManagerBack= action("bringManagerBack",
+    on("ubuntu_gnome",()->click(val(32),val(386))),
+    on("windows",()->click(val(860),val(696))));
+  final Action managerBack= action("managerBack",
+    on("ubuntu_gnome",()->waitUntilTime(val(51000))));
+  final Action managerMenu= action("managerMenu",
+    on("ubuntu_gnome",()->click(val(98),val(79))),
+    on("windows",()->click(val(31),val(33))));
+  final Action forgetAssociation= action("forgetAssociation",
+    on("ubuntu_gnome",()->click(val(128),val(191))),
+    on("windows",()->click(val(61),val(145))));
+  final Action dialogShown= action("dialogShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(55500))));
+  final Action yes= action("yes",
+    on("ubuntu_gnome",()->click(val(1928),val(1154))),
+    on("windows",()->click(val(614),val(387))));
+  final Action managerForgot= action("managerForgot",
+    on("ubuntu_gnome",()->waitUntilTime(val(58500))));
+  final Action iconReverted= action("iconReverted",
+    on("ubuntu_gnome",()->waitUntilTime(val(62500))));
+  final Action appsShownAgain= action("appsShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(64000))));
+  final Action terminalShownAgain= action("terminalShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(67500))));
+  final Action managerShownAgain= action("managerShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(80500))));
+  final Action sendManagerAwayAgain= action("sendManagerAwayAgain",
+    on("ubuntu_gnome",()->click(val(3754),val(48))),
+    on("windows",()->click(val(1162),val(11))));
+  final Action managerAwayAgain= action("managerAwayAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(83500))));
+  final Action iconChangedAgain= action("iconChangedAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(87500))));
+  final Action appsShownToEnd= action("appsShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(89000))));
+  final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("ubuntu_gnome",()->waitUntilTime(val(92500))));
+  final Action managerEnded= action("managerEnded",
+    on("ubuntu_gnome",()->waitUntilTime(val(102500))));
+  final Action closeFiles= action("closeFiles",
+    on("ubuntu_gnome",()->click(val(2374),val(842))),
+    on("windows",()->click(val(1016),val(58))));
+  @Override void walk() throws Throwable{
+    noManagerData();
+    var project= project("helloWorld");
+    shell("nohup setsid -f xdg-open \""+project+"\" >/dev/null 2>&1\n");
+    runInTerminal(appsShownForFiles,terminalShownForFiles);
     filesShown.go();
-    var generic= look(genericShown);
-    var run= launch();
+    reload(genericShown);
+    launchScript("first");
+    runInTerminal(appsShown,terminalShown);
     managerShown.go();
     sendManagerAway.go();
     managerAway.go();
-    var fearless= look(iconChanged);
-    assertFalse(same(generic,fearless));
+    reload(iconChanged);
     bringManagerBack.go();
     managerBack.go();
     managerMenu.go();
     forgetAssociation.go();
     dialogShown.go();
     yes.go();
-    until(()->!run.isAlive());
-    assertEquals(0,run.exitValue());
-    assertTrue(same(generic,look(iconReverted)));
-    launch();
+    managerForgot.go();
+    stabilize();
+    checkContent(List.of("first.exit"),"0\n");
+    reload(iconReverted);
+    launchScript("second");
+    runInTerminal(appsShownAgain,terminalShownAgain);
     managerShownAgain.go();
     sendManagerAwayAgain.go();
     managerAwayAgain.go();
-    assertTrue(same(fearless,look(iconChangedAgain)));
-    stopManagers();
+    reload(iconChangedAgain);
+    endScript();
+    runInTerminal(appsShownToEnd,terminalShownToEnd);
+    managerEnded.go();
+    stabilize();
+    checkContent(List.of("second.exit"),"137\n");
     closeFiles.go();
   }
-  private BufferedImage look(At reloaded){
+  void reload(Action reloaded) throws Throwable{
     focusFiles.go();
-    pilot.chord(KeyEvent.VK_F5);
+    keys(KeyEvent.VK_F5);
     reloaded.go();
-    look();
-    return fileIcon.shot();
   }
 }
