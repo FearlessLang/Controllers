@@ -14,7 +14,8 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(2000))),
     on("kubuntu_plasma",()->waitUntilTime(val(2000))),
     on("void_i3",()->waitUntilTime(val(2000))),
-    on("arch_sway",()->waitUntilTime(val(2000))));
+    on("arch_sway",()->waitUntilTime(val(2000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -24,7 +25,8 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(7000))),
     on("kubuntu_plasma",()->waitUntilTime(val(7000))),
     on("void_i3",()->waitUntilTime(val(6500))),
-    on("arch_sway",()->waitUntilTime(val(6500))));
+    on("arch_sway",()->waitUntilTime(val(6500))),
+    on("omarchy_hyprland",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -34,7 +36,8 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(21000))),
     on("kubuntu_plasma",()->waitUntilTime(val(21000))),
     on("void_i3",()->waitUntilTime(val(30000))),
-    on("arch_sway",()->waitUntilTime(val(20000))));
+    on("arch_sway",()->waitUntilTime(val(20000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(20000))));
   final Action focusTiles= action("focusTiles",
     on("ubuntu_gnome",()->click(val(200),val(1500))),
     on("debian_gnome_x11",()->click(val(134),val(1500))),
@@ -45,6 +48,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(134),val(1500))),
     on("void_i3",()->click(val(268),val(1500))),
     on("arch_sway",()->click(val(268),val(1500))),
+    on("omarchy_hyprland",()->click(val(268),val(1500))),
     on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(400),val(139))),
@@ -56,6 +60,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(334),val(100))),
     on("void_i3",()->click(val(766),val(173))),
     on("arch_sway",()->click(val(766),val(248))),
+    on("omarchy_hyprland",()->click(val(1318),val(346))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21600))),
@@ -66,7 +71,8 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(25000))),
     on("kubuntu_plasma",()->waitUntilTime(val(25000))),
     on("void_i3",()->waitUntilTime(val(34000))),
-    on("arch_sway",()->waitUntilTime(val(24000))));
+    on("arch_sway",()->waitUntilTime(val(24000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(24000))));
   final Action compile= action("compile",
     on("ubuntu_gnome",()->click(val(164),val(111))),
     on("debian_gnome_x11",()->click(val(108),val(112))),
@@ -77,6 +83,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(109),val(72))),
     on("void_i3",()->click(val(228),val(119))),
     on("arch_sway",()->click(val(228),val(194))),
+    on("omarchy_hyprland",()->click(val(455),val(243))),
     on("windows",()->click(val(102),val(67))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome",()->waitUntilTime(val(35200))),
@@ -87,7 +94,8 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(37000))),
     on("kubuntu_plasma",()->waitUntilTime(val(37000))),
     on("void_i3",()->waitUntilTime(val(48000))),
-    on("arch_sway",()->waitUntilTime(val(36000))));
+    on("arch_sway",()->waitUntilTime(val(36000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(36000))));
   final Action run= action("run",
     on("ubuntu_gnome",()->click(val(164),val(111))),
     on("debian_gnome_x11",()->click(val(96),val(112))),
@@ -98,6 +106,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(96),val(72))),
     on("void_i3",()->click(val(198),val(119))),
     on("arch_sway",()->click(val(198),val(194))),
+    on("omarchy_hyprland",()->click(val(406),val(243))),
     on("windows",()->click(val(102),val(67))));
   final Action programShown= action("programShown",
     on("ubuntu_gnome",()->waitUntilTime(val(39800))),
@@ -108,7 +117,8 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(45000))),
     on("kubuntu_plasma",()->waitUntilTime(val(45000))),
     on("void_i3",()->waitUntilTime(val(62000))),
-    on("arch_sway",()->waitUntilTime(val(46000))));
+    on("arch_sway",()->waitUntilTime(val(46000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(46000))));
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->click(val(98),val(79))),
     on("debian_gnome_x11",()->click(val(32),val(80))),
@@ -119,6 +129,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(30),val(39))),
     on("void_i3",()->click(val(78),val(54))),
     on("arch_sway",()->click(val(78),val(129))),
+    on("omarchy_hyprland",()->click(val(146),val(112))),
     on("windows",()->click(val(31),val(33))));
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome",()->click(val(116),val(212))),
@@ -130,6 +141,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(60),val(171))),
     on("void_i3",()->click(val(115),val(297))),
     on("arch_sway",()->click(val(115),val(371))),
+    on("omarchy_hyprland",()->click(val(206),val(596))),
     on("windows",()->click(val(61),val(167))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitUntilTime(val(43000))),
@@ -140,7 +152,8 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(50000))),
     on("kubuntu_plasma",()->waitUntilTime(val(50000))),
     on("void_i3",()->waitUntilTime(val(70000))),
-    on("arch_sway",()->waitUntilTime(val(54000))));
+    on("arch_sway",()->waitUntilTime(val(54000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(54000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var gui= project("testGui1");
@@ -168,7 +181,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     run.go();
     programShown.go();
     stabilize();
-    checkContent(console,"--- compiling testGui1 ---\n--- compile done ---\n--- running gui_example.Foo ---\n");
+    checkContent(console,"--- compiling testGui1 ---\n--- compile done ---\n--- running gui_example.Foo ---[###]");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
