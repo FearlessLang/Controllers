@@ -15,7 +15,8 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(2000))),
     on("kubuntu_plasma",()->waitUntilTime(val(2000))),
     on("void_i3",()->waitUntilTime(val(2000))),
-    on("arch_sway",()->waitUntilTime(val(2000))));
+    on("arch_sway",()->waitUntilTime(val(2000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -25,7 +26,8 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(7000))),
     on("kubuntu_plasma",()->waitUntilTime(val(7000))),
     on("void_i3",()->waitUntilTime(val(6500))),
-    on("arch_sway",()->waitUntilTime(val(6500))));
+    on("arch_sway",()->waitUntilTime(val(6500))),
+    on("omarchy_hyprland",()->waitUntilTime(val(6500))));
   final Action errorShown= action("errorShown",
     on("ubuntu_gnome",()->waitUntilTime(val(19500))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -35,7 +37,8 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(21000))),
     on("kubuntu_plasma",()->waitUntilTime(val(21000))),
     on("void_i3",()->waitUntilTime(val(30000))),
-    on("arch_sway",()->waitUntilTime(val(20000))));
+    on("arch_sway",()->waitUntilTime(val(20000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(20000))));
   final Action ok= action("ok",
     on("ubuntu_gnome",()->click(val(1952),val(1212))),
     on("debian_gnome_x11",()->click(val(1920),val(1212))),
@@ -46,6 +49,7 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(1915),val(1163))),
     on("void_i3",()->click(val(1920),val(2066))),
     on("arch_sway",()->click(val(1920),val(2100))),
+    on("omarchy_hyprland",()->click(val(1920),val(2026))),
     on("windows",()->click(val(639),val(441))));
   final Action launcherEnded= action("launcherEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
@@ -56,7 +60,8 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(26000))),
     on("kubuntu_plasma",()->waitUntilTime(val(26000))),
     on("void_i3",()->waitUntilTime(val(35000))),
-    on("arch_sway",()->waitUntilTime(val(25000))));
+    on("arch_sway",()->waitUntilTime(val(25000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(25000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
