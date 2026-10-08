@@ -17,6 +17,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(2000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(2000))),
     on("kubuntu_plasma",()->waitUntilTime(val(2000))),
+    on("opensuse_plasma",()->waitUntilTime(val(2000))),
     on("void_i3",()->waitUntilTime(val(2000))),
     on("arch_sway",()->waitUntilTime(val(2000))),
     on("omarchy_hyprland",()->waitUntilTime(val(2000))));
@@ -29,6 +30,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(6500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(7000))),
     on("kubuntu_plasma",()->waitUntilTime(val(7000))),
+    on("opensuse_plasma",()->waitUntilTime(val(7000))),
     on("void_i3",()->waitUntilTime(val(6500))),
     on("arch_sway",()->waitUntilTime(val(6500))),
     on("omarchy_hyprland",()->waitUntilTime(val(6500))));
@@ -41,6 +43,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(20000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(21000))),
     on("kubuntu_plasma",()->waitUntilTime(val(21000))),
+    on("opensuse_plasma",()->waitUntilTime(val(21000))),
     on("void_i3",()->waitUntilTime(val(30000))),
     on("arch_sway",()->waitUntilTime(val(20000))),
     on("omarchy_hyprland",()->waitUntilTime(val(20000))));
@@ -53,6 +56,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(22000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(23000))),
     on("kubuntu_plasma",()->waitUntilTime(val(23000))),
+    on("opensuse_plasma",()->waitUntilTime(val(23000))),
     on("void_i3",()->waitUntilTime(val(32000))),
     on("arch_sway",()->waitUntilTime(val(22000))),
     on("omarchy_hyprland",()->waitUntilTime(val(22000))));
@@ -65,6 +69,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(26500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(28000))),
     on("kubuntu_plasma",()->waitUntilTime(val(28000))),
+    on("opensuse_plasma",()->waitUntilTime(val(28000))),
     on("void_i3",()->waitUntilTime(val(36500))),
     on("arch_sway",()->waitUntilTime(val(26500))),
     on("omarchy_hyprland",()->waitUntilTime(val(26500))));
@@ -77,6 +82,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(40000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(42000))),
     on("kubuntu_plasma",()->waitUntilTime(val(42000))),
+    on("opensuse_plasma",()->waitUntilTime(val(42000))),
     on("void_i3",()->waitUntilTime(val(54000))),
     on("arch_sway",()->waitUntilTime(val(40000))),
     on("omarchy_hyprland",()->waitUntilTime(val(40000))));
@@ -89,6 +95,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->click(val(184),val(138))),
     on("lubuntu_lxqt",()->click(val(70),val(300))),
     on("kubuntu_plasma",()->click(val(90),val(39))),
+    on("opensuse_plasma",()->click(val(90),val(39))),
     on("void_i3",()->click(val(215),val(54))),
     on("arch_sway",()->click(val(215),val(129))),
     on("omarchy_hyprland",()->click(val(380),val(112))),
@@ -102,6 +109,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->click(val(230),val(455))),
     on("lubuntu_lxqt",()->click(val(90),val(419))),
     on("kubuntu_plasma",()->click(val(120),val(196))),
+    on("opensuse_plasma",()->click(val(120),val(196))),
     on("void_i3",()->click(val(268),val(343))),
     on("arch_sway",()->click(val(268),val(418))),
     on("omarchy_hyprland",()->click(val(466),val(690))),
@@ -115,6 +123,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(43000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(45000))),
     on("kubuntu_plasma",()->waitUntilTime(val(45000))),
+    on("opensuse_plasma",()->waitUntilTime(val(45000))),
     on("void_i3",()->waitUntilTime(val(57000))),
     on("arch_sway",()->waitUntilTime(val(43000))),
     on("omarchy_hyprland",()->waitUntilTime(val(43000))));
@@ -127,6 +136,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(45000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(47000))),
     on("kubuntu_plasma",()->waitUntilTime(val(47000))),
+    on("opensuse_plasma",()->waitUntilTime(val(47000))),
     on("void_i3",()->waitUntilTime(val(59000))),
     on("arch_sway",()->waitUntilTime(val(45000))),
     on("omarchy_hyprland",()->waitUntilTime(val(45000))));
@@ -139,6 +149,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(49500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(52000))),
     on("kubuntu_plasma",()->waitUntilTime(val(52000))),
+    on("opensuse_plasma",()->waitUntilTime(val(52000))),
     on("void_i3",()->waitUntilTime(val(63500))),
     on("arch_sway",()->waitUntilTime(val(49500))),
     on("omarchy_hyprland",()->waitUntilTime(val(49500))));
@@ -151,6 +162,7 @@ final class ForgetProjectTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(60000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(66000))),
     on("kubuntu_plasma",()->waitUntilTime(val(66000))),
+    on("opensuse_plasma",()->waitUntilTime(val(66000))),
     on("void_i3",()->waitUntilTime(val(77000))),
     on("arch_sway",()->waitUntilTime(val(62000))),
     on("omarchy_hyprland",()->waitUntilTime(val(62000))));
