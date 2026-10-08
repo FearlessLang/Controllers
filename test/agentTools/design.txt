@@ -1,135 +1,90 @@
-usage: TestAgentTools.java <desk> [agent] [<TestClassName>]
+This document is precise pseudocode explanation of what TestAgentTools should do.
+usage: TestAgentTools.java(String desk, bool agent, Opt<String> testName, Path channelFolder, Path filesIOFolder)
 
-void main(String desk, boolean agent, Optional<String> test):
-  compile(controllerTest)
-  junit(properties: desk=desk, agent=agent; select: test or every class of package agentTools)
+void main(String desk, boolean agent, Optional<String> test){
+  compile(controllerTest);
+  cleanDir(channelFolder);
+  separateProcess(()->junit(property: testName or all, desk, agent, channelFolder,filesIOFolder));
+  cleanDir(channelFolder);
+}
+class ManagerTest{
+  String desk= property("desk")
+  boolean agent= property("agent")
+  Path channel= property("channelFolder")
+  Path filesIOFolder =property("filesIOFolder");
+  abstract void walk() throws Throwable;
+  Time start;
+  int inputIndex=0;
+  String inputName;
+  List<Object> inputs;
+  @Test void test() throws Throwable{
+    start = now();
+    walk();
+  }
+  Action action(String name, On...ons){ return new Action(this,name,ons.find(desk).orCrash); }
+  On on(String desk, Run steps){ new On(desk,steps); }
 
-String desk= property("desk")
-boolean agent= property("agent")
-Path channel= /data/pilot  (C:\data\pilot on windows)
-List<Action> actions= []
-long last
-long[] values
-int index
+}
+record Action(ManagerTest m, String name, Run run){
+  void go() throws Throwable{
+    if(!m.agent){ run.run(); return; }
+    m.name = name;
+    m.inputIndex = 0;
+    cleanDir(channelFolder);
+    makeFile(channel,name);
+    waitUntilFileEndsWithSemicolon(channel,name);
+    inputs=makeInputs(channel,name);
+    run.run(); 
+  }
+}
+interface Run{ void run() throws Throwable; }
+record On(String desk, Run steps){}
 
-void walks():
-  if (!agent && actions.any(a->!a.perDesk.has(desk))){ abort }
-  if (agent){ cleanDir(channel) }
-  last= now()
-  walk()
-
-Action action(String name, On... ons): Action a= Action(name,ons); actions.add(a); return a
-On on(String desk, Runnable steps): On(desk,steps)
-record On(String desk, Runnable steps)
-record Action(String name, Map<String,Runnable> perDesk)
-
-long n(long recorded): agent ? values[index++] : recorded
-
-void Action.go():
-  index= 0
-  values= agent ? answer(name) : none
-  perDesk[desk].run()
-  assert !agent || index==values.length
-
-long[] answer(String name):
-  Path file= channel/name
-  write(file,"")
-  loop:
-    String text= read(file).strip()
-    if (text.endsWith(";")){ delete(file); return numbers(text) }
-    for (Path request in channel/*.do){ serve(request) }
-    pause(100)
-
-void serve(Path request):
-  long[] v= numbers(read(request))
-  if (v.isEmpty()){ return }
-  case request.name:
-    "shot.do": write(channel/shot.png, pilot.shot())
-    "hover.do": pilot.glide(v0,v1,none,v0,v1,none)
-  delete(request)
-
-void until(BooleanSupplier done):
-  long end= now()+60000
-  while (!done()){ assert now()<end; pause(100) }
-  last= now()
-
-void ready(long v):
-  long moment= agent ? v : last+v
-  if (moment>now()){ pause(moment-now()) }
-  last= now()
-
-void click(long x, long y): pilot.click(x,y)
-void doubleClick(long x, long y): pilot.doubleClick(x,y)
-void drag(long x0, long y0, long x1, long y1): pilot.drag(x0,y0,x1,y1)
-void keys(int... codes): pilot.chord(codes)
-
-BufferedImage look():
-  pilot.glide(right edge, middle, none, right edge, middle, none)
-  return pilot.shot()
-
-boolean same(BufferedImage a, BufferedImage b): count(i: sum(abs(channelDiff(a[i],b[i])))>30)*20 < pixels(a)
-boolean differ(BufferedImage a, Rectangle area, BufferedImage b): !same(crop(a,area),crop(b,area))
-
-void pilot.glide(int x0, int y0, Set<Button> held, int x1, int y1, Set<Button> then):
-  mouseMove(x0,y0)
-  hold(held)
-  int steps= max(abs(x1-x0),abs(y1-y0))/4+1
-  for i in 1..steps: mouseMove(lerp(x0,x1,i/steps),lerp(y0,y1,i/steps)); pause(4)
-  hold(then)
-
-void pilot.hold(Set<Button> want):
-  for b in buttons: if (down(b)!=want(b)){ set(b,want(b)) }
-  down= want
-  pause(200)
-
-void pilot.click(int x, int y): glide(x,y,none,x,y,left); glide(x,y,left,x,y,none)
-
-void pilot.doubleClick(int x, int y):
-  glide(x,y,none,x,y,none)
-  twice: press(left); pause(50); release(left); pause(50)
-  pause(200)
-
-void pilot.drag(int x0, int y0, int x1, int y1): glide(x0,y0,none,x0,y0,left); glide(x0,y0,left,x1,y1,left); glide(x1,y1,left,x1,y1,none)
-
-void pilot.chord(int... codes): press(codes); release(reverse(codes)); pause(200)
-
-BufferedImage pilot.shot():
-  BufferedImage img= capture(screen)
-  assert !allBlack(img)
-  return img
-
-Rectangle pilot.changed(BufferedImage a, BufferedImage b, int r):
-  differs= pixelwise(a,b,10)
-  solid= differs where the whole (2r+1) square around it differs
-  return box(largest connected component of solid, grown by r)
-
-class ExampleTest:
+Object val(Object recorded){
+  if(!agent){ return recorded;}
+  return inputs.get(inputIndex++); 
+}
+List<Object> makeInputs(channel,name){
+  String f= fileContent(channel,name);
+  f.split(\n).stream()
+    .map(String::trim)
+    .map(s->s.startsWith("\"")?parseStr(s):parseInteger(s))
+    .toList();
+}
+void waitUtilTime(Time time){
+  Time current=now();
+  while (start-current>time){}//implementation should not busy loop so fast
+  return;
+}
+void click(long x, long y){ pilot.click(x,y); }
+void doubleClick(long x, long y){ pilot.doubleClick(x,y); }
+void drag(long x0, long y0, long x1, long y1){ pilot.drag(x0,y0,x1,y1); }
+void type(String text){ pilot.chord(toCodes(text)); }
+void keys(int... codes){ pilot.chord(codes); }
+void stabilize(){
+  Fs.isLinux implies make the alive VM, if any, flush on the shared folder;
+  }
+void checkContent(List<String> path,String expected){
+  c= readContent(filesIOFolder+path);
+  assert c is expected;
+}
+class ExampleTest extends ManagerTest{
   Action chooseFirst= action("chooseFirst",
-    on("ubuntu_gnome",()->click(n(120),n(80))),
-    on("windows",()->doubleClick(n(60),n(40))))
+    on("ubuntu_gnome",()->click(val(120),val(80))),
+    on("windows",()->doubleClick(val(60),val(40))));
   Action settled= action("settled",
-    on("ubuntu_gnome",()->ready(n(2000))),
-    on("windows",()->ready(n(500))))
+    on("ubuntu_gnome",()->waitUtilTime(val(2000))),
+    on("windows",()->waitUtilTime(val(500))));
   Action chooseSecond= action("chooseSecond",
-    on("ubuntu_gnome",()->click(n(300),n(200))),
-    on("windows",()->click(n(150),n(90))))
-  void walk():
-    chooseFirst.go()
-    settled.go()
-    chooseSecond.go()
+    on("ubuntu_gnome",()->click(val(300),val(200))),
+    on("windows",()->click(val(150),val(90))));
 
-class ExampleSeeTest:
-  Action carry= action("carry",
-    on("ubuntu_gnome",()->drag(n(300),n(500),n(3700),n(120))),
-    on("windows",()->drag(n(200),n(400),n(900),n(60))))
-  Action close= action("close",
-    on("ubuntu_gnome",()->click(n(3822),n(50))),
-    on("windows",()->click(n(1255),n(11))))
-  void walk():
-    BufferedImage before= look()
-    carry.go()
-    until(()->!same(before,look()))
-    BufferedImage shown= look()
-    close.go()
-    until(()->same(before,look()))
-    assert !same(shown,look())
+  void walk(){
+    writeTestSpecificFiles();
+    stabilize();
+    chooseFirst.go();
+    settled.go();
+    chooseSecond.go();
+    stabilize();
+    checkContent(List.of(..),"expected");
+  }
