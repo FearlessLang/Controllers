@@ -15,7 +15,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(2000))),
     on("arch_sway",()->waitUntilTime(val(2000))),
     on("omarchy_hyprland",()->waitUntilTime(val(2000))),
-    on("fedora_gnome",()->waitUntilTime(val(2000))));
+    on("fedora_gnome",()->waitUntilTime(val(2000))),
+    on("fedora_cosmic",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -28,7 +29,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(6500))),
     on("arch_sway",()->waitUntilTime(val(6500))),
     on("omarchy_hyprland",()->waitUntilTime(val(6500))),
-    on("fedora_gnome",()->waitUntilTime(val(6500))));
+    on("fedora_gnome",()->waitUntilTime(val(6500))),
+    on("fedora_cosmic",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -41,7 +43,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(30000))),
     on("arch_sway",()->waitUntilTime(val(20000))),
     on("omarchy_hyprland",()->waitUntilTime(val(20000))),
-    on("fedora_gnome",()->waitUntilTime(val(20000))));
+    on("fedora_gnome",()->waitUntilTime(val(20000))),
+    on("fedora_cosmic",()->waitUntilTime(val(20000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(19500))),
     on("debian_gnome_x11",()->waitUntilTime(val(22000))),
@@ -54,7 +57,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(32000))),
     on("arch_sway",()->waitUntilTime(val(22000))),
     on("omarchy_hyprland",()->waitUntilTime(val(22000))),
-    on("fedora_gnome",()->waitUntilTime(val(22000))));
+    on("fedora_gnome",()->waitUntilTime(val(22000))),
+    on("fedora_cosmic",()->waitUntilTime(val(22000))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
     on("debian_gnome_x11",()->waitUntilTime(val(26500))),
@@ -67,7 +71,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(36500))),
     on("arch_sway",()->waitUntilTime(val(26500))),
     on("omarchy_hyprland",()->waitUntilTime(val(26500))),
-    on("fedora_gnome",()->waitUntilTime(val(26500))));
+    on("fedora_gnome",()->waitUntilTime(val(26500))),
+    on("fedora_cosmic",()->waitUntilTime(val(26500))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(33000))),
     on("debian_gnome_x11",()->waitUntilTime(val(38000))),
@@ -80,7 +85,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(50000))),
     on("arch_sway",()->waitUntilTime(val(38000))),
     on("omarchy_hyprland",()->waitUntilTime(val(38000))),
-    on("fedora_gnome",()->waitUntilTime(val(38000))));
+    on("fedora_gnome",()->waitUntilTime(val(38000))),
+    on("fedora_cosmic",()->waitUntilTime(val(38000))));
   final Action appsShownOnFile= action("appsShownOnFile",
     on("ubuntu_gnome",()->waitUntilTime(val(34500))),
     on("debian_gnome_x11",()->waitUntilTime(val(40000))),
@@ -93,7 +99,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(52000))),
     on("arch_sway",()->waitUntilTime(val(40000))),
     on("omarchy_hyprland",()->waitUntilTime(val(40000))),
-    on("fedora_gnome",()->waitUntilTime(val(40000))));
+    on("fedora_gnome",()->waitUntilTime(val(40000))),
+    on("fedora_cosmic",()->waitUntilTime(val(40000))));
   final Action terminalShownOnFile= action("terminalShownOnFile",
     on("ubuntu_gnome",()->waitUntilTime(val(38000))),
     on("debian_gnome_x11",()->waitUntilTime(val(44500))),
@@ -106,7 +113,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(56500))),
     on("arch_sway",()->waitUntilTime(val(44500))),
     on("omarchy_hyprland",()->waitUntilTime(val(44500))),
-    on("fedora_gnome",()->waitUntilTime(val(44500))));
+    on("fedora_gnome",()->waitUntilTime(val(44500))),
+    on("fedora_cosmic",()->waitUntilTime(val(44500))));
   final Action managerShownOnFile= action("managerShownOnFile",
     on("ubuntu_gnome",()->waitUntilTime(val(51000))),
     on("debian_gnome_x11",()->waitUntilTime(val(58000))),
@@ -119,7 +127,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(80000))),
     on("arch_sway",()->waitUntilTime(val(58000))),
     on("omarchy_hyprland",()->waitUntilTime(val(58000))),
-    on("fedora_gnome",()->waitUntilTime(val(58000))));
+    on("fedora_gnome",()->waitUntilTime(val(58000))),
+    on("fedora_cosmic",()->waitUntilTime(val(58000))));
   final Action appsShownToEndOnFile= action("appsShownToEndOnFile",
     on("ubuntu_gnome",()->waitUntilTime(val(52500))),
     on("debian_gnome_x11",()->waitUntilTime(val(60000))),
@@ -132,7 +141,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(82000))),
     on("arch_sway",()->waitUntilTime(val(60000))),
     on("omarchy_hyprland",()->waitUntilTime(val(60000))),
-    on("fedora_gnome",()->waitUntilTime(val(60000))));
+    on("fedora_gnome",()->waitUntilTime(val(60000))),
+    on("fedora_cosmic",()->waitUntilTime(val(60000))));
   final Action terminalShownToEndOnFile= action("terminalShownToEndOnFile",
     on("ubuntu_gnome",()->waitUntilTime(val(56000))),
     on("debian_gnome_x11",()->waitUntilTime(val(64500))),
@@ -145,7 +155,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(86500))),
     on("arch_sway",()->waitUntilTime(val(64500))),
     on("omarchy_hyprland",()->waitUntilTime(val(64500))),
-    on("fedora_gnome",()->waitUntilTime(val(64500))));
+    on("fedora_gnome",()->waitUntilTime(val(64500))),
+    on("fedora_cosmic",()->waitUntilTime(val(64500))));
   final Action managerEndedOnFile= action("managerEndedOnFile",
     on("ubuntu_gnome",()->waitUntilTime(val(66000))),
     on("debian_gnome_x11",()->waitUntilTime(val(76000))),
@@ -158,7 +169,8 @@ final class LaunchOnFileTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(100000))),
     on("arch_sway",()->waitUntilTime(val(76000))),
     on("omarchy_hyprland",()->waitUntilTime(val(76000))),
-    on("fedora_gnome",()->waitUntilTime(val(76000))));
+    on("fedora_gnome",()->waitUntilTime(val(76000))),
+    on("fedora_cosmic",()->waitUntilTime(val(76000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
