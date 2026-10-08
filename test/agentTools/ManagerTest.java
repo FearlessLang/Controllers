@@ -94,9 +94,10 @@ abstract class ManagerTest{
   static final List<String> state= List.of(data,"eclipse","state.info");
   static final List<String> notes= List.of(data,"eclipse","console.txt");
   final Path app= filesIOFolder.resolve("fearlessManaged"+ResolveResource.versionId);
-  final Action showApps= action("showApps",on("ubuntu_gnome",()->click(val(34),val(16))),on("windows",ManagerTest::unrecorded));
-  final Action openTerminal= action("openTerminal",on("ubuntu_gnome",()->type("terminal\n")),on("windows",ManagerTest::unrecorded));
-  final Action runShell= action("runShell",on("ubuntu_gnome",()->type("sh "+filesIOFolder.resolve("run.sh")+"; exit\n")),on("windows",ManagerTest::unrecorded));
+  final Action showApps= action("showApps",on("ubuntu_gnome",()->click(val(34),val(16))),on("debian_gnome_x11",()->click(val(1920),val(1080))),on("windows",ManagerTest::unrecorded));
+  final Action openTerminal= action("openTerminal",on("ubuntu_gnome",()->type("terminal\n")),on("debian_gnome_x11",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("windows",ManagerTest::unrecorded));
+  final Action runShell= action("runShell",on("ubuntu_gnome",this::typeRunSh),on("debian_gnome_x11",this::typeRunSh),on("windows",ManagerTest::unrecorded));
+  void typeRunSh(){ type("sh "+filesIOFolder.resolve("run.sh")+"; exit\n"); }
   static void unrecorded(){ throw Bug.todo(); }
   Path project(String name){
     var res= filesIOFolder.resolve(name);
