@@ -1,66 +1,38 @@
 usage: TestAgentTools.java <desk> [agent] [<TestClassName>]
 
+final class ExampleTest extends PilotTest{
+  final Action chooseFirst= action("chooseFirst",
+    on("ubuntu_gnome",()->click(n(120),n(80))),
+    on("windows",()->doubleClick(n(60),n(40))));
+  final Action settled= action("settled",
+    on("ubuntu_gnome",()->ready(n(2000))),
+    on("windows",()->ready(n(500))));
+  final Action chooseSecond= action("chooseSecond",
+    on("ubuntu_gnome",()->click(n(300),n(200))),
+    on("windows",()->click(n(150),n(90))));
+  @Override protected void walk(){
+    chooseFirst.go();
+    settled.go();
+    chooseSecond.go();
+  }
+}
+
 record Action(String name, Map<String,Runnable> perDesk){
   void go(){ current= name; index= 0; perDesk.get(desk).run(); }
 }
-static Action action(String name, On... ons){ return new Action(name,Map.of(ons...)); }
-static On on(String desk, Runnable steps){ return new On(desk,steps); }
 
-static long n(long recorded){ return agent ? answer(current)[index++] : recorded; }
-static long[] answer(String name){
-  create(channel/name);
-  await(channel/name ends with ";");
-  return numbers(channel/name);
+long n(long recorded){
+  if (!agent){ return recorded; }
+  return answer(current)[index++];
 }
 
-click(x,y)
-doubleClick(x,y)
-drag(x0,y0,x1,y1)
-ready(ms)
-look()
-same(shotA,shotB)
-differ(shotA,area,shotB)
-until(()->condition)
-
-final class WindowCloseTest extends ManagerTest{
-  final Action openManager= action("openManager",
-    on("ubuntu_gnome",()->drag(n(helloWorldIcon.x),n(helloWorldIcon.y),n(launcherIcon.x),n(launcherIcon.y))),
-    on("windows",()->drag(n(helloWorldIcon.x),n(helloWorldIcon.y),n(launcherIcon.x),n(launcherIcon.y))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->ready(n(2000))),
-    on("windows",()->ready(n(2000))));
-  final Action closeManager= action("closeManager",
-    on("ubuntu_gnome",()->click(n(3822),n(50))),
-    on("windows",()->click(n(1255),n(11))));
-  final Action openLauncher= action("openLauncher",
-    on("ubuntu_gnome",()->doubleClick(n(launcherIcon.x),n(launcherIcon.y))),
-    on("windows",()->doubleClick(n(launcherIcon.x),n(launcherIcon.y))));
-  final Action managerBack= action("managerBack",
-    on("ubuntu_gnome",()->ready(n(1000))),
-    on("windows",()->ready(n(1000))));
-  final Action managerMenu= action("managerMenu",
-    on("ubuntu_gnome",()->click(n(98),n(79))),
-    on("windows",()->click(n(31),n(33))));
-  final Action quitManager= action("quitManager",
-    on("ubuntu_gnome",()->click(n(128),n(191))),
-    on("windows",()->click(n(61),n(167))));
-  final Action runningSign= action("runningSign",
-    on("ubuntu_gnome",()->area(n(x),n(y),n(w),n(h))),
-    on("windows",()->area(n(x),n(y),n(w),n(h))));
-  @Override protected void walk(){
-    var background= look();
-    var sign= runningSign.area();
-    openManager.go();
-    managerShown.go();
-    var shown= look();
-    closeManager.go();
-    until(()->same(background,look()));
-    assertTrue(differ(background,sign,look()));
-    openLauncher.go();
-    managerBack.go();
-    assertTrue(same(shown,look()));
-    managerMenu.go();
-    quitManager.go();
-    until(()->!differ(background,sign,look()));
-  }
+long[] answer(String name){
+  file= channel/name
+  create(file, empty)
+  until(file ends with ";")
+  return numbers(file)
 }
+
+click(x,y)       -> pilot.click(x,y)
+doubleClick(x,y) -> pilot.doubleClick(x,y)
+ready(ms)        -> sleep until last+ms
