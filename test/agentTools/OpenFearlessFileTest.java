@@ -12,71 +12,87 @@ final class OpenFearlessFileTest extends ManagerTest{
   final Action appsShown= action("appsShown",
     on("ubuntu_gnome",()->waitUntilTime(val(2000))),
     on("debian_gnome_x11",()->waitUntilTime(val(2000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(2000))));
+    on("xubuntu_xfce",()->waitUntilTime(val(2000))),
+    on("debian_cinnamon",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(6500))));
+    on("xubuntu_xfce",()->waitUntilTime(val(6500))),
+    on("debian_cinnamon",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(20000))));
+    on("xubuntu_xfce",()->waitUntilTime(val(20000))),
+    on("debian_cinnamon",()->waitUntilTime(val(20000))));
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->click(val(98),val(79))),
     on("debian_gnome_x11",()->click(val(32),val(80))),
     on("xubuntu_xfce",()->click(val(74),val(120))),
+    on("debian_cinnamon",()->click(val(32),val(47))),
     on("windows",()->click(val(31),val(33))));
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome",()->click(val(116),val(212))),
     on("debian_gnome_x11",()->click(val(60),val(212))),
     on("xubuntu_xfce",()->click(val(110),val(362))),
+    on("debian_cinnamon",()->click(val(60),val(180))),
     on("windows",()->click(val(61),val(167))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
     on("debian_gnome_x11",()->waitUntilTime(val(24500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(24500))));
+    on("xubuntu_xfce",()->waitUntilTime(val(24500))),
+    on("debian_cinnamon",()->waitUntilTime(val(25500))));
   final Action appsShownFiles= action("appsShownFiles",
     on("ubuntu_gnome",()->waitUntilTime(val(24500))),
     on("debian_gnome_x11",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(26000))));
+    on("xubuntu_xfce",()->waitUntilTime(val(26000))),
+    on("debian_cinnamon",()->waitUntilTime(val(27000))));
   final Action terminalShownFiles= action("terminalShownFiles",
     on("ubuntu_gnome",()->waitUntilTime(val(28000))),
     on("debian_gnome_x11",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(30500))));
+    on("xubuntu_xfce",()->waitUntilTime(val(30500))),
+    on("debian_cinnamon",()->waitUntilTime(val(31500))));
   final Action filesShown= action("filesShown",
     on("ubuntu_gnome",()->waitUntilTime(val(40000))),
     on("debian_gnome_x11",()->waitUntilTime(val(44000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(44000))));
+    on("xubuntu_xfce",()->waitUntilTime(val(44000))),
+    on("debian_cinnamon",()->waitUntilTime(val(44000))));
   final Action openFile= action("openFile",
     on("ubuntu_gnome",()->doubleClick(val(1872),val(915))),
     on("debian_gnome_x11",()->doubleClick(val(1925),val(939))),
     on("xubuntu_xfce",()->doubleClick(val(2030),val(852))),
+    on("debian_cinnamon",()->doubleClick(val(678),val(272))),
     on("windows",()->doubleClick(val(503),val(254))));
   final Action managerOpened= action("managerOpened",
     on("ubuntu_gnome",()->waitUntilTime(val(52000))),
     on("debian_gnome_x11",()->waitUntilTime(val(60000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(60000))));
+    on("xubuntu_xfce",()->waitUntilTime(val(60000))),
+    on("debian_cinnamon",()->waitUntilTime(val(60000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(53500))),
     on("debian_gnome_x11",()->waitUntilTime(val(61500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(61500))));
+    on("xubuntu_xfce",()->waitUntilTime(val(61500))),
+    on("debian_cinnamon",()->waitUntilTime(val(61500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(57000))),
     on("debian_gnome_x11",()->waitUntilTime(val(66000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(66000))));
+    on("xubuntu_xfce",()->waitUntilTime(val(66000))),
+    on("debian_cinnamon",()->waitUntilTime(val(66000))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(67000))),
     on("debian_gnome_x11",()->waitUntilTime(val(76000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(76000))));
+    on("xubuntu_xfce",()->waitUntilTime(val(76000))),
+    on("debian_cinnamon",()->waitUntilTime(val(76000))));
   final Action closeFiles= action("closeFiles",
     on("ubuntu_gnome",()->click(val(2374),val(844))),
     on("debian_gnome_x11",()->click(val(2341),val(844))),
     on("xubuntu_xfce",()->click(val(2538),val(623))),
+    on("debian_cinnamon",()->click(val(1098),val(135))),
     on("windows",()->click(val(1016),val(58))));
   final Action filesClosed= action("filesClosed",
     on("ubuntu_gnome",()->waitUntilTime(val(70000))),
     on("debian_gnome_x11",()->waitUntilTime(val(78000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(80000))));
+    on("xubuntu_xfce",()->waitUntilTime(val(80000))),
+    on("debian_cinnamon",()->waitUntilTime(val(80000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
