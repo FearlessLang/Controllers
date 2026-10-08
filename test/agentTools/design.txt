@@ -1,0 +1,66 @@
+usage: TestAgentTools.java <desk> [agent] [<TestClassName>]
+
+record Action(String name, Map<String,Runnable> perDesk){
+  void go(){ current= name; index= 0; perDesk.get(desk).run(); }
+}
+static Action action(String name, On... ons){ return new Action(name,Map.of(ons...)); }
+static On on(String desk, Runnable steps){ return new On(desk,steps); }
+
+static long n(long recorded){ return agent ? answer(current)[index++] : recorded; }
+static long[] answer(String name){
+  create(channel/name);
+  await(channel/name ends with ";");
+  return numbers(channel/name);
+}
+
+click(x,y)
+doubleClick(x,y)
+drag(x0,y0,x1,y1)
+ready(ms)
+look()
+same(shotA,shotB)
+differ(shotA,area,shotB)
+until(()->condition)
+
+final class WindowCloseTest extends ManagerTest{
+  final Action openManager= action("openManager",
+    on("ubuntu_gnome",()->drag(n(helloWorldIcon.x),n(helloWorldIcon.y),n(launcherIcon.x),n(launcherIcon.y))),
+    on("windows",()->drag(n(helloWorldIcon.x),n(helloWorldIcon.y),n(launcherIcon.x),n(launcherIcon.y))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->ready(n(2000))),
+    on("windows",()->ready(n(2000))));
+  final Action closeManager= action("closeManager",
+    on("ubuntu_gnome",()->click(n(3822),n(50))),
+    on("windows",()->click(n(1255),n(11))));
+  final Action openLauncher= action("openLauncher",
+    on("ubuntu_gnome",()->doubleClick(n(launcherIcon.x),n(launcherIcon.y))),
+    on("windows",()->doubleClick(n(launcherIcon.x),n(launcherIcon.y))));
+  final Action managerBack= action("managerBack",
+    on("ubuntu_gnome",()->ready(n(1000))),
+    on("windows",()->ready(n(1000))));
+  final Action managerMenu= action("managerMenu",
+    on("ubuntu_gnome",()->click(n(98),n(79))),
+    on("windows",()->click(n(31),n(33))));
+  final Action quitManager= action("quitManager",
+    on("ubuntu_gnome",()->click(n(128),n(191))),
+    on("windows",()->click(n(61),n(167))));
+  final Action runningSign= action("runningSign",
+    on("ubuntu_gnome",()->area(n(x),n(y),n(w),n(h))),
+    on("windows",()->area(n(x),n(y),n(w),n(h))));
+  @Override protected void walk(){
+    var background= look();
+    var sign= runningSign.area();
+    openManager.go();
+    managerShown.go();
+    var shown= look();
+    closeManager.go();
+    until(()->same(background,look()));
+    assertTrue(differ(background,sign,look()));
+    openLauncher.go();
+    managerBack.go();
+    assertTrue(same(shown,look()));
+    managerMenu.go();
+    quitManager.go();
+    until(()->!differ(background,sign,look()));
+  }
+}
