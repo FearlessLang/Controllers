@@ -27,16 +27,16 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_gnome_x11",()->click(val(60),val(212))),
     on("windows",()->click(val(61),val(167))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(21500))),
+    on("ubuntu_gnome",()->waitUntilTime(val(23000))),
     on("debian_gnome_x11",()->waitUntilTime(val(24500))));
   final Action appsShownFiles= action("appsShownFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(23000))),
+    on("ubuntu_gnome",()->waitUntilTime(val(24500))),
     on("debian_gnome_x11",()->waitUntilTime(val(26000))));
   final Action terminalShownFiles= action("terminalShownFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(26500))),
+    on("ubuntu_gnome",()->waitUntilTime(val(28000))),
     on("debian_gnome_x11",()->waitUntilTime(val(30500))));
   final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(38500))),
+    on("ubuntu_gnome",()->waitUntilTime(val(40000))),
     on("debian_gnome_x11",()->waitUntilTime(val(44000))));
   final Action openFile= action("openFile",
     on("ubuntu_gnome",()->doubleClick(val(1872),val(915))),
@@ -59,7 +59,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_gnome_x11",()->click(val(2341),val(844))),
     on("windows",()->click(val(1016),val(58))));
   final Action filesClosed= action("filesClosed",
-    on("ubuntu_gnome",()->waitUntilTime(val(69000))),
+    on("ubuntu_gnome",()->waitUntilTime(val(70000))),
     on("debian_gnome_x11",()->waitUntilTime(val(78000))));
   @Override void walk() throws Throwable{
     noManagerData();
