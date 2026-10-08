@@ -15,7 +15,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(2000))),
     on("arch_sway",()->waitUntilTime(val(2000))),
     on("omarchy_hyprland",()->waitUntilTime(val(2000))),
-    on("fedora_gnome",()->waitUntilTime(val(2000))));
+    on("fedora_gnome",()->waitUntilTime(val(2000))),
+    on("fedora_cosmic",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -28,7 +29,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(6500))),
     on("arch_sway",()->waitUntilTime(val(6500))),
     on("omarchy_hyprland",()->waitUntilTime(val(6500))),
-    on("fedora_gnome",()->waitUntilTime(val(6500))));
+    on("fedora_gnome",()->waitUntilTime(val(6500))),
+    on("fedora_cosmic",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -41,7 +43,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(30000))),
     on("arch_sway",()->waitUntilTime(val(20000))),
     on("omarchy_hyprland",()->waitUntilTime(val(20000))),
-    on("fedora_gnome",()->waitUntilTime(val(20000))));
+    on("fedora_gnome",()->waitUntilTime(val(20000))),
+    on("fedora_cosmic",()->waitUntilTime(val(20000))));
   final Action appsShownSecond= action("appsShownSecond",
     on("ubuntu_gnome",()->waitUntilTime(val(19500))),
     on("debian_gnome_x11",()->waitUntilTime(val(22000))),
@@ -54,7 +57,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(32000))),
     on("arch_sway",()->waitUntilTime(val(22000))),
     on("omarchy_hyprland",()->waitUntilTime(val(22000))),
-    on("fedora_gnome",()->waitUntilTime(val(22000))));
+    on("fedora_gnome",()->waitUntilTime(val(22000))),
+    on("fedora_cosmic",()->waitUntilTime(val(22000))));
   final Action terminalShownSecond= action("terminalShownSecond",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
     on("debian_gnome_x11",()->waitUntilTime(val(26500))),
@@ -67,7 +71,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(36500))),
     on("arch_sway",()->waitUntilTime(val(26500))),
     on("omarchy_hyprland",()->waitUntilTime(val(26500))),
-    on("fedora_gnome",()->waitUntilTime(val(26500))));
+    on("fedora_gnome",()->waitUntilTime(val(26500))),
+    on("fedora_cosmic",()->waitUntilTime(val(26500))));
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome",()->waitUntilTime(val(34000))),
     on("debian_gnome_x11",()->waitUntilTime(val(40000))),
@@ -80,7 +85,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(60000))),
     on("arch_sway",()->waitUntilTime(val(40000))),
     on("omarchy_hyprland",()->waitUntilTime(val(40000))),
-    on("fedora_gnome",()->waitUntilTime(val(40000))));
+    on("fedora_gnome",()->waitUntilTime(val(40000))),
+    on("fedora_cosmic",()->waitUntilTime(val(40000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(35500))),
     on("debian_gnome_x11",()->waitUntilTime(val(42000))),
@@ -93,7 +99,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(62000))),
     on("arch_sway",()->waitUntilTime(val(42000))),
     on("omarchy_hyprland",()->waitUntilTime(val(42000))),
-    on("fedora_gnome",()->waitUntilTime(val(42000))));
+    on("fedora_gnome",()->waitUntilTime(val(42000))),
+    on("fedora_cosmic",()->waitUntilTime(val(42000))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(39000))),
     on("debian_gnome_x11",()->waitUntilTime(val(46500))),
@@ -106,7 +113,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(66500))),
     on("arch_sway",()->waitUntilTime(val(46500))),
     on("omarchy_hyprland",()->waitUntilTime(val(46500))),
-    on("fedora_gnome",()->waitUntilTime(val(46500))));
+    on("fedora_gnome",()->waitUntilTime(val(46500))),
+    on("fedora_cosmic",()->waitUntilTime(val(46500))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(49000))),
     on("debian_gnome_x11",()->waitUntilTime(val(57000))),
@@ -119,7 +127,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(80000))),
     on("arch_sway",()->waitUntilTime(val(57000))),
     on("omarchy_hyprland",()->waitUntilTime(val(57000))),
-    on("fedora_gnome",()->waitUntilTime(val(57000))));
+    on("fedora_gnome",()->waitUntilTime(val(57000))),
+    on("fedora_cosmic",()->waitUntilTime(val(57000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
