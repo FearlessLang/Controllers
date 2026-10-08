@@ -11,7 +11,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(2000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(2000))),
     on("kubuntu_plasma",()->waitUntilTime(val(2000))),
-    on("void_i3",()->waitUntilTime(val(2000))));
+    on("void_i3",()->waitUntilTime(val(2000))),
+    on("arch_sway",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -20,7 +21,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(6500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(7000))),
     on("kubuntu_plasma",()->waitUntilTime(val(7000))),
-    on("void_i3",()->waitUntilTime(val(6500))));
+    on("void_i3",()->waitUntilTime(val(6500))),
+    on("arch_sway",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -29,7 +31,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(20000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(21000))),
     on("kubuntu_plasma",()->waitUntilTime(val(21000))),
-    on("void_i3",()->waitUntilTime(val(30000))));
+    on("void_i3",()->waitUntilTime(val(30000))),
+    on("arch_sway",()->waitUntilTime(val(20000))));
   final Action appsShownSecond= action("appsShownSecond",
     on("ubuntu_gnome",()->waitUntilTime(val(19500))),
     on("debian_gnome_x11",()->waitUntilTime(val(22000))),
@@ -38,7 +41,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(22000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(23000))),
     on("kubuntu_plasma",()->waitUntilTime(val(23000))),
-    on("void_i3",()->waitUntilTime(val(32000))));
+    on("void_i3",()->waitUntilTime(val(32000))),
+    on("arch_sway",()->waitUntilTime(val(22000))));
   final Action terminalShownSecond= action("terminalShownSecond",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
     on("debian_gnome_x11",()->waitUntilTime(val(26500))),
@@ -47,7 +51,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(26500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(28000))),
     on("kubuntu_plasma",()->waitUntilTime(val(28000))),
-    on("void_i3",()->waitUntilTime(val(36500))));
+    on("void_i3",()->waitUntilTime(val(36500))),
+    on("arch_sway",()->waitUntilTime(val(26500))));
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome",()->waitUntilTime(val(34000))),
     on("debian_gnome_x11",()->waitUntilTime(val(40000))),
@@ -56,7 +61,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(40000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(42000))),
     on("kubuntu_plasma",()->waitUntilTime(val(42000))),
-    on("void_i3",()->waitUntilTime(val(60000))));
+    on("void_i3",()->waitUntilTime(val(60000))),
+    on("arch_sway",()->waitUntilTime(val(40000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(35500))),
     on("debian_gnome_x11",()->waitUntilTime(val(42000))),
@@ -65,7 +71,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(42000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(44000))),
     on("kubuntu_plasma",()->waitUntilTime(val(44000))),
-    on("void_i3",()->waitUntilTime(val(62000))));
+    on("void_i3",()->waitUntilTime(val(62000))),
+    on("arch_sway",()->waitUntilTime(val(42000))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(39000))),
     on("debian_gnome_x11",()->waitUntilTime(val(46500))),
@@ -74,7 +81,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(46500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(49000))),
     on("kubuntu_plasma",()->waitUntilTime(val(49000))),
-    on("void_i3",()->waitUntilTime(val(66500))));
+    on("void_i3",()->waitUntilTime(val(66500))),
+    on("arch_sway",()->waitUntilTime(val(46500))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(49000))),
     on("debian_gnome_x11",()->waitUntilTime(val(57000))),
@@ -83,7 +91,8 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_mate",()->waitUntilTime(val(57000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(60000))),
     on("kubuntu_plasma",()->waitUntilTime(val(60000))),
-    on("void_i3",()->waitUntilTime(val(80000))));
+    on("void_i3",()->waitUntilTime(val(80000))),
+    on("arch_sway",()->waitUntilTime(val(57000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
