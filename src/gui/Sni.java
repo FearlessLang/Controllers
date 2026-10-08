@@ -43,6 +43,7 @@ final class Sni{
   private final Runnable activate;
   private final Runnable quit;
   private final BufferedImage icon;
+  final boolean tray;
   private int serial;
   record Msg(int type, int flags, int serial, int replySerial, String[] fields, Reader body){
     String path(){ return fields[1]; }
@@ -51,17 +52,20 @@ final class Sni{
     String sender(){ return fields[7]; }
     String signature(){ return fields[8] == null ? "" : fields[8]; }
   }
-  static void install(Runnable activate, Runnable quit, Image image){
+  static boolean install(Runnable activate, Runnable quit, Image image){
     var address= System.getenv("DBUS_SESSION_BUS_ADDRESS");
-    var path= Pattern.compile("(^|;)unix:([^;]*,)?path=([^,;]+)").matcher(address == null ? "" : address);
-    if (!path.find()){ throw Messages.couldNotAddTrayIcon(new IOException(address == null ? "DBUS_SESSION_BUS_ADDRESS is not set" : "DBUS_SESSION_BUS_ADDRESS \""+address+"\" names no \"unix:path=\" socket")); }
+    if (address == null){ return false; }
+    var path= Pattern.compile("(^|;)unix:([^;]*,)?path=([^,;]+)").matcher(address);
+    if (!path.find()){ throw Messages.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS \""+address+"\" names no \"unix:path=\" socket")); }
     var icon= new BufferedImage(64,64,BufferedImage.TYPE_INT_ARGB);
     var g= icon.createGraphics();
     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);
     g.drawImage(image,0,0,64,64,null);
     g.dispose();
     var sni= new Sni(Path.of(URLDecoder.decode(path.group(3),UTF_8)),activate,quit,icon);
+    if (!sni.tray){ return false; }
     Thread.startVirtualThread(sni::serve);
+    return true;
   }
   Sni(Path socket, Runnable activate, Runnable quit, BufferedImage icon){
     this.activate= activate;
@@ -76,6 +80,8 @@ final class Sni{
       if (!answer.startsWith("OK ")){ throw new IOException("the session bus refused the connection: "+answer); }
       write(channel,"BEGIN\r\n".getBytes(UTF_8));
       await(call(bus,"/org/freedesktop/DBus",bus,"Hello","",new Writer()));
+      tray= await(call(bus,"/org/freedesktop/DBus",bus,"NameHasOwner","s",new Writer().str(watcher))).body().u32() == 1;
+      if (!tray){ channel.close(); return; }
       await(call(bus,"/org/freedesktop/DBus",bus,"AddMatch","s",new Writer().str("type='signal',sender='"+bus+"',member='NameOwnerChanged',arg0='"+watcher+"'")));
       register();
     }
