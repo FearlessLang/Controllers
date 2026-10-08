@@ -1,5 +1,113 @@
 usage: TestAgentTools.java <desk> [agent] [<TestClassName>]
 
+main(desk, agent, test):
+  Fs.rmTree(channel)
+  buildIfStale(portable, managed)
+  compile(commons, frontend, coordinator, controllerTest)
+  jvm= ["-ea","-Ddesk="+desk,"-Dagent="+agent]
+  selection= test.isEmpty() ? "agentTools.*" : "agentTools."+test
+  junit(jvm, selection)
+
+abstract class PilotTest{
+  static final String desk= System.getProperty("desk")
+  static final boolean agent= Boolean.getBoolean("agent")
+  static final Path channel= out/pilot
+  final Pilot pilot= new Pilot()
+  final ArrayList<Action> actions= new ArrayList<>()
+  Action current
+  long[] values
+  int index
+  long last
+  protected abstract void walk()
+  @Test void walks(){
+    missing= actions.stream().anyMatch(a->!a.perDesk.containsKey(desk))
+    if (!agent && missing){ abort(desk) }
+    if (agent){ Fs.cleanDir(channel) }
+    last= now()
+    walk()
+  }
+  Action action(String name, On... ons){ a= new Action(name,Map.of(ons)); actions.add(a); return a }
+  On on(String desk, Runnable steps){ return new On(desk,steps) }
+  long n(long recorded){ return agent ? values[index++] : recorded }
+  void until(BooleanSupplier done){
+    end= now()+60000
+    while (!done.getAsBoolean()){ assert now()<end; pause(100) }
+    last= now()
+  }
+  void ready(long v){
+    moment= agent ? v : last+v
+    if (moment>now()){ pause(moment-now()) }
+    last= now()
+  }
+  class Action{
+    String name
+    Map<String,Runnable> perDesk
+    void go(){
+      current= this
+      index= 0
+      values= agent ? answer(name) : null
+      perDesk.get(desk).run()
+      assert !agent || index==values.length
+    }
+  }
+  long[] answer(String name){
+    file= channel/name
+    write(file,"")
+    loop{
+      text= read(file).strip()
+      if (text.endsWith(";")){ delete(file); return parse(text) }
+      for (request: channel/*.do){ serve(request) }
+      pause(100)
+    }
+  }
+  void serve(Path request){
+    v= parse(read(request))
+    if (v.isEmpty()){ return }
+    switch(request.name){
+      case "shot.do" -> write(channel/shot.png, pilot.shot())
+      case "hover.do" -> pilot.glide(v[0],v[1],none,v[0],v[1],none)
+    }
+    delete(request)
+  }
+  void click(long x, long y){ pilot.click(x,y) }
+  void doubleClick(long x, long y){ pilot.doubleClick(x,y) }
+  void drag(long x0, long y0, long x1, long y1){ pilot.drag(x0,y0,x1,y1) }
+  void keys(int... codes){ pilot.chord(codes) }
+  BufferedImage look(){
+    pilot.glide(screen.width-1,screen.height/2,none,screen.width-1,screen.height/2,none)
+    return pilot.shot()
+  }
+  boolean same(BufferedImage a, BufferedImage b){
+    far= count(i->sum(abs(channelDiff(a[i],b[i])))>30)
+    return far*20<a.pixels
+  }
+  boolean differ(BufferedImage a, Rectangle area, BufferedImage b){ return !same(a.crop(area),b.crop(area)) }
+}
+
+Pilot:
+  glide(x0,y0,held,x1,y1,then):
+    robot.mouseMove(x0,y0)
+    hold(held)
+    steps= max(abs(x1-x0),abs(y1-y0))/4+1
+    for i in 1..steps: robot.mouseMove(lerp(x0,x1,i/steps),lerp(y0,y1,i/steps)); pause(4)
+    hold(then)
+  hold(want):
+    for b in buttons: if (down(b)!=want(b)){ press-or-release(b,want(b)) }
+    down= want
+    pause(200)
+  click(x,y): glide(x,y,none,x,y,left); glide(x,y,left,x,y,none)
+  doubleClick(x,y):
+    glide(x,y,none,x,y,none)
+    twice: press(left); pause(50); release(left); pause(50)
+    pause(200)
+  drag(x0,y0,x1,y1): glide(x0,y0,none,x0,y0,left); glide(x0,y0,left,x1,y1,left); glide(x1,y1,left,x1,y1,none)
+  chord(codes): press(codes in order); release(codes in reverse); pause(200)
+  shot(): img= robot.createScreenCapture(screen); assert !allBlack(img); return img
+  changed(a,b,r):
+    differs= pixelwise(a,b,threshold 10)
+    solid= differs where the whole (2r+1) square around it differs
+    return box of the largest connected component of solid, grown by r
+
 final class ExampleTest extends PilotTest{
   final Action chooseFirst= action("chooseFirst",
     on("ubuntu_gnome",()->click(n(120),n(80))),
@@ -17,22 +125,20 @@ final class ExampleTest extends PilotTest{
   }
 }
 
-record Action(String name, Map<String,Runnable> perDesk){
-  void go(){ current= name; index= 0; perDesk.get(desk).run(); }
+final class ExampleSeeTest extends PilotTest{
+  final Action carry= action("carry",
+    on("ubuntu_gnome",()->drag(n(300),n(500),n(3700),n(120))),
+    on("windows",()->drag(n(200),n(400),n(900),n(60))));
+  final Action close= action("close",
+    on("ubuntu_gnome",()->click(n(3822),n(50))),
+    on("windows",()->click(n(1255),n(11))));
+  @Override protected void walk(){
+    before= look();
+    carry.go();
+    until(()->!same(before,look()));
+    shown= look();
+    close.go();
+    until(()->same(before,look()));
+    assertTrue(!same(shown,look()));
+  }
 }
-
-long n(long recorded){
-  if (!agent){ return recorded; }
-  return answer(current)[index++];
-}
-
-long[] answer(String name){
-  file= channel/name
-  create(file, empty)
-  until(file ends with ";")
-  return numbers(file)
-}
-
-click(x,y)       -> pilot.click(x,y)
-doubleClick(x,y) -> pilot.doubleClick(x,y)
-ready(ms)        -> sleep until last+ms
