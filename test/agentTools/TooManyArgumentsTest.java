@@ -17,7 +17,8 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(2000))),
     on("arch_sway",()->waitUntilTime(val(2000))),
     on("omarchy_hyprland",()->waitUntilTime(val(2000))),
-    on("fedora_gnome",()->waitUntilTime(val(2000))));
+    on("fedora_gnome",()->waitUntilTime(val(2000))),
+    on("opensuse_plasma",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -29,7 +30,8 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(6500))),
     on("arch_sway",()->waitUntilTime(val(6500))),
     on("omarchy_hyprland",()->waitUntilTime(val(6500))),
-    on("fedora_gnome",()->waitUntilTime(val(6500))));
+    on("fedora_gnome",()->waitUntilTime(val(6500))),
+    on("opensuse_plasma",()->waitUntilTime(val(7000))));
   final Action errorShown= action("errorShown",
     on("ubuntu_gnome",()->waitUntilTime(val(19500))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -41,7 +43,8 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(30000))),
     on("arch_sway",()->waitUntilTime(val(20000))),
     on("omarchy_hyprland",()->waitUntilTime(val(20000))),
-    on("fedora_gnome",()->waitUntilTime(val(20000))));
+    on("fedora_gnome",()->waitUntilTime(val(20000))),
+    on("opensuse_plasma",()->waitUntilTime(val(34000))));
   final Action ok= action("ok",
     on("ubuntu_gnome",()->click(val(1952),val(1212))),
     on("debian_gnome_x11",()->click(val(1920),val(1212))),
@@ -54,6 +57,7 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("arch_sway",()->click(val(1920),val(2100))),
     on("omarchy_hyprland",()->click(val(1920),val(2026))),
     on("fedora_gnome",()->click(val(1920),val(1212))),
+    on("opensuse_plasma",()->click(val(1915),val(1165))),
     on("windows",()->click(val(639),val(441))));
   final Action launcherEnded= action("launcherEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
@@ -66,7 +70,8 @@ final class TooManyArgumentsTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(35000))),
     on("arch_sway",()->waitUntilTime(val(25000))),
     on("omarchy_hyprland",()->waitUntilTime(val(25000))),
-    on("fedora_gnome",()->waitUntilTime(val(25000))));
+    on("fedora_gnome",()->waitUntilTime(val(25000))),
+    on("opensuse_plasma",()->waitUntilTime(val(39000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
