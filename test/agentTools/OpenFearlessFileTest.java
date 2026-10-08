@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.awt.Rectangle;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.util.List;
@@ -17,7 +18,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(2000))),
     on("debian_mate",()->waitUntilTime(val(2000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(2000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(2000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(2000))),
+    on("void_i3",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -25,7 +27,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(6500))),
     on("debian_mate",()->waitUntilTime(val(6500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(7000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(7000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(7000))),
+    on("void_i3",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -33,7 +36,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(20000))),
     on("debian_mate",()->waitUntilTime(val(20000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(21000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(21000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(21000))),
+    on("void_i3",()->waitUntilTime(val(30000))));
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->click(val(98),val(79))),
     on("debian_gnome_x11",()->click(val(32),val(80))),
@@ -42,6 +46,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_mate",()->click(val(64),val(138))),
     on("lubuntu_lxqt",()->click(val(24),val(300))),
     on("kubuntu_plasma",()->click(val(30),val(39))),
+    on("void_i3",()->click(val(78),val(54))),
     on("windows",()->click(val(31),val(33))));
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome",()->click(val(116),val(212))),
@@ -51,6 +56,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_mate",()->click(val(110),val(405))),
     on("lubuntu_lxqt",()->click(val(40),val(400))),
     on("kubuntu_plasma",()->click(val(60),val(171))),
+    on("void_i3",()->click(val(115),val(297))),
     on("windows",()->click(val(61),val(167))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
@@ -59,7 +65,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(25500))),
     on("debian_mate",()->waitUntilTime(val(25500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(26500))),
-    on("kubuntu_plasma",()->waitUntilTime(val(26500))));
+    on("kubuntu_plasma",()->waitUntilTime(val(26500))),
+    on("void_i3",()->waitUntilTime(val(36000))));
   final Action appsShownFiles= action("appsShownFiles",
     on("ubuntu_gnome",()->waitUntilTime(val(24500))),
     on("debian_gnome_x11",()->waitUntilTime(val(26000))),
@@ -67,7 +74,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(27000))),
     on("debian_mate",()->waitUntilTime(val(27000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(28000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(28000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(28000))),
+    on("void_i3",()->waitUntilTime(val(38000))));
   final Action terminalShownFiles= action("terminalShownFiles",
     on("ubuntu_gnome",()->waitUntilTime(val(28000))),
     on("debian_gnome_x11",()->waitUntilTime(val(30500))),
@@ -75,7 +83,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(31500))),
     on("debian_mate",()->waitUntilTime(val(31500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(33000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(33000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(33000))),
+    on("void_i3",()->waitUntilTime(val(42500))));
   final Action filesShown= action("filesShown",
     on("ubuntu_gnome",()->waitUntilTime(val(40000))),
     on("debian_gnome_x11",()->waitUntilTime(val(44000))),
@@ -83,7 +92,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(44000))),
     on("debian_mate",()->waitUntilTime(val(44000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(46000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(46000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(46000))),
+    on("void_i3",()->waitUntilTime(val(56000))));
   final Action openFile= action("openFile",
     on("ubuntu_gnome",()->doubleClick(val(1872),val(915))),
     on("debian_gnome_x11",()->doubleClick(val(1925),val(939))),
@@ -92,6 +102,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_mate",()->doubleClick(val(1108),val(710))),
     on("lubuntu_lxqt",()->doubleClick(val(1977),val(971))),
     on("kubuntu_plasma",()->doubleClick(val(1885),val(848))),
+    on("void_i3",()->doubleClick(val(754),val(246))),
     on("windows",()->doubleClick(val(503),val(254))));
   final Action managerOpened= action("managerOpened",
     on("ubuntu_gnome",()->waitUntilTime(val(52000))),
@@ -100,7 +111,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(60000))),
     on("debian_mate",()->waitUntilTime(val(60000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(62000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(62000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(62000))),
+    on("void_i3",()->waitUntilTime(val(73000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(53500))),
     on("debian_gnome_x11",()->waitUntilTime(val(61500))),
@@ -108,7 +120,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(61500))),
     on("debian_mate",()->waitUntilTime(val(61500))),
     on("lubuntu_lxqt",()->waitUntilTime(val(63500))),
-    on("kubuntu_plasma",()->waitUntilTime(val(63500))));
+    on("kubuntu_plasma",()->waitUntilTime(val(63500))),
+    on("void_i3",()->waitUntilTime(val(75000))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(57000))),
     on("debian_gnome_x11",()->waitUntilTime(val(66000))),
@@ -116,7 +129,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(66000))),
     on("debian_mate",()->waitUntilTime(val(66000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(68500))),
-    on("kubuntu_plasma",()->waitUntilTime(val(68500))));
+    on("kubuntu_plasma",()->waitUntilTime(val(68500))),
+    on("void_i3",()->waitUntilTime(val(79500))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(67000))),
     on("debian_gnome_x11",()->waitUntilTime(val(76000))),
@@ -124,7 +138,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(76000))),
     on("debian_mate",()->waitUntilTime(val(76000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(79000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(79000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(79000))),
+    on("void_i3",()->waitUntilTime(val(90000))));
   final Action closeFiles= action("closeFiles",
     on("ubuntu_gnome",()->click(val(2374),val(844))),
     on("debian_gnome_x11",()->click(val(2341),val(844))),
@@ -133,6 +148,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_mate",()->click(val(1878),val(379))),
     on("lubuntu_lxqt",()->click(val(2149),val(887))),
     on("kubuntu_plasma",()->click(val(2286),val(737))),
+    on("void_i3",()->keys(KeyEvent.VK_ALT,KeyEvent.VK_SHIFT,KeyEvent.VK_Q)),
     on("windows",()->click(val(1016),val(58))));
   final Action filesClosed= action("filesClosed",
     on("ubuntu_gnome",()->waitUntilTime(val(70000))),
@@ -141,7 +157,8 @@ final class OpenFearlessFileTest extends ManagerTest{
     on("debian_cinnamon",()->waitUntilTime(val(80000))),
     on("debian_mate",()->waitUntilTime(val(80000))),
     on("lubuntu_lxqt",()->waitUntilTime(val(83000))),
-    on("kubuntu_plasma",()->waitUntilTime(val(83000))));
+    on("kubuntu_plasma",()->waitUntilTime(val(83000))),
+    on("void_i3",()->waitUntilTime(val(93000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
@@ -156,7 +173,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
     var bare= pilot.shot();
-    shell("xdg-open \""+project+"\"\n");
+    shell("nohup setsid -f xdg-open \""+project+"\" >/dev/null 2>&1\n");
     runInTerminal(appsShownFiles,terminalShownFiles);
     filesShown.go();
     var files= Pilot.changed(bare,pilot.shot(),6);
