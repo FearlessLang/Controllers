@@ -8,55 +8,64 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     on("debian_gnome_x11",()->waitUntilTime(val(2000))),
     on("xubuntu_xfce",()->waitUntilTime(val(2000))),
     on("debian_cinnamon",()->waitUntilTime(val(2000))),
-    on("debian_mate",()->waitUntilTime(val(2000))));
+    on("debian_mate",()->waitUntilTime(val(2000))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
     on("xubuntu_xfce",()->waitUntilTime(val(6500))),
     on("debian_cinnamon",()->waitUntilTime(val(6500))),
-    on("debian_mate",()->waitUntilTime(val(6500))));
+    on("debian_mate",()->waitUntilTime(val(6500))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(7000))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
     on("xubuntu_xfce",()->waitUntilTime(val(20000))),
     on("debian_cinnamon",()->waitUntilTime(val(20000))),
-    on("debian_mate",()->waitUntilTime(val(20000))));
+    on("debian_mate",()->waitUntilTime(val(20000))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(21000))));
   final Action appsShownSecond= action("appsShownSecond",
     on("ubuntu_gnome",()->waitUntilTime(val(19500))),
     on("debian_gnome_x11",()->waitUntilTime(val(22000))),
     on("xubuntu_xfce",()->waitUntilTime(val(22000))),
     on("debian_cinnamon",()->waitUntilTime(val(22000))),
-    on("debian_mate",()->waitUntilTime(val(22000))));
+    on("debian_mate",()->waitUntilTime(val(22000))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(23000))));
   final Action terminalShownSecond= action("terminalShownSecond",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))),
     on("debian_gnome_x11",()->waitUntilTime(val(26500))),
     on("xubuntu_xfce",()->waitUntilTime(val(26500))),
     on("debian_cinnamon",()->waitUntilTime(val(26500))),
-    on("debian_mate",()->waitUntilTime(val(26500))));
+    on("debian_mate",()->waitUntilTime(val(26500))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(28000))));
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome",()->waitUntilTime(val(34000))),
     on("debian_gnome_x11",()->waitUntilTime(val(40000))),
     on("xubuntu_xfce",()->waitUntilTime(val(40000))),
     on("debian_cinnamon",()->waitUntilTime(val(40000))),
-    on("debian_mate",()->waitUntilTime(val(40000))));
+    on("debian_mate",()->waitUntilTime(val(40000))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(42000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(35500))),
     on("debian_gnome_x11",()->waitUntilTime(val(42000))),
     on("xubuntu_xfce",()->waitUntilTime(val(42000))),
     on("debian_cinnamon",()->waitUntilTime(val(42000))),
-    on("debian_mate",()->waitUntilTime(val(42000))));
+    on("debian_mate",()->waitUntilTime(val(42000))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(44000))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(39000))),
     on("debian_gnome_x11",()->waitUntilTime(val(46500))),
     on("xubuntu_xfce",()->waitUntilTime(val(46500))),
     on("debian_cinnamon",()->waitUntilTime(val(46500))),
-    on("debian_mate",()->waitUntilTime(val(46500))));
+    on("debian_mate",()->waitUntilTime(val(46500))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(49000))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(49000))),
     on("debian_gnome_x11",()->waitUntilTime(val(57000))),
     on("xubuntu_xfce",()->waitUntilTime(val(57000))),
     on("debian_cinnamon",()->waitUntilTime(val(57000))),
-    on("debian_mate",()->waitUntilTime(val(57000))));
+    on("debian_mate",()->waitUntilTime(val(57000))),
+    on("lubuntu_lxqt",()->waitUntilTime(val(60000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
