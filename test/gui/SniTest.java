@@ -2,6 +2,7 @@ package gui;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -9,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +32,7 @@ import gui.Sni.Msg;
 import gui.Sni.Reader;
 import gui.Sni.Writer;
 import tools.Fs;
+import utils.Bug;
 import userMessages.UserError;
 
 final class SniTest{
@@ -176,6 +179,7 @@ final class SniTest{
     assertEquals("Hello",hello.member());
     Sni.write(c,msg(2,0,1,new Writer().str(":1.7"),fromBus(hello).andThen(g("s"))));
     Sni.write(c,msg(4,0,2,new Writer().str(":1.7"),busSignal("NameAcquired").andThen(s(6,":1.7")).andThen(g("s"))));
+    hasWatcher(c,true);
     var match= Sni.next(c);
     assertEquals("AddMatch",match.member());
     assertEquals("type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',arg0='org.kde.StatusNotifierWatcher'",match.body().str());
@@ -205,6 +209,35 @@ final class SniTest{
     Sni.write(c,msg(1,0,17,clicked(3),fromWatcher(Sni.menu,"Event","isvu")));
     answer(c,2,17);
     Sni.write(c,msg(4,0,5,new Writer().str("org.kde.StatusNotifierWatcher").str(":1.9").str(""),busSignal("NameOwnerChanged").andThen(g("sss"))));
+  }
+  @Test void withNoWatcherTheItemIsNotServedAndTheBusIsLeft() throws Exception{
+    Assumptions.assumeTrue(Fs.isLinux());
+    var dir= Files.createTempDirectory("sni");
+    var socket= dir.resolve("bus");
+    try(var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
+      server.bind(UnixDomainSocketAddress.of(socket));
+      var bus= new FutureTask<Void>(()->{ try(var c= server.accept()){ noWatcherScript(c); } return null; });
+      Thread.startVirtualThread(bus);
+      var sni= new Sni(socket,()->{ throw Bug.unreachable(); },()->{ throw Bug.unreachable(); },new BufferedImage(2,2,BufferedImage.TYPE_INT_ARGB));
+      bus.get();
+      assertFalse(sni.tray);
+    }
+    finally{ Files.deleteIfExists(socket); Files.delete(dir); }
+  }
+  private static void noWatcherScript(SocketChannel c) throws IOException{
+    Sni.line(c);
+    Sni.write(c,"OK 0123456789abcdef\r\n".getBytes(StandardCharsets.UTF_8));
+    assertEquals("BEGIN",Sni.line(c));
+    var hello= Sni.next(c);
+    Sni.write(c,msg(2,0,1,new Writer().str(":1.7"),fromBus(hello).andThen(g("s"))));
+    hasWatcher(c,false);
+    assertEquals(-1,c.read(ByteBuffer.allocate(1)));
+  }
+  private static void hasWatcher(SocketChannel c, boolean has) throws IOException{
+    var ask= Sni.next(c);
+    assertEquals("NameHasOwner",ask.member());
+    assertEquals("org.kde.StatusNotifierWatcher",ask.body().str());
+    Sni.write(c,msg(2,0,30,new Writer().u32(has ? 1 : 0),fromBus(ask).andThen(g("b"))));
   }
   private static Msg answer(SocketChannel c, int type, int serial) throws IOException{
     var m= Sni.next(c);
