@@ -1,14 +1,12 @@
 usage: TestAgentTools.java <desk> [agent] [<TestClassName>]
 
 void main(String desk, boolean agent, Optional<String> test):
-  Path channel= ModularBuild.out/"pilot"
-  rmTree(channel)
   compile(controllerTest)
-  junit(properties: desk=desk, agent=agent, channel=channel; select: test or every class of package agentTools)
+  junit(properties: desk=desk, agent=agent; select: test or every class of package agentTools)
 
 String desk= property("desk")
 boolean agent= property("agent")
-Path channel= property("channel")
+Path channel= /data/pilot  (C:\data\pilot on windows)
 List<Action> actions= []
 long last
 long[] values
