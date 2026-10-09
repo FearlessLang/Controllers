@@ -5,6 +5,7 @@ import java.util.List;
 
 final class ClearOutputTest extends ManagerTest{
   final Action appsShown= action("appsShown",
+    on("fedora_cosmic",()->waitUntilTime(val(2000))),
     on("ubuntu_gnome",()->waitUntilTime(val(2000))),
     on("debian_gnome_x11",()->waitUntilTime(val(2000))),
     on("fedora_gnome",()->waitUntilTime(val(2000))),
@@ -18,6 +19,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(2000))),
     on("omarchy_hyprland",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
+    on("fedora_cosmic",()->waitUntilTime(val(6500))),
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
     on("fedora_gnome",()->waitUntilTime(val(6500))),
@@ -31,6 +33,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(6500))),
     on("omarchy_hyprland",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
+    on("fedora_cosmic",()->waitUntilTime(val(20000))),
     on("ubuntu_gnome",()->waitUntilTime(val(18500))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
     on("fedora_gnome",()->waitUntilTime(val(20000))),
@@ -44,6 +47,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(20000))),
     on("omarchy_hyprland",()->waitUntilTime(val(20000))));
   final Action focusTiles= action("focusTiles",
+    on("fedora_cosmic",()->click(val(258),val(1500))),
     on("ubuntu_gnome",()->click(val(200),val(1500))),
     on("debian_gnome_x11",()->click(val(134),val(1500))),
     on("fedora_gnome",()->click(val(134),val(1500))),
@@ -58,6 +62,7 @@ final class ClearOutputTest extends ManagerTest{
     on("omarchy_hyprland",()->click(val(268),val(1500))),
     on("windows",()->click(val(200),val(400))));
   final Action closeInformation= action("closeInformation",
+    on("fedora_cosmic",()->click(val(164),val(332))),
     on("ubuntu_gnome",()->click(val(150),val(167))),
     on("debian_gnome_x11",()->click(val(84),val(167))),
     on("fedora_gnome",()->click(val(84),val(167))),
@@ -72,6 +77,7 @@ final class ClearOutputTest extends ManagerTest{
     on("omarchy_hyprland",()->click(val(338),val(442))),
     on("windows",()->click(val(79),val(120))));
   final Action check= action("check",
+    on("fedora_cosmic",()->click(val(204),val(221))),
     on("ubuntu_gnome",()->click(val(164),val(111))),
     on("debian_gnome_x11",()->click(val(102),val(112))),
     on("fedora_gnome",()->click(val(102),val(112))),
@@ -86,6 +92,7 @@ final class ClearOutputTest extends ManagerTest{
     on("omarchy_hyprland",()->click(val(431),val(243))),
     on("windows",()->click(val(102),val(67))));
   final Action checked= action("checked",
+    on("fedora_cosmic",()->waitUntilTime(val(35500))),
     on("ubuntu_gnome",()->waitUntilTime(val(34000))),
     on("debian_gnome_x11",()->waitUntilTime(val(35500))),
     on("fedora_gnome",()->waitUntilTime(val(35500))),
@@ -99,6 +106,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(34000))),
     on("omarchy_hyprland",()->waitUntilTime(val(34000))));
   final Action checkAgain= action("checkAgain",
+    on("fedora_cosmic",()->click(val(204),val(221))),
     on("ubuntu_gnome",()->click(val(164),val(111))),
     on("debian_gnome_x11",()->click(val(102),val(112))),
     on("fedora_gnome",()->click(val(102),val(112))),
@@ -113,6 +121,7 @@ final class ClearOutputTest extends ManagerTest{
     on("omarchy_hyprland",()->click(val(431),val(243))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedAgain= action("checkedAgain",
+    on("fedora_cosmic",()->waitUntilTime(val(49500))),
     on("ubuntu_gnome",()->waitUntilTime(val(48000))),
     on("debian_gnome_x11",()->waitUntilTime(val(49500))),
     on("fedora_gnome",()->waitUntilTime(val(49500))),
@@ -126,6 +135,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(48000))),
     on("omarchy_hyprland",()->waitUntilTime(val(48000))));
   final Action clearOutput= action("clearOutput",
+    on("fedora_cosmic",()->click(val(3728),val(464))),
     on("ubuntu_gnome",()->click(val(3785),val(233))),
     on("debian_gnome_x11",()->click(val(3785),val(233))),
     on("fedora_gnome",()->click(val(3785),val(233))),
@@ -140,6 +150,7 @@ final class ClearOutputTest extends ManagerTest{
     on("omarchy_hyprland",()->click(val(3600),val(682))),
     on("windows",()->click(val(1227),val(184))));
   final Action outputCleared= action("outputCleared",
+    on("fedora_cosmic",()->waitUntilTime(val(52000))),
     on("ubuntu_gnome",()->waitUntilTime(val(50500))),
     on("debian_gnome_x11",()->waitUntilTime(val(52000))),
     on("fedora_gnome",()->waitUntilTime(val(52000))),
@@ -153,6 +164,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(51000))),
     on("omarchy_hyprland",()->waitUntilTime(val(51000))));
   final Action checkAfterClear= action("checkAfterClear",
+    on("fedora_cosmic",()->click(val(204),val(221))),
     on("ubuntu_gnome",()->click(val(164),val(111))),
     on("debian_gnome_x11",()->click(val(102),val(112))),
     on("fedora_gnome",()->click(val(102),val(112))),
@@ -167,6 +179,7 @@ final class ClearOutputTest extends ManagerTest{
     on("omarchy_hyprland",()->click(val(431),val(243))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedAfterClear= action("checkedAfterClear",
+    on("fedora_cosmic",()->waitUntilTime(val(66000))),
     on("ubuntu_gnome",()->waitUntilTime(val(64500))),
     on("debian_gnome_x11",()->waitUntilTime(val(66000))),
     on("fedora_gnome",()->waitUntilTime(val(66000))),
@@ -180,6 +193,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(65000))),
     on("omarchy_hyprland",()->waitUntilTime(val(65000))));
   final Action appsShownToEnd= action("appsShownToEnd",
+    on("fedora_cosmic",()->waitUntilTime(val(74000))),
     on("ubuntu_gnome",()->waitUntilTime(val(66000))),
     on("debian_gnome_x11",()->waitUntilTime(val(67500))),
     on("fedora_gnome",()->waitUntilTime(val(74000))),
@@ -193,6 +207,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(66500))),
     on("omarchy_hyprland",()->waitUntilTime(val(66500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
+    on("fedora_cosmic",()->waitUntilTime(val(80500))),
     on("ubuntu_gnome",()->waitUntilTime(val(69500))),
     on("debian_gnome_x11",()->waitUntilTime(val(72000))),
     on("fedora_gnome",()->waitUntilTime(val(80000))),
@@ -206,6 +221,7 @@ final class ClearOutputTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(71000))),
     on("omarchy_hyprland",()->waitUntilTime(val(71000))));
   final Action managerEnded= action("managerEnded",
+    on("fedora_cosmic",()->waitUntilTime(val(92000))),
     on("ubuntu_gnome",()->waitUntilTime(val(79500))),
     on("debian_gnome_x11",()->waitUntilTime(val(82000))),
     on("fedora_gnome",()->waitUntilTime(val(92000))),
