@@ -26,7 +26,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(2000))),
     on("void_i3",()->waitUntilTime(val(2000))),
     on("arch_sway",()->waitUntilTime(val(2000))),
-    on("omarchy_hyprland",()->waitUntilTime(val(2000))));
+    on("omarchy_hyprland",()->waitUntilTime(val(2000))),
+    on("fedora_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -37,7 +38,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(7000))),
     on("void_i3",()->waitUntilTime(val(6500))),
     on("arch_sway",()->waitUntilTime(val(6500))),
-    on("omarchy_hyprland",()->waitUntilTime(val(6500))));
+    on("omarchy_hyprland",()->waitUntilTime(val(6500))),
+    on("fedora_gnome",()->waitUntilTime(val(6500))));
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome",()->waitUntilTime(val(19000))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -48,7 +50,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(21000))),
     on("void_i3",()->waitUntilTime(val(32000))),
     on("arch_sway",()->waitUntilTime(val(20000))),
-    on("omarchy_hyprland",()->waitUntilTime(val(20000))));
+    on("omarchy_hyprland",()->waitUntilTime(val(20000))),
+    on("fedora_gnome",()->waitUntilTime(val(20000))));
   final Action ok= action("ok",
     on("ubuntu_gnome",()->click(val(1952),val(1132))),
     on("debian_gnome_x11",()->click(val(1920),val(1132))),
@@ -60,6 +63,7 @@ final class KindResetTest extends ManagerTest{
     on("void_i3",()->click(val(1907),val(1068))),
     on("arch_sway",()->click(val(1917),val(1148))),
     on("omarchy_hyprland",()->click(val(1910),val(1156))),
+    on("fedora_gnome",()->click(val(1920),val(1132))),
     on("windows",()->click(val(639),val(367))));
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->click(val(98),val(79))),
@@ -72,6 +76,7 @@ final class KindResetTest extends ManagerTest{
     on("void_i3",()->click(val(78),val(54))),
     on("arch_sway",()->click(val(78),val(129))),
     on("omarchy_hyprland",()->click(val(146),val(112))),
+    on("fedora_gnome",()->click(val(32),val(80))),
     on("windows",()->click(val(31),val(33))));
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome",()->click(val(116),val(212))),
@@ -84,6 +89,7 @@ final class KindResetTest extends ManagerTest{
     on("void_i3",()->click(val(115),val(297))),
     on("arch_sway",()->click(val(115),val(371))),
     on("omarchy_hyprland",()->click(val(206),val(596))),
+    on("fedora_gnome",()->click(val(60),val(212))),
     on("windows",()->click(val(61),val(167))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitUntilTime(val(25000))),
@@ -95,7 +101,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(27000))),
     on("void_i3",()->waitUntilTime(val(38000))),
     on("arch_sway",()->waitUntilTime(val(26000))),
-    on("omarchy_hyprland",()->waitUntilTime(val(26000))));
+    on("omarchy_hyprland",()->waitUntilTime(val(26000))),
+    on("fedora_gnome",()->waitUntilTime(val(26000))));
   final Action appsShownAgain= action("appsShownAgain",
     on("ubuntu_gnome",()->waitUntilTime(val(26500))),
     on("debian_gnome_x11",()->waitUntilTime(val(27500))),
@@ -106,7 +113,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(28500))),
     on("void_i3",()->waitUntilTime(val(39500))),
     on("arch_sway",()->waitUntilTime(val(27500))),
-    on("omarchy_hyprland",()->waitUntilTime(val(27500))));
+    on("omarchy_hyprland",()->waitUntilTime(val(27500))),
+    on("fedora_gnome",()->waitUntilTime(val(34000))));
   final Action terminalShownAgain= action("terminalShownAgain",
     on("ubuntu_gnome",()->waitUntilTime(val(30000))),
     on("debian_gnome_x11",()->waitUntilTime(val(32000))),
@@ -117,7 +125,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(33500))),
     on("void_i3",()->waitUntilTime(val(46000))),
     on("arch_sway",()->waitUntilTime(val(32000))),
-    on("omarchy_hyprland",()->waitUntilTime(val(32000))));
+    on("omarchy_hyprland",()->waitUntilTime(val(32000))),
+    on("fedora_gnome",()->waitUntilTime(val(40000))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(43000))),
     on("debian_gnome_x11",()->waitUntilTime(val(46000))),
@@ -128,7 +137,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(47000))),
     on("void_i3",()->waitUntilTime(val(70000))),
     on("arch_sway",()->waitUntilTime(val(46000))),
-    on("omarchy_hyprland",()->waitUntilTime(val(46000))));
+    on("omarchy_hyprland",()->waitUntilTime(val(46000))),
+    on("fedora_gnome",()->waitUntilTime(val(56000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(44500))),
     on("debian_gnome_x11",()->waitUntilTime(val(47500))),
@@ -139,7 +149,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(48500))),
     on("void_i3",()->waitUntilTime(val(71500))),
     on("arch_sway",()->waitUntilTime(val(47500))),
-    on("omarchy_hyprland",()->waitUntilTime(val(47500))));
+    on("omarchy_hyprland",()->waitUntilTime(val(47500))),
+    on("fedora_gnome",()->waitUntilTime(val(64000))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(48000))),
     on("debian_gnome_x11",()->waitUntilTime(val(52000))),
@@ -150,7 +161,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(53500))),
     on("void_i3",()->waitUntilTime(val(78000))),
     on("arch_sway",()->waitUntilTime(val(52000))),
-    on("omarchy_hyprland",()->waitUntilTime(val(52000))));
+    on("omarchy_hyprland",()->waitUntilTime(val(52000))),
+    on("fedora_gnome",()->waitUntilTime(val(70000))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(58000))),
     on("debian_gnome_x11",()->waitUntilTime(val(62000))),
@@ -161,7 +173,8 @@ final class KindResetTest extends ManagerTest{
     on("kubuntu_plasma",()->waitUntilTime(val(64000))),
     on("void_i3",()->waitUntilTime(val(90000))),
     on("arch_sway",()->waitUntilTime(val(64000))),
-    on("omarchy_hyprland",()->waitUntilTime(val(64000))));
+    on("omarchy_hyprland",()->waitUntilTime(val(64000))),
+    on("fedora_gnome",()->waitUntilTime(val(82000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
