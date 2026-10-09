@@ -13,7 +13,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(2000))),
     on("kubuntu_plasma",()->waitUntilTime(val(2000))),
     on("void_i3",()->waitUntilTime(val(2000))),
-    on("arch_sway",()->waitUntilTime(val(2000))));
+    on("arch_sway",()->waitUntilTime(val(2000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",
     on("ubuntu_gnome",()->waitUntilTime(val(5500))),
     on("debian_gnome_x11",()->waitUntilTime(val(6500))),
@@ -23,7 +24,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(7000))),
     on("kubuntu_plasma",()->waitUntilTime(val(7000))),
     on("void_i3",()->waitUntilTime(val(6500))),
-    on("arch_sway",()->waitUntilTime(val(6500))));
+    on("arch_sway",()->waitUntilTime(val(6500))),
+    on("omarchy_hyprland",()->waitUntilTime(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))),
     on("debian_gnome_x11",()->waitUntilTime(val(20000))),
@@ -33,7 +35,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(22500))),
     on("kubuntu_plasma",()->waitUntilTime(val(21000))),
     on("void_i3",()->waitUntilTime(val(30000))),
-    on("arch_sway",()->waitUntilTime(val(20000))));
+    on("arch_sway",()->waitUntilTime(val(20000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(20000))));
   final Action focusTiles= action("focusTiles",
     on("ubuntu_gnome",()->click(val(200),val(1500))),
     on("debian_gnome_x11",()->click(val(134),val(1500))),
@@ -44,6 +47,7 @@ final class ClearOutputTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(134),val(1500))),
     on("void_i3",()->click(val(268),val(1500))),
     on("arch_sway",()->click(val(268),val(1500))),
+    on("omarchy_hyprland",()->click(val(268),val(1500))),
     on("windows",()->click(val(200),val(400))));
   final Action closeInformation= action("closeInformation",
     on("ubuntu_gnome",()->click(val(150),val(167))),
@@ -55,6 +59,7 @@ final class ClearOutputTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(84),val(126))),
     on("void_i3",()->click(val(180),val(222))),
     on("arch_sway",()->click(val(180),val(297))),
+    on("omarchy_hyprland",()->click(val(338),val(442))),
     on("windows",()->click(val(79),val(120))));
   final Action check= action("check",
     on("ubuntu_gnome",()->click(val(164),val(111))),
@@ -66,6 +71,7 @@ final class ClearOutputTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(102),val(72))),
     on("void_i3",()->click(val(214),val(118))),
     on("arch_sway",()->click(val(214),val(193))),
+    on("omarchy_hyprland",()->click(val(431),val(243))),
     on("windows",()->click(val(102),val(67))));
   final Action checked= action("checked",
     on("ubuntu_gnome",()->waitUntilTime(val(34000))),
@@ -76,7 +82,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(36500))),
     on("kubuntu_plasma",()->waitUntilTime(val(36500))),
     on("void_i3",()->waitUntilTime(val(44000))),
-    on("arch_sway",()->waitUntilTime(val(34000))));
+    on("arch_sway",()->waitUntilTime(val(34000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(34000))));
   final Action checkAgain= action("checkAgain",
     on("ubuntu_gnome",()->click(val(164),val(111))),
     on("debian_gnome_x11",()->click(val(102),val(112))),
@@ -87,6 +94,7 @@ final class ClearOutputTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(102),val(72))),
     on("void_i3",()->click(val(214),val(118))),
     on("arch_sway",()->click(val(214),val(193))),
+    on("omarchy_hyprland",()->click(val(431),val(243))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedAgain= action("checkedAgain",
     on("ubuntu_gnome",()->waitUntilTime(val(48000))),
@@ -97,7 +105,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(50500))),
     on("kubuntu_plasma",()->waitUntilTime(val(50500))),
     on("void_i3",()->waitUntilTime(val(58000))),
-    on("arch_sway",()->waitUntilTime(val(48000))));
+    on("arch_sway",()->waitUntilTime(val(48000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(48000))));
   final Action clearOutput= action("clearOutput",
     on("ubuntu_gnome",()->click(val(3785),val(233))),
     on("debian_gnome_x11",()->click(val(3785),val(233))),
@@ -108,6 +117,7 @@ final class ClearOutputTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(3785),val(192))),
     on("void_i3",()->click(val(3710),val(346))),
     on("arch_sway",()->click(val(3710),val(421))),
+    on("omarchy_hyprland",()->click(val(3600),val(682))),
     on("windows",()->click(val(1227),val(184))));
   final Action outputCleared= action("outputCleared",
     on("ubuntu_gnome",()->waitUntilTime(val(50500))),
@@ -118,7 +128,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(53000))),
     on("kubuntu_plasma",()->waitUntilTime(val(53000))),
     on("void_i3",()->waitUntilTime(val(61000))),
-    on("arch_sway",()->waitUntilTime(val(51000))));
+    on("arch_sway",()->waitUntilTime(val(51000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(51000))));
   final Action checkAfterClear= action("checkAfterClear",
     on("ubuntu_gnome",()->click(val(164),val(111))),
     on("debian_gnome_x11",()->click(val(102),val(112))),
@@ -129,6 +140,7 @@ final class ClearOutputTest extends ManagerTest{
     on("kubuntu_plasma",()->click(val(102),val(72))),
     on("void_i3",()->click(val(214),val(118))),
     on("arch_sway",()->click(val(214),val(193))),
+    on("omarchy_hyprland",()->click(val(431),val(243))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedAfterClear= action("checkedAfterClear",
     on("ubuntu_gnome",()->waitUntilTime(val(64500))),
@@ -139,7 +151,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(67000))),
     on("kubuntu_plasma",()->waitUntilTime(val(67000))),
     on("void_i3",()->waitUntilTime(val(75000))),
-    on("arch_sway",()->waitUntilTime(val(65000))));
+    on("arch_sway",()->waitUntilTime(val(65000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(65000))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(66000))),
     on("debian_gnome_x11",()->waitUntilTime(val(67500))),
@@ -149,7 +162,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(68500))),
     on("kubuntu_plasma",()->waitUntilTime(val(68500))),
     on("void_i3",()->waitUntilTime(val(76500))),
-    on("arch_sway",()->waitUntilTime(val(66500))));
+    on("arch_sway",()->waitUntilTime(val(66500))),
+    on("omarchy_hyprland",()->waitUntilTime(val(66500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(69500))),
     on("debian_gnome_x11",()->waitUntilTime(val(72000))),
@@ -159,7 +173,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(73500))),
     on("kubuntu_plasma",()->waitUntilTime(val(73500))),
     on("void_i3",()->waitUntilTime(val(83000))),
-    on("arch_sway",()->waitUntilTime(val(71000))));
+    on("arch_sway",()->waitUntilTime(val(71000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(71000))));
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(79500))),
     on("debian_gnome_x11",()->waitUntilTime(val(82000))),
@@ -169,7 +184,8 @@ final class ClearOutputTest extends ManagerTest{
     on("lubuntu_lxqt",()->waitUntilTime(val(84000))),
     on("kubuntu_plasma",()->waitUntilTime(val(84000))),
     on("void_i3",()->waitUntilTime(val(93000))),
-    on("arch_sway",()->waitUntilTime(val(83000))));
+    on("arch_sway",()->waitUntilTime(val(83000))),
+    on("omarchy_hyprland",()->waitUntilTime(val(83000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
