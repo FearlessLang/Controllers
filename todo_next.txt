@@ -4,8 +4,8 @@ Next round of the agentTools work: what is left to do, and what the guest rounds
 
 On a freshly booted fedora_gnome the manager is the first X11 client: Xwayland starts cold with it and the window
 stays minimized past the 2 s of the window surfaced check (Window.checkSurfaced), so the manager stops with "The
-desktop did not show the Fearless manager window". The next start works. The desk was not ready, the manager is
-not changed for it: a test round on a VM starts only once its desk is fully up, Xwayland included.
+desktop did not show the Fearless manager window". The next start works. A test round on a VM starts only once
+its desk is fully up, Xwayland included.
 Details: /data/overnight_logs/agent_tools_vms/kind_reset_test_fedora_gnome.txt (local log).
 
 = 3. Desks with neither tray nor minimization (void_i3) =
@@ -38,9 +38,9 @@ State of the recordings of test/agentTools:
   31 tests are recorded on ubuntu_gnome only. The other desks hold values made with the divider at the left edge, and
   the panel starts 320 px from the left of the window: ClearOutputTest, QuitWhileRunningTest and
   ForgetRunningProjectTest have no valid recording on the other desks until a desk is recorded again.
-- Every test looks at the screen after its actions (ManagerTest: look, changed, same, differ, plain, whiteAround):
-  these need no recorded value and each desk runs them once. The one Action to record on every desk is
-  SortByCompiledTest.tileCell. The box of a dialog or of a window is found where it opens.
+- The tests look at the screen where an action opens or closes something (ManagerTest: look, changed, popup, same,
+  differ, plain, whiteAround): these need no recorded value and each desk runs them once. The one Action to record
+  on every desk is SortByCompiledTest.tileCell. The box of a dialog or of a window is found where it opens.
 - copied and clipboardIs compare the clipboard of the test process with the text of a dialog or of the Copy button;
   on a VM they press the keys and compare nothing, the clipboard of a VM being the VM's own. Reading it through the
   guest agent would give these checks to the VMs.
