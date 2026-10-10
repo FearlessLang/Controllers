@@ -73,7 +73,7 @@ final class RunningMenuTest extends ManagerTest{
     runningMenu.go();
     menuShown.go();
     var nothing= look();
-    var menu= changed("The Running menu opens",closed,nothing,0);
+    var menu= popup("The Running menu opens",closed,nothing);
     keys(KeyEvent.VK_ESCAPE);
     same("Escape closes the Running menu",closed,look(),menu);
     becomeCode.go();

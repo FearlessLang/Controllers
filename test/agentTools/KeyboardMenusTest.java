@@ -62,7 +62,7 @@ final class KeyboardMenusTest extends ManagerTest{
     projectMenu.go();
     menuOpened.go();
     var opened= look();
-    var menu= changed("A click opens the Project menu",closed,opened,0);
+    var menu= popup("A click opens the Project menu",closed,opened);
     keys(KeyEvent.VK_DOWN);
     itemHighlighted.go();
     var highlighted= look();

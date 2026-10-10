@@ -114,6 +114,11 @@ abstract class ManagerTest{
     catch(AssertionError e){ throw new AssertionFailedError(what+": the screen looks as before"); }
     finally{ looked+= System.currentTimeMillis()-begin; }
   }
+  Rectangle popup(String what, BufferedImage before, BufferedImage after){
+    var box= changed(what,before,after,0);
+    assertTrue(box.width>=100 && box.height>=20,what+": the screen changed only in "+box);
+    return box;
+  }
   void same(String what, BufferedImage a, BufferedImage b, Rectangle at){ assertEquals(0L,mismatches(a,b,at),what+": the screen differs in "+at); }
   void differ(String what, BufferedImage a, BufferedImage b, Rectangle at){ assertTrue(mismatches(a,b,at)>50,what+": the screen is the same in "+at); }
   long mismatches(BufferedImage a, BufferedImage b, Rectangle at){

@@ -50,6 +50,7 @@ final class ForgetRunningProjectTest extends ManagerTest{
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var empty= look();
     launchScript("second",gui);
     runInTerminal(appsShownGui,terminalShownGui);
     panelShown.go();
@@ -66,7 +67,7 @@ final class ForgetRunningProjectTest extends ManagerTest{
     projectMenu.go();
     forgetProject.go();
     forgotten.go();
-    plain("Forget project closes the window of the program",look(),program);
+    same("Forget project closes the window of the program and empties the panel",empty,look(),program);
     stabilize();
     checkContent(state,"{}\n");
     checkContent(info,"{}\n");
