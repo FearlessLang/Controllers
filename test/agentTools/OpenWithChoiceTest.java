@@ -16,12 +16,12 @@ final class OpenWithChoiceTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21600))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome",()->waitUntilTime(val(35200))));
@@ -32,15 +32,15 @@ final class OpenWithChoiceTest extends ManagerTest{
   final Action filesShown= action("filesShown",
     on("ubuntu_gnome",()->waitUntilTime(val(53200))));
   final Action openNote= action("openNote",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("ubuntu_gnome",()->doubleClick(val(1984),val(915))),
     on("windows",()->doubleClick(val(480),val(312))));
   final Action chooserShown= action("chooserShown",
     on("ubuntu_gnome",()->waitUntilTime(val(55700))));
   final Action pickSecond= action("pickSecond",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("ubuntu_gnome",()->click(val(1950),val(1012))),
     on("windows",()->click(val(650),val(247))));
   final Action runPicked= action("runPicked",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("ubuntu_gnome",()->click(val(2008),val(1251))),
     on("windows",()->click(val(698),val(485))));
   final Action ranSecond= action("ranSecond",
     on("ubuntu_gnome",()->waitUntilTime(val(60900))));
@@ -51,7 +51,7 @@ final class OpenWithChoiceTest extends ManagerTest{
   final Action managerEnded= action("managerEnded",
     on("ubuntu_gnome",()->waitUntilTime(val(75900))));
   final Action closeFiles= action("closeFiles",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
+    on("ubuntu_gnome",()->click(val(2374),val(843))),
     on("windows",()->click(val(1016),val(58))));
   @Override void walk() throws Throwable{
     noManagerData();
@@ -62,6 +62,7 @@ final class OpenWithChoiceTest extends ManagerTest{
     Fs.ensureDir(choice.resolve("_hello").resolve("icons"));
     Fs.ofV(()->ImageIO.write(new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB),"png",choice.resolve("_hello").resolve("icons").resolve("hello.png").toFile()));
     Fs.writeUtf8(choice.resolve("note.ffile123"),"dear reader\n");
+    var bare= look();
     launchScript("first",choice);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
@@ -80,9 +81,11 @@ final class OpenWithChoiceTest extends ManagerTest{
     compiled.go();
     stabilize();
     checkContent(console,"--- compiling choice ---\n--- compile done ---\n");
-    shell("xdg-open \""+choice+"\"\n");
+    var manager= look();
+    shell("nohup setsid -f xdg-open \""+choice+"\" >/dev/null 2>&1\n");
     runInTerminal(appsShownFiles,terminalShownFiles);
     filesShown.go();
+    var files= changed("Opening the folder shows the file manager window",manager,look());
     openNote.go();
     chooserShown.go();
     pickSecond.go();
@@ -102,5 +105,6 @@ final class OpenWithChoiceTest extends ManagerTest{
     stabilize();
     checkContent(List.of("first.exit"),"137\n");
     closeFiles.go();
+    same("Closing the file manager window shows the desk as before",bare,look(),files);
   }
 }
