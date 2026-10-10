@@ -215,7 +215,9 @@ final class KindResetTest extends ManagerTest{
     var idle= remembered.formatted(slashed(project),"idle");
     checkContent(info,idle);
     assertFalse(Files.exists(cache));
+    var noted= look();
     ok.go();
+    changed("OK closes the note",noted,look());
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

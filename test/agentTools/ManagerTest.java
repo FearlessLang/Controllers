@@ -3,6 +3,7 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -67,7 +68,8 @@ abstract class ManagerTest{
     var left= start+looked+time-System.currentTimeMillis();
     if (left>0){ Pilot.pause((int)left); }
   }
-  void click(int x, int y){ pilot.click(x,y); }
+  final Point clicked= new Point();
+  void click(int x, int y){ clicked.setLocation(x,y); pilot.click(x,y); }
   void doubleClick(int x, int y){ pilot.doubleClick(x,y); }
   void drag(int x0, int y0, int x1, int y1){ pilot.drag(x0,y0,x1,y1); }
   void type(String text){ text.chars().forEach(this::type); }
@@ -97,38 +99,51 @@ abstract class ManagerTest{
     return out;
   }
   void checkContent(List<String> path, String expected){ Err.strCmp(expected,Fs.readUtf8(filesIOFolder.resolve(String.join("/",path)))); }
-  void park(){
-    var s= Toolkit.getDefaultToolkit().getScreenSize();
-    pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
-  }
   BufferedImage look(){
     var begin= System.currentTimeMillis();
-    park();
+    var s= Toolkit.getDefaultToolkit().getScreenSize();
+    pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
     var res= pilot.shot();
     looked+= System.currentTimeMillis()-begin;
     return res;
   }
   Rectangle changed(String what, BufferedImage before, BufferedImage after){ return changed(what,before,after,6); }
   Rectangle changed(String what, BufferedImage before, BufferedImage after, int r){
+    var begin= System.currentTimeMillis();
     try{ return Pilot.changed(before,after,r); }
     catch(AssertionError e){ throw new AssertionFailedError(what+": the screen looks as before"); }
+    finally{ looked+= System.currentTimeMillis()-begin; }
   }
   void same(String what, BufferedImage a, BufferedImage b, Rectangle at){ assertEquals(0L,mismatches(a,b,at),what+": the screen differs in "+at); }
   void differ(String what, BufferedImage a, BufferedImage b, Rectangle at){ assertTrue(mismatches(a,b,at)>50,what+": the screen is the same in "+at); }
-  static long mismatches(BufferedImage a, BufferedImage b, Rectangle at){
+  long mismatches(BufferedImage a, BufferedImage b, Rectangle at){
+    var begin= System.currentTimeMillis();
     var pa= a.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
     var pb= b.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
-    return IntStream.range(0,pa.length).filter(i->!near(pa[i],pb[i])).count();
+    var res= IntStream.range(0,pa.length).filter(i->!near(pa[i],pb[i])).count();
+    looked+= System.currentTimeMillis()-begin;
+    return res;
   }
-  static boolean near(int p, int q){ return IntStream.of(0,8,16).allMatch(s->Math.abs((p>>s&255)-(q>>s&255))<=16); }
+  static boolean near(int p, int q){ return Math.abs((p&255)-(q&255))<=16 && Math.abs((p>>8&255)-(q>>8&255))<=16 && Math.abs((p>>16&255)-(q>>16&255))<=16; }
+  Rectangle whiteAround(BufferedImage shot){
+    var s= Toolkit.getDefaultToolkit().getScreenSize();
+    return whiteAround(shot,s.width/2,s.height/2);
+  }
+  Rectangle whiteAround(BufferedImage shot, int x, int y){
+    int l= x, r= x, t= y, b= y;
+    for (; (shot.getRGB(l-1,y)&0xffffff)==0xffffff; l--){}
+    for (; (shot.getRGB(r+1,y)&0xffffff)==0xffffff; r++){}
+    for (; (shot.getRGB(x,t-1)&0xffffff)==0xffffff; t--){}
+    for (; (shot.getRGB(x,b+1)&0xffffff)==0xffffff; b++){}
+    return new Rectangle(l,t,r-l+1,b-t+1);
+  }
   void plain(String what, BufferedImage shot, Rectangle at){
     var px= shot.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
     assertEquals(0L,IntStream.of(px).filter(p->!near(p,px[0])).count(),what+": the screen is not plain in "+at);
   }
-  void pixelIs(String what, int x, int y, String rgb){ assertEquals(rgb,"%06x".formatted(look().getRGB(x,y)&0xffffff),what+": the screen at ("+x+","+y+")"); }
-  final boolean sharedClipboard= List.of("ubuntu_gnome","windows").contains(desk);
-  void clearClipboard(){ if (sharedClipboard){ Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection("nothing was copied"),null); } }
-  void clipboardIs(String expected) throws Throwable{ if (sharedClipboard){ Err.strCmp(expected,(String)Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor)); } }
+  final boolean hostDesk= List.of("ubuntu_gnome","windows").contains(desk);
+  void clearClipboard(){ if (hostDesk){ Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection("nothing was copied"),null); } }
+  void clipboardIs(String expected) throws Throwable{ if (hostDesk){ Err.strCmp(expected,(String)Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor)); } }
   void copied(String expected) throws Throwable{
     clearClipboard();
     keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);

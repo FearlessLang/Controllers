@@ -81,14 +81,17 @@ final class TooManyArgumentsTest extends ManagerTest{
     noManagerData();
     var project= project("helloWorld");
     var other= project("helloStackTraces");
+    var bare= look();
     launchScript("first",project,other);
     runInTerminal(appsShown,terminalShown);
     errorShown.go();
+    var error= changed("The error opens",bare,look());
     stabilize();
     assertFalse(Files.exists(filesIOFolder.resolve("first.exit")));
     assertFalse(Files.exists(filesIOFolder.resolve(data)));
     ok.go();
     launcherEnded.go();
+    same("OK closes the error",bare,look(),error);
     stabilize();
     checkContent(List.of("first.exit"),"1\n");
     assertFalse(Files.exists(filesIOFolder.resolve(data)));

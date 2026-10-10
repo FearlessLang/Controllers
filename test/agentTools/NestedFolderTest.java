@@ -17,9 +17,6 @@ final class NestedFolderTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action appsShownNest= action("appsShownNest",
     on("ubuntu_gnome",()->waitUntilTime(val(20600))));
   final Action terminalShownNest= action("terminalShownNest",
@@ -63,25 +60,29 @@ final class NestedFolderTest extends ManagerTest{
     managerShown.go();
     stabilize();
     checkContent(info,remembered);
-    focusTiles.go();
+    var closed= look();
     launchScript("second",nest);
     runInTerminal(appsShownNest,terminalShownNest);
     noteShown.go();
+    var shown= changed("The note opens",closed,look());
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
     checkContent(notes,note(nest));
     checkContent(info,remembered);
     assertEquals(files,tree());
     ok.go();
+    same("OK closes the note",closed,look(),shown);
     launchScript("third",source);
     runInTerminal(appsShownSource,terminalShownSource);
     noteShownAgain.go();
+    var shownAgain= changed("The second note opens",closed,look());
     stabilize();
     checkContent(List.of("third.exit"),"0\n");
     checkContent(notes,note(nest)+note(source));
     checkContent(info,remembered);
     assertEquals(files,tree());
     okAgain.go();
+    same("OK closes the second note",closed,look(),shownAgain);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

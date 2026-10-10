@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class EditMetadataCommitTest extends ManagerTest{
@@ -56,16 +55,19 @@ final class EditMetadataCommitTest extends ManagerTest{
       """;
     stabilize();
     checkContent(info,registry.formatted(slashed(project),"idle"));
+    var closed= look();
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
+    var editor= changed("Edit project metadata opens the editor",closed,look());
     focusText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied(registry.formatted(slashed(project),"idle"));
     kindIdle.go();
     type("code");
+    var typed= look();
     commit.go();
     codeSaved.go();
+    differ("Commit closes the editor",typed,look(),editor);
     stabilize();
     checkContent(info,registry.formatted(slashed(project),"code"));
     backToIdle.go();

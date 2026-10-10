@@ -2,6 +2,7 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.util.List;
@@ -181,11 +182,16 @@ final class WindowCloseTest extends ManagerTest{
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
+    var bare= look();
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var shown= look();
+    var window= changed("The manager window opens",bare,shown);
+    var corner= new Rectangle(window.x,window.y,400,200);
     closeManager.go();
     managerHidden.go();
+    same("Closing the window hides it",bare,look(),window);
     stabilize();
     assertFalse(Files.exists(filesIOFolder.resolve("first.exit")));
     launchScript("second");
@@ -194,10 +200,12 @@ final class WindowCloseTest extends ManagerTest{
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
     managerBack.go();
+    same("The second launch brings the window back as it was",shown,look(),corner);
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
+    same("Quit manager closes the window",bare,look(),window);
   }
 }

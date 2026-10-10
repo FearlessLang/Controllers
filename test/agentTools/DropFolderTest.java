@@ -55,12 +55,15 @@ final class DropFolderTest extends ManagerTest{
     Fs.rmTree(drops);
     Fs.writeUtf8(dropped.resolve("dropped.fearless"),"\n");
     Fs.writeUtf8(dropped.resolve("_dropped").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"dropped\")}\n");
+    var bare= look();
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var manager= look();
     shell("nohup setsid -f xdg-open '"+drops+"' >/dev/null 2>&1\n");
     runInTerminal(appsShownFiles,terminalShownFiles);
     filesShown.go();
+    var files= changed("Opening the folder shows the file manager window",manager,look());
     carryDropped.go();
     droppedSaved.go();
     var remembered= """
@@ -82,6 +85,7 @@ final class DropFolderTest extends ManagerTest{
     noManagerData();
     closeFiles.go();
     filesClosed.go();
+    same("Closing the file manager window shows the desk as before",bare,look(),files);
     launchScript("second",dropped);
     runInTerminal(appsShownSecond,terminalShownSecond);
     managerShownSecond.go();

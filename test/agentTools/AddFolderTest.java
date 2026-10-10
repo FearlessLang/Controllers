@@ -62,16 +62,20 @@ final class AddFolderTest extends ManagerTest{
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var closed= look();
     projectMenu.go();
     addFolder.go();
     chooserShown.go();
+    var chooser= changed("Add folder opens the chooser",closed,look());
     cancel.go();
     chooserGone.go();
+    same("Cancel closes the chooser",closed,look(),chooser);
     stabilize();
     assertFalse(Files.exists(filesIOFolder.resolve(String.join("/",info))));
     projectMenuAgain.go();
     addFolderAgain.go();
     chooserShownAgain.go();
+    differ("Add folder opens the chooser again",closed,look(),chooser);
     fileName.go();
     type(project+"\n");
     var remembered= """
