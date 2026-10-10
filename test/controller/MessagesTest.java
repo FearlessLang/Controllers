@@ -29,6 +29,19 @@ Fearless needs to show a window, but opening the window failed.
 Reported reason:
 No X11 DISPLAY variable was set, but this program performed an operation which requires it.""", Messages.couldNotStartGui(cause).getMessage());
   }
+  @Test void desktopHoldsWindow(){
+    same("""
+The desktop has not shown the Fearless manager window yet.
+
+Fearless asked the desktop to show its window, and the desktop still
+reports the window as minimized. A slow desktop shows it in a moment,
+and this message goes away by itself.
+If it stays, every program with decorated windows is affected, not only
+Fearless: on GNOME it means the process that decorates windows
+(mutter-x11-frames) has died.
+Quit the manager, log out and log in again, then start Fearless again.
+""", Messages.desktopHoldsWindow());
+  }
   @Test void vmOrLinkageFailure(){
     var cause= new LinkageError("loader constraint violation: loader previously initiated loading for coordinator.Coordinator");
     same("""

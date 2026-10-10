@@ -86,7 +86,9 @@ public final class Window implements Manager.View{
   private final Timer ticker= new Timer(1000,_->tick());
   private State state= new State(List.of(),Optional.empty(),List.of());
   private Optional<Panel> shown= Optional.empty();
+  private boolean iconified;
   private boolean surfaced;
+  private JDialog held;
   private boolean closeIconifies;
   private Window(Main main){
     this.main= main;
@@ -105,9 +107,9 @@ public final class Window implements Manager.View{
         frame.setVisible(false);
         ticker.stop();
       }
-      @Override public void windowIconified(WindowEvent e){ ticker.stop(); }
-      @Override public void windowDeiconified(WindowEvent e){ ticker.start(); surfaced= true; }
-      @Override public void windowActivated(WindowEvent e){ surfaced= true; }
+      @Override public void windowIconified(WindowEvent e){ ticker.stop(); iconified= true; }
+      @Override public void windowDeiconified(WindowEvent e){ ticker.start(); iconified= false; surface(); }
+      @Override public void windowActivated(WindowEvent e){ surface(); }
     });
     frame.setIconImage(Icons.app());
     if (Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE)){ Taskbar.getTaskbar().setIconImage(Icons.app()); }
@@ -133,7 +135,7 @@ public final class Window implements Manager.View{
   }
   @Override public void show(){
     SwingUtilities.invokeLater(()->{
-      surfaced= surfaced && onScreen();
+      surfaced= surfaced && frame.isVisible() && !iconified;
       frame.setVisible(true);
       frame.setExtendedState(frame.getExtendedState() & ~Frame.ICONIFIED);
       frame.toFront();
@@ -214,10 +216,22 @@ public final class Window implements Manager.View{
     });
     return res;
   }
-  private boolean onScreen(){ return frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) == 0; }
-  //A desktop that refuses to show a window reports it as iconified and never deiconifies it.
+  private void surface(){
+    surfaced= true;
+    if (held != null){ held.dispose(); held= null; }
+  }
+  //A desktop that has not shown the window reports it as iconified; a slow one deiconifies it in the end, and the notice goes when it does.
+  //Only the events tell what the desktop reported: the extended state of the frame also holds what show() asked for.
   private void checkSurfaced(){
-    if (frame.isVisible() && !surfaced && !onScreen()){ main.fail(Messages.desktopHidesWindow()); }
+    if (!frame.isVisible() || surfaced || !iconified || held != null){ return; }
+    var pane= new JOptionPane(Messages.desktopHoldsWindow(),JOptionPane.WARNING_MESSAGE,JOptionPane.DEFAULT_OPTION,null,new Object[]{"Quit manager"});
+    pane.addPropertyChangeListener(JOptionPane.VALUE_PROPERTY,_->main.quit());
+    held= new JDialog(frame,"Fearless",false);
+    held.setUndecorated(true);
+    held.setContentPane(pane);
+    held.pack();
+    held.setLocationRelativeTo(null);
+    held.setVisible(true);
   }
   public boolean askForget(){
     return onEdt(()->JOptionPane.showConfirmDialog(frame,"""

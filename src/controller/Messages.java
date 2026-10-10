@@ -217,6 +217,19 @@ public final class Messages{
       Run button runs it, and the Terminate button of its console stops it.
       """.formatted(eclipse);
   }
+  public static String desktopHoldsWindow(){
+    return """
+      The desktop has not shown the Fearless manager window yet.
+
+      Fearless asked the desktop to show its window, and the desktop still
+      reports the window as minimized. A slow desktop shows it in a moment,
+      and this message goes away by itself.
+      If it stays, every program with decorated windows is affected, not only
+      Fearless: on GNOME it means the process that decorates windows
+      (mutter-x11-frames) has died.
+      Quit the manager, log out and log in again, then start Fearless again.
+      """;
+  }
 
   //-- what the manager can no longer do
   public static UserError programFolderNotFound(Path startedFrom, String expectedDirName){
@@ -234,17 +247,6 @@ public final class Messages{
       Fearless needs to show a window, but opening the window failed.
 
       %s""".formatted(reported(cause)), cause);
-  }
-  public static UserError desktopHidesWindow(){
-    return new UserError("""
-      The desktop did not show the Fearless manager window.
-
-      Fearless asked the desktop to show its window, and the desktop keeps
-      reporting the window as minimized. When this happens every program with
-      decorated windows is affected, not only Fearless: on GNOME it means the
-      process that decorates windows (mutter-x11-frames) has died.
-      Log out and log in again, then start Fearless again.
-      """).bare();
   }
   public static UserError noSystemTray(){
     return new UserError("""

@@ -1,15 +1,5 @@
 Next round of the agentTools work: what is left to do, and what the guest rounds found.
 
-= 1. Manager bug: the window surfaced check is too strict =
-
-src/gui/Window.java checks 2 s after show (Timer(2000,_->checkSurfaced())) that the window is on screen.
-On a freshly booted fedora_gnome (GNOME wayland) the manager is the first X11 client: Xwayland starts cold
-with it and the window stays minimized past those 2 s. The manager then fails with "The desktop did not show
-the Fearless manager window" and deletes its manager folder and every file association, although the desk
-is healthy. The next start works.
-Fix it so a slow but healthy desk is never taken for a broken one, and add a test that covers a slow first
-surfacing. Details: /data/overnight_logs/agent_tools_vms/kind_reset_test_fedora_gnome.txt (local log).
-
 = 2. Tests must fail when their actions were not done =
 
 Several tests pass when a click misses, because they check only files and exit codes:
@@ -48,10 +38,11 @@ SecondMarkerTest NestedFolderTest ClearCacheTest AliasClashTest OpenWithChoiceTe
 RunSelectedTest CompileFailsTest ConnectEclipseTest CloseProgramWindowTest EditMetadataAddProjectTest
 RawStateTest TerminateDuringRunSelectedTest EditMetadataForgetTest EditMetadataRenameTest TileSwitchTest
 SystemExtensionTest AllMainsRunTest ClearOutputWhileRunningTest LogsSectionTest RunningMenuTest StaleMainTest
-StaleMainNoteTest EditMetadataConflictTest LinkReadTest LinkWriteTest LogViewTest DividerPlaceTest.
+StaleMainNoteTest EditMetadataConflictTest LinkReadTest LinkWriteTest LogViewTest DividerPlaceTest
+SlowSurfacingTest.
 Shared code (ManagerTest, OpenFearlessFileTest) changed after some desks were recorded: once every test is
 recorded, run the whole agentTools package once per desk and fix what broke.
-Points 1 and 2 change what the tests observe, so doing them first saves recording the remaining tests twice.
+Point 2 changes what the tests observe, so doing it first saves recording the remaining tests twice.
 
 = 5. Smaller observations =
 
@@ -61,4 +52,8 @@ Points 1 and 2 change what the tests observe, so doing them first saves recordin
 - debian_gnome_x11: after boot the screen stays black and the first Ctrl+Alt+T is lost until an X client
   (xrandr as the session user) touches the display.
 - Dolphin (opensuse_plasma) remembers a taller window after its first normal close.
+- fedora_gnome: the session sits in the Activities overview after login, and a dialog owned by a window the
+  desktop holds (the notice of SlowSurfacingTest) is not drawn there until Escape leaves the overview
+  (virsh send-key fedora_gnome KEY_ESC). With no tray the manager iconifies on close, and a window it iconified
+  itself is already framed: the second phase of SlowSurfacingTest may not hold it on that desk.
 The per desk facts are in /data/gym/gui_vms_gym.txt; the per round logs in /data/overnight_logs/agent_tools_vms.
