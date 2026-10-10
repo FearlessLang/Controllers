@@ -48,7 +48,7 @@ SecondMarkerTest NestedFolderTest ClearCacheTest AliasClashTest OpenWithChoiceTe
 RunSelectedTest CompileFailsTest ConnectEclipseTest CloseProgramWindowTest EditMetadataAddProjectTest
 RawStateTest TerminateDuringRunSelectedTest EditMetadataForgetTest EditMetadataRenameTest TileSwitchTest
 SystemExtensionTest AllMainsRunTest ClearOutputWhileRunningTest LogsSectionTest RunningMenuTest StaleMainTest
-StaleMainNoteTest EditMetadataConflictTest LinkReadTest LinkWriteTest LogViewTest.
+StaleMainNoteTest EditMetadataConflictTest LinkReadTest LinkWriteTest LogViewTest DividerPlaceTest.
 Shared code (ManagerTest, OpenFearlessFileTest) changed after some desks were recorded: once every test is
 recorded, run the whole agentTools package once per desk and fix what broke.
 Points 1 and 2 change what the tests observe, so doing them first saves recording the remaining tests twice.
