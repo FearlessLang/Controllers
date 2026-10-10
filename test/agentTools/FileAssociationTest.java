@@ -122,6 +122,7 @@ final class FileAssociationTest extends ManagerTest{
     same("Closing the file manager window shows the desk as before",bare,look(),files);
   }
   void noAssociation() throws Throwable{
+    if (!hostDesk){ return; }
     var share= Path.of(System.getProperty("user.home"),".local","share");
     for (var dir: List.of(share.resolve("applications"),share.resolve("mime").resolve("packages"))){
       Fs.walkV(dir,s->s.filter(p->p.getFileName().toString().contains("earless")).toList().forEach(p->Fs.ofV(()->Files.delete(p))));
