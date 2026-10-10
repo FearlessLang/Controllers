@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 import tools.Fs;
@@ -13,31 +12,28 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21500))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action mainsShown= action("mainsShown",
     on("ubuntu_gnome",()->waitUntilTime(val(35000))));
   final Action all= action("all",
-    on("ubuntu_gnome",()->click(val(112),val(165))),
+    on("ubuntu_gnome",()->click(val(431),val(165))),
     on("windows",()->click(val(45),val(118))));
   final Action bothSaved= action("bothSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(37000))));
   final Action runSelected= action("runSelected",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action programShown= action("programShown",
     on("ubuntu_gnome",()->waitUntilTime(val(42000))));
   final Action terminate= action("terminate",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action terminated= action("terminated",
     on("ubuntu_gnome",()->waitUntilTime(val(45000))));
@@ -64,9 +60,6 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     launchScript("first",chain);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();
@@ -84,12 +77,15 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
       """.formatted(slashed(chain));
     stabilize();
     checkContent(info,both);
+    var idle= look();
     runSelected.go();
     programShown.go();
+    var program= changed("Run selected opens the window of the first main",idle,look());
     stabilize();
-    checkContent(console,"--- compiling chain ---\n--- compile done ---\n--- running chain.Show ---\n");
+    checkContent(console,"--- compiling chain ---\n--- compile done ---\n--- running chain.Show ---[###]");
     terminate.go();
     terminated.go();
+    same("Terminate closes the window of the program",idle,look(),program);
     stabilize();
     checkContent(state,"""
       {
@@ -111,8 +107,8 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     checkContent(console,"""
       --- compiling chain ---
       --- compile done ---
-      --- running chain.Show ---
-      --- terminating chain.Show ---
+      --- running chain.Show ---[###]
+      --- terminating chain.Show ---[###]
       --- chain.Show exited with 143 after [###]s ---
       """);
     checkContent(info,both);

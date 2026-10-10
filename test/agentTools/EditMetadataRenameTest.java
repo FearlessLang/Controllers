@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -15,11 +14,8 @@ final class EditMetadataRenameTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checked= action("checked",
     on("ubuntu_gnome",()->waitUntilTime(val(33500))));
@@ -54,21 +50,21 @@ final class EditMetadataRenameTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1953),val(1323))),
     on("windows",()->click(val(639),val(568))));
   final Action openInformation= action("openInformation",
-    on("ubuntu_gnome",()->click(val(150),val(167))),
+    on("ubuntu_gnome",()->click(val(469),val(167))),
     on("windows",()->click(val(79),val(120))));
   final Action markerSeen= action("markerSeen",
-    on("ubuntu_gnome",()->waitUntilTime(val(48500))));
+    on("ubuntu_gnome",()->waitUntilTime(val(51500))));
   final Action checkAgain= action("checkAgain",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedAgain= action("checkedAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(62000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(65000))));
   final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(63500))));
+    on("ubuntu_gnome",()->waitUntilTime(val(66500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(67000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(70000))));
   final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(77000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(80000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var old= filesIOFolder.resolve("old");
@@ -78,20 +74,23 @@ final class EditMetadataRenameTest extends ManagerTest{
     launchScript("first",old);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     check.go();
     checked.go();
     stabilize();
     checkContent(List.of(data,"eclipse","old","console.txt"),fine);
+    var valid= look();
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
+    var editor= changed("Edit project metadata opens the editor",valid,look());
     nameOld.go();
     type("fresh");
+    var typed= look();
     commit.go();
     renamed.go();
+    var invalid= look();
+    differ("Commit closes the editor",typed,invalid,editor);
+    var badge= changed("The tile shows the missing marker",valid,invalid,3);
     stabilize();
     checkContent(info,"""
       {
@@ -105,14 +104,18 @@ final class EditMetadataRenameTest extends ManagerTest{
     projectMenu.go();
     errorReport.go();
     reportShown.go();
+    var report= changed("Error report opens the dialog",invalid,look());
     focusReport.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("The marker file \"fresh.fearless\" is missing from\n"+old+"\nRestore it, or forget and re-add this project folder.");
     ok.go();
+    same("OK closes the dialog",invalid,look(),report);
+    var collapsed= look();
     openInformation.go();
+    changed("Information opens its section",collapsed,look());
     Files.move(old.resolve("old.fearless"),old.resolve("fresh.fearless"));
     stabilize();
     markerSeen.go();
+    differ("The tile is valid again by itself",invalid,look(),badge);
     checkAgain.go();
     checkedAgain.go();
     stabilize();

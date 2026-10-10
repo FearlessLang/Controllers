@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class EditMetadataConflictTest extends ManagerTest{
@@ -97,9 +96,11 @@ final class EditMetadataConflictTest extends ManagerTest{
     managerShown.go();
     stabilize();
     checkContent(info,one.formatted(slashed(project),"idle"));
+    var closed= look();
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
+    var editor= changed("Edit project metadata opens the editor",closed,look());
     kindIdle.go();
     type("code");
     launchScript("second",other);
@@ -109,8 +110,10 @@ final class EditMetadataConflictTest extends ManagerTest{
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
     checkContent(info,both);
+    var typed= look();
     commit.go();
     noteShown.go();
+    var refused= changed("The note opens",typed,look());
     stabilize();
     checkContent(notes,"""
       The project metadata is not committed: projects.info changed while it was edited.
@@ -118,21 +121,25 @@ final class EditMetadataConflictTest extends ManagerTest{
       """);
     checkContent(info,both);
     ok.go();
+    same("OK closes the note",typed,look(),refused);
     focusText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied(one.formatted(slashed(project),"code"));
     close.go();
     editorClosed.go();
+    var closedAgain= look();
+    differ("Close closes the editor",typed,closedAgain,editor);
     managerMenuAgain.go();
     editMetadataAgain.go();
     editorShownAgain.go();
+    differ("Edit project metadata opens the editor again",closedAgain,look(),editor);
     focusTextAgain.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied(both);
     kindIdleAgain.go();
     type("code");
+    var typedAgain= look();
     commitAgain.go();
     codeSaved.go();
+    differ("Commit closes the editor",typedAgain,look(),editor);
     stabilize();
     checkContent(info,two.formatted(slashed(project),"code",slashed(other)));
     endScript();

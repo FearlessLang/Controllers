@@ -2,6 +2,7 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.awt.Rectangle;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -185,14 +186,18 @@ final class ForgetProjectTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var one= look();
     launchScript("second",other);
     runInTerminal(appsShownOther,terminalShownOther);
     otherShown.go();
+    var tiles= changed("The second launch adds a tile",one,look());
+    var second= new Rectangle(tiles.x+tiles.width/2,tiles.y,tiles.width/2,tiles.height);
     stabilize();
     var files= files(other);
     projectMenu.go();
     forgetProject.go();
     forgotten.go();
+    same("Forget project takes its tile away",one,look(),second);
     stabilize();
     checkContent(info,"""
       {

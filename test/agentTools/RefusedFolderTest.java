@@ -55,7 +55,9 @@ final class RefusedFolderTest extends ManagerTest{
     checkContent(notes,missing);
     assertFalse(Files.exists(folder.resolve("projects.info")));
     assertFalse(Files.exists(gone));
+    var noted= look();
     ok.go();
+    changed("OK closes the note",noted,look());
     var manager= missing+"""
       Fearless cannot keep track of this folder as a project.
 
@@ -66,10 +68,9 @@ final class RefusedFolderTest extends ManagerTest{
       The manager folder holds what Fearless remembers about your projects: it is
       never part of a project, and no project is inside it.
       """.formatted(folder,folder);
-    refused("second",folder,appsShownAgain,terminalShownAgain,noteShownAgain,manager);
-    okAgain.go();
+    refused("second",folder,appsShownAgain,terminalShownAgain,noteShownAgain,okAgain,manager);
     var root= Path.of("/").toAbsolutePath();
-    refused("third",root,appsShownRoot,terminalShownRoot,rootNoteShown,manager+"""
+    refused("third",root,appsShownRoot,terminalShownRoot,rootNoteShown,rootOk,manager+"""
       Fearless cannot keep track of the root of a drive or of the file system as a
       project.
 
@@ -78,20 +79,23 @@ final class RefusedFolderTest extends ManagerTest{
       Put the project in a folder inside it, and make that folder the project
       folder.
       """.formatted(root));
-    rootOk.go();
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();
     stabilize();
     checkContent(List.of("first.exit"),"137\n");
   }
-  void refused(String exit, Path folder, Action appsShown, Action terminalShown, Action shown, String said) throws Throwable{
+  void refused(String exit, Path folder, Action appsShown, Action terminalShown, Action shown, Action ok, String said) throws Throwable{
+    var closed= look();
     launchScript(exit,folder);
     runInTerminal(appsShown,terminalShown);
     shown.go();
+    var note= changed("The note opens",closed,look());
     stabilize();
     checkContent(List.of(exit+".exit"),"0\n");
     checkContent(notes,said);
     assertFalse(Files.exists(filesIOFolder.resolve(data).resolve("projects.info")));
+    ok.go();
+    same("OK closes the note",closed,look(),note);
   }
 }

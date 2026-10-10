@@ -2,7 +2,6 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -16,7 +15,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action goneNoticed= action("goneNoticed",
-    on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(24000))));
   final Action projectMenu= action("projectMenu",
     on("ubuntu_gnome",()->click(val(158),val(79))),
     on("windows",()->click(val(89),val(33))));
@@ -24,7 +23,7 @@ final class FolderGoneTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(180),val(212))),
     on("windows",()->click(val(111),val(166))));
   final Action reportShown= action("reportShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(24000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(27000))));
   final Action focusReport= action("focusReport",
     on("ubuntu_gnome",()->click(val(1970),val(1100))),
     on("windows",()->click(val(660),val(300))));
@@ -32,15 +31,15 @@ final class FolderGoneTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1953),val(1323))),
     on("windows",()->click(val(639),val(568))));
   final Action reportClosed= action("reportClosed",
-    on("ubuntu_gnome",()->waitUntilTime(val(27000))));
-  final Action tileBack= action("tileBack",
     on("ubuntu_gnome",()->waitUntilTime(val(30000))));
+  final Action tileBack= action("tileBack",
+    on("ubuntu_gnome",()->waitUntilTime(val(33000))));
   final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(31500))));
+    on("ubuntu_gnome",()->waitUntilTime(val(34500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(38000))));
   final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(48000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var gone= filesIOFolder.resolve("gone");
@@ -52,17 +51,21 @@ final class FolderGoneTest extends ManagerTest{
     launchScript("first",gone);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var valid= look();
     Files.move(gone,moved);
     stabilize();
     goneNoticed.go();
+    var invalid= look();
+    var badge= changed("The tile shows the missing folder",valid,invalid,3);
     projectMenu.go();
     errorReport.go();
     reportShown.go();
+    var report= changed("Error report opens the dialog",invalid,look());
     focusReport.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("The folder of this project does not exist:\n"+gone+"\nRestore it, or forget this project.");
     ok.go();
     reportClosed.go();
+    same("OK closes the dialog",invalid,look(),report);
     stabilize();
     checkContent(info,"""
       {
@@ -76,6 +79,7 @@ final class FolderGoneTest extends ManagerTest{
     Files.move(moved,gone);
     stabilize();
     tileBack.go();
+    same("The tile is valid again by itself",valid,look(),badge);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

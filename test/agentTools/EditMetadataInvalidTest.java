@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class EditMetadataInvalidTest extends ManagerTest{
@@ -10,9 +9,6 @@ final class EditMetadataInvalidTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->click(val(98),val(79))),
     on("windows",()->click(val(31),val(33))));
@@ -62,14 +58,17 @@ final class EditMetadataInvalidTest extends ManagerTest{
       """.formatted(slashed(project));
     stabilize();
     checkContent(info,idle);
-    focusTiles.go();
+    var closed= look();
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
+    var editor= changed("Edit project metadata opens the editor",closed,look());
     kindIdle.go();
     type("lazy");
+    var typed= look();
     commit.go();
     noteShown.go();
+    var refused= changed("The note opens",typed,look());
     var note= """
       In file: %s
 
@@ -83,11 +82,12 @@ final class EditMetadataInvalidTest extends ManagerTest{
     checkContent(notes,note);
     checkContent(info,idle);
     ok.go();
+    same("OK closes the note",typed,look(),refused);
     focusText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied(idle.replace("\"idle\"","\"lazy\""));
     close.go();
     editorClosed.go();
+    same("Close closes the editor",closed,look(),editor);
     stabilize();
     checkContent(info,idle);
     checkContent(notes,note);

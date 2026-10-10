@@ -2,7 +2,6 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -15,9 +14,6 @@ final class AliasClashTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action appsShownSecond= action("appsShownSecond",
     on("ubuntu_gnome",()->waitUntilTime(val(21000))));
   final Action terminalShownSecond= action("terminalShownSecond",
@@ -30,7 +26,7 @@ final class AliasClashTest extends ManagerTest{
   final Action noteGone= action("noteGone",
     on("ubuntu_gnome",()->waitUntilTime(val(38000))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checked= action("checked",
     on("ubuntu_gnome",()->waitUntilTime(val(52000))));
@@ -62,12 +58,11 @@ final class AliasClashTest extends ManagerTest{
         }
       }
       """.formatted(slashed(first)));
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
+    var closed= look();
     launchScript("second",second);
     runInTerminal(appsShownSecond,terminalShownSecond);
     noteShown.go();
+    var shown= changed("The note opens",closed,look());
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
     checkContent(notes,"""
@@ -99,6 +94,7 @@ final class AliasClashTest extends ManagerTest{
     checkContent(List.of("twins","b","twin","twin2.fearless"),"\n");
     ok.go();
     noteGone.go();
+    same("OK closes the note",closed,look(),shown);
     check.go();
     checked.go();
     stabilize();

@@ -1,9 +1,10 @@
 package agentTools;
 
 import java.nio.file.Files;
-import java.util.List;
+import java.nio.file.Path;
 
 import tools.Fs;
+import utils.Err;
 
 final class DesktopDragTest extends ManagerTest{
   final Action deskShown= action("deskShown",
@@ -68,35 +69,52 @@ final class DesktopDragTest extends ManagerTest{
     on("windows",()->click(val(1042),val(83))));
   static final String content= "carried across the desk\n";
   @Override void walk() throws Throwable{
-    var test1= filesIOFolder.resolve("test1");
-    var test2= filesIOFolder.resolve("test2");
+    var desk= hostDesk ? Path.of(System.getProperty("user.home"),"Desktop") : filesIOFolder;
+    var test1= desk.resolve("test1");
+    var test2= desk.resolve("test2");
     Fs.rmTree(test1);
     Fs.rmTree(test2);
     Fs.writeUtf8(test1.resolve("example.txt"),content);
     Fs.ensureDir(test2);
     stabilize();
     deskShown.go();
+    var bare= look();
     openTest1.go();
     test1Shown.go();
+    var opened= look();
+    changed("A double click on the icon of test1 opens its window",bare,opened);
     placeTest1.go();
     test1Placed.go();
+    var placed= look();
+    changed("Carrying the title bar moves the window of test1",opened,placed);
+    var window1= changed("The window of test1 stands at its new place",bare,placed);
     sendTest1Away.go();
     test1Away.go();
+    same("The minimize button sends the window of test1 away",bare,look(),window1);
     openTest2.go();
     test2Shown.go();
+    var opened2= look();
+    changed("A double click on the icon of test2 opens its window",bare,opened2);
     placeTest2.go();
     test2Placed.go();
+    var placed2= look();
+    changed("Carrying the title bar moves the window of test2",opened2,placed2);
+    var window2= changed("The window of test2 stands at its new place",bare,placed2);
     showOpenWindows.go();
     openWindowsShown.go();
     pickTest1.go();
     test1Back.go();
+    var both= look();
+    differ("The bar of open windows brings the window of test1 back",placed2,both,window1);
     carryFile.go();
     fileCarried.go();
     closeTest1.go();
     test1Closed.go();
+    same("The close button closes the window of test1",placed2,look(),window1);
     closeTest2.go();
+    same("The close button closes the window of test2",bare,look(),window2);
     stabilize();
-    checkContent(List.of("test2","example.txt"),content);
+    Err.strCmp(content,Fs.readUtf8(test2.resolve("example.txt")));
     assert !Files.exists(test1.resolve("example.txt"));
     Fs.rmTree(test1);
     Fs.rmTree(test2);

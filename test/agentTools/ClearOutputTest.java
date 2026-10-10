@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class ClearOutputTest extends ManagerTest{
@@ -46,24 +45,9 @@ final class ClearOutputTest extends ManagerTest{
     on("void_i3",()->waitUntilTime(val(30000))),
     on("arch_sway",()->waitUntilTime(val(20000))),
     on("omarchy_hyprland",()->waitUntilTime(val(20000))));
-  final Action focusTiles= action("focusTiles",
-    on("fedora_cosmic",()->click(val(258),val(1500))),
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("debian_gnome_x11",()->click(val(134),val(1500))),
-    on("fedora_gnome",()->click(val(134),val(1500))),
-    on("xubuntu_xfce",()->click(val(268),val(1500))),
-    on("debian_cinnamon",()->click(val(134),val(1500))),
-    on("debian_mate",()->click(val(258),val(1500))),
-    on("lubuntu_lxqt",()->click(val(100),val(1500))),
-    on("kubuntu_plasma",()->click(val(134),val(1500))),
-    on("opensuse_plasma",()->click(val(134),val(1500))),
-    on("void_i3",()->click(val(268),val(1500))),
-    on("arch_sway",()->click(val(268),val(1500))),
-    on("omarchy_hyprland",()->click(val(268),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action closeInformation= action("closeInformation",
     on("fedora_cosmic",()->click(val(164),val(332))),
-    on("ubuntu_gnome",()->click(val(150),val(167))),
+    on("ubuntu_gnome",()->click(val(469),val(167))),
     on("debian_gnome_x11",()->click(val(84),val(167))),
     on("fedora_gnome",()->click(val(84),val(167))),
     on("xubuntu_xfce",()->click(val(176),val(288))),
@@ -78,7 +62,7 @@ final class ClearOutputTest extends ManagerTest{
     on("windows",()->click(val(79),val(120))));
   final Action check= action("check",
     on("fedora_cosmic",()->click(val(204),val(221))),
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("debian_gnome_x11",()->click(val(102),val(112))),
     on("fedora_gnome",()->click(val(102),val(112))),
     on("xubuntu_xfce",()->click(val(210),val(185))),
@@ -107,7 +91,7 @@ final class ClearOutputTest extends ManagerTest{
     on("omarchy_hyprland",()->waitUntilTime(val(34000))));
   final Action checkAgain= action("checkAgain",
     on("fedora_cosmic",()->click(val(204),val(221))),
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("debian_gnome_x11",()->click(val(102),val(112))),
     on("fedora_gnome",()->click(val(102),val(112))),
     on("xubuntu_xfce",()->click(val(210),val(185))),
@@ -165,7 +149,7 @@ final class ClearOutputTest extends ManagerTest{
     on("omarchy_hyprland",()->waitUntilTime(val(51000))));
   final Action checkAfterClear= action("checkAfterClear",
     on("fedora_cosmic",()->click(val(204),val(221))),
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("debian_gnome_x11",()->click(val(102),val(112))),
     on("fedora_gnome",()->click(val(102),val(112))),
     on("xubuntu_xfce",()->click(val(210),val(185))),
@@ -242,28 +226,32 @@ final class ClearOutputTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     closeInformation.go();
     stabilize();
     checkContent(console,"");
+    var empty= look();
+    var output= whiteAround(empty);
     check.go();
     checked.go();
     stabilize();
     checkContent(console,ok);
+    var once= look();
+    differ("Check shows its result in the Output",empty,once,output);
     checkAgain.go();
     checkedAgain.go();
     stabilize();
     checkContent(console,ok+ok);
+    differ("A second Check adds a line to the Output",once,look(),output);
     clearOutput.go();
     outputCleared.go();
     stabilize();
     checkContent(console,"");
+    same("Clear output empties the Output",empty,look(),output);
     checkAfterClear.go();
     checkedAfterClear.go();
     stabilize();
     checkContent(console,ok);
+    same("The Output starts again from the top",once,look(),output);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

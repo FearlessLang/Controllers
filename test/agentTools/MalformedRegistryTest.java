@@ -65,14 +65,17 @@ final class MalformedRegistryTest extends ManagerTest{
     stabilize();
     checkContent(List.of("first.exit"),"137\n");
     Fs.writeUtf8(filesIOFolder.resolve(data).resolve("projects.info"),remembered.substring(0,remembered.length()-2));
+    var bare= look();
     launchScript("second");
     runInTerminal(appsShownMalformed,terminalShownMalformed);
     errorShown.go();
+    var error= changed("The error opens",bare,look());
     stabilize();
     assertFalse(Files.exists(filesIOFolder.resolve("second.exit")));
     assertFalse(Files.exists(filesIOFolder.resolve(data)));
     ok.go();
     errorDismissed.go();
+    same("OK closes the error",bare,look(),error);
     stabilize();
     checkContent(List.of("second.exit"),"1\n");
     launchScript("third");

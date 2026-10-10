@@ -1,12 +1,20 @@
 package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
@@ -28,6 +36,7 @@ abstract class ManagerTest{
   final Path filesIOFolder= Path.of(System.getProperty("filesIOFolder"));
   final Pilot pilot= new Pilot();
   long start;
+  long looked;
   int inputIndex;
   List<Object> inputs;
   abstract void walk() throws Throwable;
@@ -56,10 +65,11 @@ abstract class ManagerTest{
   @SuppressWarnings("unchecked")
   <T> T val(T recorded){ return agent ? (T)inputs.get(inputIndex++) : recorded; }
   void waitUntilTime(int time){
-    var left= start+time-System.currentTimeMillis();
+    var left= start+looked+time-System.currentTimeMillis();
     if (left>0){ Pilot.pause((int)left); }
   }
-  void click(int x, int y){ pilot.click(x,y); }
+  final Point clicked= new Point();
+  void click(int x, int y){ clicked.setLocation(x,y); pilot.click(x,y); }
   void doubleClick(int x, int y){ pilot.doubleClick(x,y); }
   void drag(int x0, int y0, int x1, int y1){ pilot.drag(x0,y0,x1,y1); }
   void type(String text){ text.chars().forEach(this::type); }
@@ -89,6 +99,62 @@ abstract class ManagerTest{
     return out;
   }
   void checkContent(List<String> path, String expected){ Err.strCmp(expected,Fs.readUtf8(filesIOFolder.resolve(String.join("/",path)))); }
+  BufferedImage look(){
+    var begin= System.currentTimeMillis();
+    var s= Toolkit.getDefaultToolkit().getScreenSize();
+    pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
+    var res= pilot.shot();
+    looked+= System.currentTimeMillis()-begin;
+    return res;
+  }
+  Rectangle changed(String what, BufferedImage before, BufferedImage after){ return changed(what,before,after,6); }
+  Rectangle changed(String what, BufferedImage before, BufferedImage after, int r){
+    var begin= System.currentTimeMillis();
+    try{ return Pilot.changed(before,after,r); }
+    catch(AssertionError e){ throw new AssertionFailedError(what+": the screen looks as before"); }
+    finally{ looked+= System.currentTimeMillis()-begin; }
+  }
+  Rectangle popup(String what, BufferedImage before, BufferedImage after){
+    var box= changed(what,before,after,0);
+    assertTrue(box.width>=100 && box.height>=20,what+": the screen changed only in "+box);
+    return box;
+  }
+  void same(String what, BufferedImage a, BufferedImage b, Rectangle at){ assertEquals(0L,mismatches(a,b,at),what+": the screen differs in "+at); }
+  void differ(String what, BufferedImage a, BufferedImage b, Rectangle at){ assertTrue(mismatches(a,b,at)>50,what+": the screen is the same in "+at); }
+  long mismatches(BufferedImage a, BufferedImage b, Rectangle at){
+    var begin= System.currentTimeMillis();
+    var pa= a.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
+    var pb= b.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
+    var res= IntStream.range(0,pa.length).filter(i->!near(pa[i],pb[i])).count();
+    looked+= System.currentTimeMillis()-begin;
+    return res;
+  }
+  static boolean near(int p, int q){ return Math.abs((p&255)-(q&255))<=16 && Math.abs((p>>8&255)-(q>>8&255))<=16 && Math.abs((p>>16&255)-(q>>16&255))<=16; }
+  Rectangle whiteAround(BufferedImage shot){
+    var s= Toolkit.getDefaultToolkit().getScreenSize();
+    return whiteAround(shot,s.width/2,s.height/2);
+  }
+  Rectangle whiteAround(BufferedImage shot, int x, int y){
+    int l= x, r= x, t= y, b= y;
+    for (; (shot.getRGB(l-1,y)&0xffffff)==0xffffff; l--){}
+    for (; (shot.getRGB(r+1,y)&0xffffff)==0xffffff; r++){}
+    for (; (shot.getRGB(x,t-1)&0xffffff)==0xffffff; t--){}
+    for (; (shot.getRGB(x,b+1)&0xffffff)==0xffffff; b++){}
+    return new Rectangle(l,t,r-l+1,b-t+1);
+  }
+  void plain(String what, BufferedImage shot, Rectangle at){
+    var px= shot.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
+    assertEquals(0L,IntStream.of(px).filter(p->!near(p,px[0])).count(),what+": the screen is not plain in "+at);
+  }
+  final boolean hostDesk= List.of("ubuntu_gnome","windows").contains(desk);
+  void clearClipboard(){ if (hostDesk){ Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection("nothing was copied"),null); } }
+  void clipboardIs(String expected) throws Throwable{ if (hostDesk){ Err.strCmp(expected,(String)Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor)); } }
+  void copied(String expected) throws Throwable{
+    clearClipboard();
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    clipboardIs(expected);
+  }
   static final String data= JavacTool.dataDirNameFor(ResolveResource.versionId);
   static final List<String> info= List.of(data,"projects.info");
   static final List<String> state= List.of(data,"eclipse","state.info");

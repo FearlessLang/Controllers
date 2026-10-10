@@ -68,12 +68,15 @@ final class ConnectEclipseTest extends ManagerTest{
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var closed= look();
     managerMenu.go();
     connectEclipse.go();
     chooserShown.go();
+    var chooser= changed("Connect Eclipse opens the chooser",closed,look());
     fileName.go();
     type(dropins+"\n");
     noteShown.go();
+    var refused= changed("The note opens",closed,look());
     var none= """
       Eclipse is not connected: no Eclipse installation, a folder holding the file ".eclipseproduct", is in
         %s
@@ -85,12 +88,15 @@ final class ConnectEclipseTest extends ManagerTest{
     checkContent(notes,none);
     assertEquals(List.of(".eclipseproduct","dropins/fearless/plugins/fearlessPluginProject_3.2.0.jar"),files());
     ok.go();
+    same("OK closes the note",closed,look(),refused);
     managerMenuAgain.go();
     connectEclipseAgain.go();
     chooserShownAgain.go();
+    differ("Connect Eclipse opens the chooser again",closed,look(),chooser);
     fileNameAgain.go();
     type(ide+"\n");
     noteShownAgain.go();
+    var connected= changed("The second note opens",closed,look());
     stabilize();
     checkContent(notes,none+"""
       Eclipse is now connected:
@@ -109,6 +115,7 @@ final class ConnectEclipseTest extends ManagerTest{
       }
       """.formatted(escaped(filesIOFolder.resolve(data)),escaped(lib.resolve("stdLib").resolve("baseCache"))));
     okAgain.go();
+    same("OK closes the second note",closed,look(),connected);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

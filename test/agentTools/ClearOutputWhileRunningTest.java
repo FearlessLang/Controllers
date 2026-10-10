@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 import tools.Fs;
@@ -12,21 +11,18 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(22000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action mainShown= action("mainShown",
     on("ubuntu_gnome",()->waitUntilTime(val(37000))));
   final Action run= action("run",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action programShown= action("programShown",
     on("ubuntu_gnome",()->waitUntilTime(val(43000))));
@@ -69,19 +65,21 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
     launchScript("first",talk);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();
     mainShown.go();
+    var idle= look();
+    var output= whiteAround(idle);
     run.go();
     programShown.go();
+    changed("Run opens the window of the program",idle,look());
     stabilize();
-    checkContent(console,"--- compiling talk ---\n--- compile done ---\n--- running talk.Show ---\nbefore\n");
+    checkContent(console,"--- compiling talk ---\n--- compile done ---\n--- running talk.Show ---\nbefore[###]");
     clearOutput.go();
     outputCleared.go();
+    var cleared= look();
+    plain("Clear output empties the Output",cleared,output);
     stabilize();
     checkContent(console,"");
     checkContent(state,"""
@@ -102,8 +100,12 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
       """.formatted(escaped(talk)));
     bringProgramBack.go();
     programBack.go();
+    var program= changed("The bar of open windows brings the window of the program back",cleared,look());
     closeProgram.go();
     programEnded.go();
+    var ended= look();
+    same("The close button closes the window of the program",cleared,ended,program);
+    differ("The Output shows what the program printed after the clear",cleared,ended,output);
     stabilize();
     checkContent(state,"""
       {
@@ -122,7 +124,7 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
       }
       """.formatted(escaped(talk)));
     checkContent(console,"""
-      after
+      [###]after
       --- talk.Show exited with 0 after [###]s ---
       """);
     endScript();

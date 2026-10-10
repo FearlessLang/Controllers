@@ -136,9 +136,11 @@ final class SecondLaunchOnFolderTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var one= look();
     launchScript("second",other);
     runInTerminal(appsShownSecond,terminalShownSecond);
     secondShown.go();
+    changed("The second launch adds a tile",one,look());
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
     checkContent(info,"""

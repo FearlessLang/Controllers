@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 import tools.Fs;
@@ -29,32 +28,29 @@ final class RecompileAfterEditTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21500))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action firstCompiled= action("firstCompiled",
     on("ubuntu_gnome",()->waitUntilTime(val(35000))));
   final Action editNoticed= action("editNoticed",
-    on("ubuntu_gnome",()->waitUntilTime(val(38000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(40000))));
   final Action compileEdited= action("compileEdited",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action editedCompiled= action("editedCompiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(54000))));
   final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(53500))));
+    on("ubuntu_gnome",()->waitUntilTime(val(55500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(57000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(59000))));
   final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(67000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(69000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var draft= filesIOFolder.resolve("draft");
@@ -65,9 +61,6 @@ final class RecompileAfterEditTest extends ManagerTest{
     launchScript("first",draft);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();

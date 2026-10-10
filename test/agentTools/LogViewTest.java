@@ -2,7 +2,6 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -16,34 +15,31 @@ final class LogViewTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(140))),
+    on("ubuntu_gnome",()->click(val(719),val(140))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21600))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action compileShown= action("compileShown",
     on("ubuntu_gnome",()->waitUntilTime(val(36200))));
   final Action openLogs= action("openLogs",
-    on("ubuntu_gnome",()->click(val(128),val(253))),
+    on("ubuntu_gnome",()->click(val(447),val(253))),
     on("windows",()->click(val(62),val(203))));
   final Action run= action("run",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action ranOnce= action("ranOnce",
     on("ubuntu_gnome",()->waitUntilTime(val(41500))));
   final Action runAgain= action("runAgain",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action ranTwice= action("ranTwice",
     on("ubuntu_gnome",()->waitUntilTime(val(46100))));
   final Action olderLog= action("olderLog",
-    on("ubuntu_gnome",()->click(val(250),val(296))),
+    on("ubuntu_gnome",()->click(val(569),val(296))),
     on("windows",()->click(val(100),val(244))));
   final Action view= action("view",
     on("ubuntu_gnome",()->click(val(3688),val(251))),
@@ -51,15 +47,15 @@ final class LogViewTest extends ManagerTest{
   final Action dialogShown= action("dialogShown",
     on("ubuntu_gnome",()->waitUntilTime(val(48800))));
   final Action focusText= action("focusText",
-    on("ubuntu_gnome",()->click(val(1958),val(1100))),
+    on("ubuntu_gnome",()->click(val(2118),val(1100))),
     on("windows",()->click(val(640),val(350))));
   final Action ok= action("ok",
-    on("ubuntu_gnome",()->click(val(1958),val(1340))),
+    on("ubuntu_gnome",()->click(val(2118),val(1340))),
     on("windows",()->click(val(644),val(579))));
   final Action dialogGone= action("dialogGone",
     on("ubuntu_gnome",()->waitUntilTime(val(51400))));
   final Action newerLog= action("newerLog",
-    on("ubuntu_gnome",()->click(val(250),val(278))),
+    on("ubuntu_gnome",()->click(val(569),val(278))),
     on("windows",()->click(val(100),val(226))));
   final Action viewNewer= action("viewNewer",
     on("ubuntu_gnome",()->click(val(3688),val(251))),
@@ -67,10 +63,10 @@ final class LogViewTest extends ManagerTest{
   final Action newerDialogShown= action("newerDialogShown",
     on("ubuntu_gnome",()->waitUntilTime(val(54100))));
   final Action focusNewerText= action("focusNewerText",
-    on("ubuntu_gnome",()->click(val(1958),val(1100))),
+    on("ubuntu_gnome",()->click(val(2118),val(1100))),
     on("windows",()->click(val(640),val(350))));
   final Action okNewer= action("okNewer",
-    on("ubuntu_gnome",()->click(val(1958),val(1340))),
+    on("ubuntu_gnome",()->click(val(2118),val(1340))),
     on("windows",()->click(val(644),val(579))));
   final Action newerDialogGone= action("newerDialogGone",
     on("ubuntu_gnome",()->waitUntilTime(val(56700))));
@@ -96,9 +92,6 @@ final class LogViewTest extends ManagerTest{
     launchScript("first",journal);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     stabilize();
@@ -147,21 +140,25 @@ final class LogViewTest extends ManagerTest{
       checkContent(List.of(logs,log),"[###] dear diary\n[###] good night\n");
     }
     olderLog.go();
+    var listed= look();
     view.go();
     dialogShown.go();
+    var dialog= changed("View opens the log in a dialog",listed,look());
     focusText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("[###] dear diary\n[###] good night");
     ok.go();
     dialogGone.go();
+    same("OK closes the dialog",listed,look(),dialog);
     newerLog.go();
+    var listedNewer= look();
     viewNewer.go();
     newerDialogShown.go();
+    var newerDialog= changed("View opens the newer log in a dialog",listedNewer,look());
     focusNewerText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("[###] dear diary\n[###] good night");
     okNewer.go();
     newerDialogGone.go();
+    same("OK closes the dialog",listedNewer,look(),newerDialog);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

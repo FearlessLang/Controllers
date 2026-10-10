@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class QuitWhileRunningTest extends ManagerTest{
@@ -47,23 +46,8 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("arch_sway",()->waitUntilTime(val(20000))),
     on("omarchy_hyprland",()->waitUntilTime(val(20000))),
     on("fedora_cosmic",()->waitUntilTime(val(20000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("debian_gnome_x11",()->click(val(134),val(1500))),
-    on("fedora_gnome",()->click(val(134),val(1500))),
-    on("xubuntu_xfce",()->click(val(268),val(1500))),
-    on("debian_cinnamon",()->click(val(134),val(1500))),
-    on("debian_mate",()->click(val(258),val(1500))),
-    on("lubuntu_lxqt",()->click(val(100),val(1500))),
-    on("kubuntu_plasma",()->click(val(134),val(1500))),
-    on("opensuse_plasma",()->click(val(134),val(1500))),
-    on("void_i3",()->click(val(268),val(1500))),
-    on("arch_sway",()->click(val(268),val(1500))),
-    on("omarchy_hyprland",()->click(val(268),val(1500))),
-    on("fedora_cosmic",()->click(val(258),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("debian_gnome_x11",()->click(val(334),val(140))),
     on("fedora_gnome",()->click(val(334),val(140))),
     on("xubuntu_xfce",()->click(val(762),val(239))),
@@ -92,7 +76,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("omarchy_hyprland",()->waitUntilTime(val(24000))),
     on("fedora_cosmic",()->waitUntilTime(val(24000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("debian_gnome_x11",()->click(val(108),val(112))),
     on("fedora_gnome",()->click(val(108),val(112))),
     on("xubuntu_xfce",()->click(val(224),val(185))),
@@ -121,7 +105,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     on("omarchy_hyprland",()->waitUntilTime(val(36000))),
     on("fedora_cosmic",()->waitUntilTime(val(36000))));
   final Action run= action("run",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("debian_gnome_x11",()->click(val(96),val(112))),
     on("fedora_gnome",()->click(val(96),val(112))),
     on("xubuntu_xfce",()->click(val(194),val(185))),
@@ -196,12 +180,11 @@ final class QuitWhileRunningTest extends ManagerTest{
   @Override void walk() throws Throwable{
     noManagerData();
     var gui= project("testGui1");
+    var bare= look();
     launchScript("first",gui);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
+    var window= changed("The manager window opens",bare,look());
     becomeCode.go();
     codeShown.go();
     stabilize();
@@ -224,6 +207,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    same("Quit manager closes the window of the manager and the window of the program",bare,look(),window);
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
   }

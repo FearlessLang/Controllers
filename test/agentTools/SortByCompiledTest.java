@@ -1,6 +1,6 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.util.List;
 
 import tools.Fs;
@@ -18,6 +18,9 @@ final class SortByCompiledTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(23000))));
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  Rectangle cell;
+  final Action tileCell= action("tileCell",
+    on("ubuntu_gnome",()->cell= new Rectangle(val(74),val(149),val(128),val(88))));
   final Action orderBy= action("orderBy",
     on("ubuntu_gnome",()->click(val(165),val(130))),
     on("windows",()->click(val(108),val(82))));
@@ -27,7 +30,7 @@ final class SortByCompiledTest extends ManagerTest{
   final Action sorted= action("sorted",
     on("ubuntu_gnome",()->waitUntilTime(val(37000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action alphaCompiled= action("alphaCompiled",
     on("ubuntu_gnome",()->waitUntilTime(val(51000))));
@@ -65,17 +68,23 @@ final class SortByCompiledTest extends ManagerTest{
         }
       }
       """.formatted(slashed(zeta),slashed(alpha)));
+    tileCell.go();
+    var first= new Rectangle(cell.x+4,cell.y+4,30,6);
+    var second= new Rectangle(cell.x+cell.width+4,cell.y+4,30,6);
+    var byName= look();
     orderBy.go();
     compiled.go();
     sorted.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
+    var byCompiled= look();
+    differ("Order by Compiled takes the selection from the first tile",byName,byCompiled,first);
+    differ("Order by Compiled gives the selection to the second tile",byName,byCompiled,second);
     compile.go();
     alphaCompiled.go();
     stabilize();
     checkContent(List.of(data,"activity.txt"),"-1 -1 Str:"+zeta+"\n[###] -1 Str:"+alpha+"\n");
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_END);
+    var afterCompile= look();
+    same("The compile of alpha puts its tile first again",byName,afterCompile,first);
+    same("The compile of alpha puts the other tile second again",byName,afterCompile,second);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

@@ -10,26 +10,23 @@ final class RunningMenuTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action runningMenu= action("runningMenu",
     on("ubuntu_gnome",()->click(val(218),val(79))),
     on("windows",()->click(val(146),val(33))));
   final Action menuShown= action("menuShown",
     on("ubuntu_gnome",()->waitUntilTime(val(20500))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(23000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action mainShown= action("mainShown",
     on("ubuntu_gnome",()->waitUntilTime(val(37000))));
   final Action run= action("run",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action programShown= action("programShown",
     on("ubuntu_gnome",()->waitUntilTime(val(42000))));
@@ -50,7 +47,7 @@ final class RunningMenuTest extends ManagerTest{
   final Action programChosen= action("programChosen",
     on("ubuntu_gnome",()->waitUntilTime(val(62000))));
   final Action terminate= action("terminate",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action terminated= action("terminated",
     on("ubuntu_gnome",()->waitUntilTime(val(64500))));
@@ -72,12 +69,13 @@ final class RunningMenuTest extends ManagerTest{
     launchScript("first",gui);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
+    var closed= look();
     runningMenu.go();
     menuShown.go();
+    var nothing= look();
+    var menu= popup("The Running menu opens",closed,nothing);
     keys(KeyEvent.VK_ESCAPE);
+    same("Escape closes the Running menu",closed,look(),menu);
     becomeCode.go();
     codeShown.go();
     compile.go();
@@ -91,6 +89,7 @@ final class RunningMenuTest extends ManagerTest{
     checkContent(List.of("second.exit"),"0\n");
     runningMenuAgain.go();
     menuShownAgain.go();
+    differ("The Running menu lists the program that runs",nothing,look(),menu);
     chooseProgram.go();
     programChosen.go();
     terminate.go();
@@ -124,6 +123,7 @@ final class RunningMenuTest extends ManagerTest{
       """.formatted(escaped(gui),escaped(project)));
     runningMenuLast.go();
     menuShownLast.go();
+    same("The Running menu says nothing runs again",nothing,look(),menu);
     keys(KeyEvent.VK_ESCAPE);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);

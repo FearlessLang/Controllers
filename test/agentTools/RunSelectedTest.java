@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class RunSelectedTest extends ManagerTest{
@@ -10,31 +9,28 @@ final class RunSelectedTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21500))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action mainsShown= action("mainsShown",
     on("ubuntu_gnome",()->waitUntilTime(val(35000))));
   final Action tickHello4= action("tickHello4",
-    on("ubuntu_gnome",()->click(val(99),val(240))),
+    on("ubuntu_gnome",()->click(val(418),val(240))),
     on("windows",()->click(val(31),val(190))));
   final Action hello4Saved= action("hello4Saved",
     on("ubuntu_gnome",()->waitUntilTime(val(37000))));
   final Action tickHello1= action("tickHello1",
-    on("ubuntu_gnome",()->click(val(99),val(190))),
+    on("ubuntu_gnome",()->click(val(418),val(190))),
     on("windows",()->click(val(31),val(142))));
   final Action hello1Saved= action("hello1Saved",
     on("ubuntu_gnome",()->waitUntilTime(val(39000))));
   final Action runSelected= action("runSelected",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action runsDone= action("runsDone",
     on("ubuntu_gnome",()->waitUntilTime(val(46000))));
@@ -50,9 +46,6 @@ final class RunSelectedTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();

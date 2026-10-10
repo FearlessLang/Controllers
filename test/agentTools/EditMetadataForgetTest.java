@@ -1,5 +1,6 @@
 package agentTools;
 
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
@@ -85,20 +86,31 @@ final class EditMetadataForgetTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var one= look();
     launchScript("second",other);
     runInTerminal(appsShownSecond,terminalShownSecond);
     secondShown.go();
+    var two= look();
+    var tiles= changed("The second launch adds a tile",one,two);
+    var second= new Rectangle(tiles.x+tiles.width/2,tiles.y,tiles.width/2,tiles.height);
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
+    var editor= changed("Edit project metadata opens the editor",two,look());
     focusText.go();
     keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
     type(only);
+    var typed= look();
     commit.go();
     onlySaved.go();
+    var edited= look();
+    differ("Commit closes the editor",typed,edited,editor);
+    same("Commit takes the tile of the second project away",one,edited,second);
     stabilize();
     checkContent(info,only);
     projectMenu.go();
+    var disabled= look();
+    var menu= changed("The Project menu opens",edited,disabled);
     endScript();
     runInTerminal(appsShownToRestart,terminalShownToRestart);
     managerEndedToRestart.go();
@@ -114,9 +126,11 @@ final class EditMetadataForgetTest extends ManagerTest{
     projectMenuAgain.go();
     forgetProject.go();
     forgotten.go();
+    same("Forget project takes the tile of the second project away",one,look(),second);
     stabilize();
     checkContent(info,only);
     projectMenuOnceMore.go();
+    same("The Project menu offers nothing, as after the edit",disabled,look(),menu);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();
