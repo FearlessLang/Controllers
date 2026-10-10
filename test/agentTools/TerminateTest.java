@@ -48,12 +48,15 @@ final class TerminateTest extends ManagerTest{
     mainShown.go();
     stabilize();
     checkContent(console,"--- compiling testGui1 ---\n--- compile done ---\n");
+    var idle= look();
     run.go();
     programShown.go();
+    var program= changed("Run opens the window of the program",idle,look());
     stabilize();
-    checkContent(console,"--- compiling testGui1 ---\n--- compile done ---\n--- running gui_example.Foo ---\n");
+    checkContent(console,"--- compiling testGui1 ---\n--- compile done ---\n--- running gui_example.Foo ---[###]");
     terminate.go();
     terminated.go();
+    same("Terminate closes the window of the program",idle,look(),program);
     stabilize();
     checkContent(state,"""
       {
@@ -74,8 +77,8 @@ final class TerminateTest extends ManagerTest{
     checkContent(console,"""
       --- compiling testGui1 ---
       --- compile done ---
-      --- running gui_example.Foo ---
-      --- terminating gui_example.Foo ---
+      --- running gui_example.Foo ---[###]
+      --- terminating gui_example.Foo ---[###]
       --- gui_example.Foo exited with 143 after [###]s ---
       """);
     endScript();

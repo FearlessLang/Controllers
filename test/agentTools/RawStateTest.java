@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.nio.file.attribute.FileTime;
 import java.time.ZoneId;
@@ -80,13 +79,15 @@ final class RawStateTest extends ManagerTest{
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var closed= look();
     managerMenu.go();
     showRawState.go();
     dialogShown.go();
+    var dialog= changed("Show raw project state opens the dialog",closed,look());
     focusText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("<nothing registered>");
     ok.go();
+    same("OK closes the dialog",closed,look(),dialog);
     launchScript("second",notesFolder);
     runInTerminal(appsShownNotes,terminalShownNotes);
     notesHanded.go();
@@ -109,13 +110,31 @@ final class RawStateTest extends ManagerTest{
         }
       }
       """.formatted(slashed(notesFolder),slashed(tally)));
+    var closedAgain= look();
     managerMenuAgain.go();
     showRawStateAgain.go();
     dialogShownAgain.go();
+    var dialogAgain= changed("Show raw project state opens the dialog again",closedAgain,look());
     focusTextAgain.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("""
+      Folder          %s
+      Name            notes
+      Kind            idle
+      Files           2
+      Total size      61 bytes
+      Last modified   2026-01-02 03:04:05
+      Job             none
+      Problems        none
+
+      Folder          %s
+      Name            tally
+      Kind            code
+      [###]
+      Job             none
+      Problems        none
+      """.formatted(notesFolder,tally));
     okAgain.go();
+    same("OK closes the dialog",closedAgain,look(),dialogAgain);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

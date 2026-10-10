@@ -59,11 +59,14 @@ final class ForgetRunningProjectTest extends ManagerTest{
     codeShown.go();
     compile.go();
     mainShown.go();
+    var idle= look();
     run.go();
     programShown.go();
+    var program= changed("Run opens the window of the program",idle,look());
     projectMenu.go();
     forgetProject.go();
     forgotten.go();
+    plain("Forget project closes the window of the program",look(),program);
     stabilize();
     checkContent(state,"{}\n");
     checkContent(info,"{}\n");

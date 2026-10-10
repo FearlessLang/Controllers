@@ -1,7 +1,13 @@
 package agentTools;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.awt.event.KeyEvent;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+
+import tools.Fs;
 
 final class FileAssociationTest extends ManagerTest{
   final Action appsShownForFiles= action("appsShownForFiles",
@@ -72,17 +78,23 @@ final class FileAssociationTest extends ManagerTest{
     on("windows",()->click(val(1016),val(58))));
   @Override void walk() throws Throwable{
     noManagerData();
+    noAssociation();
     var project= project("helloWorld");
+    var bare= look();
     shell("nohup setsid -f xdg-open \""+project+"\" >/dev/null 2>&1\n");
     runInTerminal(appsShownForFiles,terminalShownForFiles);
     filesShown.go();
+    var files= changed("Opening the folder shows the file manager window",bare,look());
     reload(genericShown);
+    var generic= look();
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
     sendManagerAway.go();
     managerAway.go();
     reload(iconChanged);
+    var fearless= look();
+    var icon= changed("The manager makes the desk show the Fearless icon on hello_world.fearless",generic,fearless);
     bringManagerBack.go();
     managerBack.go();
     managerMenu.go();
@@ -93,18 +105,29 @@ final class FileAssociationTest extends ManagerTest{
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
     reload(iconReverted);
+    same("Forget association brings the generic icon back",generic,look(),icon);
     launchScript("second");
     runInTerminal(appsShownAgain,terminalShownAgain);
     managerShownAgain.go();
     sendManagerAwayAgain.go();
     managerAwayAgain.go();
     reload(iconChangedAgain);
+    same("The next start shows the Fearless icon again",fearless,look(),icon);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();
     stabilize();
     checkContent(List.of("second.exit"),"137\n");
     closeFiles.go();
+    same("Closing the file manager window shows the desk as before",bare,look(),files);
+  }
+  void noAssociation() throws Throwable{
+    var share= Path.of(System.getProperty("user.home"),".local","share");
+    for (var dir: List.of(share.resolve("applications"),share.resolve("mime").resolve("packages"))){
+      Fs.walkV(dir,s->s.filter(p->p.getFileName().toString().contains("earless")).toList().forEach(p->Fs.ofV(()->Files.delete(p))));
+    }
+    assertEquals(0,new ProcessBuilder("update-mime-database",share.resolve("mime").toString()).start().waitFor());
+    assertEquals(0,new ProcessBuilder("update-desktop-database",share.resolve("applications").toString()).start().waitFor());
   }
   void reload(Action reloaded) throws Throwable{
     focusFiles.go();

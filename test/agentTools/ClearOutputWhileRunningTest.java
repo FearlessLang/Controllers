@@ -69,12 +69,17 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
     codeShown.go();
     compile.go();
     mainShown.go();
+    var idle= look();
+    var output= whiteAround(idle);
     run.go();
     programShown.go();
+    changed("Run opens the window of the program",idle,look());
     stabilize();
-    checkContent(console,"--- compiling talk ---\n--- compile done ---\n--- running talk.Show ---\nbefore\n");
+    checkContent(console,"--- compiling talk ---\n--- compile done ---\n--- running talk.Show ---\nbefore[###]");
     clearOutput.go();
     outputCleared.go();
+    var cleared= look();
+    plain("Clear output empties the Output",cleared,output);
     stabilize();
     checkContent(console,"");
     checkContent(state,"""
@@ -95,8 +100,12 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
       """.formatted(escaped(talk)));
     bringProgramBack.go();
     programBack.go();
+    var program= changed("The bar of open windows brings the window of the program back",cleared,look());
     closeProgram.go();
     programEnded.go();
+    var ended= look();
+    same("The close button closes the window of the program",cleared,ended,program);
+    differ("The Output shows what the program printed after the clear",cleared,ended,output);
     stabilize();
     checkContent(state,"""
       {
@@ -115,7 +124,7 @@ final class ClearOutputWhileRunningTest extends ManagerTest{
       }
       """.formatted(escaped(talk)));
     checkContent(console,"""
-      after
+      [###]after
       --- talk.Show exited with 0 after [###]s ---
       """);
     endScript();

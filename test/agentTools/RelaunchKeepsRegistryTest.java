@@ -65,10 +65,12 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     launchScript("second");
     runInTerminal(appsShownAgain,terminalShownAgain);
     managerShownAgain.go();
+    var unselected= look();
     stabilize();
     checkContent(info,remembered);
     selectTile.go();
     tileSelected.go();
+    changed("A click on the tile shows the panel of its project",unselected,look());
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

@@ -180,9 +180,11 @@ final class QuitWhileRunningTest extends ManagerTest{
   @Override void walk() throws Throwable{
     noManagerData();
     var gui= project("testGui1");
+    var bare= look();
     launchScript("first",gui);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var window= changed("The manager window opens",bare,look());
     becomeCode.go();
     codeShown.go();
     stabilize();
@@ -205,6 +207,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    same("Quit manager closes the window of the manager and the window of the program",bare,look(),window);
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
   }

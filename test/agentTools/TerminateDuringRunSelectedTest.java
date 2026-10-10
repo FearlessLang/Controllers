@@ -77,12 +77,15 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
       """.formatted(slashed(chain));
     stabilize();
     checkContent(info,both);
+    var idle= look();
     runSelected.go();
     programShown.go();
+    var program= changed("Run selected opens the window of the first main",idle,look());
     stabilize();
-    checkContent(console,"--- compiling chain ---\n--- compile done ---\n--- running chain.Show ---\n");
+    checkContent(console,"--- compiling chain ---\n--- compile done ---\n--- running chain.Show ---[###]");
     terminate.go();
     terminated.go();
+    same("Terminate closes the window of the program",idle,look(),program);
     stabilize();
     checkContent(state,"""
       {
@@ -104,8 +107,8 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     checkContent(console,"""
       --- compiling chain ---
       --- compile done ---
-      --- running chain.Show ---
-      --- terminating chain.Show ---
+      --- running chain.Show ---[###]
+      --- terminating chain.Show ---[###]
       --- chain.Show exited with 143 after [###]s ---
       """);
     checkContent(info,both);

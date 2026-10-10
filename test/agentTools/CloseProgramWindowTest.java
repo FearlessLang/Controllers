@@ -60,10 +60,12 @@ final class CloseProgramWindowTest extends ManagerTest{
     mainShown.go();
     stabilize();
     checkContent(console,"--- compiling shut ---\n--- compile done ---\n");
+    var idle= look();
     run.go();
     programShown.go();
+    var program= changed("Run opens the window of the program",idle,look());
     stabilize();
-    checkContent(console,"--- compiling shut ---\n--- compile done ---\n--- running shut.Show ---\n");
+    checkContent(console,"--- compiling shut ---\n--- compile done ---\n--- running shut.Show ---[###]");
     checkContent(state,"""
       {
         "shut": {
@@ -82,6 +84,7 @@ final class CloseProgramWindowTest extends ManagerTest{
       """.formatted(escaped(shut)));
     closeProgram.go();
     programEnded.go();
+    same("The close button closes the window of the program",idle,look(),program);
     stabilize();
     checkContent(state,"""
       {
@@ -102,7 +105,7 @@ final class CloseProgramWindowTest extends ManagerTest{
     checkContent(console,"""
       --- compiling shut ---
       --- compile done ---
-      --- running shut.Show ---
+      --- running shut.Show ---[###]
       --- shut.Show exited with 0 after [###]s ---
       """);
     endScript();
