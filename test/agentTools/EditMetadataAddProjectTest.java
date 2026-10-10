@@ -29,11 +29,8 @@ final class EditMetadataAddProjectTest extends ManagerTest{
   final Action selectSecond= action("selectSecond",
     on("ubuntu_gnome",()->click(val(265),val(190))),
     on("windows",()->click(val(199),val(145))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checked= action("checked",
     on("ubuntu_gnome",()->waitUntilTime(val(92000))));
@@ -91,9 +88,6 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     stabilize();
     checkContent(info,both);
     selectSecond.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     check.go();
     checked.go();
     stabilize();

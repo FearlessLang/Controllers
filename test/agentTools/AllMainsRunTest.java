@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class AllMainsRunTest extends ManagerTest{
@@ -10,31 +9,28 @@ final class AllMainsRunTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(22000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action mainsShown= action("mainsShown",
     on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action all= action("all",
-    on("ubuntu_gnome",()->click(val(112),val(165))),
+    on("ubuntu_gnome",()->click(val(431),val(165))),
     on("windows",()->click(val(45),val(118))));
   final Action allSaved= action("allSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(38500))));
   final Action runSelected= action("runSelected",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action runsDone= action("runsDone",
     on("ubuntu_gnome",()->waitUntilTime(val(60000))));
   final Action none= action("none",
-    on("ubuntu_gnome",()->click(val(162),val(165))),
+    on("ubuntu_gnome",()->click(val(481),val(165))),
     on("windows",()->click(val(93),val(118))));
   final Action noneSaved= action("noneSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(62500))));
@@ -50,9 +46,6 @@ final class AllMainsRunTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();

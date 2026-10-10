@@ -13,11 +13,8 @@ final class LinkWriteTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeEditableData= action("becomeEditableData",
-    on("ubuntu_gnome",()->click(val(272),val(140))),
+    on("ubuntu_gnome",()->click(val(591),val(140))),
     on("windows",()->click(val(202),val(94))));
   final Action dataSaved= action("dataSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(21500))));
@@ -28,22 +25,22 @@ final class LinkWriteTest extends ManagerTest{
   final Action tellerShown= action("tellerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(37500))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(140))),
+    on("ubuntu_gnome",()->click(val(719),val(140))),
     on("windows",()->click(val(332),val(94))));
   final Action codeSaved= action("codeSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(40000))));
   final Action openLinks= action("openLinks",
-    on("ubuntu_gnome",()->click(val(130),val(191))),
+    on("ubuntu_gnome",()->click(val(449),val(191))),
     on("windows",()->click(val(62),val(144))));
   final Action linksShown= action("linksShown",
     on("ubuntu_gnome",()->waitUntilTime(val(42000))));
   final Action writeField= action("writeField",
-    on("ubuntu_gnome",()->click(val(442),val(233))),
+    on("ubuntu_gnome",()->click(val(761),val(233))),
     on("windows",()->click(val(327),val(183))));
   final Action editsSaved= action("editsSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(45500))));
   final Action readField= action("readField",
-    on("ubuntu_gnome",()->click(val(240),val(233))),
+    on("ubuntu_gnome",()->click(val(559),val(233))),
     on("windows",()->click(val(158),val(183))));
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome",()->waitUntilTime(val(49000))));
@@ -51,12 +48,12 @@ final class LinkWriteTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1952),val(1183))),
     on("windows",()->click(val(639),val(414))));
   final Action readFieldAgain= action("readFieldAgain",
-    on("ubuntu_gnome",()->click(val(240),val(233))),
+    on("ubuntu_gnome",()->click(val(559),val(233))),
     on("windows",()->click(val(158),val(183))));
   final Action readEmptied= action("readEmptied",
     on("ubuntu_gnome",()->waitUntilTime(val(52500))));
   final Action writeFieldAgain= action("writeFieldAgain",
-    on("ubuntu_gnome",()->click(val(442),val(233))),
+    on("ubuntu_gnome",()->click(val(761),val(233))),
     on("windows",()->click(val(327),val(183))));
   final Action writeEmptied= action("writeEmptied",
     on("ubuntu_gnome",()->waitUntilTime(val(55500))));
@@ -79,9 +76,6 @@ final class LinkWriteTest extends ManagerTest{
     launchScript("first",vault);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeEditableData.go();
     dataSaved.go();
     stabilize();

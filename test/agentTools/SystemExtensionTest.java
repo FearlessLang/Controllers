@@ -2,7 +2,6 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.util.List;
@@ -21,8 +20,6 @@ final class SystemExtensionTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
@@ -80,9 +77,6 @@ final class SystemExtensionTest extends ManagerTest{
     launchScript("first",opens);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     stabilize();

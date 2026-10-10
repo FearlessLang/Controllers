@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class TerminateTest extends ManagerTest{
@@ -11,26 +10,23 @@ final class TerminateTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21500))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action mainShown= action("mainShown",
     on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action run= action("run",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action programShown= action("programShown",
     on("ubuntu_gnome",()->waitUntilTime(val(41000))));
   final Action terminate= action("terminate",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action terminated= action("terminated",
     on("ubuntu_gnome",()->waitUntilTime(val(44000))));
@@ -46,9 +42,6 @@ final class TerminateTest extends ManagerTest{
     launchScript("first",gui);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();

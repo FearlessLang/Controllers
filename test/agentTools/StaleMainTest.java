@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 import tools.Fs;
@@ -24,38 +23,35 @@ final class StaleMainTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21500))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action mainsShown= action("mainsShown",
     on("ubuntu_gnome",()->waitUntilTime(val(35000))));
   final Action tickSecond= action("tickSecond",
-    on("ubuntu_gnome",()->click(val(99),val(215))),
+    on("ubuntu_gnome",()->click(val(418),val(215))),
     on("windows",()->click(val(31),val(166))));
   final Action secondSaved= action("secondSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(37000))));
   final Action tickThird= action("tickThird",
-    on("ubuntu_gnome",()->click(val(99),val(240))),
+    on("ubuntu_gnome",()->click(val(418),val(240))),
     on("windows",()->click(val(31),val(190))));
   final Action thirdSaved= action("thirdSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(39000))));
   final Action mainsForgotten= action("mainsForgotten",
     on("ubuntu_gnome",()->waitUntilTime(val(42000))));
   final Action compileEdited= action("compileEdited",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action editedCompiled= action("editedCompiled",
     on("ubuntu_gnome",()->waitUntilTime(val(56000))));
   final Action runSelected= action("runSelected",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action runDone= action("runDone",
     on("ubuntu_gnome",()->waitUntilTime(val(61000))));
@@ -75,9 +71,6 @@ final class StaleMainTest extends ManagerTest{
     launchScript("first",menu);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();

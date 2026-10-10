@@ -2,7 +2,6 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -16,11 +15,8 @@ final class LinkReadTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeData= action("becomeData",
-    on("ubuntu_gnome",()->click(val(141),val(140))),
+    on("ubuntu_gnome",()->click(val(460),val(140))),
     on("windows",()->click(val(74),val(94))));
   final Action dataSaved= action("dataSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(21500))));
@@ -31,17 +27,17 @@ final class LinkReadTest extends ManagerTest{
   final Action readerShown= action("readerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(37500))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(140))),
+    on("ubuntu_gnome",()->click(val(719),val(140))),
     on("windows",()->click(val(332),val(94))));
   final Action codeSaved= action("codeSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(40000))));
   final Action openLinks= action("openLinks",
-    on("ubuntu_gnome",()->click(val(130),val(191))),
+    on("ubuntu_gnome",()->click(val(449),val(191))),
     on("windows",()->click(val(62),val(144))));
   final Action linksShown= action("linksShown",
     on("ubuntu_gnome",()->waitUntilTime(val(42000))));
   final Action readField= action("readField",
-    on("ubuntu_gnome",()->click(val(240),val(233))),
+    on("ubuntu_gnome",()->click(val(559),val(233))),
     on("windows",()->click(val(158),val(183))));
   final Action readsSaved= action("readsSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(45500))));
@@ -52,7 +48,7 @@ final class LinkReadTest extends ManagerTest{
   final Action storeShown= action("storeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(61500))));
   final Action backToIdle= action("backToIdle",
-    on("ubuntu_gnome",()->click(val(138),val(140))),
+    on("ubuntu_gnome",()->click(val(457),val(140))),
     on("windows",()->click(val(70),val(94))));
   final Action idleSaved= action("idleSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(64000))));
@@ -63,7 +59,7 @@ final class LinkReadTest extends ManagerTest{
   final Action readerShownAgain= action("readerShownAgain",
     on("ubuntu_gnome",()->waitUntilTime(val(80000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action compileRefused= action("compileRefused",
     on("ubuntu_gnome",()->waitUntilTime(val(86000))));
@@ -86,9 +82,6 @@ final class LinkReadTest extends ManagerTest{
     launchScript("first",store);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeData.go();
     dataSaved.go();
     stabilize();

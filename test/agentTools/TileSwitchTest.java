@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class TileSwitchTest extends ManagerTest{
@@ -13,19 +12,16 @@ final class TileSwitchTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action closeInformation= action("closeInformation",
-    on("ubuntu_gnome",()->click(val(150),val(167))),
+    on("ubuntu_gnome",()->click(val(469),val(167))),
     on("windows",()->click(val(79),val(120))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedOnce= action("checkedOnce",
     on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action checkAgain= action("checkAgain",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedTwice= action("checkedTwice",
     on("ubuntu_gnome",()->waitUntilTime(val(41500))));
@@ -36,7 +32,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action secondHandled= action("secondHandled",
     on("ubuntu_gnome",()->waitUntilTime(val(57500))));
   final Action checkStart= action("checkStart",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action startChecked= action("startChecked",
     on("ubuntu_gnome",()->waitUntilTime(val(68500))));
@@ -45,9 +41,6 @@ final class TileSwitchTest extends ManagerTest{
     on("windows",()->click(val(71),val(145))));
   final Action helloShown= action("helloShown",
     on("ubuntu_gnome",()->waitUntilTime(val(71000))));
-  final Action focusHello= action("focusHello",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action clearOutput= action("clearOutput",
     on("ubuntu_gnome",()->click(val(3785),val(233))),
     on("windows",()->click(val(1227),val(184))));
@@ -58,9 +51,6 @@ final class TileSwitchTest extends ManagerTest{
     on("windows",()->click(val(199),val(145))));
   final Action startShown= action("startShown",
     on("ubuntu_gnome",()->waitUntilTime(val(77000))));
-  final Action focusStart= action("focusStart",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(79500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
@@ -74,8 +64,6 @@ final class TileSwitchTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    left();
     closeInformation.go();
     check.go();
     checkedOnce.go();
@@ -96,31 +84,19 @@ final class TileSwitchTest extends ManagerTest{
     stabilize();
     checkContent(startConsole,ok);
     checkContent(helloConsole,ok+ok);
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_END);
-    choose(helloTile,helloShown,focusHello);
+    helloTile.go();
+    helloShown.go();
     clearOutput.go();
     cleared.go();
     stabilize();
     checkContent(helloConsole,"");
     checkContent(startConsole,ok);
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_END);
-    choose(startTile,startShown,focusStart);
+    startTile.go();
+    startShown.go();
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();
     stabilize();
     checkContent(List.of("first.exit"),"137\n");
-  }
-  void choose(Action tile, Action shown, Action focus) throws Throwable{
-    tile.go();
-    shown.go();
-    focus.go();
-    left();
-  }
-  void left(){
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
   }
 }

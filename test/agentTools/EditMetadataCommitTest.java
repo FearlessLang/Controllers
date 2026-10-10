@@ -10,9 +10,6 @@ final class EditMetadataCommitTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->click(val(98),val(79))),
     on("windows",()->click(val(31),val(33))));
@@ -33,7 +30,7 @@ final class EditMetadataCommitTest extends ManagerTest{
   final Action codeSaved= action("codeSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(27500))));
   final Action backToIdle= action("backToIdle",
-    on("ubuntu_gnome",()->click(val(138),val(140))),
+    on("ubuntu_gnome",()->click(val(457),val(140))),
     on("windows",()->click(val(70),val(94))));
   final Action idleSaved= action("idleSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(30000))));
@@ -49,9 +46,6 @@ final class EditMetadataCommitTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     var registry= """
       {
         "hello_world": {

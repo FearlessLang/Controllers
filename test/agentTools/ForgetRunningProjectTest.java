@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class ForgetRunningProjectTest extends ManagerTest{
@@ -10,9 +9,6 @@ final class ForgetRunningProjectTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action appsShownGui= action("appsShownGui",
     on("ubuntu_gnome",()->waitUntilTime(val(20500))));
   final Action terminalShownGui= action("terminalShownGui",
@@ -20,17 +16,17 @@ final class ForgetRunningProjectTest extends ManagerTest{
   final Action panelShown= action("panelShown",
     on("ubuntu_gnome",()->waitUntilTime(val(35500))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(38000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action mainShown= action("mainShown",
     on("ubuntu_gnome",()->waitUntilTime(val(53000))));
   final Action run= action("run",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action programShown= action("programShown",
     on("ubuntu_gnome",()->waitUntilTime(val(58000))));
@@ -54,9 +50,6 @@ final class ForgetRunningProjectTest extends ManagerTest{
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     launchScript("second",gui);
     runInTerminal(appsShownGui,terminalShownGui);
     panelShown.go();

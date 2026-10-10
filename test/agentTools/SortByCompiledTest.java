@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 import tools.Fs;
@@ -27,7 +26,7 @@ final class SortByCompiledTest extends ManagerTest{
   final Action sorted= action("sorted",
     on("ubuntu_gnome",()->waitUntilTime(val(37000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action alphaCompiled= action("alphaCompiled",
     on("ubuntu_gnome",()->waitUntilTime(val(51000))));
@@ -68,14 +67,10 @@ final class SortByCompiledTest extends ManagerTest{
     orderBy.go();
     compiled.go();
     sorted.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     compile.go();
     alphaCompiled.go();
     stabilize();
     checkContent(List.of(data,"activity.txt"),"-1 -1 Str:"+zeta+"\n[###] -1 Str:"+alpha+"\n");
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_END);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

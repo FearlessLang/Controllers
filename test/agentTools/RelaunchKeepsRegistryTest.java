@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class RelaunchKeepsRegistryTest extends ManagerTest{
@@ -10,11 +9,8 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
+    on("ubuntu_gnome",()->click(val(719),val(139))),
     on("windows",()->click(val(332),val(94))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome",()->waitUntilTime(val(21500))));
@@ -37,9 +33,6 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     on("windows",()->click(val(71),val(145))));
   final Action tileSelected= action("tileSelected",
     on("ubuntu_gnome",()->waitUntilTime(val(45000))));
-  final Action focusTilesAgain= action("focusTilesAgain",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action appsShownToEnd= action("appsShownToEnd",
     on("ubuntu_gnome",()->waitUntilTime(val(47500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
@@ -52,9 +45,6 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     launchScript("first",project);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     var remembered= """
@@ -79,9 +69,6 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     checkContent(info,remembered);
     selectTile.go();
     tileSelected.go();
-    focusTilesAgain.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

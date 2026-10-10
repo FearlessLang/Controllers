@@ -14,9 +14,6 @@ final class SecondMarkerTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action secondNoticed= action("secondNoticed",
     on("ubuntu_gnome",()->waitUntilTime(val(21000))));
   final Action projectMenu= action("projectMenu",
@@ -36,17 +33,17 @@ final class SecondMarkerTest extends ManagerTest{
   final Action reportClosed= action("reportClosed",
     on("ubuntu_gnome",()->waitUntilTime(val(26000))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checked= action("checked",
     on("ubuntu_gnome",()->waitUntilTime(val(28500))));
   final Action openInformation= action("openInformation",
-    on("ubuntu_gnome",()->click(val(150),val(167))),
+    on("ubuntu_gnome",()->click(val(469),val(167))),
     on("windows",()->click(val(79),val(120))));
   final Action secondGone= action("secondGone",
     on("ubuntu_gnome",()->waitUntilTime(val(31000))));
   final Action checkAgain= action("checkAgain",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedAgain= action("checkedAgain",
     on("ubuntu_gnome",()->waitUntilTime(val(33500))));
@@ -66,9 +63,6 @@ final class SecondMarkerTest extends ManagerTest{
     launchScript("first",twice);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     Fs.writeUtf8(second,"\n");
     stabilize();
     secondNoticed.go();

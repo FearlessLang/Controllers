@@ -15,11 +15,8 @@ final class EditMetadataRenameTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checked= action("checked",
     on("ubuntu_gnome",()->waitUntilTime(val(33500))));
@@ -54,12 +51,12 @@ final class EditMetadataRenameTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1953),val(1323))),
     on("windows",()->click(val(639),val(568))));
   final Action openInformation= action("openInformation",
-    on("ubuntu_gnome",()->click(val(150),val(167))),
+    on("ubuntu_gnome",()->click(val(469),val(167))),
     on("windows",()->click(val(79),val(120))));
   final Action markerSeen= action("markerSeen",
     on("ubuntu_gnome",()->waitUntilTime(val(48500))));
   final Action checkAgain= action("checkAgain",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action checkedAgain= action("checkedAgain",
     on("ubuntu_gnome",()->waitUntilTime(val(62000))));
@@ -78,9 +75,6 @@ final class EditMetadataRenameTest extends ManagerTest{
     launchScript("first",old);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     check.go();
     checked.go();
     stabilize();

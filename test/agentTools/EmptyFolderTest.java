@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.util.List;
 
 import tools.Fs;
@@ -12,16 +11,13 @@ final class EmptyFolderTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome",()->waitUntilTime(val(34500))));
   final Action run= action("run",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
+    on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action runDone= action("runDone",
     on("ubuntu_gnome",()->waitUntilTime(val(39500))));
@@ -58,9 +54,6 @@ final class EmptyFolderTest extends ManagerTest{
         }
       }
       """.formatted(slashed(empty)));
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     compile.go();
     compiled.go();
     var known= """

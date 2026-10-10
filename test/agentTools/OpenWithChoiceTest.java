@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
@@ -16,9 +15,6 @@ final class OpenWithChoiceTest extends ManagerTest{
     on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
-    on("windows",()->click(val(200),val(400))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",ManagerTest::unrecorded),
     on("windows",()->click(val(332),val(94))));
@@ -69,9 +65,6 @@ final class OpenWithChoiceTest extends ManagerTest{
     launchScript("first",choice);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     stabilize();
