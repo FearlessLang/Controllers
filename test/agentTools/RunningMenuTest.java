@@ -69,9 +69,13 @@ final class RunningMenuTest extends ManagerTest{
     launchScript("first",gui);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var closed= look();
     runningMenu.go();
     menuShown.go();
+    var nothing= look();
+    var menu= changed("The Running menu opens",closed,nothing,0);
     keys(KeyEvent.VK_ESCAPE);
+    same("Escape closes the Running menu",closed,look(),menu);
     becomeCode.go();
     codeShown.go();
     compile.go();
@@ -85,6 +89,7 @@ final class RunningMenuTest extends ManagerTest{
     checkContent(List.of("second.exit"),"0\n");
     runningMenuAgain.go();
     menuShownAgain.go();
+    differ("The Running menu lists the program that runs",nothing,look(),menu);
     chooseProgram.go();
     programChosen.go();
     terminate.go();
@@ -118,6 +123,7 @@ final class RunningMenuTest extends ManagerTest{
       """.formatted(escaped(gui),escaped(project)));
     runningMenuLast.go();
     menuShownLast.go();
+    same("The Running menu says nothing runs again",nothing,look(),menu);
     keys(KeyEvent.VK_ESCAPE);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);

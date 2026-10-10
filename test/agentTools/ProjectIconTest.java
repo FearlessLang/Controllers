@@ -3,7 +3,7 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,9 +21,9 @@ final class ProjectIconTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitUntilTime(val(18500))));
   final Action ownIconShown= action("ownIconShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(20000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(23000))));
   final Action madeUpIconShown= action("madeUpIconShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
+    on("ubuntu_gnome",()->waitUntilTime(val(27500))));
   final Action projectMenu= action("projectMenu",
     on("ubuntu_gnome",()->click(val(158),val(79))),
     on("windows",()->click(val(89),val(33))));
@@ -31,7 +31,7 @@ final class ProjectIconTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(180),val(212))),
     on("windows",()->click(val(111),val(166))));
   final Action reportShown= action("reportShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(24200))));
+    on("ubuntu_gnome",()->waitUntilTime(val(30200))));
   final Action focusReport= action("focusReport",
     on("ubuntu_gnome",()->click(val(1970),val(1100))),
     on("windows",()->click(val(660),val(300))));
@@ -39,15 +39,15 @@ final class ProjectIconTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1953),val(1323))),
     on("windows",()->click(val(639),val(568))));
   final Action reportGone= action("reportGone",
-    on("ubuntu_gnome",()->waitUntilTime(val(26800))));
+    on("ubuntu_gnome",()->waitUntilTime(val(32800))));
   final Action ownIconBack= action("ownIconBack",
-    on("ubuntu_gnome",()->waitUntilTime(val(28300))));
+    on("ubuntu_gnome",()->waitUntilTime(val(37300))));
   final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(29800))));
+    on("ubuntu_gnome",()->waitUntilTime(val(38800))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(33300))));
+    on("ubuntu_gnome",()->waitUntilTime(val(42300))));
   final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(43300))));
+    on("ubuntu_gnome",()->waitUntilTime(val(52300))));
   @Override void walk() throws Throwable{
     noManagerData();
     var pic= filesIOFolder.resolve("pic");
@@ -58,23 +58,42 @@ final class ProjectIconTest extends ManagerTest{
     launchScript("first",pic);
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var madeUp= look();
     png(icons.resolve("face.png"),0xC03090);
     stabilize();
     ownIconShown.go();
+    var own= look();
+    var icon= changed("The tile shows the icon of the project",madeUp,own);
+    var art= new Rectangle(icon.x,icon.y,icon.width*2/3,icon.height*2/3);
     png(icons.resolve("other.png"),0x30C090);
     stabilize();
     madeUpIconShown.go();
+    var invalid= look();
+    same("The tile shows the made up icon again",madeUp,invalid,art);
     projectMenu.go();
     errorReport.go();
     reportShown.go();
+    var report= changed("Error report opens the dialog",invalid,look());
     focusReport.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("""
+      More than one .png file was found for this project's icon.
+
+      Looked in:
+        %s
+
+      Found:
+        face.png
+        other.png
+
+      Keep exactly one .png file there.
+      """.formatted(icons));
     ok.go();
     reportGone.go();
+    same("OK closes the dialog",invalid,look(),report);
     Files.delete(icons.resolve("other.png"));
     stabilize();
     ownIconBack.go();
+    same("The tile shows the icon of the project again",own,look(),icon);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

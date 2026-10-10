@@ -97,11 +97,16 @@ final class LinkWriteTest extends ManagerTest{
     stabilize();
     var unlinked= registry(vault,teller,"");
     checkContent(info,unlinked);
+    var closedLinks= look();
     openLinks.go();
     linksShown.go();
+    var opened= look();
+    changed("Links opens its section",closedLinks,opened);
     writeField.go();
+    var write= whiteAround(opened,clicked.x,clicked.y);
     type("Coin\n");
     editsSaved.go();
+    differ("The write field shows what was typed",opened,look(),write);
     stabilize();
     var edits= registry(vault,teller,"""
       ,
@@ -109,9 +114,12 @@ final class LinkWriteTest extends ManagerTest{
             "vault": ["Coin"]
           }""");
     checkContent(info,edits);
+    var beforeNote= look();
     readField.go();
+    var read= whiteAround(opened,clicked.x,clicked.y);
     type("Coin\n");
     noteShown.go();
+    var refused= changed("The note opens",beforeNote,look());
     stabilize();
     checkContent(notes,"""
       In file: %s
@@ -124,9 +132,12 @@ final class LinkWriteTest extends ManagerTest{
       """.formatted(filesIOFolder.resolve(data).resolve("projects.info")));
     checkContent(info,edits);
     ok.go();
+    var afterNote= look();
+    same("OK closes the note",beforeNote,afterNote,refused);
     readFieldAgain.go();
     empty();
     readEmptied.go();
+    differ("The read field is emptied",afterNote,look(),read);
     stabilize();
     checkContent(info,edits);
     writeFieldAgain.go();
@@ -134,6 +145,9 @@ final class LinkWriteTest extends ManagerTest{
     writeEmptied.go();
     stabilize();
     checkContent(info,unlinked);
+    var emptied= look();
+    same("The write field is emptied",opened,emptied,write);
+    same("The read field is emptied again",opened,emptied,read);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();

@@ -44,23 +44,23 @@ final class StaleMainTest extends ManagerTest{
   final Action thirdSaved= action("thirdSaved",
     on("ubuntu_gnome",()->waitUntilTime(val(39000))));
   final Action mainsForgotten= action("mainsForgotten",
-    on("ubuntu_gnome",()->waitUntilTime(val(42000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(44000))));
   final Action compileEdited= action("compileEdited",
     on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action editedCompiled= action("editedCompiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(56000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(58000))));
   final Action runSelected= action("runSelected",
     on("ubuntu_gnome",()->click(val(483),val(111))),
     on("windows",()->click(val(102),val(67))));
   final Action runDone= action("runDone",
-    on("ubuntu_gnome",()->waitUntilTime(val(61000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(63000))));
   final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(62500))));
+    on("ubuntu_gnome",()->waitUntilTime(val(64500))));
   final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(66000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(68000))));
   final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(76000))));
+    on("ubuntu_gnome",()->waitUntilTime(val(78000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var menu= filesIOFolder.resolve("menu");

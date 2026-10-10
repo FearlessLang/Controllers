@@ -2,7 +2,6 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -48,10 +47,10 @@ final class LogViewTest extends ManagerTest{
   final Action dialogShown= action("dialogShown",
     on("ubuntu_gnome",()->waitUntilTime(val(48800))));
   final Action focusText= action("focusText",
-    on("ubuntu_gnome",()->click(val(1958),val(1100))),
+    on("ubuntu_gnome",()->click(val(2118),val(1100))),
     on("windows",()->click(val(640),val(350))));
   final Action ok= action("ok",
-    on("ubuntu_gnome",()->click(val(1958),val(1340))),
+    on("ubuntu_gnome",()->click(val(2118),val(1340))),
     on("windows",()->click(val(644),val(579))));
   final Action dialogGone= action("dialogGone",
     on("ubuntu_gnome",()->waitUntilTime(val(51400))));
@@ -64,10 +63,10 @@ final class LogViewTest extends ManagerTest{
   final Action newerDialogShown= action("newerDialogShown",
     on("ubuntu_gnome",()->waitUntilTime(val(54100))));
   final Action focusNewerText= action("focusNewerText",
-    on("ubuntu_gnome",()->click(val(1958),val(1100))),
+    on("ubuntu_gnome",()->click(val(2118),val(1100))),
     on("windows",()->click(val(640),val(350))));
   final Action okNewer= action("okNewer",
-    on("ubuntu_gnome",()->click(val(1958),val(1340))),
+    on("ubuntu_gnome",()->click(val(2118),val(1340))),
     on("windows",()->click(val(644),val(579))));
   final Action newerDialogGone= action("newerDialogGone",
     on("ubuntu_gnome",()->waitUntilTime(val(56700))));
@@ -141,21 +140,25 @@ final class LogViewTest extends ManagerTest{
       checkContent(List.of(logs,log),"[###] dear diary\n[###] good night\n");
     }
     olderLog.go();
+    var listed= look();
     view.go();
     dialogShown.go();
+    var dialog= changed("View opens the log in a dialog",listed,look());
     focusText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("[###] dear diary\n[###] good night");
     ok.go();
     dialogGone.go();
+    same("OK closes the dialog",listed,look(),dialog);
     newerLog.go();
+    var listedNewer= look();
     viewNewer.go();
     newerDialogShown.go();
+    var newerDialog= changed("View opens the newer log in a dialog",listedNewer,look());
     focusNewerText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    copied("[###] dear diary\n[###] good night");
     okNewer.go();
     newerDialogGone.go();
+    same("OK closes the dialog",listedNewer,look(),newerDialog);
     endScript();
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();
