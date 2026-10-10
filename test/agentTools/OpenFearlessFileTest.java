@@ -1,15 +1,10 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.Rectangle;
-import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.stream.IntStream;
 
 final class OpenFearlessFileTest extends ManagerTest{
   final Action appsShown= action("appsShown",
@@ -250,15 +245,14 @@ final class OpenFearlessFileTest extends ManagerTest{
     assertFalse(Files.exists(filesIOFolder.resolve(data).resolve("projects.info")));
     managerMenu.go();
     quitManager.go();
-    park();
     managerQuit.go();
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
-    var bare= pilot.shot();
+    var bare= look();
     shell("nohup setsid -f xdg-open \""+project+"\" >/dev/null 2>&1\n");
     runInTerminal(appsShownFiles,terminalShownFiles);
     filesShown.go();
-    var files= Pilot.changed(bare,pilot.shot(),6);
+    var files= changed("The file manager window",bare,look());
     openFile.go();
     managerOpened.go();
     stabilize();
@@ -274,16 +268,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     runInTerminal(appsShownToEnd,terminalShownToEnd);
     managerEnded.go();
     closeFiles.go();
-    park();
     filesClosed.go();
-    var before= pixels(bare,files);
-    var after= pixels(pilot.shot(),files);
-    assertEquals(0L,IntStream.range(0,before.length).filter(i->!near(before[i],after[i])).count());
+    same("The file manager window is closed",bare,look(),files);
   }
-  void park(){
-    var s= Toolkit.getDefaultToolkit().getScreenSize();
-    pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
-  }
-  static int[] pixels(BufferedImage img, Rectangle r){ return img.getRGB(r.x,r.y,r.width,r.height,null,0,r.width); }
-  static boolean near(int p, int q){ return IntStream.of(0,8,16).allMatch(s->Math.abs((p>>s&255)-(q>>s&255))<=16); }
 }

@@ -1,12 +1,19 @@
 package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Rectangle;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
@@ -28,6 +35,7 @@ abstract class ManagerTest{
   final Path filesIOFolder= Path.of(System.getProperty("filesIOFolder"));
   final Pilot pilot= new Pilot();
   long start;
+  long looked;
   int inputIndex;
   List<Object> inputs;
   abstract void walk() throws Throwable;
@@ -56,7 +64,7 @@ abstract class ManagerTest{
   @SuppressWarnings("unchecked")
   <T> T val(T recorded){ return agent ? (T)inputs.get(inputIndex++) : recorded; }
   void waitUntilTime(int time){
-    var left= start+time-System.currentTimeMillis();
+    var left= start+looked+time-System.currentTimeMillis();
     if (left>0){ Pilot.pause((int)left); }
   }
   void click(int x, int y){ pilot.click(x,y); }
@@ -89,6 +97,44 @@ abstract class ManagerTest{
     return out;
   }
   void checkContent(List<String> path, String expected){ Err.strCmp(expected,Fs.readUtf8(filesIOFolder.resolve(String.join("/",path)))); }
+  void park(){
+    var s= Toolkit.getDefaultToolkit().getScreenSize();
+    pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
+  }
+  BufferedImage look(){
+    var begin= System.currentTimeMillis();
+    park();
+    var res= pilot.shot();
+    looked+= System.currentTimeMillis()-begin;
+    return res;
+  }
+  Rectangle changed(String what, BufferedImage before, BufferedImage after){ return changed(what,before,after,6); }
+  Rectangle changed(String what, BufferedImage before, BufferedImage after, int r){
+    try{ return Pilot.changed(before,after,r); }
+    catch(AssertionError e){ throw new AssertionFailedError(what+": the screen looks as before"); }
+  }
+  void same(String what, BufferedImage a, BufferedImage b, Rectangle at){ assertEquals(0L,mismatches(a,b,at),what+": the screen differs in "+at); }
+  void differ(String what, BufferedImage a, BufferedImage b, Rectangle at){ assertTrue(mismatches(a,b,at)>50,what+": the screen is the same in "+at); }
+  static long mismatches(BufferedImage a, BufferedImage b, Rectangle at){
+    var pa= a.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
+    var pb= b.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
+    return IntStream.range(0,pa.length).filter(i->!near(pa[i],pb[i])).count();
+  }
+  static boolean near(int p, int q){ return IntStream.of(0,8,16).allMatch(s->Math.abs((p>>s&255)-(q>>s&255))<=16); }
+  void plain(String what, BufferedImage shot, Rectangle at){
+    var px= shot.getRGB(at.x,at.y,at.width,at.height,null,0,at.width);
+    assertEquals(0L,IntStream.of(px).filter(p->!near(p,px[0])).count(),what+": the screen is not plain in "+at);
+  }
+  void pixelIs(String what, int x, int y, String rgb){ assertEquals(rgb,"%06x".formatted(look().getRGB(x,y)&0xffffff),what+": the screen at ("+x+","+y+")"); }
+  final boolean sharedClipboard= List.of("ubuntu_gnome","windows").contains(desk);
+  void clearClipboard(){ if (sharedClipboard){ Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection("nothing was copied"),null); } }
+  void clipboardIs(String expected) throws Throwable{ if (sharedClipboard){ Err.strCmp(expected,(String)Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor)); } }
+  void copied(String expected) throws Throwable{
+    clearClipboard();
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
+    clipboardIs(expected);
+  }
   static final String data= JavacTool.dataDirNameFor(ResolveResource.versionId);
   static final List<String> info= List.of(data,"projects.info");
   static final List<String> state= List.of(data,"eclipse","state.info");
