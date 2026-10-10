@@ -58,9 +58,11 @@ final class AliasClashTest extends ManagerTest{
         }
       }
       """.formatted(slashed(first)));
+    var closed= look();
     launchScript("second",second);
     runInTerminal(appsShownSecond,terminalShownSecond);
     noteShown.go();
+    var shown= changed("The note opens",closed,look());
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
     checkContent(notes,"""
@@ -92,6 +94,7 @@ final class AliasClashTest extends ManagerTest{
     checkContent(List.of("twins","b","twin","twin2.fearless"),"\n");
     ok.go();
     noteGone.go();
+    same("OK closes the note",closed,look(),shown);
     check.go();
     checked.go();
     stabilize();
