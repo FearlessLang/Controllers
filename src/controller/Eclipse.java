@@ -28,6 +28,8 @@ import userMessages.Violation;
 /// the plugin reads. A file the plugin reads whole is replaced at once, never rewritten in place.
 public record Eclipse(Path dir){
   private static final Pattern at= Pattern.compile("(?m)^In file: fear:/(\\S+)\\n\\n(\\d+)\\| ");
+  /// The Output of the project, as the Console view of the plugin shows it: the plugin follows
+  /// this file, and shows a change late. A rework of the plugin needs a faster way than a file.
   public Path console(String alias){ return dir.resolve(alias).resolve("console.txt"); }
   public Path notes(){ return dir.resolve("console.txt"); }
   public static String state(List<Project> projects){ return Info.print(obj(projects.stream().map(p->new Field(p.alias(),Info.noSpan,project(p))).toList())); }
