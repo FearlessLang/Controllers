@@ -22,27 +22,26 @@ final class Follow{
   static boolean compilingFor(String alias, Duration longer){
     return followed.filter(j->j.compile && j.alias.equals(alias) && j.since.plus(longer).isBefore(Instant.now())).isPresent();
   }
-  static void compile(String alias, Runnable whenNothing){ follow(alias, true, whenNothing, "Compile", alias); }
-  static void run(String alias, String... mains){ follow(alias, false, ()->{}, "Run", Stream.concat(Stream.of(alias), Stream.of(mains)).toArray(String[]::new)); }
-  private static void follow(String alias, boolean compile, Runnable whenNothing, String verb, String... args){
+  static void compile(String alias){ follow(alias, true, "Compile", alias); }
+  static void run(String alias, String... mains){ follow(alias, false, "Run", Stream.concat(Stream.of(alias), Stream.of(mains)).toArray(String[]::new)); }
+  private static void follow(String alias, boolean compile, String verb, String... args){
     var job= new Follow(alias, compile);
     followed= Optional.of(job);
+    MainButton.refresh();
     ServerSocket server;
     try{ server= new ServerSocket(0, 1, InetAddress.getLoopbackAddress()); server.setSoTimeout(60_000); }
     catch(IOException e){ throw new UncheckedIOException(e); }
-    Thread.startVirtualThread(()->job.follow(server, whenNothing));
+    Thread.startVirtualThread(()->job.follow(server));
     ManagerLink.send(verb, Stream.concat(Stream.of(args), Stream.of("Port:"+server.getLocalPort())).toArray(String[]::new));
   }
-  private void follow(ServerSocket server, Runnable whenNothing){
+  private void follow(ServerSocket server){
     var process= Process.start(alias, compile ? "compile" : "run");
-    var any= false;
     try(server; var s= server.accept(); var in= new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8)){
       var buf= new char[8192];
-      for (int n; (n= in.read(buf)) != -1; ){ any= true; process.append(new String(buf, 0, n)); }
+      for (int n; (n= in.read(buf)) != -1; ){ process.append(new String(buf, 0, n)); }
     }
     catch(SocketTimeoutException e){}
     catch(IOException e){ throw new UncheckedIOException(e); }
-    finally{ process.ended(); followed= followed.filter(j->j != this); }
-    if (!any){ whenNothing.run(); }
+    finally{ process.ended(); followed= followed.filter(j->j != this); MainButton.refresh(); }
   }
 }

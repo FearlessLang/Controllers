@@ -149,11 +149,18 @@
   </extension>
 
   <extension point="org.eclipse.ui.commands">
+    <command id="fearlessPluginProject.main" name="Fearless Main Button" defaultHandler="fearlessPluginProject.MainButton"/>
     <command id="fearlessPluginProject.terminate" name="Terminate Fearless Programs" defaultHandler="fearlessPluginProject.Terminate"/>
   </extension>
 
   <extension point="org.eclipse.ui.menus">
     <menuContribution locationURI="toolbar:org.eclipse.debug.ui.launchActionSet?after=additions">
+      <command commandId="fearlessPluginProject.main" tooltip="Run"
+        icon="platform:/plugin/org.eclipse.debug.ui/icons/full/obj16/lrun_obj.png">
+        <visibleWhen checkEnabled="false">
+          <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
+        </visibleWhen>
+      </command>
       <command commandId="fearlessPluginProject.terminate" tooltip="Terminate the running Fearless programs"
         icon="platform:/plugin/org.eclipse.debug.ui/icons/full/elcl16/terminate_co.png"
         disabledIcon="platform:/plugin/org.eclipse.debug.ui/icons/full/dlcl16/terminate_co.png">

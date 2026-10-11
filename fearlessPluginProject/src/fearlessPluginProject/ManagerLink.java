@@ -24,7 +24,7 @@ import org.osgi.framework.FrameworkUtil;
 /// the manager folder and the .fearless_out folder of each project, and commands the manager
 /// by running the manager program with the arguments FearlessCommand<Verb> and the arguments of the verb.
 public final class ManagerLink{
-  public record Project(Path folder, String kind, List<String> mains){}
+  public record Project(Path folder, String kind, List<String> mains, List<String> reads, List<String> edits){}
   private ManagerLink(){}
   private static final Map<String,Object> link= Info.parse(FileLocator.getBundleFileLocation(FrameworkUtil.getBundle(ManagerLink.class)).orElseThrow().toPath().getParent().resolveSibling("manager.info"));
   private static final Path launcher= path(link.get("launcher"));
@@ -38,7 +38,10 @@ public final class ManagerLink{
   static Project project(String alias){ return Objects.requireNonNull(projects().get(alias)); }
   private static Project project(Map<String,Object> o){
     var mains= o.containsKey("mains") ? Info.lst(o.get("mains")).stream().map(m->(String)m).toList() : List.<String>of();
-    return new Project(path(o.get("path")), (String)o.get("kind"), mains);
+    return new Project(path(o.get("path")), (String)o.get("kind"), mains, links(o, "reads"), links(o, "edits"));
+  }
+  private static List<String> links(Map<String,Object> o, String field){
+    return o.containsKey(field) ? List.copyOf(Info.obj(o.get(field)).keySet()) : List.of();
   }
   static Path out(Path folder){ return folder.resolve(".fearless_out"); }
   static Map<String,String> mains(Path folder){

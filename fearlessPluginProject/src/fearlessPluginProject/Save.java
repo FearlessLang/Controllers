@@ -20,7 +20,7 @@ public final class Save extends AbstractHandler{
     if (Follow.compilingFor(alias, Duration.ofSeconds(15))){ return null; }
     ManagerLink.send("Terminate", alias);
     Stream.of(editor.getSite().getPage().getDirtyEditors()).filter(e->project.equals(projectOf(e))).forEach(e->e.doSave(new NullProgressMonitor()));
-    Follow.compile(alias, ()->{});
+    Follow.compile(alias);
     return null;
   }
   private static Object projectOf(IEditorPart editor){
