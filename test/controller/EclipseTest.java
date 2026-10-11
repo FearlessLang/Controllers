@@ -86,7 +86,7 @@ Error 7 WellFormedness
     assertEquals("file=_pkb/_rank_app200.fear|line=002|message="+wrapped,problem(wrapped));
   }
   @Test void aFailedCompileWithNoSourcePositionIsNoProblem(){
-    assertEquals("",problem("The fearless project folder contains no *.fear files\n"));
+    assertEquals("",problem("This project folder contains no \".fear\" files.\n"));
   }
   private static Path eclipseAt(Path folder){
     Fs.writeUtf8(folder.resolve(".eclipseproduct"),"name=Eclipse Platform\n");
