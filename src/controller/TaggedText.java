@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 
 import metaParser.Message;
 import tools.Fs;
-import utils.Bug;
 import utils.Range;
 
 /// A text that may hold characters outside the Fearless character set, as the files and messages
@@ -29,8 +28,9 @@ public final class TaggedText{
   public static String line(String text){ return text.indexOf('\n') < 0 ? of(text) : notStr(text); }
   private static String notStr(String text){
     if (text.codePoints().noneMatch(TaggedText::surrogate)){ return "UStr:"+uStr(text.codePoints().toArray()); }
-    return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes(text));
+    return base16(text);
   }
+  public static String base16(String path){ return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes(path)); }
   static String read(String text, Function<String,? extends RuntimeException> bad){
     if (text.startsWith("Str:")){ return safeAfter("Str:",text,bad); }
     if (text.startsWith("UStr:")){ return new Reader(safeAfter("UStr:",text,bad),bad).all(); }
@@ -49,12 +49,11 @@ public final class TaggedText{
   private static boolean surrogate(int c){ return c >= 0xD800 && c <= 0xDFFF; }
   //A Windows name is UTF-16 code units, written little endian; an unpaired surrogate is a unit
   //like any other, and Java keeps it in a String. Tested on Windows only.
-  //Elsewhere a name is bytes, which Java decodes with sun.jnu.encoding: a String Java got from
-  //such a system has no unpaired surrogate, so "Base16:" is never written there. TO TEST on
-  //Linux and macOS: reading a "Base16:" path, and a folder whose name is not valid in that
-  //encoding (Java gives the manager another name, which names nothing).
+  //Elsewhere a name is bytes, which Java decodes and encodes with sun.jnu.encoding. TO TEST on
+  //Linux and macOS: a folder whose name is not valid in that encoding (Java gives the manager
+  //another name, which names nothing).
   private static byte[] bytes(String path){
-    if (!Fs.isWindows()){ throw Bug.unreachable(); }
+    if (!Fs.isWindows()){ return path.getBytes(Charset.forName(System.getProperty("sun.jnu.encoding"))); }
     var res= new byte[path.length()*2];
     for (int i : Range.of(0,path.length())){ res[2*i]= (byte)path.charAt(i); res[2*i+1]= (byte)(path.charAt(i) >> 8); }
     return res;

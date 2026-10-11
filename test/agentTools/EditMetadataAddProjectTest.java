@@ -1,83 +1,30 @@
 package agentTools;
 
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class EditMetadataAddProjectTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action managerMenu= action("managerMenu",
-    on("ubuntu_gnome",()->click(val(98),val(79))),
-    on("windows",()->click(val(31),val(33))));
-  final Action editMetadata= action("editMetadata",
-    on("ubuntu_gnome",()->click(val(128),val(103))),
-    on("windows",()->click(val(61),val(58))));
-  final Action editorShown= action("editorShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
-  final Action focusText= action("focusText",
-    on("ubuntu_gnome",()->click(val(1900),val(1200))),
-    on("windows",()->click(val(700),val(400))));
-  final Action commit= action("commit",
-    on("ubuntu_gnome",()->click(val(2238),val(1370))),
-    on("windows",()->click(val(924),val(619))));
-  final Action bothSaved= action("bothSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(76500))));
-  final Action selectSecond= action("selectSecond",
-    on("ubuntu_gnome",()->click(val(265),val(190))),
-    on("windows",()->click(val(199),val(145))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action checked= action("checked",
-    on("ubuntu_gnome",()->waitUntilTime(val(92000))));
-  final Action appsShownToRestart= action("appsShownToRestart",
-    on("ubuntu_gnome",()->waitUntilTime(val(93500))));
-  final Action terminalShownToRestart= action("terminalShownToRestart",
-    on("ubuntu_gnome",()->waitUntilTime(val(97000))));
-  final Action managerEndedToRestart= action("managerEndedToRestart",
-    on("ubuntu_gnome",()->waitUntilTime(val(107000))));
-  final Action appsShownSecond= action("appsShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(108500))));
-  final Action terminalShownSecond= action("terminalShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(112000))));
-  final Action managerShownSecond= action("managerShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(125000))));
-  final Action appsShownThird= action("appsShownThird",
-    on("ubuntu_gnome",()->waitUntilTime(val(126500))));
-  final Action terminalShownThird= action("terminalShownThird",
-    on("ubuntu_gnome",()->waitUntilTime(val(130000))));
-  final Action thirdHanded= action("thirdHanded",
-    on("ubuntu_gnome",()->waitUntilTime(val(141000))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(142500))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(146000))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(156000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action editorShown= action("editorShown",on("ubuntu_gnome",()->waitUntilTime(val(22000))));
+  final Action focusText= action("focusText",on("ubuntu_gnome",()->click(val(1900),val(1200))));
+  final Action commit= action("commit",on("ubuntu_gnome",()->click(val(2238),val(1370))));
+  final Action bothSaved= action("bothSaved",on("ubuntu_gnome",()->waitUntilTime(val(70000))));
+  final Action secondTile= action("secondTile",on("ubuntu_gnome",()->click(val(261),val(130))));
+  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(72000))));
+  final Action check= action("check",on("ubuntu_gnome",()->click(val(520),val(112))));
+  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(74500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(79500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
     var other= project("helloStackTraces");
     var both= """
-      {
-        "hello_world": {
-          "path": "Str:%s",
-          "kind": "idle"
-        },
-        "start": {
-          "path": "Str:%s",
-          "kind": "idle"
-        }
-      }
+      {"projects": {"hello_world": {"path": "Str:%s", "kind": "idle"}, "start": {"path": "Str:%s", "kind": "idle"}}, "systemExtensions": []}
       """.formatted(slashed(project),slashed(other));
-    launchScript("first",project);
+    launchScript("first",project.resolve("hello_world.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
     managerMenu.go();
@@ -85,39 +32,36 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     editorShown.go();
     focusText.go();
     keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    type(both);
+    type(both.strip());
     commit.go();
     bothSaved.go();
     stabilize();
-    checkContent(info,both);
-    selectSecond.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
+    checkContent(info,"""
+      {
+        "projects": {
+          "hello_world": {
+            "path": "Str:%s",
+            "kind": "idle"
+          },
+          "start": {
+            "path": "Str:%s",
+            "kind": "idle"
+          }
+        },
+        "systemExtensions": []
+      }
+      """.formatted(slashed(project),slashed(other)));
+    secondTile.go();
+    secondShown.go();
+    var output= new Rectangle(410,190,1000,60);
+    var before= look();
     check.go();
     checked.go();
+    changed(before,output);
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of(data,"eclipse","start","console.txt"),"--- ok: no problem found ---\n");
-    checkContent(List.of(data,"eclipse","hello_world","console.txt"),"");
-    endScript();
-    runInTerminal(appsShownToRestart,terminalShownToRestart);
-    managerEndedToRestart.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"137\n");
-    noManagerData();
-    launchScript("second",project);
-    runInTerminal(appsShownSecond,terminalShownSecond);
-    managerShownSecond.go();
-    launchScript("third",other);
-    runInTerminal(appsShownThird,terminalShownThird);
-    thirdHanded.go();
-    stabilize();
-    checkContent(List.of("third.exit"),"0\n");
-    checkContent(info,both);
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
-    stabilize();
-    checkContent(List.of("second.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
 }

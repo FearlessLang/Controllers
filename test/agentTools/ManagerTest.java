@@ -1,12 +1,17 @@
 package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Assertions;
@@ -91,9 +96,39 @@ abstract class ManagerTest{
   void checkContent(List<String> path, String expected){ Err.strCmp(expected,Fs.readUtf8(filesIOFolder.resolve(String.join("/",path)))); }
   static final String data= JavacTool.dataDirNameFor(ResolveResource.versionId);
   static final List<String> info= List.of(data,"projects.info");
-  static final List<String> state= List.of(data,"eclipse","state.info");
-  static final List<String> notes= List.of(data,"eclipse","console.txt");
   final Path app= filesIOFolder.resolve("fearlessManaged"+ResolveResource.versionId);
+  final Action managerMenu= action("managerMenu",on("ubuntu_gnome",()->click(val(99),val(79))));
+  final Action addFolder= action("addFolder",on("ubuntu_gnome",()->click(val(110),val(103))));
+  final Action editMetadata= action("editMetadata",on("ubuntu_gnome",()->click(val(143),val(124))));
+  final Action connectEclipse= action("connectEclipse",on("ubuntu_gnome",()->click(val(126),val(145))));
+  final Action resetManager= action("resetManager",on("ubuntu_gnome",()->click(val(90),val(191))));
+  final Action quitManager= action("quitManager",on("ubuntu_gnome",()->click(val(88),val(212))));
+  final Action closeWindow= action("closeWindow",on("ubuntu_gnome",()->click(val(3822),val(50))));
+  final Action firstTile= action("firstTile",on("ubuntu_gnome",()->click(val(133),val(130))));
+  final Action becomeData= action("becomeData",on("ubuntu_gnome",()->click(val(468),val(140))));
+  final Action becomeEditableData= action("becomeEditableData",on("ubuntu_gnome",()->click(val(597),val(140))));
+  final Action becomeCode= action("becomeCode",on("ubuntu_gnome",()->click(val(727),val(140))));
+  final Action backToIdle= action("backToIdle",on("ubuntu_gnome",()->click(val(464),val(140))));
+  final Action forgetIdle= action("forgetIdle",on("ubuntu_gnome",()->click(val(889),val(140))));
+  final Action forget= action("forget",on("ubuntu_gnome",()->click(val(621),val(140))));
+  final Action clean= action("clean",on("ubuntu_gnome",()->click(val(683),val(140))));
+  final Action trayIcon= action("trayIcon",on("ubuntu_gnome",()->click(val(3655),val(15))));
+  final Action trayShow= action("trayShow",on("ubuntu_gnome",()->click(val(3625),val(60))));
+  final Action closeDialog= action("closeDialog",on("ubuntu_gnome",()->keys(KeyEvent.VK_ENTER)));
+  void park(){
+    var s= Toolkit.getDefaultToolkit().getScreenSize();
+    pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
+  }
+  BufferedImage look(){ park(); return pilot.shot(); }
+  static int[] pixels(BufferedImage img, Rectangle r){ return img.getRGB(r.x,r.y,r.width,r.height,null,0,r.width); }
+  static boolean near(int p, int q){ return IntStream.of(0,8,16).allMatch(s->Math.abs((p>>s&255)-(q>>s&255))<=16); }
+  static long differing(BufferedImage a, BufferedImage b, Rectangle r){
+    var pa= pixels(a,r);
+    var pb= pixels(b,r);
+    return IntStream.range(0,pa.length).filter(i->!near(pa[i],pb[i])).count();
+  }
+  void same(BufferedImage before, Rectangle r){ assertEquals(0L,differing(before,look(),r)); }
+  void changed(BufferedImage before, Rectangle r){ assertNotEquals(0L,differing(before,look(),r)); }
   final Action showApps= action("showApps",on("ubuntu_gnome",()->click(val(34),val(16))),on("debian_gnome_x11",()->click(val(1920),val(1080))),on("xubuntu_xfce",()->click(val(1920),val(1080))),on("debian_cinnamon",()->click(val(1920),val(1000))),on("debian_mate",()->click(val(1920),val(1080))),on("lubuntu_lxqt",()->click(val(1920),val(1080))),on("kubuntu_plasma",()->click(val(1920),val(1200))),on("void_i3",()->click(val(1920),val(1080))),on("arch_sway",()->click(val(1920),val(1080))),on("omarchy_hyprland",()->click(val(1920),val(1080))),on("fedora_gnome",()->doubleClick(val(1920),val(1080))),on("opensuse_plasma",()->click(val(1920),val(1080))),on("fedora_cosmic",()->click(val(1920),val(1000))),on("windows",ManagerTest::unrecorded));
   final Action openTerminal= action("openTerminal",on("ubuntu_gnome",()->type("terminal\n")),on("debian_gnome_x11",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("xubuntu_xfce",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("debian_cinnamon",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("debian_mate",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("lubuntu_lxqt",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("kubuntu_plasma",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("void_i3",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("arch_sway",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("omarchy_hyprland",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("fedora_gnome",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("opensuse_plasma",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("fedora_cosmic",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("windows",ManagerTest::unrecorded));
   final Action runShell= action("runShell",on("ubuntu_gnome",this::typeRunSh),on("debian_gnome_x11",this::typeRunSh),on("xubuntu_xfce",this::typeRunSh),on("debian_cinnamon",this::typeRunSh),on("debian_mate",this::typeRunSh),on("lubuntu_lxqt",this::typeRunSh),on("kubuntu_plasma",this::typeRunSh),on("void_i3",this::typeRunSh),on("arch_sway",this::typeRunSh),on("omarchy_hyprland",this::typeRunSh),on("fedora_gnome",this::typeRunSh),on("opensuse_plasma",this::typeRunSh),on("fedora_cosmic",this::typeRunSh),on("windows",ManagerTest::unrecorded));

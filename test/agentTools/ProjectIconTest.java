@@ -3,7 +3,7 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,40 +14,15 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class ProjectIconTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action ownIconShown= action("ownIconShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(20000))));
-  final Action madeUpIconShown= action("madeUpIconShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
-  final Action projectMenu= action("projectMenu",
-    on("ubuntu_gnome",()->click(val(158),val(79))),
-    on("windows",()->click(val(89),val(33))));
-  final Action errorReport= action("errorReport",
-    on("ubuntu_gnome",()->click(val(180),val(212))),
-    on("windows",()->click(val(111),val(166))));
-  final Action reportShown= action("reportShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(24200))));
-  final Action focusReport= action("focusReport",
-    on("ubuntu_gnome",()->click(val(1970),val(1100))),
-    on("windows",()->click(val(660),val(300))));
-  final Action ok= action("ok",
-    on("ubuntu_gnome",()->click(val(1953),val(1323))),
-    on("windows",()->click(val(639),val(568))));
-  final Action reportGone= action("reportGone",
-    on("ubuntu_gnome",()->waitUntilTime(val(26800))));
-  final Action ownIconBack= action("ownIconBack",
-    on("ubuntu_gnome",()->waitUntilTime(val(28300))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(29800))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(33300))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(43300))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action ownIconShown= action("ownIconShown",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
+  final Action invalidShown= action("invalidShown",on("ubuntu_gnome",()->waitUntilTime(val(28000))));
+  final Action check= action("check",on("ubuntu_gnome",()->click(val(520),val(112))));
+  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
+  final Action ownIconBack= action("ownIconBack",on("ubuntu_gnome",()->waitUntilTime(val(37000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var pic= filesIOFolder.resolve("pic");
@@ -55,31 +30,33 @@ final class ProjectIconTest extends ManagerTest{
     Fs.rmTree(pic);
     Fs.writeUtf8(pic.resolve("pic.fearless"),"\n");
     Fs.writeUtf8(pic.resolve("_pic").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"pic\")}\n");
-    launchScript("first",pic);
+    launchScript("first",pic.resolve("pic.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
+    var tile= new Rectangle(69,95,128,85);
+    var output= new Rectangle(410,190,1000,60);
+    var madeUp= look();
     png(icons.resolve("face.png"),0xC03090);
     stabilize();
     ownIconShown.go();
+    changed(madeUp,tile);
+    var own= look();
     png(icons.resolve("other.png"),0x30C090);
     stabilize();
-    madeUpIconShown.go();
-    projectMenu.go();
-    errorReport.go();
-    reportShown.go();
-    focusReport.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_C);
-    ok.go();
-    reportGone.go();
+    invalidShown.go();
+    changed(own,tile);
+    check.go();
+    checked.go();
+    changed(own,output);
     Files.delete(icons.resolve("other.png"));
     stabilize();
     ownIconBack.go();
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    same(own,tile);
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
   static void png(Path file, int rgb) throws Exception{
     var img= new BufferedImage(48,48,BufferedImage.TYPE_INT_RGB);

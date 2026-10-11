@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
-import controller.Messages;
+import managerMessages.Violation;
 import gui.Sni.Msg;
 import gui.Sni.Reader;
 import gui.Sni.Writer;
@@ -166,7 +166,7 @@ final class SniTest{
       Thread.startVirtualThread(bus);
       var e= assertThrows(UserError.class,()->new Sni(socket,()->log.add("activate"),()->log.add("quit"),icon).serve());
       bus.get();
-      assertEquals(Messages.trayIconRemoved().getMessage(),e.getMessage());
+      assertEquals(Violation.trayIconRemoved().getMessage(),e.getMessage());
       assertEquals(List.of("activate","activate","quit"),log);
     }
     finally{ Files.deleteIfExists(socket); Files.delete(dir); }

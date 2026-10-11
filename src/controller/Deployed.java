@@ -48,10 +48,14 @@ public final class Deployed implements Manager.Tools{
     return Coordinator.startMain(folder,stdLib("base"),main,coordinator(folder).sharedClasspath(),out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
-  @Override public void associate(List<Icon> claimed, Function<String,String> claimedBy){
+  @Override public void associate(List<Icon> captured, Function<String,String> claimedBy){
     if (Fs.isMac()){ return; }
     var launcher= Association.launcher();
-    Association.reconcile(launcher,Stream.concat(Stream.of(new Icon(".fearless",launcher,Association.iconFile())),claimed.stream()).toList(),claimedBy);
+    Association.reconcile(launcher,Stream.concat(Stream.of(new Icon(".fearless",launcher,Association.iconFile())),captured.stream()).toList(),claimedBy);
+  }
+  @Override public List<String> others(){ return Fs.isMac() ? List.of() : Association.others(); }
+  @Override public void connect(Path eclipse, Path managerDir){
+    Eclipse.connect(eclipse,appDir().resolve("eclipsePlugin"),Main.programDir(),Association.launcher(),managerDir,stdLib("baseCache"));
   }
   @Override public Optional<Map<String,String>> mains(Path folder){
     var c= coordinator(folder);

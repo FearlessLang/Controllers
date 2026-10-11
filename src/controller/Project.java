@@ -3,10 +3,6 @@ package controller;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -25,18 +21,18 @@ import coordinator.MainsInfo;
 import realSourceOracle.AutoloadHandler;
 import realSourceOracle.BuildWithZip;
 import realSourceOracle.PathEntry;
-import userMessages.Report;
+import managerMessages.Report;
 import userMessages.UserError;
-import utils.Join;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
-/// folder holds, its mains once known, why its links are broken, its job, if any, and the output of its last compile when that failed.
-public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mains, MainsInfo claims, Optional<String> linkProblem, String job, Instant since, int runs, String lastRun, int exit, String failure){
+/// folder holds, its mains once known, why its links are broken, and its job, if any.
+public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mains, MainsInfo claims, Optional<String> linkProblem, String job){
   public static final String compiling= "compiling";
   public static final MainsInfo noClaims= new MainsInfo(Map.of());
   public record Claimant(Path folder, String alias, String main, boolean shortcut, MainsInfo.Claim claim){
     public String label(){ return alias+"::"+main; }
     public Path icon(String suffix){ return folder.resolve(Facts.outDir).resolve("icons").resolve(claim.icon()+suffix); }
+    public Path shortcutFile(){ return folder.resolve(Project.shortcutFile(folder,main,claim.extension())); }
   }
   public enum State{
     codeInvalid("code: invalid content"), dataInvalid("data: invalid content"), idle("idle"), dataReadOnly("data: read only"), dataReadWrite("data: read write"),
@@ -44,14 +40,12 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
     public final String text;
     State(String text){ this.text= text; }
   }
-  private static final DateTimeFormatter when= DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
   public Path folder(){ return entry.path(); }
   public String alias(){ return entry.alias(); }
   public Kind kind(){ return entry.kind(); }
   public boolean busy(){ return !job.isEmpty(); }
-  public Optional<String> running(){ return busy() && !job.equals(compiling) ? Optional.of(job) : Optional.empty(); }
-  public boolean needsCompiling(){ return kind() == Kind.code && !facts.upToDate(); }
-  public Optional<String> problem(){ return facts.problem().or(()->linkProblem).or(()->Optional.of(failure).filter(f->!f.isEmpty())); }
+  public boolean needsCompiling(){ return kind() == Kind.code && facts.stale().isPresent(); }
+  public Optional<String> problem(){ return facts.problem().or(()->linkProblem); }
   public List<String> knownMains(){ return mains.map(m->List.copyOf(m.keySet())).orElse(List.of()); }
   public List<String> selectedMains(){
     var known= knownMains();
@@ -88,7 +82,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
         .filter(p->p.icon().equals(c.icon())).map(MainsInfo.Claim::extension)
         .filter(e->e.matches(prefix+"[0-9]{3}") && !explicit.contains(e)).findFirst()
         .or(()->IntStream.range(0,1000).mapToObj(i->prefix+"%03d".formatted((start+i)%1000)).filter(e->!used.contains(e)).findFirst())
-        .orElseThrow(()->Messages.noFreeExtension(main,shortcut,c.icon()));
+        .orElseThrow(()->Report.noFreeExtension(main,shortcut,c.icon()));
       used.add(ext);
       return new MainsInfo.Claim(c.icon(),c.diskPath(),c.zipSteps(),c.zipEntry(),ext);
     }
@@ -98,17 +92,17 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
     for (var c: cs.filter(Claimant::shortcut).toList()){
       var file= shortcutFile(c.folder(),c.main(),c.claim().extension());
       var other= files.putIfAbsent(file,c.main());
-      if (other != null){ throw Messages.shortcutsCollide(other,c.main(),file); }
+      if (other != null){ throw Report.shortcutsCollide(other,c.main(),file); }
     }
     return List.copyOf(files.keySet());
   }
   private static String shortcutFile(Path project, String main, String ext){
-    var name= AutoloadHandler.fileName(main.substring(main.lastIndexOf('.')+1)).orElseThrow(()->Messages.shortcutNoFileName(main));
+    var name= AutoloadHandler.fileName(main.substring(main.lastIndexOf('.')+1)).orElseThrow(()->Report.shortcutNoFileName(main));
     var file= name+"."+ext;
     try{ BuildWithZip.checkIndividualVisibleSegment(new PathEntry(project,Path.of(file))); }
-    catch(UserError e){ throw Messages.shortcutBadFileName(main,file); }
-    var masks= Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name),LinkOption.NOFOLLOW_LINKS);
-    if (masks){ throw Messages.shortcutMasksFile(main,file,name); }
+    catch(UserError e){ throw Report.shortcutBadFileName(main,file); }
+    var masks= userMessages.Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name),LinkOption.NOFOLLOW_LINKS);
+    if (masks){ throw Report.shortcutMasksFile(main,file,name); }
     return file;
   }
   public State state(){
@@ -118,42 +112,14 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       case idle -> State.idle;
       case dataReadOnly -> State.dataReadOnly;
       case dataReadWrite -> State.dataReadWrite;
-      case code -> !facts.hasCache() ? State.codeNoCache : !facts.upToDate() ? State.codeOutdated : State.codeCompiled;
+      case code -> !facts.hasCache() ? State.codeNoCache : needsCompiling() ? State.codeOutdated : State.codeCompiled;
     };
   }
-  public record Action(String text, String verb, boolean enabled){}
+  public enum Action{ check, compile, run, terminate }
   public Action action(){
-    if (busy()){ return new Action("Terminate","terminate",true); }
-    if (kind() != Kind.code){ return new Action("Check","check",true); }
-    if (needsCompiling()){ return new Action("Compile","compile",true); }
-    return new Action(knownMains().size() > 1 ? "Run selected" : "Run","run",!selectedMains().isEmpty());
-  }
-  public String information(){
-    var rows= new ArrayList<>(List.of(
-      row("Folder",folder().toString()),
-      row("Name",alias()),
-      row("Kind",kind().text),
-      row("Files",facts.files()+""),
-      row("Total size",bytes(facts.bytes())),
-      row("Last modified",stamp(facts.modified()))));
-    if (kind() == Kind.code){
-      rows.add(row("Compiled cache",facts.upToDate() ? "up to date" : "needs compiling"));
-      rows.add(row("Last compile",stamp(entry.compiled())));
-      rows.add(row("Last run",stamp(entry.run())));
-      rows.add(row("Packages",Join.of(facts.pkgs(),""," ","","<none>")));
-      rows.add(row("Mains selected",Join.of(entry.mains(),""," ","","<none>")));
-      rows.add(row("Reads",Join.of(entry.reads().keySet().stream(),""," ","","<none>")));
-      rows.add(row("Edits",Join.of(entry.edits().keySet().stream(),""," ","","<none>")));
-    }
-    rows.add(row("Job",busy() ? job : "none"));
-    rows.add(row("Problems",problem().isEmpty() ? "none" : "see Error report"));
-    return String.join("\n",rows);
-  }
-  private static String row(String name, String value){ return "%-16s%s".formatted(name,value); }
-  private static String stamp(long millis){ return millis < 0 ? "never" : when.format(Instant.ofEpochMilli(millis)); }
-  private static String bytes(long size){
-    if (size < 1024){ return size+" bytes"; }
-    if (size < 1024*1024){ return "%.1f kB".formatted(size/1024.0); }
-    return "%.1f MB".formatted(size/(1024.0*1024));
+    if (busy()){ return Action.terminate; }
+    if (kind() != Kind.code || problem().isPresent()){ return Action.check; }
+    if (needsCompiling()){ return Action.compile; }
+    return Action.run;
   }
 }

@@ -57,15 +57,15 @@ final class DropTest{
     var t= fixed(uriList("java.lang.String"),"https://x/y\r\n"+root+"data/a\r\nsmb://host/share/b\r\nhome/me/c\r\nfile:///a b\r\n");
     assertUris(Drop.paths(t,refused::add),root+"data/a");
     assertEquals(List.of(
-      "The manager was asked to register \"https://x/y\", dropped on its window, but only a \"file:\" URI names a file or folder of this computer.",
-      "The manager was asked to register \"smb://host/share/b\", dropped on its window, but only a \"file:\" URI names a file or folder of this computer.",
-      "The manager was asked to register \"home/me/c\", dropped on its window, but only a \"file:\" URI names a file or folder of this computer.",
-      "The manager was asked to register \"file:///a b\", dropped on its window, but it is not a URI: Illegal character in path."),refused);
+      "Nothing is registered from \"https://x/y\", dropped on the window: only a \"file:\" URI names a file or folder of this computer.",
+      "Nothing is registered from \"smb://host/share/b\", dropped on the window: only a \"file:\" URI names a file or folder of this computer.",
+      "Nothing is registered from \"home/me/c\", dropped on the window: only a \"file:\" URI names a file or folder of this computer.",
+      "Nothing is registered from \"file:///a b\", dropped on the window: it is not a URI: Illegal character in path."),refused);
   }
   @Test void aDropTheDesktopDoesNotHandOverIsRefused(){
     var t= fixed(uriList("java.io.InputStream"),new InputStream(){ @Override public int read() throws IOException{ throw new IOException("the drag ended"); } });
     assertEquals(List.of(),Drop.paths(t,refused::add));
-    assertEquals(List.of("The manager was asked to register what was dropped on its window, but the desktop did not hand it over: the drag ended"),refused);
+    assertEquals(List.of("Nothing is registered from what was dropped on the window: the desktop did not hand it over: the drag ended"),refused);
   }
   private static DataFlavor uriList(String repClass){
     try{ return new DataFlavor("text/uri-list;class="+repClass); }

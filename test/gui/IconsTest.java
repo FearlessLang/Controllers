@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,8 +28,8 @@ final class IconsTest{
   static Project project(Path folder, Kind kind){
     var alias= folder.getFileName().toString().toLowerCase();
     Fs.writeUtf8(folder.resolve(alias+".fearless"),"");
-    var entry= new Entry(alias,folder.toAbsolutePath().normalize(),kind,List.of(),Map.of(),Map.of(),-1,-1);
-    return new Project(entry,Facts.of(entry.path(),alias,kind),Optional.empty(),Project.noClaims,Optional.empty(),"",Instant.EPOCH,0,"",-1,"");
+    var entry= new Entry(alias,folder.toAbsolutePath().normalize(),kind,List.of(),Map.of(),Map.of());
+    return new Project(entry,Facts.of(entry.path(),alias,kind),Optional.empty(),Project.noClaims,Optional.empty(),"");
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);

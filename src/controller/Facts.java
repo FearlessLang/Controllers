@@ -20,11 +20,12 @@ import coordinator.Coordinator;
 import fileSupport.LogFiles;
 import realSourceOracle.RealSourceOracleWithZip;
 import tools.Fs;
+import managerMessages.Report;
 import userMessages.UserError;
 
-/// What the file system says about a project folder: its authored files, its compiled
-/// cache under `.fearless_out`, its icon, its logs, and why it is invalid if it is.
-public record Facts(int files, long bytes, long modified, List<String> pkgs, boolean hasCache, boolean upToDate, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
+/// What the file system says about a project folder: its compiled cache under
+/// `.fearless_out` and why it is out of date, its icon, its logs, and why it is invalid if it is.
+public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
   public static final String outDir= Coordinator.outDir;
   /// An icon is the same while its file is: the image is read from it once.
   public record Icon(Path file, long stamp, BufferedImage image){
@@ -34,9 +35,9 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
   public static Facts of(Path folder, String alias, Kind kind){
     try{ return retried(()->read(folder,alias,kind)); }
-    catch(UncheckedIOException e){ return invalid("The folder of this project can not be read:\n"+folder+"\n"+Messages.fileFailure(e.getCause())+"\nGive Fearless access to it, or forget this project."); }
+    catch(UncheckedIOException e){ return invalid(Report.folderUnreadable(folder,e.getCause())); }
   }
-  private static Facts invalid(String problem){ return new Facts(0,0,-1,List.of(),false,false,Optional.empty(),List.of(),Optional.of(problem)); }
+  private static Facts invalid(String problem){ return new Facts(false,Optional.empty(),Optional.empty(),List.of(),Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
     for(var left= 10;; left-= 1){
       try{ return read.get(); }
@@ -44,9 +45,8 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     }
   }
   private static Facts read(Path folder, String alias, Kind kind){
-    if (!Files.isDirectory(folder)){ return invalid("The folder of this project does not exist:\n"+folder+"\nRestore it, or forget this project."); }
+    if (!Files.isDirectory(folder)){ return invalid(Report.folderMissing(folder)); }
     UserError.root= folder;
-    var src= sources(folder);
     Map<String,Boolean> built= Map.of();
     Optional<String> problem;
     try{
@@ -57,17 +57,19 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     Optional<Icon> icon= Optional.empty();
     try{ icon= icon(folder); }
     catch(UserError e){ if (problem.isEmpty()){ problem= Optional.of(e.getMessage()); } }
-    var upToDate= !built.isEmpty() && !built.containsValue(false);
-    var modified= src.stream().mapToLong(Fs::lastModified).max().orElse(-1);
-    var bytes= src.stream().mapToLong(p->Fs.of(()->Files.size(p))).sum();
-    return new Facts(src.size(),bytes,modified,List.copyOf(built.keySet()),Files.isDirectory(folder.resolve(outDir)),upToDate,icon,LogFiles.list(folder),problem);
+    var hasCache= Files.isDirectory(folder.resolve(outDir));
+    var stalePkgs= built.entrySet().stream().filter(e->!e.getValue()).map(Map.Entry::getKey).toList();
+    var stale= kind != Kind.code ? Optional.<String>empty()
+      : !hasCache || built.isEmpty() ? Optional.of(Report.noCache())
+      : stalePkgs.isEmpty() ? Optional.<String>empty() : Optional.of(Report.stalePackages(stalePkgs));
+    return new Facts(hasCache,stale,icon,LogFiles.list(folder),problem);
   }
-  Facts outOfDate(Optional<String> error){ return new Facts(files,bytes,modified,pkgs,hasCache,false,icon,logs,problem.or(()->error)); }
+  Facts outOfDate(String why){ return new Facts(hasCache,Optional.of(why),icon,logs,problem); }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder,".config").flatMap(c->Names.folder(c,"icon"));
     if (dir.isEmpty()){ return Optional.empty(); }
     var pngs= Names.list(dir.get()).stream().filter(p->p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png") && Files.isRegularFile(p)).toList();
-    if (pngs.size() > 1){ throw Messages.projectIconsMany(dir.get(),pngs); }
+    if (pngs.size() > 1){ throw Report.projectIconsMany(dir.get(),pngs); }
     if (pngs.isEmpty()){ return Optional.empty(); }
     var png= pngs.getFirst();
     var stamp= Fs.lastModified(png);
@@ -75,14 +77,10 @@ public record Facts(int files, long bytes, long modified, List<String> pkgs, boo
     if (known != null && known.stamp() == stamp){ return Optional.of(known); }
     BufferedImage image;
     try{ image= ImageIO.read(png.toFile()); }
-    catch(IOException e){ throw Messages.projectIconUnreadable(png); }
-    if (image == null){ throw Messages.projectIconUnreadable(png); }
+    catch(IOException e){ throw Report.projectIconUnreadable(png); }
+    if (image == null){ throw Report.projectIconUnreadable(png); }
     var res= new Icon(png,stamp,image);
     decoded.put(png,res);
     return Optional.of(res);
-  }
-  private static List<Path> sources(Path folder){
-    var written= List.of(outDir,LogFiles.runDir);
-    return Fs.walk(folder,s->s.filter(p->!written.contains(folder.relativize(p).getName(0).toString())).filter(Files::isRegularFile).toList());
   }
 }

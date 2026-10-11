@@ -48,18 +48,8 @@ final class FactsTest{
     Fs.writeUtf8(file,content);
     Fs.ofV(()->Files.setLastModifiedTime(file,FileTime.fromMillis(stamp)));
   }
-  static long after(Path project){ return Facts.of(project,"someproject",Kind.code).modified()+1000; }
-  @Test void countsAndSizesTheSourceFiles(@TempDir Path dir){
-    var facts= Facts.of(project(dir,"someProject"),"someproject",Kind.code);
-    assertEquals(3,facts.files());
-    assertEquals("use base.Main as Main;\n".length()+"hi\n".length(),facts.bytes());
-    assertTrue(facts.modified() > 0);
-  }
-  @Test void theCompiledCacheIsNotCountedAsSource(@TempDir Path dir){
-    var project= project(dir,"someProject");
-    cache(project,"hello",after(project));
-    assertEquals(3,Facts.of(project,"someproject",Kind.code).files());
-  }
+  static long after(Path project){ return Fs.walk(project,s->s.filter(Files::isRegularFile).mapToLong(Fs::lastModified).max().orElse(0))+1000; }
+  static boolean upToDate(Facts f){ return f.stale().isEmpty(); }
   //A log or an Eclipse report lands after the build stamp, inside the project folder
   @Test void whatFearlessWritesAboutAProjectIsNotCountedAsSource(@TempDir Path dir){
     var project= project(dir,"someProject");
@@ -68,43 +58,38 @@ final class FactsTest{
     var written= project.resolve(LogFiles.runDir);
     at(written.resolve("eclipse").resolve("problems.txt"),"",stamp+1000);
     at(written.resolve("logs").resolve("_base").resolve("unit_test_log.log"),"x\n",stamp+1000);
-    var facts= Facts.of(project,"someproject",Kind.code);
-    assertEquals(3,facts.files());
-    assertTrue(facts.upToDate());
+    assertTrue(upToDate(Facts.of(project,"someproject",Kind.code)));
   }
   @Test void recognisesThePackagesOfTheProject(@TempDir Path dir){
     var project= project(dir,"someProject");
     Fs.writeUtf8(project.resolve("_other").resolve("_rank_app.fear"),"");
-    var facts= Facts.of(project,"someproject",Kind.code);
-    assertEquals(List.of("hello","other"),facts.pkgs().stream().sorted().toList());
-    assertTrue(facts.problem().isEmpty());
+    assertTrue(Facts.of(project,"someproject",Kind.code).problem().isEmpty());
   }
   @Test void brokenNamesAreReportedNotHidden(@TempDir Path dir){
     var project= project(dir,"someProject");
     Fs.writeUtf8(project.resolve("_hello").resolve("Bad.fear"),"");
     var facts= Facts.of(project,"someproject",Kind.code);
     assertFalse(facts.problem().isEmpty());
-    assertEquals(List.of(),facts.pkgs());
     assertTrue(facts.problem().orElseThrow().contains("Bad.fear"));
   }
   @Test void withNoCacheThereIsSomethingToCompileAndNothingToRun(@TempDir Path dir){
     var facts= Facts.of(project(dir,"someProject"),"someproject",Kind.code);
     assertFalse(facts.hasCache());
-    assertFalse(facts.upToDate());
+    assertEquals(Optional.of("This project has no compiled cache: compiling it makes one."),facts.stale());
   }
   @Test void aCacheNewerThanEverySourceIsUpToDate(@TempDir Path dir){
     var project= project(dir,"someProject");
     cache(project,"hello",after(project));
     var facts= Facts.of(project,"someproject",Kind.code);
     assertTrue(facts.hasCache());
-    assertTrue(facts.upToDate());
+    assertTrue(upToDate(facts));
   }
   @Test void aPackageBuiltBeforeOneOfItsFilesChangedIsStale(@TempDir Path dir){
     var project= project(dir,"someProject");
     Fs.writeUtf8(project.resolve("_other").resolve("_rank_app.fear"),"");
     cache(project,"hello",after(project));
     cache(project,"other",1000);
-    assertFalse(Facts.of(project,"someproject",Kind.code).upToDate());
+    assertEquals(Optional.of("The compiled cache does not match the files of the package \"other\": compiling the project compiles it."),Facts.of(project,"someproject",Kind.code).stale());
   }
   @Test void eachPackageIsComparedWithItsOwnFilesOnly(@TempDir Path dir){
     var project= project(dir,"someProject");
@@ -113,7 +98,7 @@ final class FactsTest{
     at(project.resolve("_hello").resolve("_rank_app.fear"),"use base.Main as Main;\n",1000);
     cache(project,"hello",2000);
     cache(project,"other",6000);
-    assertTrue(Facts.of(project,"someproject",Kind.code).upToDate());
+    assertTrue(upToDate(Facts.of(project,"someproject",Kind.code)));
   }
   @Test void aPackageBuiltBeforeTheApiOfALowerRankIsStale(@TempDir Path dir){
     var project= project(dir,"someProject");
@@ -123,9 +108,9 @@ final class FactsTest{
     at(project.resolve(".fearless_out").resolve("lib.built"),"fear:/_lib/_rank_core.fear",3000);
     at(project.resolve(".fearless_out").resolve("lib.json"),"{}\n",3000);
     at(project.resolve(".fearless_out").resolve("lib.mains.info"),"{}\n",3000);
-    assertFalse(Facts.of(project,"someproject",Kind.code).upToDate());
+    assertFalse(upToDate(Facts.of(project,"someproject",Kind.code)));
     cache(project,"hello",4000);
-    assertTrue(Facts.of(project,"someproject",Kind.code).upToDate());
+    assertTrue(upToDate(Facts.of(project,"someproject",Kind.code)));
   }
   @Test void aFileOutsideEveryPackageNeverMakesTheCacheStale(@TempDir Path dir){
     var project= project(dir,"someProject");
@@ -133,7 +118,7 @@ final class FactsTest{
     cache(project,"hello",stamp);
     at(project.resolve("readme"),"edited\n",stamp+5000);
     at(project.resolve("someproject.fearless"),"",stamp+5000);
-    assertTrue(Facts.of(project,"someproject",Kind.code).upToDate());
+    assertTrue(upToDate(Facts.of(project,"someproject",Kind.code)));
   }
   @Test void aShortcutFileAtTheTopLevelKeepsTheCacheUpToDateAndTheProjectValid(@TempDir Path dir){
     var project= project(dir,"someProject");
@@ -141,14 +126,14 @@ final class FactsTest{
     cache(project,"hello",stamp);
     at(project.resolve("bar.fapp042"),"",stamp+5000);
     var facts= Facts.of(project,"someproject",Kind.code);
-    assertTrue(facts.upToDate());
+    assertTrue(upToDate(facts));
     assertEquals(Optional.empty(),facts.problem());
   }
   @Test void aFileAddedToAPackageMakesItStaleWhateverItsTime(@TempDir Path dir){
     var project= project(dir,"someProject");
     cache(project,"hello",after(project));
     at(project.resolve("_hello").resolve("more.fear"),"",1000);
-    assertFalse(Facts.of(project,"someproject",Kind.code).upToDate());
+    assertFalse(upToDate(Facts.of(project,"someproject",Kind.code)));
   }
   @Test void aDataFolderNeedsNoPackageStructure(@TempDir Path dir){
     var project= dir.resolve("publicFiles");
@@ -156,7 +141,7 @@ final class FactsTest{
     Fs.writeUtf8(project.resolve("publicfiles.fearless"),"");
     var facts= Facts.of(project,"publicfiles",Kind.dataReadOnly);
     assertEquals(Optional.empty(),facts.problem());
-    assertEquals(List.of(),facts.pkgs());
+    assertEquals(Optional.empty(),facts.stale());
   }
   @Test void aFolderWithoutItsMarkerIsInvalid(@TempDir Path dir){
     var project= project(dir,"someProject");
@@ -253,7 +238,7 @@ final class FactsTest{
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"),"not an image");
     cache(project,"hello",after(project));
     var facts= Facts.of(project,"someproject",Kind.code);
-    assertTrue(facts.upToDate());
+    assertTrue(upToDate(facts));
     assertTrue(facts.problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }
   @Test void aProjectWithBrokenNamesKeepsItsIcon(@TempDir Path dir){

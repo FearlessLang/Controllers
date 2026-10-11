@@ -1,134 +1,63 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.util.List;
 
 final class AllMainsRunTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
-    on("windows",()->click(val(332),val(94))));
-  final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(22000))));
-  final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action mainsShown= action("mainsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action all= action("all",
-    on("ubuntu_gnome",()->click(val(112),val(165))),
-    on("windows",()->click(val(45),val(118))));
-  final Action allSaved= action("allSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(38500))));
-  final Action runSelected= action("runSelected",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action runsDone= action("runsDone",
-    on("ubuntu_gnome",()->waitUntilTime(val(60000))));
-  final Action none= action("none",
-    on("ubuntu_gnome",()->click(val(162),val(165))),
-    on("windows",()->click(val(93),val(118))));
-  final Action noneSaved= action("noneSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(62500))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(64000))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(67500))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(77500))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(580),val(112))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action runV= action("runV",on("ubuntu_gnome",()->click(val(580),val(112))));
+  final Action mainsShown= action("mainsShown",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
+  final Action tick= action("tick",on("ubuntu_gnome",()->List.of(140,166,190,216,241).forEach(y->click(val(574),val(y)))));
+  final Action runTicked= action("runTicked",on("ubuntu_gnome",()->click(val(584),val(265))));
+  final Action runsDone= action("runsDone",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action mainsShownAgain= action("mainsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(54000))));
+  final Action closeMains= action("closeMains",on("ubuntu_gnome",()->keys(java.awt.event.KeyEvent.VK_ESCAPE)));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(59000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
-    launchScript("first",project);
+    launchScript("first",project.resolve("hello_world.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();
+    compiled.go();
+    var output= new Rectangle(410,300,1000,120);
+    var before= look();
+    runV.go();
     mainsShown.go();
-    all.go();
-    allSaved.go();
-    stabilize();
-    checkContent(info,"""
-      {
-        "hello_world": {
-          "path": "Str:%s",
-          "kind": "code",
-          "mains": ["hello.Hello1", "hello.Hello3", "hello.Hello4", "hello.Hello5", "hello.Hello6"]
-        }
-      }
-      """.formatted(slashed(project)));
-    runSelected.go();
+    var unticked= look();
+    tick.go();
+    runTicked.go();
     runsDone.go();
-    stabilize();
-    checkContent(state,"""
-      {
-        "hello_world": {
-          "folder": "Str:%s",
-          "kind": "code",
-          "running": "",
-          "runs": "5",
-          "lastRun": "hello.Hello6",
-          "exit": "[###]",
-          "mains": {
-            "hello.Hello1": "_hello/_rank_app.fear",
-            "hello.Hello3": "_hello/_rank_app.fear",
-            "hello.Hello4": "_hello/_rank_app.fear",
-            "hello.Hello5": "_hello/_rank_app.fear",
-            "hello.Hello6": "_hello/_rank_app.fear"
-          },
-          "problem": {}
-        }
-      }
-      """.formatted(escaped(project)));
-    checkContent(List.of(data,"eclipse","hello_world","console.txt"),"""
-      --- compiling helloWorld ---
-      --- compile done ---
-      --- running hello.Hello1 ---
-      hello world 3
-      --- hello.Hello1 exited with 0 after [###]s ---
-      --- running hello.Hello3 ---
-      [Hi]
-      --- hello.Hello3 exited with 0 after [###]s ---
-      --- running hello.Hello4 ---
-      [1, 2, 3, 4]
-      --- hello.Hello4 exited with 0 after [###]s ---
-      --- running hello.Hello5 ---
-      [11, 12, 13, 14]
-      --- hello.Hello5 exited with 0 after [###]s ---
-      --- running hello.Hello6 ---
-      AAAAh
-      imm Bar.bar error line: 16 in file _hello/_rank_app.fear
-      imm Foo.foo error line: 15 in file _hello/_rank_app.fear
-      imm Hello6.main(_) error line: 14 in file _hello/_rank_app.fear
-      --- hello.Hello6 exited with [###] after [###]s ---
-      """);
-    none.go();
-    noneSaved.go();
+    changed(before,output);
     stabilize();
     checkContent(info,"""
       {
-        "hello_world": {
-          "path": "Str:%s",
-          "kind": "code"
-        }
+        "projects": {
+          "hello_world": {
+            "path": "Str:%s",
+            "kind": "code",
+            "mains": ["hello.Hello1", "hello.Hello3", "hello.Hello4", "hello.Hello5", "hello.Hello6"]
+          }
+        },
+        "systemExtensions": []
       }
       """.formatted(slashed(project)));
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    runV.go();
+    mainsShownAgain.go();
+    changed(unticked,new Rectangle(566,132,16,116));
+    closeMains.go();
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
 }

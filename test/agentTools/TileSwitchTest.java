@@ -1,126 +1,56 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.util.List;
 
 final class TileSwitchTest extends ManagerTest{
-  static final List<String> helloConsole= List.of(data,"eclipse","hello_world","console.txt");
-  static final List<String> startConsole= List.of(data,"eclipse","start","console.txt");
-  static final String ok= "--- ok: no problem found ---\n";
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action closeInformation= action("closeInformation",
-    on("ubuntu_gnome",()->click(val(150),val(167))),
-    on("windows",()->click(val(79),val(120))));
-  final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action checkedOnce= action("checkedOnce",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))));
-  final Action checkAgain= action("checkAgain",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action checkedTwice= action("checkedTwice",
-    on("ubuntu_gnome",()->waitUntilTime(val(41500))));
-  final Action appsShownSecond= action("appsShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(43000))));
-  final Action terminalShownSecond= action("terminalShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(46500))));
-  final Action secondHandled= action("secondHandled",
-    on("ubuntu_gnome",()->waitUntilTime(val(57500))));
-  final Action checkStart= action("checkStart",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action startChecked= action("startChecked",
-    on("ubuntu_gnome",()->waitUntilTime(val(68500))));
-  final Action helloTile= action("helloTile",
-    on("ubuntu_gnome",()->click(val(138),val(192))),
-    on("windows",()->click(val(71),val(145))));
-  final Action helloShown= action("helloShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(71000))));
-  final Action focusHello= action("focusHello",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action clearOutput= action("clearOutput",
-    on("ubuntu_gnome",()->click(val(3785),val(233))),
-    on("windows",()->click(val(1227),val(184))));
-  final Action cleared= action("cleared",
-    on("ubuntu_gnome",()->waitUntilTime(val(74500))));
-  final Action startTile= action("startTile",
-    on("ubuntu_gnome",()->click(val(265),val(192))),
-    on("windows",()->click(val(199),val(145))));
-  final Action startShown= action("startShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(77000))));
-  final Action focusStart= action("focusStart",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(79500))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(83000))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(93000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action checkHello= action("checkHello",on("ubuntu_gnome",()->click(val(580),val(112))));
+  final Action helloChecked= action("helloChecked",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(22500))));
+  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action helloTile= action("helloTile",on("ubuntu_gnome",()->click(val(133),val(130))));
+  final Action helloShown= action("helloShown",on("ubuntu_gnome",()->waitUntilTime(val(36500))));
+  final Action startTile= action("startTile",on("ubuntu_gnome",()->click(val(261),val(130))));
+  final Action startShown= action("startShown",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
     var other= project("helloStackTraces");
-    launchScript("first",project);
+    launchScript("first",project.resolve("hello_world.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    left();
-    closeInformation.go();
-    check.go();
-    checkedOnce.go();
-    stabilize();
-    checkContent(helloConsole,ok);
-    checkAgain.go();
-    checkedTwice.go();
-    stabilize();
-    checkContent(helloConsole,ok+ok);
-    launchScript("second",other);
+    var panel= new Rectangle(410,95,1000,155);
+    var name= new Rectangle(450,95,110,32);
+    var output= new Rectangle(410,190,1000,60);
+    var helloEmpty= look();
+    checkHello.go();
+    helloChecked.go();
+    changed(helloEmpty,panel);
+    var hello= look();
+    launchScript("second",other.resolve("start.fearless"));
     runInTerminal(appsShownSecond,terminalShownSecond);
-    secondHandled.go();
+    secondShown.go();
+    changed(hello,panel);
+    var start= look();
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
-    checkContent(startConsole,"");
-    checkStart.go();
-    startChecked.go();
+    helloTile.go();
+    helloShown.go();
+    same(hello,name);
+    same(hello,output);
+    startTile.go();
+    startShown.go();
+    same(start,name);
+    same(start,output);
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(startConsole,ok);
-    checkContent(helloConsole,ok+ok);
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_END);
-    choose(helloTile,helloShown,focusHello);
-    clearOutput.go();
-    cleared.go();
-    stabilize();
-    checkContent(helloConsole,"");
-    checkContent(startConsole,ok);
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_END);
-    choose(startTile,startShown,focusStart);
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"137\n");
-  }
-  void choose(Action tile, Action shown, Action focus) throws Throwable{
-    tile.go();
-    shown.go();
-    focus.go();
-    left();
-  }
-  void left(){
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
+    checkContent(List.of("first.exit"),"0\n");
   }
 }

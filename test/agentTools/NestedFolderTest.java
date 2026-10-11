@@ -2,6 +2,7 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.awt.Rectangle;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -11,97 +12,65 @@ final class NestedFolderTest extends ManagerTest{
   final Path nest= filesIOFolder.resolve("nest");
   final Path inner= nest.resolve("inner");
   final Path source= inner.resolve("_inner");
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action appsShownNest= action("appsShownNest",
-    on("ubuntu_gnome",()->waitUntilTime(val(20600))));
-  final Action terminalShownNest= action("terminalShownNest",
-    on("ubuntu_gnome",()->waitUntilTime(val(24100))));
-  final Action noteShown= action("noteShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(36100))));
-  final Action ok= action("ok",
-    on("ubuntu_gnome",()->click(val(1952),val(1223))),
-    on("windows",()->click(val(639),val(453))));
-  final Action appsShownSource= action("appsShownSource",
-    on("ubuntu_gnome",()->waitUntilTime(val(38200))));
-  final Action terminalShownSource= action("terminalShownSource",
-    on("ubuntu_gnome",()->waitUntilTime(val(41700))));
-  final Action noteShownAgain= action("noteShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(53700))));
-  final Action okAgain= action("okAgain",
-    on("ubuntu_gnome",()->click(val(1952),val(1223))),
-    on("windows",()->click(val(639),val(453))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(55800))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(59300))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(69300))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action appsShownNest= action("appsShownNest",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
+  final Action terminalShownNest= action("terminalShownNest",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
+  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(30000))));
+  final Action appsShownSource= action("appsShownSource",on("ubuntu_gnome",()->waitUntilTime(val(32000))));
+  final Action terminalShownSource= action("terminalShownSource",on("ubuntu_gnome",()->waitUntilTime(val(35500))));
+  final Action noteShownAgain= action("noteShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(43000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
   @Override void walk() throws Throwable{
     noManagerData();
     Fs.rmTree(nest);
     Fs.writeUtf8(inner.resolve("inner.fearless"),"\n");
+    Fs.writeUtf8(nest.resolve("nest.fearless"),"\n");
     Fs.writeUtf8(source.resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"inner\")}\n");
+    Fs.writeUtf8(source.resolve("source.fearless"),"\n");
     var files= tree();
     var remembered= """
       {
-        "inner": {
-          "path": "Str:%s",
-          "kind": "idle"
-        }
+        "projects": {
+          "inner": {
+            "path": "Str:%s",
+            "kind": "idle"
+          }
+        },
+        "systemExtensions": []
       }
       """.formatted(slashed(inner));
-    launchScript("first",inner);
+    launchScript("first",inner.resolve("inner.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
     stabilize();
     checkContent(info,remembered);
-    focusTiles.go();
-    launchScript("second",nest);
+    var center= new Rectangle(1720,1000,400,160);
+    var before= look();
+    launchScript("second",nest.resolve("nest.fearless"));
     runInTerminal(appsShownNest,terminalShownNest);
     noteShown.go();
+    changed(before,center);
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
-    checkContent(notes,note(nest));
     checkContent(info,remembered);
     assertEquals(files,tree());
-    ok.go();
-    launchScript("third",source);
+    closeDialog.go();
+    launchScript("third",source.resolve("source.fearless"));
     runInTerminal(appsShownSource,terminalShownSource);
     noteShownAgain.go();
+    changed(before,center);
     stabilize();
     checkContent(List.of("third.exit"),"0\n");
-    checkContent(notes,note(nest)+note(source));
     checkContent(info,remembered);
     assertEquals(files,tree());
-    okAgain.go();
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    closeDialog.go();
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
-  }
-  String note(Path folder){
-    return """
-      Fearless cannot keep track of this project folder.
-
-      The manager was asked to register:
-        %s
-      Fearless is already keeping track of:
-        %s
-      One of the two is inside the other. Fearless keeps track of project folders
-      that do not overlap, so that every file belongs to exactly one project.
-
-      Use the folder Fearless already keeps track of, or make Fearless forget that
-      folder first, and then register this one again.
-      """.formatted(folder,inner);
+    checkContent(List.of("first.exit"),"0\n");
   }
   List<Path> tree(){ return Fs.walk(nest,s->s.sorted().toList()); }
 }

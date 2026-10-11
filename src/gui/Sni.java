@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
-import controller.Messages;
+import managerMessages.Violation;
 import utils.Bug;
 
 /// The manager's icon on a Linux desktop: a StatusNotifierItem served on the session bus.
@@ -56,7 +56,7 @@ final class Sni{
     var address= System.getenv("DBUS_SESSION_BUS_ADDRESS");
     if (address == null){ return false; }
     var path= Pattern.compile("(^|;)unix:([^;]*,)?path=([^,;]+)").matcher(address);
-    if (!path.find()){ throw Messages.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS \""+address+"\" names no \"unix:path=\" socket")); }
+    if (!path.find()){ throw Violation.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS \""+address+"\" names no \"unix:path=\" socket")); }
     var icon= new BufferedImage(64,64,BufferedImage.TYPE_INT_ARGB);
     var g= icon.createGraphics();
     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);
@@ -85,14 +85,14 @@ final class Sni{
       await(call(bus,"/org/freedesktop/DBus",bus,"AddMatch","s",new Writer().str("type='signal',sender='"+bus+"',member='NameOwnerChanged',arg0='"+watcher+"'")));
       register();
     }
-    catch(IOException e){ throw Messages.couldNotAddTrayIcon(e); }
+    catch(IOException e){ throw Violation.couldNotAddTrayIcon(e); }
   }
   private void register() throws IOException{
     await(call(watcher,"/StatusNotifierWatcher",watcher,"RegisterStatusNotifierItem","s",new Writer().str(itemPath)));
   }
   void serve(){
     try{ for(;;){ handle(next(channel)); } }
-    catch(IOException e){ throw Messages.trayConnectionLost(e); }
+    catch(IOException e){ throw Violation.trayConnectionLost(e); }
   }
   private Msg await(int serial) throws IOException{
     for(;;){
@@ -100,7 +100,7 @@ final class Sni{
       var answers= (m.type() == 2 || m.type() == 3) && m.replySerial() == serial;
       if (!answers){ handle(m); continue; }
       if (m.type() == 2){ return m; }
-      if (m.error().equals(serviceUnknown)){ throw Messages.noSystemTray(); }
+      if (m.error().equals(serviceUnknown)){ throw Violation.noSystemTray(); }
       throw new IOException(m.error()+(m.signature().startsWith("s") ? ": "+m.body().str() : ""));
     }
   }
@@ -131,7 +131,7 @@ final class Sni{
     var watched= m.sender().equals(bus) && m.member().equals("NameOwnerChanged") && m.body().str().equals(watcher);
     if (!watched){ return; }
     m.body().str();
-    if (m.body().str().isEmpty()){ throw Messages.trayIconRemoved(); }
+    if (m.body().str().isEmpty()){ throw Violation.trayIconRemoved(); }
     register();
   }
   private void get(Msg m) throws IOException{

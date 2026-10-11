@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import controller.Messages;
+import managerMessages.Report;
 
 /// The folders a desktop drags into the window: a file list, or the text/uri-list some desktops offer instead.
 public final class Drop{
@@ -31,7 +31,7 @@ public final class Drop{
       var flavor= uriList(t);
       return flavor.isEmpty() ? List.of() : fromUriList(text(t.getTransferData(flavor.get())),refused);
     }
-    catch(UnsupportedFlavorException|IOException e){ refused.accept(Messages.dropUnreadable(e)); return List.of(); }
+    catch(UnsupportedFlavorException|IOException e){ refused.accept(Report.dropUnreadable(e)); return List.of(); }
   }
   private static Optional<DataFlavor> uriList(Transferable t){
     return Stream.of(t.getTransferDataFlavors()).filter(f->f.getPrimaryType().equalsIgnoreCase("text") && f.getSubType().equalsIgnoreCase("uri-list")).findFirst();
@@ -50,10 +50,10 @@ public final class Drop{
     try{
       var uri= new URI(line);
       if ("file".equalsIgnoreCase(uri.getScheme())){ return Stream.of(Path.of(uri)); }
-      refused.accept(Messages.dropRefused(line,"only a \"file:\" URI names a file or folder of this computer"));
+      refused.accept(Report.dropRefused(line,"only a \"file:\" URI names a file or folder of this computer"));
     }
-    catch(URISyntaxException e){ refused.accept(Messages.dropRefused(line,"it is not a URI: "+e.getReason())); }
-    catch(IllegalArgumentException e){ refused.accept(Messages.dropRefused(line,"it names no file or folder of this computer: "+e.getMessage())); }
+    catch(URISyntaxException e){ refused.accept(Report.dropRefused(line,"it is not a URI: "+e.getReason())); }
+    catch(IllegalArgumentException e){ refused.accept(Report.dropRefused(line,"it names no file or folder of this computer: "+e.getMessage())); }
     return Stream.of();
   }
 }

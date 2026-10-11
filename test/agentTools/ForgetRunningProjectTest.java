@@ -1,83 +1,63 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.util.List;
 
 final class ForgetRunningProjectTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action appsShownGui= action("appsShownGui",
-    on("ubuntu_gnome",()->waitUntilTime(val(20500))));
-  final Action terminalShownGui= action("terminalShownGui",
-    on("ubuntu_gnome",()->waitUntilTime(val(24000))));
-  final Action panelShown= action("panelShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(35500))));
-  final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
-    on("windows",()->click(val(332),val(94))));
-  final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(38000))));
-  final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action mainShown= action("mainShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(53000))));
-  final Action run= action("run",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action programShown= action("programShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(58000))));
-  final Action projectMenu= action("projectMenu",
-    on("ubuntu_gnome",()->click(val(158),val(79))),
-    on("windows",()->click(val(89),val(33))));
-  final Action forgetProject= action("forgetProject",
-    on("ubuntu_gnome",()->click(val(180),val(237))),
-    on("windows",()->click(val(111),val(191))));
-  final Action forgotten= action("forgotten",
-    on("ubuntu_gnome",()->waitUntilTime(val(61000))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(62500))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(66000))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(76000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(520),val(112))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action run= action("run",on("ubuntu_gnome",()->click(val(520),val(112))));
+  final Action programShown= action("programShown",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
+  final Action refusalShown= action("refusalShown",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+  final Action terminate= action("terminate",on("ubuntu_gnome",()->click(val(520),val(112))));
+  final Action terminated= action("terminated",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
+  final Action forgotten= action("forgotten",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(57000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var gui= project("testGui1");
-    launchScript("first");
+    launchScript("first",gui.resolve("start.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
-    launchScript("second",gui);
-    runInTerminal(appsShownGui,terminalShownGui);
-    panelShown.go();
-    stabilize();
-    checkContent(List.of("second.exit"),"0\n");
     becomeCode.go();
     codeShown.go();
     compile.go();
-    mainShown.go();
+    compiled.go();
+    var code= """
+      {
+        "projects": {
+          "start": {
+            "path": "Str:%s",
+            "kind": "code"
+          }
+        },
+        "systemExtensions": []
+      }
+      """.formatted(slashed(gui));
     run.go();
     programShown.go();
-    projectMenu.go();
-    forgetProject.go();
+    var running= look();
+    forget.go();
+    refusalShown.go();
+    var center= new Rectangle(1720,1040,150,80);
+    changed(running,center);
+    stabilize();
+    checkContent(info,code);
+    closeDialog.go();
+    terminate.go();
+    terminated.go();
+    forget.go();
     forgotten.go();
     stabilize();
-    checkContent(state,"{}\n");
-    checkContent(info,"{}\n");
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    checkContent(info,"{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
 }

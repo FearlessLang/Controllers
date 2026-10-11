@@ -6,16 +6,19 @@ import static gui.Window.named;
 import static gui.Window.small;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.KeyboardFocusManager;
-import java.awt.Toolkit;
-import java.awt.datatransfer.StringSelection;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,21 +31,24 @@ import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import controller.Facts;
+import controller.Main;
 import controller.Project;
 import controller.Registry.Kind;
 import fileSupport.LogFiles;
+import managerMessages.Report;
 import tools.Fs;
 import tools.OpenPath;
 
@@ -50,172 +56,160 @@ import tools.OpenPath;
 /// buttons that act on it. One Panel per project, kept while the project stays registered:
 /// it holds the Output of the project.
 final class Panel{
-  interface Requests{ void ask(String verb, String name, String arg); }
   private record Link(JTextField field, String was){ boolean typed(){ return !field.getText().strip().equals(was); } }
   private static final int iconSize= 32;
   private static final int claimSize= 20;
-  private final Requests requests;
   private final Consumer<String> refuse;
   final JPanel root= new JPanel(new BorderLayout(8,8));
   final JTextArea output= mono(named(new JTextArea(10,60),"output"));
-  private final JScrollPane outputScroll= new JScrollPane(output);
-  private final JButton clearOutput= small("Clear output",this::clearOutput);
-  private final JTextArea details= mono(named(new JTextArea(9,40),"details"));
   private final JPanel kinds= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
-  private final JPanel mainsBox= named(new JPanel(),"mains");
-  private final JScrollPane mainsScroll= new JScrollPane(mainsBox);
-  private final JPanel mainsPanel= new JPanel(new BorderLayout());
-  private final JPanel pick= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
+  private final JPanel shortcuts= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
   private final JPanel claimsBox= new JPanel();
-  private final JScrollPane claimsScroll= named(new JScrollPane(claimsBox),"claims");
+  private final Collapsible claims= new Collapsible("Extensions",half(claimsBox),true);
   private final JPanel linksBox= new JPanel();
-  private final Collapsible links= new Collapsible("Links",new JScrollPane(linksBox),false);
-  private final Collapsible information= new Collapsible("Information",new JScrollPane(details),true);
+  private final Collapsible links= new Collapsible("Links",half(linksBox),false);
+  private final JList<LogFiles.Entry> logList= new JList<>();
+  private final Collapsible logs= new Collapsible("Logs",half(logList),false,small("Logs",this::openLogs));
   private final JButton openDocs= small("Open docs",this::openDocs);
   private final JButton action= named(new JButton("Compile"),"action");
+  private final JButton clean= small("Clean",()->Main.command("Clean",this.project.alias()));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
-  private final JList<LogFiles.Entry> logList= new JList<>();
-  private final JButton viewLog= small("View",this::viewLog);
-  private final JButton copyLog= small("Copy",this::copyLog);
-  private final JButton deleteLog= small("Delete",this::deleteLog);
   private Object shown= List.of();
   private HashMap<String,Link> linkFields= new HashMap<>();
   private Project project;
-  Panel(Requests requests, Consumer<String> refuse){
-    this.requests= requests;
+  Panel(Consumer<String> refuse){
     this.refuse= refuse;
     output.setEditable(false);
-    details.setEditable(false);
-    mainsBox.setLayout(new BoxLayout(mainsBox,BoxLayout.Y_AXIS));
     linksBox.setLayout(new BoxLayout(linksBox,BoxLayout.Y_AXIS));
     claimsBox.setLayout(new BoxLayout(claimsBox,BoxLayout.Y_AXIS));
-    claimsScroll.setBorder(BorderFactory.createEtchedBorder());
-    claimsScroll.getVerticalScrollBar().setUnitIncrement(16);
-    pick.add(named(small("All",()->requests.ask("mains",project.alias(),String.join(" ",project.knownMains()))),"all"));
-    pick.add(named(small("None",()->requests.ask("mains",project.alias(),"")),"none"));
-    mainsPanel.add(pick,BorderLayout.NORTH);
-    mainsPanel.add(mainsScroll,BorderLayout.CENTER);
-    mainsPanel.setBorder(BorderFactory.createEtchedBorder());
-    var logScroll= new JScrollPane(logList);
-    logScroll.setPreferredSize(new Dimension(0,140));
-    logList.addListSelectionListener(_->updateLogButtons());
-    outputScroll.setBorder(BorderFactory.createTitledBorder("Output"));
     action.addActionListener(_->act());
     root.setBorder(BorderFactory.createEmptyBorder(4,8,4,8));
     root.setMinimumSize(new Dimension(0,0));//let the split divider shrink this panel past its natural content width
     var header= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
     header.add(icon);
-    header.add(action);
     name.setFont(name.getFont().deriveFont(Font.BOLD,18f));
     header.add(name);
+    header.add(action);
     header.add(openDocs);
+    var buttons= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
+    buttons.add(kinds);
+    buttons.add(small("Browse",()->Window.open(refuse,project.folder())));
+    buttons.add(small("Forget",()->Main.command("Forget",project.alias())));
+    buttons.add(clean);
     var top= new JPanel();
     top.setLayout(new BoxLayout(top,BoxLayout.Y_AXIS));
-    top.add(header);
-    top.add(kinds);
-    top.add(mainsPanel);
-    top.add(claimsScroll);
-    top.add(links);
-    top.add(information);
-    top.add(new Collapsible("Logs",logScroll,false,viewLog,copyLog,deleteLog));
+    Stream.of(header,buttons,shortcuts).forEach(top::add);
+    var areas= new JPanel();
+    areas.setLayout(new BoxLayout(areas,BoxLayout.Y_AXIS));
+    Stream.of(new Collapsible("Output",half(output),true),claims,links,logs).forEach(areas::add);
+    areas.add(new JPanel());
     root.add(top,BorderLayout.NORTH);
-    var bar= new JPanel(new FlowLayout(FlowLayout.RIGHT,0,0));
-    bar.add(clearOutput);
-    var outputPanel= new JPanel(new BorderLayout());
-    outputPanel.add(bar,BorderLayout.NORTH);
-    outputPanel.add(outputScroll,BorderLayout.CENTER);
-    root.add(outputPanel,BorderLayout.CENTER);
+    root.add(areas,BorderLayout.CENTER);
+    root.addComponentListener(new ComponentAdapter(){
+      @Override public void componentResized(ComponentEvent e){ root.revalidate(); }
+    });
+  }
+  private JScrollPane half(Component view){
+    return new JScrollPane(view){
+      @Override public Dimension getPreferredSize(){
+        var d= super.getPreferredSize();
+        return new Dimension(d.width,Math.max(40,Math.min(d.height,root.getHeight()/2)));
+      }
+      @Override public Dimension getMaximumSize(){ return new Dimension(Integer.MAX_VALUE,getPreferredSize().height); }
+    };
   }
   private void openDocs(){ openDocs(refuse,project.folder()); }
-  private void clearOutput(){ requests.ask("clear",project.alias(),""); }
+  static void openDocs(Consumer<String> refuse, Path folder){
+    var gen= folder.resolve(Facts.outDir).resolve("gen_java");
+    var docs= Files.isDirectory(gen) ? Fs.walk(gen,s->s.filter(p->p.toString().endsWith(".html")).toList()) : List.<Path>of();
+    if (docs.isEmpty()){ refuse.accept(Report.noDocs(gen)); return; }
+    docs.forEach(OpenPath::open);
+  }
+  private void openLogs(){ Window.open(refuse,project.folder().resolve(LogFiles.runDir).resolve("logs")); }
   void append(String text){
-    var bar= outputScroll.getVerticalScrollBar();
+    var bar= ((JScrollPane)output.getParent().getParent()).getVerticalScrollBar();
     var following= bar.getValue()+bar.getVisibleAmount() >= bar.getMaximum()-16;
     output.append(text);
     if (following){ output.setCaretPosition(output.getDocument().getLength()); }
+    root.revalidate();
   }
   private void act(){
-    information.setOpen(false);
-    links.setOpen(false);
-    requests.ask(project.action().verb(),project.alias(),"");
+    var alias= project.alias();
+    switch(project.action()){
+      case check -> Main.command("Check",alias);
+      case compile -> Main.command("Compile",alias);
+      case terminate -> Main.command("Terminate",alias);
+      case run -> run();
+    }
   }
-  void render(Project p, List<Project> all){
+  private void run(){
+    var mains= project.knownMains();
+    if (mains.size() == 1){ Main.command("Run",project.alias(),mains.getFirst()); return; }
+    var popup= new JPopupMenu();
+    var boxes= mains.stream().map(m->named(new JCheckBox(m,project.selectedMains().contains(m)),m)).toList();
+    var run= named(small("Run",()->{ popup.setVisible(false); runTicked(boxes); }),"runTicked");
+    Runnable enable= ()->run.setEnabled(boxes.stream().anyMatch(JCheckBox::isSelected));
+    boxes.forEach(b->b.addActionListener(_->enable.run()));
+    enable.run();
+    var list= new JPanel();
+    list.setLayout(new BoxLayout(list,BoxLayout.Y_AXIS));
+    boxes.forEach(list::add);
+    list.add(run);
+    popup.add(list);
+    popup.show(action,0,action.getHeight());
+  }
+  private void runTicked(List<JCheckBox> boxes){
+    var ticked= boxes.stream().filter(JCheckBox::isSelected).map(JCheckBox::getText);
+    Main.command("Run",Stream.concat(Stream.of(project.alias()),ticked).toArray(String[]::new));
+  }
+  void render(Project p, List<Project> all, int height){
     var claimed= Project.claimed(all);
     var stamps= claimed.values().stream().flatMap(List::stream).map(c->c.icon(".png").toFile().lastModified()).toList();
-    var next= List.of(p,all.stream().map(Project::entry).toList(),claimed,stamps);
+    var next= List.of(p,all.stream().map(Project::entry).toList(),claimed,stamps,height);
     if (next.equals(shown)){ return; }
     shown= next;
     project= p;
     icon.setIcon(new ImageIcon(Icons.of(p,iconSize).getScaledInstance(iconSize,iconSize,Image.SCALE_SMOOTH)));
     name.setText(p.alias());
     var a= p.action();
-    action.setText(a.text());
-    action.setEnabled(a.enabled());
+    var several= a == Project.Action.run && p.knownMains().size() > 1;
+    action.setText(switch(a){ case check -> "Check"; case compile -> "Compile"; case run -> "Run"; case terminate -> "Terminate"; });
+    action.setIcon(several ? new Arrow() : null);
+    action.setHorizontalTextPosition(JButton.LEADING);
+    action.setEnabled(a != Project.Action.run || !p.knownMains().isEmpty());
     openDocs.setEnabled(p.mains().isPresent());
-    details.setText(p.information());
-    details.setCaretPosition(0);
+    clean.setVisible(p.kind() == Kind.code);
     fillKinds(p);
-    fillMains(p);
+    fillShortcuts(p,claimed);
     fillClaims(p,claimed);
     fillLinks(p,all);
+    logs.setVisible(p.kind() == Kind.code);
     var log= logList.getSelectedValue();
     logList.setListData(p.facts().logs().toArray(LogFiles.Entry[]::new));
     logList.setSelectedValue(log,false);
-    updateLogButtons();
     root.revalidate();
     root.repaint();
   }
-  private void updateLogButtons(){
-    var has= logList.getSelectedValue() != null;
-    viewLog.setEnabled(has);
-    copyLog.setEnabled(has);
-    deleteLog.setEnabled(has);
+  private void fillShortcuts(Project p, Map<String,List<Project.Claimant>> claimed){
+    shortcuts.removeAll();
+    var mine= mine(p,claimed).filter(Project.Claimant::shortcut).toList();
+    shortcuts.setVisible(!mine.isEmpty());
+    mine.forEach(c->shortcuts.add(doubleClicked(named(new JLabel(new ImageIcon(Icons.of(c,iconSize))),"shortcut "+c.main()+" "+c.claim().extension()),()->Main.command("OpenWithOrShortcut",Main.path(c.shortcutFile())))));
   }
-  private void viewLog(){
-    var sel= logList.getSelectedValue();
-    Window.onFiles(refuse,"The log is not shown",()->Window.showText(root,Fs.readUtf8(sel.path()),sel.path().getFileName().toString(),JOptionPane.PLAIN_MESSAGE));
-  }
-  private void copyLog(){ Window.onFiles(refuse,"The log is not copied",()->copy(Fs.readUtf8(logList.getSelectedValue().path()))); }
-  private static void copy(String text){
-    var selection= new StringSelection(text);
-    Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection,selection);
-  }
-  private void deleteLog(){
-    var sel= logList.getSelectedValue();
-    if (JOptionPane.showConfirmDialog(root,"Delete "+sel.path().getFileName()+"?","Fearless",JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION){ return; }
-    Window.onFiles(refuse,"The log is not deleted",()->Fs.rmTree(sel.path()));
-  }
-  //For a code project: what it can run. Unknown until compiled, a single main needs
-  //no choice, and several mains are picked one by one or with All and None.
-  private void fillMains(Project p){
-    mainsBox.removeAll();
-    mainsScroll.setPreferredSize(null);
-    mainsPanel.setVisible(p.kind() == Kind.code);
-    var known= p.knownMains();
-    pick.setVisible(known.size() > 1);
-    if (p.mains().isEmpty()){ mainsBox.add(new JLabel(p.problem().isPresent() ? "<invalid: see Error report>" : "<needs compiling>")); return; }
-    if (known.size() == 1){ mainsBox.add(new JLabel(known.getFirst())); return; }
-    for(var main: known){
-      var box= named(new JCheckBox(main,p.selectedMains().contains(main)),main);
-      box.addActionListener(_->requests.ask("mains",p.alias(),ticked()));
-      mainsBox.add(box);
-    }
-    mainsScroll.setPreferredSize(new Dimension(0,Math.min(3,known.size())*26+8));
+  private static Stream<Project.Claimant> mine(Project p, Map<String,List<Project.Claimant>> claimed){
+    return claimed.values().stream().flatMap(List::stream).filter(c->c.folder().equals(p.folder()));
   }
   private void fillClaims(Project p, Map<String,List<Project.Claimant>> claimed){
     claimsBox.removeAll();
-    var mine= claimed.values().stream().flatMap(List::stream).filter(c->c.folder().equals(p.folder()))
-      .collect(Collectors.groupingBy(Project.Claimant::main,TreeMap::new,Collectors.toList()));
-    claimsScroll.setVisible(!mine.isEmpty());
-    mine.forEach((main,cs)->fillClaims(main,cs,claimed));
-    claimsScroll.setPreferredSize(new Dimension(0,Math.min(240,claimsBox.getPreferredSize().height+4)));
+    var opens= mine(p,claimed).filter(c->!c.shortcut()).collect(Collectors.groupingBy(Project.Claimant::main,TreeMap::new,Collectors.toList()));
+    claims.setVisible(!opens.isEmpty());
+    opens.forEach((main,cs)->fillClaims(main,cs,claimed));
   }
   private void fillClaims(String main, List<Project.Claimant> cs, Map<String,List<Project.Claimant>> claimed){
     claimsBox.add(row(0,new JLabel(main)));
-    section("Extensions this main opens:",cs.stream().filter(c->others(c,claimed).isEmpty()).map(c->row(16,label("."+c.claim().extension(),c))).toList());
+    section("Extensions this main opens:",cs.stream().map(c->row(16,label("."+c.claim().extension(),c))).toList());
     section("Conflicting extensions:",cs.stream().filter(c->!others(c,claimed).isEmpty()).map(c->conflict(c,others(c,claimed))).toList());
-    section("Shortcuts (double click to run):",cs.stream().filter(Project.Claimant::shortcut).map(c->row(16,shortcut(c))).toList());
   }
   private static List<Project.Claimant> others(Project.Claimant c, Map<String,List<Project.Claimant>> claimed){ return claimed.get(c.claim().extension()).stream().filter(o->!o.equals(c)).toList(); }
   private void section(String heading, List<JPanel> rows){
@@ -231,14 +225,10 @@ final class Panel{
   }
   private static JLabel label(String text, Project.Claimant c){ return new JLabel(text,new ImageIcon(Icons.of(c,claimSize)),JLabel.LEADING); }
   private static JPanel conflict(Project.Claimant c, List<Project.Claimant> others){
-    var res= row(16,label("."+c.claim().extension(),c),new JLabel("also claimed by"),label(others.getFirst().label(),others.getFirst()));
-    if (others.size() > 1){ res.add(new JLabel("and "+(others.size()-1)+" more")); }
+    var res= row(16,new JLabel("."+c.claim().extension()+" is also opened by"));
+    others.forEach(o->res.add(label(o.label(),o)));
     return res;
   }
-  private JLabel shortcut(Project.Claimant c){
-    return doubleClicked(named(new JLabel(new ImageIcon(Icons.of(c,iconSize))),"shortcut "+c.main()+" "+c.claim().extension()),()->requests.ask("run",c.alias(),c.main()));
-  }
-  private String ticked(){ return String.join(" ",Stream.of(mainsBox.getComponents()).map(c->(JCheckBox)c).filter(JCheckBox::isSelected).map(JCheckBox::getText).toList()); }
   private void fillKinds(Project p){
     kinds.removeAll();
     if (p.kind() != Kind.idle){ kinds.add(kindButton(p,"Back to idle",Kind.idle)); return; }
@@ -247,7 +237,7 @@ final class Panel{
     kinds.add(kindButton(p,"Become code",Kind.code));
   }
   private JButton kindButton(Project p, String text, Kind target){
-    var res= named(small(text,()->requests.ask("kind",p.alias(),target.text)),target.text);
+    var res= named(small(text,()->Main.command("Kind",p.alias(),target.text)),target.text);
     res.setEnabled(!p.busy());
     return res;
   }
@@ -289,17 +279,23 @@ final class Panel{
     linkFields.put(field.getName(),link);
     field.addActionListener(_->field.transferFocus());
     field.addFocusListener(new FocusAdapter(){
-      @Override public void focusLost(FocusEvent e){ if (linkFields.get(field.getName()) == link && link.typed()){ requests.ask("link",code.alias(),data+" "+how+" "+field.getText()); } }
+      @Override public void focusLost(FocusEvent e){ if (linkFields.get(field.getName()) == link && link.typed()){ sendLink(code,data,how,field.getText()); } }
     });
     var res= new JPanel(new FlowLayout(FlowLayout.LEFT,2,0));
     res.add(new JLabel(how));
     res.add(field);
     return res;
   }
-  static void openDocs(Consumer<String> refuse, Path folder){ Window.onFiles(refuse,"The documentation is not opened",()->openAll(refuse,folder.resolve(Facts.outDir).resolve("gen_java"))); }
-  private static void openAll(Consumer<String> refuse, Path gen){
-    var docs= Fs.walk(gen,s->s.filter(p->p.toString().endsWith(".html")).toList());
-    if (docs.isEmpty()){ refuse.accept("The documentation is not opened: no .html file is in\n"+gen); return; }
-    docs.forEach(OpenPath::open);
+  private static void sendLink(Project code, String data, String how, String names){
+    var words= Stream.of(names.split(" +")).filter(w->!w.isEmpty());
+    Main.command("Link",Stream.concat(Stream.of(code.alias(),data,how),words).toArray(String[]::new));
+  }
+  private static final class Arrow implements Icon{
+    @Override public int getIconWidth(){ return 10; }
+    @Override public int getIconHeight(){ return 6; }
+    @Override public void paintIcon(Component c, Graphics g, int x, int y){
+      g.setColor(c.isEnabled() ? Color.darkGray : Color.lightGray);
+      g.fillPolygon(new int[]{x,x+10,x+5},new int[]{y,y,y+6},3);
+    }
   }
 }

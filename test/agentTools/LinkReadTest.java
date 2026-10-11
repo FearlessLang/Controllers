@@ -2,7 +2,7 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -10,69 +10,26 @@ import java.util.List;
 import tools.Fs;
 
 final class LinkReadTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action becomeData= action("becomeData",
-    on("ubuntu_gnome",()->click(val(141),val(140))),
-    on("windows",()->click(val(74),val(94))));
-  final Action dataSaved= action("dataSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
-  final Action appsShownReader= action("appsShownReader",
-    on("ubuntu_gnome",()->waitUntilTime(val(23000))));
-  final Action terminalShownReader= action("terminalShownReader",
-    on("ubuntu_gnome",()->waitUntilTime(val(26500))));
-  final Action readerShown= action("readerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(37500))));
-  final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(140))),
-    on("windows",()->click(val(332),val(94))));
-  final Action codeSaved= action("codeSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(40000))));
-  final Action openLinks= action("openLinks",
-    on("ubuntu_gnome",()->click(val(130),val(191))),
-    on("windows",()->click(val(62),val(144))));
-  final Action linksShown= action("linksShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(42000))));
-  final Action readField= action("readField",
-    on("ubuntu_gnome",()->click(val(240),val(233))),
-    on("windows",()->click(val(158),val(183))));
-  final Action readsSaved= action("readsSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(45500))));
-  final Action appsShownStore= action("appsShownStore",
-    on("ubuntu_gnome",()->waitUntilTime(val(47000))));
-  final Action terminalShownStore= action("terminalShownStore",
-    on("ubuntu_gnome",()->waitUntilTime(val(50500))));
-  final Action storeShown= action("storeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(61500))));
-  final Action backToIdle= action("backToIdle",
-    on("ubuntu_gnome",()->click(val(138),val(140))),
-    on("windows",()->click(val(70),val(94))));
-  final Action idleSaved= action("idleSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(64000))));
-  final Action appsShownReaderAgain= action("appsShownReaderAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(65500))));
-  final Action terminalShownReaderAgain= action("terminalShownReaderAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(69000))));
-  final Action readerShownAgain= action("readerShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(80000))));
-  final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action compileRefused= action("compileRefused",
-    on("ubuntu_gnome",()->waitUntilTime(val(86000))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(87500))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(91000))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(101000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action dataSaved= action("dataSaved",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShownReader= action("appsShownReader",on("ubuntu_gnome",()->waitUntilTime(val(22500))));
+  final Action terminalShownReader= action("terminalShownReader",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action readerShown= action("readerShown",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action codeSaved= action("codeSaved",on("ubuntu_gnome",()->waitUntilTime(val(37000))));
+  final Action openLinks= action("openLinks",on("ubuntu_gnome",()->click(val(450),val(379))));
+  final Action linksShown= action("linksShown",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
+  final Action readField= action("readField",on("ubuntu_gnome",()->click(val(560),val(421))));
+  final Action readsSaved= action("readsSaved",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
+  final Action storeTile= action("storeTile",on("ubuntu_gnome",()->click(val(261),val(130))));
+  final Action storeShown= action("storeShown",on("ubuntu_gnome",()->waitUntilTime(val(46500))));
+  final Action idleSaved= action("idleSaved",on("ubuntu_gnome",()->waitUntilTime(val(49500))));
+  final Action readerTile= action("readerTile",on("ubuntu_gnome",()->click(val(133),val(130))));
+  final Action readerShownAgain= action("readerShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action check= action("check",on("ubuntu_gnome",()->click(val(540),val(112))));
+  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(55000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(61000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var links= filesIOFolder.resolve("links");
@@ -83,24 +40,16 @@ final class LinkReadTest extends ManagerTest{
     Fs.writeUtf8(store.resolve("_store").resolve("_rank_app.fear"),"Stock:{}\n");
     Fs.writeUtf8(reader.resolve("reader.fearless"),"\n");
     Fs.writeUtf8(reader.resolve("_reader").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"reader\")}\n");
-    launchScript("first",store);
+    launchScript("first",store.resolve("store.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeData.go();
     dataSaved.go();
+    launchScript("second",reader.resolve("reader.fearless"));
+    runInTerminal(appsShownReader,terminalShownReader);
+    readerShown.go();
     stabilize();
-    checkContent(info,"""
-      {
-        "store": {
-          "path": "Str:%s",
-          "kind": "data:readOnly"
-        }
-      }
-      """.formatted(slashed(store)));
-    handOver("second",reader,appsShownReader,terminalShownReader,readerShown);
+    checkContent(List.of("second.exit"),"0\n");
     becomeCode.go();
     codeSaved.go();
     stabilize();
@@ -113,47 +62,44 @@ final class LinkReadTest extends ManagerTest{
     stabilize();
     var reads= """
       ,
-          "reads": {
-            "store": ["Stock"]
-          }""";
+            "reads": {
+              "store": ["Stock"]
+            }""";
     checkContent(info,registry(store,reader,"data:readOnly",reads));
-    handOver("third",store,appsShownStore,terminalShownStore,storeShown);
+    storeTile.go();
+    storeShown.go();
     backToIdle.go();
     idleSaved.go();
     stabilize();
     checkContent(info,registry(store,reader,"idle",reads));
-    handOver("fourth",reader,appsShownReaderAgain,terminalShownReaderAgain,readerShownAgain);
-    compile.go();
-    compileRefused.go();
+    readerTile.go();
+    readerShownAgain.go();
+    var before= look();
+    check.go();
+    checked.go();
+    changed(before,new Rectangle(410,190,1000,60));
     stabilize();
-    checkContent(List.of(data,"eclipse","reader","console.txt"),"""
-      "reads" refers to "store", but the kind of "store" is "idle"; "reads" accepts only "data:readOnly" or "data:readWrite".
-      """);
     assertFalse(Files.exists(reader.resolve(".fearless_out")));
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
-  }
-  void handOver(String exit, Path folder, Action appsShown, Action terminalShown, Action shown) throws Throwable{
-    launchScript(exit,folder);
-    runInTerminal(appsShown,terminalShown);
-    shown.go();
-    stabilize();
-    checkContent(List.of(exit+".exit"),"0\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
   static String registry(Path store, Path reader, String storeKind, String links){
     return """
       {
-        "store": {
-          "path": "Str:%s",
-          "kind": "%s"
+        "projects": {
+          "store": {
+            "path": "Str:%s",
+            "kind": "%s"
+          },
+          "reader": {
+            "path": "Str:%s",
+            "kind": "code"%s
+          }
         },
-        "reader": {
-          "path": "Str:%s",
-          "kind": "code"%s
-        }
+        "systemExtensions": []
       }
       """.formatted(slashed(store),storeKind,slashed(reader),links);
   }

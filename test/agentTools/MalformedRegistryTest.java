@@ -1,89 +1,74 @@
 package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Rectangle;
 import java.nio.file.Files;
 import java.util.List;
 
 import tools.Fs;
 
 final class MalformedRegistryTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(20000))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(23500))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(33500))));
-  final Action appsShownMalformed= action("appsShownMalformed",
-    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
-  final Action terminalShownMalformed= action("terminalShownMalformed",
-    on("ubuntu_gnome",()->waitUntilTime(val(38500))));
-  final Action errorShown= action("errorShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(52500))));
-  final Action ok= action("ok",
-    on("ubuntu_gnome",()->click(val(1952),val(1279))),
-    on("windows",()->click(val(639),val(506))));
-  final Action errorDismissed= action("errorDismissed",
-    on("ubuntu_gnome",()->waitUntilTime(val(54600))));
-  final Action appsShownFresh= action("appsShownFresh",
-    on("ubuntu_gnome",()->waitUntilTime(val(56100))));
-  final Action terminalShownFresh= action("terminalShownFresh",
-    on("ubuntu_gnome",()->waitUntilTime(val(59600))));
-  final Action freshShown= action("freshShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(72600))));
-  final Action appsShownToEndFresh= action("appsShownToEndFresh",
-    on("ubuntu_gnome",()->waitUntilTime(val(74100))));
-  final Action terminalShownToEndFresh= action("terminalShownToEndFresh",
-    on("ubuntu_gnome",()->waitUntilTime(val(77600))));
-  final Action freshEnded= action("freshEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(87600))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
+  final Action appsShownMalformed= action("appsShownMalformed",on("ubuntu_gnome",()->waitUntilTime(val(25000))));
+  final Action terminalShownMalformed= action("terminalShownMalformed",on("ubuntu_gnome",()->waitUntilTime(val(28500))));
+  final Action errorShown= action("errorShown",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
+  final Action errorDismissed= action("errorDismissed",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+  final Action appsShownFresh= action("appsShownFresh",on("ubuntu_gnome",()->waitUntilTime(val(47000))));
+  final Action terminalShownFresh= action("terminalShownFresh",on("ubuntu_gnome",()->waitUntilTime(val(50500))));
+  final Action freshShown= action("freshShown",on("ubuntu_gnome",()->waitUntilTime(val(63500))));
+  final Action freshQuit= action("freshQuit",on("ubuntu_gnome",()->waitUntilTime(val(68500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
     var remembered= """
       {
-        "hello_world": {
-          "path": "Str:%s",
-          "kind": "idle"
-        }
+        "projects": {
+          "hello_world": {
+            "path": "Str:%s",
+            "kind": "idle"
+          }
+        },
+        "systemExtensions": []
       }
       """.formatted(slashed(project));
-    launchScript("first",project);
+    launchScript("first",project.resolve("hello_world.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
     stabilize();
     checkContent(info,remembered);
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
     Fs.writeUtf8(filesIOFolder.resolve(data).resolve("projects.info"),remembered.substring(0,remembered.length()-2));
+    var before= look();
     launchScript("second");
     runInTerminal(appsShownMalformed,terminalShownMalformed);
     errorShown.go();
+    changed(before,new Rectangle(1720,1000,400,160));
     stabilize();
     assertFalse(Files.exists(filesIOFolder.resolve("second.exit")));
-    assertFalse(Files.exists(filesIOFolder.resolve(data)));
-    ok.go();
+    assertTrue(Files.exists(filesIOFolder.resolve(data)));
+    closeDialog.go();
     errorDismissed.go();
     stabilize();
     checkContent(List.of("second.exit"),"1\n");
+    assertFalse(Files.exists(filesIOFolder.resolve(data)));
     launchScript("third");
     runInTerminal(appsShownFresh,terminalShownFresh);
     freshShown.go();
     stabilize();
-    checkContent(state,"{}\n");
-    endScript();
-    runInTerminal(appsShownToEndFresh,terminalShownToEndFresh);
-    freshEnded.go();
+    checkContent(info,"{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    managerMenu.go();
+    quitManager.go();
+    freshQuit.go();
     stabilize();
-    checkContent(List.of("third.exit"),"137\n");
+    checkContent(List.of("third.exit"),"0\n");
   }
 }

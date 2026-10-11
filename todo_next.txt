@@ -10,48 +10,29 @@ is healthy. The next start works.
 Fix it so a slow but healthy desk is never taken for a broken one, and add a test that covers a slow first
 surfacing. Details: /data/overnight_logs/agent_tools_vms/kind_reset_test_fedora_gnome.txt (local log).
 
-= 2. Tests must fail when their actions were not done =
+= 2. Recordings on the guest desks =
 
-Several tests pass when a click misses, because they check only files and exit codes:
-- WindowCloseTest: never checks the window went away after the close.
-- ForgetRunningProjectTest: a missed Become code, Compile or Run click leaves the same files as a hit.
-During the guest rounds the agents checked those steps by hand with screenshots; the tests must check them
-themselves. OpenFearlessFileTest shows the intended style: it compares a screen area with its look before
-the window opened (16 levels of tolerance per channel, pointer moved to the screen centre before each shot,
-since the viewer scales some guests and some compositors draw the pointer into the guest image).
-Review every test in test/agentTools for the same pattern: for each action, ask what the test would observe
-if the action did nothing, and add a check where the answer is "nothing".
-A check on console.txt must allow lines the running program adds by itself ("repaint frame(s) lost" on slow
-desks): QuitWhileRunningTest ends its check with a [###] hole after the running line.
+Every test of test/agentTools but DesktopDragTest has a recording for ubuntu_gnome only, made with the
+window of the current ControllersDesign. Record each test on the 12 guest desks, then run the whole
+agentTools package once per desk and fix what broke.
+StandInTest takes the tray away by switching off the ubuntu-appindicators GNOME extension; each guest desk
+needs its own way to take its tray away, or no StandInTest when the desk has no tray to begin with.
 
-= 3. Desks with neither tray nor minimization (void_i3) =
+= 3. Tests must fail when their actions were not done =
 
-With no StatusNotifierWatcher the manager iconifies on close (Tray calls window.iconifyOnClose()). i3 ignores
-iconify requests, so on void_i3 the close does nothing visible, and nothing can bring a hidden window back.
-Proposal: on a desk with no tray the manager draws its own tray substitute in Swing: a small undecorated
-always-on-top window with the Fearless icon sitting in a screen corner. Closing the main window hides it and
-shows the corner icon; a click on the icon reopens the window; a right click opens the same menu as the tray
-icon. This takes full control and behaves the same on every desk with no tray (debian_mate, debian_gnome_x11,
-fedora_gnome, void_i3), so iconifyOnClose may go away.
-Open points: which corner (a corner a panel does not cover), whether tiling desks float an undecorated
-always-on-top window (i3 floats dialogs and owned windows), and how WindowCloseTest checks it.
+Review every test in test/agentTools: for each action, ask what the test would observe if the action did
+nothing, and add a check where the answer is "nothing". The tests compare screen areas with their look at an
+earlier step (ManagerTest.look, same, changed: 16 levels of tolerance per channel, pointer moved to the
+screen centre before each shot).
 
-= 4. Remaining guest rounds =
+= 4. The desk between runs =
 
-Done on all 13 desks: TooManyArgumentsTest, SecondLaunchOnFolderTest, WindowCloseTest, LaunchOnFileTest,
-ForgetProjectTest, QuitWhileRunningTest, OpenFearlessFileTest, KindResetTest, ClearOutputTest.
-ForgetRunningProjectTest: done on ubuntu_gnome only.
-Not started: BrowseFilesTest FolderGoneTest ShortcutFileTest SortByCompiledTest EditMetadataCommitTest
-MalformedRegistryTest KeyboardMenusTest RelaunchKeepsRegistryTest ProjectIconTest TerminateTest DropFolderTest
-RefusedFolderTest EditMetadataInvalidTest EmptyFolderTest RecompileAfterEditTest DesktopDragTest AddFolderTest
-SecondMarkerTest NestedFolderTest ClearCacheTest AliasClashTest OpenWithChoiceTest FileAssociationTest
-RunSelectedTest CompileFailsTest ConnectEclipseTest CloseProgramWindowTest EditMetadataAddProjectTest
-RawStateTest TerminateDuringRunSelectedTest EditMetadataForgetTest EditMetadataRenameTest TileSwitchTest
-SystemExtensionTest AllMainsRunTest ClearOutputWhileRunningTest LogsSectionTest RunningMenuTest StaleMainTest
-StaleMainNoteTest EditMetadataConflictTest LinkReadTest LinkWriteTest LogViewTest DividerPlaceTest.
-Shared code (ManagerTest, OpenFearlessFileTest) changed after some desks were recorded: once every test is
-recorded, run the whole agentTools package once per desk and fix what broke.
-Points 1 and 2 change what the tests observe, so doing them first saves recording the remaining tests twice.
+A test that fails leaves its windows open. The next test then finds a file manager window open: GNOME Files
+opens the next window at an offset, a double click meant for a file lands on the title bar and maximizes the
+window, and Files remembers to open maximized. Between runs on ubuntu_gnome: nautilus -q, and
+gsettings set org.gnome.nautilus.window-state maximized false.
+DesktopDragTest needs the folders test1 and test2 of the files folder shown on the desktop: it passes only
+when the files folder is the folder the desktop shows.
 
 = 5. Smaller observations =
 
