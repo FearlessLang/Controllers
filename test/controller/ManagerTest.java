@@ -429,7 +429,7 @@ final class ManagerTest{
     send(m,"Forget","hello","now");
     send(m,"Run");
     assertEquals(5,view.refused.size());
-    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Select\", \"Check\", \"Terminate\", \"Clean\", \"ClearOutput\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\".",view.refused.get(0));
+    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Select\", \"Check\", \"Terminate\", \"Clean\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\".",view.refused.get(0));
     assertEquals("The manager was asked to change the kind of \"hello\" to \"library\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".",view.refused.get(1));
     assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link.",view.refused.get(2));
     assertEquals("The manager was asked \"Forget\" with 2 arguments, but \"Forget\" takes 1.\nThe arguments are:\n  \"hello\"\n  \"now\"",view.refused.get(3));
@@ -523,8 +523,6 @@ final class ManagerTest{
     var hello= code(m,dir,"hello");
     send(m,"Check","hello");
     assertEquals("This project has no compiled cache: compiling it makes one.\n",view.out(hello));
-    send(m,"ClearOutput","hello");
-    assertEquals("",view.out(hello));
   }
   @Test void linksAreEditedByRequestAndBrokenLinksStopTheCompile(@TempDir Path dir){
     var m= manager(dir);

@@ -101,7 +101,7 @@ public final class Manager{
   private static Map<String,List<Integer>> verbs(){
     var res= new LinkedHashMap<String,List<Integer>>();
     Stream.of("Show","Quit","Reset").forEach(v->res.put(v,List.of(0)));
-    Stream.of("Register","ConnectEclipse","EditMetadata","OpenWithOrShortcut","Select","Check","Terminate","Clean","ClearOutput","Forget").forEach(v->res.put(v,List.of(1)));
+    Stream.of("Register","ConnectEclipse","EditMetadata","OpenWithOrShortcut","Select","Check","Terminate","Clean","Forget").forEach(v->res.put(v,List.of(1)));
     res.put("Run",List.of(1,2,3));
     res.put("Compile",List.of(1,2));
     res.put("Kind",List.of(2));
@@ -265,7 +265,6 @@ public final class Manager{
       case "Check" -> check(f);
       case "Terminate" -> terminate(f);
       case "Clean" -> clean(f);
-      case "ClearOutput" -> { selected= Optional.of(f); view.clear(f); }
       case "Kind" -> kind(f,args.get(1));
       case "Forget" -> forget(f);
       case "Link" -> link(f,args.get(1));

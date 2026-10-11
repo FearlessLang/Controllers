@@ -100,7 +100,7 @@ final class Panel{
     Stream.of(header,shortcuts).forEach(top::add);
     var areas= new JPanel();
     areas.setLayout(new BoxLayout(areas,BoxLayout.Y_AXIS));
-    Stream.of(new Collapsible("Output",half(output),true,small("Clear",()->Main.command("ClearOutput",project.alias()))),claims,links,logs).forEach(areas::add);
+    Stream.of(new Collapsible("Output",half(output),true,small("Clear",()->output.setText(""))),claims,links,logs).forEach(areas::add);
     areas.add(new JPanel());
     root.add(top,BorderLayout.NORTH);
     root.add(areas,BorderLayout.CENTER);
