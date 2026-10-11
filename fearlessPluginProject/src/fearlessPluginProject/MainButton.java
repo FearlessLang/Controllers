@@ -37,6 +37,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -73,29 +74,23 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var all= List.copyOf(ManagerLink.mains(p.folder()).keySet());
     return new State(action, all, all.stream().filter(p.mains()::contains).toList());
   }
-  static void press(String alias, String main){
+  @Override public Object execute(ExecutionEvent event){
+    var alias= target(HandlerUtil.getActiveWorkbenchWindow(event)).orElseThrow();
+    if (Follow.followed().isPresent()){ ManagerLink.send("Terminate", alias); return null; }
     var s= of(alias, ManagerLink.projects());
     switch(s.action()){
       case check -> ManagerLink.send("Check", alias);
       case compile -> Follow.compile(alias);
-      case run -> run(alias, !main.isEmpty() ? List.of(main) : s.mains().size() == 1 ? s.mains() : chosen(s));
+      case run -> run(alias, s.mains().size() == 1 ? s.mains() : chosen(s, HandlerUtil.getActiveShell(event)));
     }
+    return null;
   }
   private static void run(String alias, List<String> mains){ if (!mains.isEmpty()){ Follow.run(alias, mains.toArray(String[]::new)); } }
-  private static List<String> chosen(State s){
-    var res= new ArrayList<String>();
-    Display.getDefault().syncExec(()->{
-      var dialog= ListSelectionDialog.of(s.mains()).contentProvider(ArrayContentProvider.getInstance()).labelProvider(new LabelProvider()).title("Fearless").message("Mains to run:").create(Display.getDefault().getActiveShell());
-      dialog.setInitialElementSelections(s.selected());
-      if (dialog.open() == Window.OK){ Stream.of(dialog.getResult()).forEach(m->res.add((String)m)); }
-    });
-    return res;
-  }
-  @Override public Object execute(ExecutionEvent event){
-    var alias= target(HandlerUtil.getActiveWorkbenchWindow(event)).orElseThrow();
-    if (Follow.followed().isPresent()){ ManagerLink.send("Terminate", alias); return null; }
-    press(alias, "");
-    return null;
+  private static List<String> chosen(State s, Shell shell){
+    var dialog= ListSelectionDialog.of(s.mains()).contentProvider(ArrayContentProvider.getInstance()).labelProvider(new LabelProvider()).title("Fearless").message("Mains to run:").create(shell);
+    dialog.setInitialElementSelections(s.selected());
+    if (dialog.open() != Window.OK){ return List.of(); }
+    return Stream.of(dialog.getResult()).map(m->(String)m).toList();
   }
   @Override public void setEnabled(Object context){
     var window= ((IEvaluationContext)context).getVariable(ISources.ACTIVE_WORKBENCH_WINDOW_NAME);
