@@ -65,6 +65,7 @@ public final class FearlessWatcher extends Job implements IStartup{
     }
     marks.keySet().retainAll(projects.keySet());
     for (var e : projects.entrySet()){ reflect(mirror(root.getProject(e.getKey()), e.getValue(), monitor), e.getValue()); }
+    MainButton.look(projects);
   }
   private static IProject mirror(IProject project, ManagerLink.Project p, IProgressMonitor monitor) throws CoreException{
     if (!project.exists()){

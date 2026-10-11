@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.core.runtime.ListenerList;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.PlatformObject;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugEvent;
@@ -18,6 +19,9 @@ import org.eclipse.debug.core.model.IFlushableStreamMonitor;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.debug.core.model.IStreamsProxy;
+import org.eclipse.debug.ui.IDebugUIConstants;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
 
 /// The job Eclipse follows, shown as Eclipse shows a process it started itself: in the Debug
 /// view, and in the Console view with its output and its Terminate button. Job starts it,
@@ -38,6 +42,8 @@ public final class Process extends PlatformObject implements IProcess{
     this.label= label;
   }
   static Process start(String alias, String main){
+    try{ Platform.getBundle(IDebugUIConstants.PLUGIN_ID).start(Bundle.START_TRANSIENT); }
+    catch(BundleException e){ throw new IllegalStateException(e); }
     var launch= new Launch(null, ILaunchManager.RUN_MODE, null);
     var res= new Process(launch, alias, alias+" - "+main);
     res.setAttribute(ATTR_PROCESS_TYPE, type);

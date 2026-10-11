@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Fearless Eclipse Connect
 Bundle-SymbolicName: fearlessPluginProject;singleton:=true
-Bundle-Version: 3.4.0
+Bundle-Version: 3.5.0
 Bundle-Vendor: Fearless
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.eclipse.swt,
@@ -13,6 +13,7 @@ Require-Bundle: org.eclipse.swt,
  org.eclipse.core.resources,
  org.eclipse.core.filebuffers,
  org.eclipse.core.commands,
+ org.eclipse.core.expressions,
  org.eclipse.e4.core.services,
  org.eclipse.e4.ui.workbench,
  org.eclipse.debug.core,
