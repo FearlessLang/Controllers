@@ -71,8 +71,8 @@ final class Panel{
   private final JList<LogFiles.Entry> logList= new JList<>();
   private final Collapsible logs= new Collapsible("Logs",half(logList),false,small("Logs",this::openLogs));
   private final JButton openDocs= small("Open docs",this::openDocs);
-  private final JButton action= named(new JButton("Compile"),"action");
-  private final JButton clean= small("Clean",()->Main.command("Clean",this.project.alias()));
+  private final JButton action= named(small("Compile",this::act),"action");
+  private final JButton clean= small("Delete cache",()->Main.command("Clean",this.project.alias()));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
   private Object shown= List.of();
@@ -83,7 +83,6 @@ final class Panel{
     output.setEditable(false);
     linksBox.setLayout(new BoxLayout(linksBox,BoxLayout.Y_AXIS));
     claimsBox.setLayout(new BoxLayout(claimsBox,BoxLayout.Y_AXIS));
-    action.addActionListener(_->act());
     root.setBorder(BorderFactory.createEmptyBorder(4,8,4,8));
     root.setMinimumSize(new Dimension(0,0));//let the split divider shrink this panel past its natural content width
     var header= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
@@ -92,17 +91,16 @@ final class Panel{
     header.add(name);
     header.add(action);
     header.add(openDocs);
-    var buttons= new JPanel(new FlowLayout(FlowLayout.LEFT,8,0));
-    buttons.add(kinds);
-    buttons.add(small("Browse",()->Window.open(refuse,project.folder())));
-    buttons.add(small("Forget",()->Main.command("Forget",project.alias())));
-    buttons.add(clean);
+    header.add(kinds);
+    header.add(small("Browse",()->Window.open(refuse,project.folder())));
+    header.add(small("Forget",()->Main.command("Forget",project.alias())));
+    header.add(clean);
     var top= new JPanel();
     top.setLayout(new BoxLayout(top,BoxLayout.Y_AXIS));
-    Stream.of(header,buttons,shortcuts).forEach(top::add);
+    Stream.of(header,shortcuts).forEach(top::add);
     var areas= new JPanel();
     areas.setLayout(new BoxLayout(areas,BoxLayout.Y_AXIS));
-    Stream.of(new Collapsible("Output",half(output),true),claims,links,logs).forEach(areas::add);
+    Stream.of(new Collapsible("Output",half(output),true,small("Clear",()->Main.command("ClearOutput",project.alias()))),claims,links,logs).forEach(areas::add);
     areas.add(new JPanel());
     root.add(top,BorderLayout.NORTH);
     root.add(areas,BorderLayout.CENTER);

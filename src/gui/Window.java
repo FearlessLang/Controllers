@@ -138,6 +138,7 @@ public final class Window implements Manager.View{
   @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(()->panel(folder).append(text)); }
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(()->panel(folder).output.setText("")); }
   @Override public void refuse(String text){ SwingUtilities.invokeLater(()->{ showNow(); say(text); }); }
+  @Override public void tell(String text){ refuse(text); }
   private void say(String text){ JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE); }
   @Override public void choose(List<Project.Claimant> choices){ SwingUtilities.invokeLater(()->chooser(choices)); }
   @Override public void allow(String question, String content){

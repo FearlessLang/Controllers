@@ -83,6 +83,10 @@
     <category id="fearlessPluginProject.wizards" name="Fearless"/>
     <wizard id="fearlessPluginProject.newProject" name="Fearless Project" category="fearlessPluginProject.wizards"
       class="fearlessPluginProject.NewProjectWizard" icon="icons/fearless16.png" project="true"/>
+    <wizard id="fearlessPluginProject.newFolder" name="Folder" category="fearlessPluginProject.wizards"
+      class="fearlessPluginProject.NewFolder" icon="platform:/plugin/org.eclipse.ui.ide/icons/full/obj16/folder.png"/>
+    <wizard id="fearlessPluginProject.newFile" name="File" category="fearlessPluginProject.wizards"
+      class="fearlessPluginProject.NewFile" icon="platform:/plugin/org.eclipse.ui.ide/icons/full/etool16/newfile_wiz.png"/>
   </extension>
 
   <extension point="org.eclipse.core.contenttype.contentTypes">
@@ -125,11 +129,50 @@
 
   <extension point="org.eclipse.ui.commands">
     <command id="fearlessPluginProject.main" name="Fearless Main Button" defaultHandler="fearlessPluginProject.MainButton"/>
+    <command id="fearlessPluginProject.newSource" name="New Fearless Package or Type">
+      <commandParameter id="fearlessPluginProject.what" name="What" optional="false"/>
+    </command>
+  </extension>
+
+  <extension point="org.eclipse.ui.handlers">
+    <handler commandId="fearlessPluginProject.newSource" class="fearlessPluginProject.NewSource">
+      <enabledWhen>
+        <or>
+          <with variable="selection">
+            <count value="1"/>
+            <iterate>
+              <adapt type="org.eclipse.core.resources.IResource">
+                <test property="org.eclipse.core.resources.projectNature" value="fearlessPluginProject.nature"/>
+              </adapt>
+            </iterate>
+          </with>
+          <with variable="activeEditorInput">
+            <adapt type="org.eclipse.core.resources.IResource">
+              <test property="org.eclipse.core.resources.projectNature" value="fearlessPluginProject.nature"/>
+            </adapt>
+          </with>
+        </or>
+      </enabledWhen>
+    </handler>
   </extension>
 
   <extension point="org.eclipse.ui.menus">
     <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
       <toolbar id="fearlessPluginProject.toolbar">
+        <command commandId="fearlessPluginProject.newSource" tooltip="New Package"
+          icon="platform:/plugin/org.eclipse.jdt.ui/icons/full/etool16/newpack_wiz.png">
+          <parameter name="fearlessPluginProject.what" value="package"/>
+          <visibleWhen checkEnabled="false">
+            <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
+          </visibleWhen>
+        </command>
+        <command commandId="fearlessPluginProject.newSource" tooltip="New Type"
+          icon="platform:/plugin/org.eclipse.jdt.ui/icons/full/etool16/newclass_wiz.png">
+          <parameter name="fearlessPluginProject.what" value="type"/>
+          <visibleWhen checkEnabled="false">
+            <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
+          </visibleWhen>
+        </command>
         <command commandId="fearlessPluginProject.main" tooltip="Run"
           icon="platform:/plugin/org.eclipse.debug.ui/icons/full/obj16/lrun_obj.png">
           <visibleWhen checkEnabled="false">

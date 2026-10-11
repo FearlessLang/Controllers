@@ -105,6 +105,7 @@ final class ManagerTest{
   }
   static final class View implements Manager.View{
     final List<String> refused= new ArrayList<>();
+    final List<String> told= new ArrayList<>();
     final Map<Path,StringBuilder> outputs= new HashMap<>();
     final List<Path> cleared= new ArrayList<>();
     final List<List<String>> choices= new ArrayList<>();
@@ -119,6 +120,7 @@ final class ManagerTest{
     @Override public synchronized void output(Path folder, String text){ outputs.computeIfAbsent(folder,_->new StringBuilder()).append(text); }
     @Override public synchronized void clear(Path folder){ cleared.add(folder); outputs.put(folder,new StringBuilder()); }
     @Override public void refuse(String text){ shown+= 1; refused.add(text); }
+    @Override public void tell(String text){ shown+= 1; told.add(text); }
     @Override public boolean visible(){ return visible; }
     @Override public void choose(List<Project.Claimant> cs){ choices.add(cs.stream().map(Project.Claimant::label).toList()); }
     @Override public void allow(String question, String content){ asked.add(question); offered.add(content); }
@@ -427,7 +429,7 @@ final class ManagerTest{
     send(m,"Forget","hello","now");
     send(m,"Run");
     assertEquals(5,view.refused.size());
-    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Select\", \"Check\", \"Terminate\", \"Clean\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\".",view.refused.get(0));
+    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Select\", \"Check\", \"Terminate\", \"Clean\", \"ClearOutput\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\".",view.refused.get(0));
     assertEquals("The manager was asked to change the kind of \"hello\" to \"library\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".",view.refused.get(1));
     assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link.",view.refused.get(2));
     assertEquals("The manager was asked \"Forget\" with 2 arguments, but \"Forget\" takes 1.\nThe arguments are:\n  \"hello\"\n  \"now\"",view.refused.get(3));
@@ -521,6 +523,8 @@ final class ManagerTest{
     var hello= code(m,dir,"hello");
     send(m,"Check","hello");
     assertEquals("This project has no compiled cache: compiling it makes one.\n",view.out(hello));
+    send(m,"ClearOutput","hello");
+    assertEquals("",view.out(hello));
   }
   @Test void linksAreEditedByRequestAndBrokenLinksStopTheCompile(@TempDir Path dir){
     var m= manager(dir);
@@ -840,6 +844,8 @@ final class ManagerTest{
     send(m,"ConnectEclipse",TaggedText.of(eclipse.getParent().toString()));
     send(m,"ConnectEclipse",TaggedText.of(dir.toString()));
     assertEquals(List.of(eclipse),connected);
+    same("Eclipse is connected:\n[###]eclipse\nRestart Eclipse if it is running: Eclipse loads the Fearless plugin when it starts.\nThen open the Fearless perspective: Window > Perspective > Open Perspective > Other... > Fearless.",view.told.getFirst());
+    assertEquals(1,view.told.size());
     same("Eclipse is not connected: no Eclipse folder, a folder holding the file \".eclipseproduct\", is found from\n[###]\nSelect the Eclipse folder, a file in it, a file in a folder of it, or a folder holding only the Eclipse folder.",view.refused.getFirst());
   }
   @Test void anotherFearlessTakingTheFearlessFilesIsShownOnceAndNothingIsTakenBack(@TempDir Path dir){

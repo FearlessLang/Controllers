@@ -188,6 +188,7 @@ public final class Report{
   public static String noEclipse(Path chosen){
     return "Eclipse is not connected: no Eclipse folder, a folder holding the file \".eclipseproduct\", is found from\n"+path(chosen.toString())+"\nSelect the Eclipse folder, a file in it, a file in a folder of it, or a folder holding only the Eclipse folder.";
   }
+  public static String eclipseConnected(Path eclipse){ return "Eclipse is connected:\n"+path(eclipse.toString())+"\nRestart Eclipse if it is running: Eclipse loads the Fearless plugin when it starts.\nThen open the Fearless perspective: Window > Perspective > Open Perspective > Other... > Fearless."; }
   public static String eclipseNotConnected(Path chosen, IOException e){ return "Eclipse is not connected from\n"+path(chosen.toString())+"\n"+fileFailure(e); }
 
   //-- opening a file
