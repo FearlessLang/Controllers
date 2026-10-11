@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -18,15 +17,17 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import controller.Registry.Content;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
-import fileSupport.Info;
 import tools.Fs;
+import userMessages.UserError;
 
 final class RegistryTest{
-  private static final URI uri= URI.create("test:projects.info");
+  private static final Path file= Path.of("projects.info").toAbsolutePath();
   private static final String root= Path.of("").toAbsolutePath().getRoot().toString().replace('\\','/');
-  private static List<Entry> parse(String text){ return Registry.fromInfo(text,Info.parse(text,uri),Registry::real,Path.of(root+"manager")); }
+  private static Content content(String text){ return Registry.parse(text,file,Registry::real,Path.of(root+"manager")); }
+  private static List<Entry> parse(String projects){ return content("{\"projects\":"+projects+",\"systemExtensions\":[]}").projects(); }
   private static Registry registry(Path dir){ return new Registry(folder(dir,"manager")); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -39,7 +40,7 @@ final class RegistryTest{
   @Test void anEmptyFileIsNoProjects(){ assertEquals(List.of(),parse("{}")); }
   @Test void aMinimalProjectHasAPathAndAKindWithNoMainsReadsOrEdits(){
     var e= parse("{\"someproject\":{\"path\":\"Str:"+root+"abs/someproject\",\"kind\":\"idle\"}}").getFirst();
-    assertEquals(new Entry("someproject",Path.of(root+"abs/someproject"),Kind.idle,List.of(),Map.of(),Map.of(),-1,-1),e);
+    assertEquals(new Entry("someproject",Path.of(root+"abs/someproject"),Kind.idle,List.of(),Map.of(),Map.of()),e);
   }
   @Test void aFullCodeProjectParsesEveryField(){
     var e= parse("""
@@ -51,7 +52,7 @@ final class RegistryTest{
         "edits":{"publicdata":["Data2","Data3"]}
       }}""".formatted(root)).getFirst();
     assertEquals(new Entry("someproject",Path.of(root+"abs/someproject"),Kind.code,
-      List.of("some.Main1","some.Main2"),Map.of("publicfiles",List.of("Data1")),Map.of("publicdata",List.of("Data2","Data3")),-1,-1),e);
+      List.of("some.Main1","some.Main2"),Map.of("publicfiles",List.of("Data1")),Map.of("publicdata",List.of("Data2","Data3"))),e);
   }
   @Test void allFourKindsParse(){
     assertEquals(Kind.idle,parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"idle\"}}").getFirst().kind());
@@ -59,8 +60,11 @@ final class RegistryTest{
     assertEquals(Kind.dataReadOnly,parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"data:readOnly\"}}").getFirst().kind());
     assertEquals(Kind.dataReadWrite,parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"data:readWrite\"}}").getFirst().kind());
   }
-  @Test void theWholeFileMustBeAnObject(){
-    err("[###]The whole file must be an object {...} mapping each project name to the metadata of that project.[###]",()->parse("\"not an object\""));
+  @Test void theWholeFileMustBeAnObjectWithProjectsAndSystemExtensions(){
+    err("[###]The whole file must be an object {...} with \"projects\" and \"systemExtensions\".[###]",()->content("\"not an object\""));
+    err("[###]\"projects\" must be an object {...} mapping each project name to the metadata of that project.[###]",()->parse("\"not an object\""));
+    err("[###]The key \"systemExtensions\" is missing: the keys are \"projects\" and \"systemExtensions\".[###]",()->content("{\"projects\":{}}"));
+    err("[###]Unknown key \"other\": the keys are \"projects\" and \"systemExtensions\".[###]",()->content("{\"projects\":{},\"systemExtensions\":[],\"other\":[]}"));
   }
   @Test void aProjectNameMustBeShapedLikeAFolderName(){
     err("[###]\"Not Valid\" is not a valid project name[###]",()->parse("{\"Not Valid\":{\"path\":\"Str:"+root+"a\"}}"));
@@ -105,54 +109,39 @@ final class RegistryTest{
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]",()->parse("{\"a\":{\"path\":\"Str:"+unix(real)+"\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}"));
     assertEquals(real,parse("{\"a\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}").getFirst().path());
   }
-  @Test void toInfoThenFromInfoRoundTripsAnEntry(){
-    var e= new Entry("someproject",Path.of(root+"abs/someproject"),Kind.code,List.of("some.Main1"),Map.of("publicfiles",List.of("Data1")),Map.of(),999,999);
-    var back= parse(Info.print(Registry.toInfo(List.of(e)))).getFirst();
-    assertEquals(new Entry("someproject",Path.of(root+"abs/someproject"),Kind.code,List.of("some.Main1"),Map.of("publicfiles",List.of("Data1")),Map.of(),-1,-1),back);
+  @Test void printingThenParsingRoundTripsTheContent(){
+    var c= new Content(List.of(new Entry("someproject",Path.of(root+"abs/someproject"),Kind.code,List.of("some.Main1"),Map.of("publicfiles",List.of("Data1")),Map.of())),List.of("htm"));
+    assertEquals(c,content(Registry.text(c)));
   }
 
   //-- persistence
   @Test void noFileYetIsNoRegisteredFolder(@TempDir Path dir){ assertEquals(List.of(),registry(dir).all()); }
-  @Test void addedFolderIsIdleWithNoTimesAndNoLinks(@TempDir Path dir){
+  @Test void addedFolderIsIdleWithNoLinks(@TempDir Path dir){
     var project= folder(dir,"someproject");
-    registry(dir).add("someproject",project,Kind.idle);
-    assertEquals(List.of(new Entry("someproject",project.toAbsolutePath().normalize(),Kind.idle,List.of(),Map.of(),Map.of(),-1,-1)),registry(dir).all());
+    registry(dir).add("someproject",project);
+    assertEquals(List.of(new Entry("someproject",project.toAbsolutePath().normalize(),Kind.idle,List.of(),Map.of(),Map.of())),registry(dir).all());
   }
   @Test void addingARegisteredFolderOrNameAgainIsABug(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= registry(dir);
-    r.add("someproject",project,Kind.idle);
-    assertThrows(AssertionError.class,()->r.add("again",project.resolve("..").resolve("someproject"),Kind.idle));
-    assertThrows(AssertionError.class,()->r.add("someproject",folder(dir,"other"),Kind.idle));
+    r.add("someproject",project);
+    assertThrows(AssertionError.class,()->r.add("again",project.resolve("..").resolve("someproject")));
+    assertThrows(AssertionError.class,()->r.add("someproject",folder(dir,"other")));
     assertEquals(1,registry(dir).all().size());
   }
-  @Test void aForgottenFolderForgetsItsTimesToo(@TempDir Path dir){
+  @Test void mainsSurviveAReRead(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= registry(dir);
-    r.add("someproject",project,Kind.idle);
-    r.update(project,e->e.withTimes(111,e.run()));
-    r.remove(project);
-    r.add("someproject",project,Kind.idle);
-    assertEquals(-1,r.all().getFirst().compiled());
-  }
-  @Test void compileRunTimesAndMainsSurviveAReRead(@TempDir Path dir){
-    var project= folder(dir,"someproject");
-    var r= registry(dir);
-    r.add("someproject",project,Kind.idle);
-    r.update(project,e->e.withTimes(111,e.run()));
-    r.update(project,e->e.withTimes(e.compiled(),222));
+    r.add("someproject",project);
     r.update(project,e->e.withMains(List.of("hello.Hello1")));
-    var reread= registry(dir).all().getFirst();
-    assertEquals(111,reread.compiled());
-    assertEquals(222,reread.run());
-    assertEquals(List.of("hello.Hello1"),reread.mains());
+    assertEquals(List.of("hello.Hello1"),registry(dir).all().getFirst().mains());
   }
   @Test void forgettingAFolderRemovesOnlyThatOne(@TempDir Path dir){
     var kept= folder(dir,"kept");
     var gone= folder(dir,"gone");
     var r= registry(dir);
-    r.add("kept",kept,Kind.idle);
-    r.add("gone",gone,Kind.idle);
+    r.add("kept",kept);
+    r.add("gone",gone);
     r.remove(gone);
     assertEquals(List.of(kept.toAbsolutePath().normalize()),r.all().stream().map(Entry::path).toList());
     assertEquals(Optional.empty(),r.of(gone));
@@ -160,7 +149,7 @@ final class RegistryTest{
   @Test void aFolderInsideOrAroundARegisteredOneIsFound(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= registry(dir);
-    r.add("someproject",project,Kind.idle);
+    r.add("someproject",project);
     assertEquals(project,r.overlapping(project.resolve("inside")).orElseThrow());
     assertEquals(project,r.overlapping(dir).orElseThrow());
     assertEquals(Optional.empty(),r.overlapping(folder(dir,"otherproject")));
@@ -168,65 +157,44 @@ final class RegistryTest{
   }
   @Test void aSiblingNamedLikeAPrefixIsNotNested(@TempDir Path dir){
     var r= registry(dir);
-    r.add("some",folder(dir,"some"),Kind.idle);
+    r.add("some",folder(dir,"some"));
     assertEquals(Optional.empty(),r.overlapping(folder(dir,"someproject")));
   }
   @Test void awkwardFolderNamesSurviveAReRead(@TempDir Path dir){
     var project= folder(dir,"a name with spaces");
-    registry(dir).add("spacey",project,Kind.idle);
+    registry(dir).add("spacey",project);
     assertEquals(project.toAbsolutePath().normalize(),registry(dir).all().getFirst().path());
   }
-  @Test void aFolderNamedWithABackslashOrANewlineSurvivesAReReadWithItsTimes(@TempDir Path dir){
+  @Test void aFolderNamedWithABackslashOrANewlineSurvivesAReRead(@TempDir Path dir){
     Assumptions.assumeFalse(Fs.isWindows());
-    var slash= folder(dir,"a\\b");
-    var line= folder(dir,"c\nd");
     var r= registry(dir);
-    r.add("slash",slash,Kind.idle);
-    r.add("line",line,Kind.idle);
-    r.update(slash,e->e.withTimes(111,222));
-    r.update(line,e->e.withTimes(333,444));
+    r.add("slash",folder(dir,"a\\b"));
+    r.add("line",folder(dir,"c\nd"));
     assertEquals(r.all(),registry(dir).all());
-  }
-  private static void activity(Path dir, String text, String expected){
-    Fs.writeUtf8(dir.resolve("manager").resolve("activity.txt"),text);
-    err("In "+dir.resolve("manager").resolve("activity.txt")+", line 2:\n"+expected,()->registry(dir));
-  }
-  @Test void eachMalformedLineOfActivityTxtIsAFatalErrorNamingTheLine(@TempDir Path dir){
-    var r= registry(dir);
-    r.add("someproject",folder(dir,"someproject"),Kind.idle);
-    var project= r.all().getFirst().path();
-    var line= "1 2 "+TaggedText.line(project.toString())+"\n";
-    var shape= " is malformed: a line is the time of the last compile, a space, the time of the last run, a space, then the project folder as a tagged text; a time is -1 for never, else the milliseconds since 1970, in at most 18 digits.";
-    activity(dir,line+"1 2\n","\"1 2\""+shape);
-    activity(dir,line+"1 x Str:/a\n","\"1 x Str:/a\""+shape);
-    activity(dir,line+"1 1234567890123456789 Str:/a\n","\"1 1234567890123456789 Str:/a\""+shape);
-    activity(dir,line+"\n","\"\""+shape);
-    activity(dir,line+"1 2 /a\n","\"/a\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.");
-    activity(dir,line+"1 2 "+TaggedText.of("/a\u0000b")+"\n","\"/a\" [Null 0x00] \"b\" is not a path this system accepts: [###].");
-    activity(dir,line+line,"The project folder\n"+project+"\nis also on line 1: a project folder is on one line only.");
-    Fs.writeUtf8(dir.resolve("manager").resolve("activity.txt"),line);
-    assertEquals(List.of(1L,2L),List.of(registry(dir).all().getFirst().compiled(),registry(dir).all().getFirst().run()));
   }
   @Test void changingTheLinksKeepsTheirOrderInTheFile(@TempDir Path dir){
     var code= folder(dir,"code");
     var r= registry(dir);
-    r.commit(Registry.text(r.all()),"{\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"reads\": {\"zeta\": [\"Z\"], \"alpha\": [\"A\"], \"mid\": [\"M\"], \"beta\": [\"B\"]}}}");
+    r.replace(content("{\"projects\": {\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"reads\": {\"zeta\": [\"Z\"], \"alpha\": [\"A\"], \"mid\": [\"M\"], \"beta\": [\"B\"]}}}, \"systemExtensions\": []}"));
     r.update(code,e->e.withLinks(e.reads(),Map.of("zeta",List.of("W"))));
     assertEquals("""
       {
-        "code": {
-          "path": "Str:%s",
-          "kind": "code",
-          "reads": {
-            "zeta": ["Z"],
-            "alpha": ["A"],
-            "mid": ["M"],
-            "beta": ["B"]
-          },
-          "edits": {
-            "zeta": ["W"]
+        "projects": {
+          "code": {
+            "path": "Str:%s",
+            "kind": "code",
+            "reads": {
+              "zeta": ["Z"],
+              "alpha": ["A"],
+              "mid": ["M"],
+              "beta": ["B"]
+            },
+            "edits": {
+              "zeta": ["W"]
+            }
           }
-        }
+        },
+        "systemExtensions": []
       }
       """.formatted(unix(code)),Fs.readUtf8(folder(dir,"manager").resolve("projects.info")));
   }
@@ -234,45 +202,41 @@ final class RegistryTest{
     Fs.writeUtf8(folder(dir,"manager").resolve("projects.info"),"not info at all");
     err("[###]Expected a string \"...\", a list [...] or an object {...} here.[###]",()->registry(dir).all());
   }
-  @Test void theAllowedSystemExtensionsSurviveAReReadSortedAndAMalformedListRefusesToLoad(@TempDir Path dir){
-    registry(dir).extensions(List.of("pdf","htm"));
-    assertEquals(List.of("htm","pdf"),registry(dir).extensions());
-    var file= folder(dir,"manager").resolve("extensions.info");
-    Fs.writeUtf8(file,"[\"htm\", \"fapp001\"]");
-    err("[###]\"fapp001\" in \"extensions.info\" is not a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\".[###]",()->registry(dir));
-    Fs.writeUtf8(file,"[\"htm\", \"htm\"]");
-    err("[###]\"htm\" is repeated in \"extensions.info\".[###]",()->registry(dir));
-    Fs.writeUtf8(file,"{}");
-    err("[###]\"extensions.info\" must be a list [...] of strings.[###]",()->registry(dir));
+  @Test void aMissingFileIsWrittenEmpty(@TempDir Path dir){
+    registry(dir);
+    assertEquals("""
+      {
+        "projects": {},
+        "systemExtensions": []
+      }
+      """,Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
   }
-  @Test void commitWritesAValidatedFileAndRejectsLeavingDiskUnchanged(@TempDir Path dir){
-    var project= folder(dir,"someproject");
+  @Test void theSystemExtensionsSurviveAReReadAndAMalformedListRefusesToLoad(@TempDir Path dir){
     var r= registry(dir);
-    r.commit(Registry.text(r.all()),"{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"code\"}\n}\n");
-    assertEquals(Kind.code,r.all().getFirst().kind());
-    var before= Registry.text(r.all());
-    assertThrows(Registry.Refused.class,()->r.commit(Registry.text(r.all()),"{\n  \"someproject\": {\"path\": \"Str:"+unix(project)+"\", \"kind\": \"nonsense\"}\n}\n"));
-    assertEquals(before,Registry.text(registry(dir).all()));
+    r.replace(new Content(List.of(),List.of("pdf","htm")));
+    assertEquals(List.of("pdf","htm"),registry(dir).extensions());
+    err("[###]\"fapp001\" in \"systemExtensions\" is not a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\".[###]",()->content("{\"projects\":{},\"systemExtensions\":[\"htm\", \"fapp001\"]}"));
+    err("[###]\"htm\" is repeated in \"systemExtensions\".[###]",()->content("{\"projects\":{},\"systemExtensions\":[\"htm\", \"htm\"]}"));
+    err("[###]\"systemExtensions\" must be a list [...] of strings.[###]",()->content("{\"projects\":{},\"systemExtensions\":{}}"));
   }
   private static String inManager(Path folder, Path manager){
     return "[###]\"path\": \"Str:"+unix(folder)+"\"[###]^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of this folder as a project.\n\nThe folder is:\n  "+folder+"\nThe manager folder of this Fearless is:\n  "+manager+"\n[###]";
   }
-  private static void placedAt(Registry r, Path folder, String expected){
-    var text= "{\n  \"x\": {\"path\": \"Str:"+unix(folder)+"\", \"kind\": \"code\"}\n}\n";
-    same(expected,assertThrows(Registry.Refused.class,()->r.commit(Registry.text(r.all()),text)).getMessage());
-    assertEquals(List.of(),r.all());
+  private static void placedAt(Path manager, Path folder, String expected){
+    var text= "{\"projects\": {\n  \"x\": {\"path\": \"Str:"+unix(folder)+"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n";
+    err(expected,()->Registry.parse(text,file,Registry::real,manager));
   }
-  @Test void aCommitPlacingAProjectAtARootOrInOrAroundTheManagerFolderIsRefusedAtThePath(@TempDir Path dir){
-    var r= registry(dir);
+  @Test void anEditPlacingAProjectAtARootOrInOrAroundTheManagerFolderIsRefusedAtThePath(@TempDir Path dir){
+    registry(dir);
     var manager= Registry.real(dir.resolve("manager"));
-    placedAt(r,Path.of(root),"[###]\"path\": \"Str:"+root+"\"[###]^^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]");
-    placedAt(r,manager,inManager(manager,manager));
-    placedAt(r,folder(manager,"inside"),inManager(manager.resolve("inside"),manager));
-    placedAt(r,Registry.real(dir),inManager(Registry.real(dir),manager));
+    placedAt(manager,Path.of(root),"[###]\"path\": \"Str:"+root+"\"[###]^^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]");
+    placedAt(manager,manager,inManager(manager,manager));
+    placedAt(manager,folder(manager,"inside"),inManager(manager.resolve("inside"),manager));
+    placedAt(manager,Registry.real(dir),inManager(Registry.real(dir),manager));
   }
   @Test void aProjectsInfoPlacingAProjectInTheManagerFolderIsAFatalErrorAtThePath(@TempDir Path dir){
     var manager= folder(dir,"manager");
-    Fs.writeUtf8(manager.resolve("projects.info"),"{\n  \"x\": {\"path\": \"Str:"+unix(manager)+"\", \"kind\": \"code\"}\n}\n");
+    Fs.writeUtf8(manager.resolve("projects.info"),"{\"projects\": {\n  \"x\": {\"path\": \"Str:"+unix(manager)+"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n");
     err(inManager(Registry.real(manager),Registry.real(manager)),()->registry(dir));
   }
   @Test void aTypeNameIsInReadsOrInEditsNotInBoth(){
@@ -288,8 +252,8 @@ final class RegistryTest{
     var code= folder(dir,"mycode");
     var pub= folder(dir,"pub");
     var r= registry(dir);
-    r.add("mycode",code,Kind.idle);
-    r.add("pub",pub,Kind.idle);
+    r.add("mycode",code);
+    r.add("pub",pub);
     r.update(code,e->e.withKind(Kind.code));
     r.update(pub,e->e.withKind(Kind.dataReadWrite));
     r.update(code,e->e.withLinks(Map.of("pub",List.of("Data2","Data3")),Map.of("pub",List.of("Data1"))));
@@ -300,7 +264,7 @@ final class RegistryTest{
 
   //-- link checks
   private static Entry link(String alias, Path path, Kind kind, Map<String,List<String>> reads, Map<String,List<String>> edits){
-    return new Entry(alias,path,kind,List.of(),reads,edits,-1,-1);
+    return new Entry(alias,path,kind,List.of(),reads,edits);
   }
   private static Path readme(Path dir, String name){
     var res= dir.resolve(name);
@@ -309,8 +273,8 @@ final class RegistryTest{
   }
   private Optional<String> linkProblem(Path dir, Entry e, Entry... others){
     var r= registry(dir);
-    for (var o: others){ r.add(o.alias(),o.path(),Kind.idle); r.update(o.path(),_->o); }
-    r.add(e.alias(),e.path(),Kind.idle);
+    for (var o: others){ r.add(o.alias(),o.path()); r.update(o.path(),_->o); }
+    r.add(e.alias(),e.path());
     r.update(e.path(),_->e);
     return r.linkProblem(e,_->Optional.empty());
   }
@@ -346,8 +310,8 @@ final class RegistryTest{
   @Test void anEditThatWouldWriteAnInvalidFileIsRefusedAndChangesNothing(@TempDir Path dir){
     var project= folder(dir,"someproject");
     var r= registry(dir);
-    r.add("someproject",project,Kind.idle);
-    same("[###]\"hello\" in \"mains\" is not a Fearless main name[###]",assertThrows(Registry.Refused.class,()->r.update(project,e->e.withMains(List.of("hello")))).getMessage());
+    r.add("someproject",project);
+    same("[###]\"hello\" in \"mains\" is not a Fearless main name[###]",assertThrows(Refused.class,()->r.update(project,e->e.withMains(List.of("hello")))).getMessage());
     assertEquals(List.of(),r.all().getFirst().mains());
   }
 }

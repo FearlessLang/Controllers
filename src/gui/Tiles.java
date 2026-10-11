@@ -2,7 +2,6 @@ package gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.FlowLayout;
 import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -16,7 +15,6 @@ import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -29,18 +27,8 @@ import controller.Project;
 /// The grid of registered projects: one tile per project, its icon badged with its state.
 @SuppressWarnings("serial")
 public final class Tiles extends JPanel{
-  public enum Sort{
-    Name, Modified, Compiled, Run;
-    Comparator<Project> comparator(){ return switch(this){
-      case Name -> Comparator.comparing(Project::alias,String.CASE_INSENSITIVE_ORDER);
-      case Modified -> Comparator.<Project>comparingLong(p->p.facts().modified()).reversed();
-      case Compiled -> Comparator.<Project>comparingLong(p->p.entry().compiled()).reversed();
-      case Run -> Comparator.<Project>comparingLong(p->p.entry().run()).reversed();
-    };}
-  }
   private static final int iconSize= 48;
   final JList<Project> list= new JList<>();
-  final JComboBox<Sort> sort= new JComboBox<>(Sort.values());
   private final Timer spinner= new Timer(80,_->list.repaint());
   private State state= new State(List.of(),Optional.empty(),List.of());
   private Map<Project,Image> images= Map.of();
@@ -58,12 +46,6 @@ public final class Tiles extends JPanel{
         if (i >= 0 && list.getCellBounds(i,i).contains(e.getPoint())){ onSelect.accept(list.getModel().getElementAt(i).alias()); }
       }
     });
-    sort.setName("sort");
-    sort.addActionListener(_->render(state));
-    var top= new JPanel(new FlowLayout(FlowLayout.LEFT));
-    top.add(new JLabel("Order by"));
-    top.add(sort);
-    add(top,BorderLayout.NORTH);
     add(new JScrollPane(list),BorderLayout.CENTER);
   }
   public void render(State s){
@@ -71,7 +53,7 @@ public final class Tiles extends JPanel{
     state= s;
     var old= images;
     images= s.projects().stream().collect(Collectors.toMap(Function.identity(),p->old.containsKey(p) ? old.get(p) : Icons.of(p,iconSize)));
-    var rows= s.projects().stream().sorted(((Sort)sort.getSelectedItem()).comparator()).toList();
+    var rows= s.projects().stream().sorted(Comparator.comparing(Project::alias)).toList();
     list.setListData(rows.toArray(Project[]::new));
     var at= s.selected().map(f->rows.stream().map(Project::folder).toList().indexOf(f)).orElse(-1);
     if (at >= 0){ list.setSelectedIndex(at); }

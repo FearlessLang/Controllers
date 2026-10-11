@@ -17,6 +17,7 @@ import javax.imageio.ImageIO;
 import fileAssociations.Ico;
 import realSourceOracle.ZipLocator;
 import tools.Fs;
+import managerMessages.Report;
 import userMessages.UserError;
 
 final class ClaimIcons{
@@ -32,13 +33,13 @@ final class ClaimIcons{
     var steps= c.zipSteps().isEmpty() ? List.<String>of() : List.of(c.zipSteps().split(";"));
     byte[] bytes;
     try{ bytes= c.zipEntry().isEmpty() ? Fs.of(()->Files.readAllBytes(file)) : ZipLocator.entryBytes(file,steps,c.zipEntry()); }
-    catch(UncheckedIOException e){ throw Messages.iconUnreadable(claimant,Messages.fileFailure(e.getCause())); }
-    catch(UserError e){ throw Messages.iconUnreadable(claimant,e.getMessage().stripTrailing()); }
-    if (bytes.length < 24 || !Arrays.equals(bytes,0,16,pngHead,0,16)){ throw Messages.iconRefused(claimant,"is not a PNG image"); }
+    catch(UncheckedIOException e){ throw Report.iconUnreadable(claimant,Report.fileFailure(e.getCause())); }
+    catch(UserError e){ throw Report.iconUnreadable(claimant,e.getMessage().stripTrailing()); }
+    if (bytes.length < 24 || !Arrays.equals(bytes,0,16,pngHead,0,16)){ throw Report.iconRefused(claimant,"is not a PNG image"); }
     var w= ByteBuffer.wrap(bytes).getInt(16);
     var h= ByteBuffer.wrap(bytes).getInt(20);
-    if (w != h || w < 64 || w > 1024){ throw Messages.iconRefused(claimant,"is "+w+"x"+h+" pixels"); }
-    if (!decodes(bytes)){ throw Messages.iconRefused(claimant,"is not a PNG image"); }
+    if (w != h || w < 64 || w > 1024){ throw Report.iconRefused(claimant,"is "+w+"x"+h+" pixels"); }
+    if (!decodes(bytes)){ throw Report.iconRefused(claimant,"is not a PNG image"); }
     return bytes;
   }
   private static boolean decodes(byte[] bytes){

@@ -1,70 +1,40 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.util.List;
 
 import tools.Fs;
 
 final class StaleMainTest extends ManagerTest{
-  static final List<String> console= List.of(data,"eclipse","menu","console.txt");
   static final String mains= "use base.Main as Main;\n\nFirst: Main{sys -> sys.out.println \"First\"}\nSecond: Main{sys -> sys.out.println \"Second\"}\n";
-  static final String compiled= "--- compiling menu ---\n--- compile done ---\n";
   static final String registry= """
     {
-      "menu": {
-        "path": "Str:%s",
-        "kind": "code",
-        "mains": [%s]
-      }
+      "projects": {
+        "menu": {
+          "path": "Str:%s",
+          "kind": "code",
+          "mains": [%s]
+        }
+      },
+      "systemExtensions": []
     }
     """;
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
-    on("windows",()->click(val(332),val(94))));
-  final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
-  final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action mainsShown= action("mainsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
-  final Action tickSecond= action("tickSecond",
-    on("ubuntu_gnome",()->click(val(99),val(215))),
-    on("windows",()->click(val(31),val(166))));
-  final Action secondSaved= action("secondSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(37000))));
-  final Action tickThird= action("tickThird",
-    on("ubuntu_gnome",()->click(val(99),val(240))),
-    on("windows",()->click(val(31),val(190))));
-  final Action thirdSaved= action("thirdSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(39000))));
-  final Action mainsForgotten= action("mainsForgotten",
-    on("ubuntu_gnome",()->waitUntilTime(val(42000))));
-  final Action compileEdited= action("compileEdited",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action editedCompiled= action("editedCompiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(56000))));
-  final Action runSelected= action("runSelected",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action runDone= action("runDone",
-    on("ubuntu_gnome",()->waitUntilTime(val(61000))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(62500))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(66000))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(76000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action runV= action("runV",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action mainsShown= action("mainsShown",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
+  final Action tickSecond= action("tickSecond",on("ubuntu_gnome",()->click(val(540),val(166))));
+  final Action tickThird= action("tickThird",on("ubuntu_gnome",()->click(val(540),val(190))));
+  final Action runTicked= action("runTicked",on("ubuntu_gnome",()->click(val(530),val(215))));
+  final Action runsDone= action("runsDone",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
+  final Action editNoticed= action("editNoticed",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action compileEdited= action("compileEdited",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action editedCompiled= action("editedCompiled",on("ubuntu_gnome",()->waitUntilTime(val(67000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(72000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var menu= filesIOFolder.resolve("menu");
@@ -72,65 +42,36 @@ final class StaleMainTest extends ManagerTest{
     Fs.rmTree(menu);
     Fs.writeUtf8(menu.resolve("menu.fearless"),"\n");
     Fs.writeUtf8(source,mains+"Third: Main{sys -> sys.out.println \"Third\"}\n");
-    launchScript("first",menu);
+    launchScript("first",menu.resolve("menu.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();
+    compiled.go();
+    runV.go();
     mainsShown.go();
     tickSecond.go();
-    secondSaved.go();
-    stabilize();
-    checkContent(info,registry.formatted(slashed(menu),"\"menu.Second\""));
     tickThird.go();
-    thirdSaved.go();
-    var both= registry.formatted(slashed(menu),"\"menu.Second\", \"menu.Third\"");
+    runTicked.go();
+    runsDone.go();
     stabilize();
-    checkContent(info,both);
+    checkContent(info,registry.formatted(slashed(menu),"\"menu.Second\", \"menu.Third\""));
+    var button= new Rectangle(500,100,160,24);
+    var runnable= look();
     Fs.writeUtf8(source,mains);
     stabilize();
-    mainsForgotten.go();
-    stabilize();
-    checkContent(info,both);
-    checkContent(console,compiled);
+    editNoticed.go();
+    changed(runnable,button);
     compileEdited.go();
     editedCompiled.go();
+    same(runnable,button);
     stabilize();
-    checkContent(console,compiled+compiled);
     checkContent(info,registry.formatted(slashed(menu),"\"menu.Second\""));
-    runSelected.go();
-    runDone.go();
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(state,"""
-      {
-        "menu": {
-          "folder": "Str:%s",
-          "kind": "code",
-          "running": "",
-          "runs": "1",
-          "lastRun": "menu.Second",
-          "exit": "0",
-          "mains": {
-            "menu.First": "_menu/_rank_app.fear",
-            "menu.Second": "_menu/_rank_app.fear"
-          },
-          "problem": {}
-        }
-      }
-      """.formatted(escaped(menu)));
-    checkContent(console,compiled+compiled+"""
-      --- running menu.Second ---
-      Second
-      --- menu.Second exited with 0 after [###]s ---
-      """);
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
 }

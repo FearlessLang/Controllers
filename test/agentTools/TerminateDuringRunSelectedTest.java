@@ -1,52 +1,26 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.util.List;
 
 import tools.Fs;
 
 final class TerminateDuringRunSelectedTest extends ManagerTest{
-  static final List<String> console= List.of(data,"eclipse","chain","console.txt");
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
-    on("windows",()->click(val(332),val(94))));
-  final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
-  final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action mainsShown= action("mainsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
-  final Action all= action("all",
-    on("ubuntu_gnome",()->click(val(112),val(165))),
-    on("windows",()->click(val(45),val(118))));
-  final Action bothSaved= action("bothSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(37000))));
-  final Action runSelected= action("runSelected",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action programShown= action("programShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(42000))));
-  final Action terminate= action("terminate",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action terminated= action("terminated",
-    on("ubuntu_gnome",()->waitUntilTime(val(45000))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(46500))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(50000))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(60000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action runV= action("runV",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action mainsShown= action("mainsShown",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
+  final Action tickShow= action("tickShow",on("ubuntu_gnome",()->click(val(540),val(140))));
+  final Action tickTell= action("tickTell",on("ubuntu_gnome",()->click(val(540),val(166))));
+  final Action runTicked= action("runTicked",on("ubuntu_gnome",()->click(val(530),val(191))));
+  final Action programShown= action("programShown",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+  final Action terminate= action("terminate",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action terminated= action("terminated",on("ubuntu_gnome",()->waitUntilTime(val(48000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(53000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var chain= filesIOFolder.resolve("chain");
@@ -56,70 +30,49 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
       use base.Main as Main;
       use base.Consumer as Consumer;
       use base.Frame as Frame;
-
       Show: Main{sys -> sys.gui.run Note}
       Tell: Main{sys -> sys.out.println("told")}
       Note: Consumer[mut Frame]{:: .title "chain" .content{:: .label{:: .text "terminate this program" } } }
       """);
-    launchScript("first",chain);
+    launchScript("first",chain.resolve("chain.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();
+    compiled.go();
+    var program= new Rectangle(1880,1050,150,94);
+    var output= new Rectangle(410,190,1000,60);
+    var before= look();
+    runV.go();
     mainsShown.go();
-    all.go();
-    bothSaved.go();
-    var both= """
-      {
-        "chain": {
-          "path": "Str:%s",
-          "kind": "code",
-          "mains": ["chain.Show", "chain.Tell"]
-        }
-      }
-      """.formatted(slashed(chain));
-    stabilize();
-    checkContent(info,both);
-    runSelected.go();
+    tickShow.go();
+    tickTell.go();
+    runTicked.go();
     programShown.go();
-    stabilize();
-    checkContent(console,"--- compiling chain ---\n--- compile done ---\n--- running chain.Show ---\n");
+    changed(before,program);
+    var running= look();
     terminate.go();
     terminated.go();
+    same(before,program);
     stabilize();
-    checkContent(state,"""
+    checkContent(info,"""
       {
-        "chain": {
-          "folder": "Str:%s",
-          "kind": "code",
-          "running": "",
-          "runs": "1",
-          "lastRun": "chain.Show",
-          "exit": "143",
-          "mains": {
-            "chain.Show": "_chain/_rank_app.fear",
-            "chain.Tell": "_chain/_rank_app.fear"
-          },
-          "problem": {}
-        }
+        "projects": {
+          "chain": {
+            "path": "Str:%s",
+            "kind": "code",
+            "mains": ["chain.Show", "chain.Tell"]
+          }
+        },
+        "systemExtensions": []
       }
-      """.formatted(escaped(chain)));
-    checkContent(console,"""
-      --- compiling chain ---
-      --- compile done ---
-      --- running chain.Show ---
-      --- terminating chain.Show ---
-      --- chain.Show exited with 143 after [###]s ---
-      """);
-    checkContent(info,both);
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+      """.formatted(slashed(chain)));
+    assert differing(running,look(),output) > 0;
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
 }

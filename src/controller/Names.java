@@ -16,6 +16,7 @@ import mainCoordinator.MakeDemo;
 import realSourceOracle.BuildWithZip;
 import realSourceOracle.PathEntry;
 import tools.Fs;
+import managerMessages.Report;
 import userMessages.UserError;
 import utils.OneOr;
 
@@ -24,14 +25,6 @@ public final class Names{
   private Names(){}
   public static final String ext= ".fearless";
   private static final Path anyRoot= Path.of("").toAbsolutePath();
-  public static String compactName(Path folder){
-    var all= markers(folder);
-    return all.size() == 1 ? stem(all.getFirst()) : folder.getFileName().toString();
-  }
-  public static String pkgName(String alias){
-    var s= alias.replaceFirst("^_+","");
-    return TName.isPkgName(s) && !s.equals("base") && !s.equals("rank") ? s : "app_"+s;
-  }
   public static boolean isName(String name){
     PathEntry kid;
     try{ kid= new PathEntry(anyRoot,Path.of(name+ext)); }
@@ -43,10 +36,10 @@ public final class Names{
   public static Optional<String> markerProblem(Path folder, String alias){
     var all= markers(folder);
     if (all.size() > 1){
-      return Optional.of("More than one .fearless marker file was found in\n"+folder+"\nA project folder holds exactly one, and its name is the project name: keep only \""+alias+ext+"\".");
+      return Optional.of(Report.markersMany(folder,alias+ext));
     }
     if (all.size() == 1 && stem(all.getFirst()).equals(alias)){ return Optional.empty(); }
-    return Optional.of("The marker file \""+alias+ext+"\" is missing from\n"+folder+"\nRestore it, or forget and re-add this project folder.");
+    return Optional.of(Report.markerMissing(folder,alias+ext));
   }
   public static String makeUnique(Path folder, Set<String> taken){
     var all= markers(folder);

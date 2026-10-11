@@ -2,52 +2,24 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.awt.Rectangle;
 import java.nio.file.Files;
 import java.util.List;
 
 import tools.Fs;
 
 final class BrowseFilesTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action projectMenu= action("projectMenu",
-    on("ubuntu_gnome",()->click(val(158),val(79))),
-    on("windows",()->click(val(89),val(33))));
-  final Action browseFiles= action("browseFiles",
-    on("ubuntu_gnome",()->click(val(180),val(149))),
-    on("windows",()->click(val(111),val(103))));
-  final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(22500))));
-  final Action closeFiles= action("closeFiles",
-    on("ubuntu_gnome",()->click(val(2374),val(843))),
-    on("windows",()->click(val(1016),val(58))));
-  final Action filesClosed= action("filesClosed",
-    on("ubuntu_gnome",()->waitUntilTime(val(24000))));
-  final Action tileChanged= action("tileChanged",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action projectMenuAgain= action("projectMenuAgain",
-    on("ubuntu_gnome",()->click(val(158),val(79))),
-    on("windows",()->click(val(89),val(33))));
-  final Action browseFilesAgain= action("browseFilesAgain",
-    on("ubuntu_gnome",()->click(val(180),val(149))),
-    on("windows",()->click(val(111),val(103))));
-  final Action noteShown= action("noteShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(29000))));
-  final Action ok= action("ok",
-    on("ubuntu_gnome",()->click(val(1952),val(1136))),
-    on("windows",()->click(val(639),val(369))));
-  final Action noteGone= action("noteGone",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(32000))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(35500))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(45500))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action browse= action("browse",on("ubuntu_gnome",()->click(val(822),val(140))));
+  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(22500))));
+  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
+  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(24500))));
+  final Action tileChanged= action("tileChanged",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
+  final Action browseAgain= action("browseAgain",on("ubuntu_gnome",()->click(val(822),val(140))));
+  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var browsed= filesIOFolder.resolve("browsed");
@@ -56,29 +28,29 @@ final class BrowseFilesTest extends ManagerTest{
     Fs.rmTree(moved);
     Fs.writeUtf8(browsed.resolve("browsed.fearless"),"\n");
     Fs.writeUtf8(browsed.resolve("_browsed").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"browsed\")}\n");
-    launchScript("first",browsed);
+    launchScript("first",browsed.resolve("browsed.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    projectMenu.go();
-    browseFiles.go();
+    var center= new Rectangle(1720,1000,400,160);
+    var before= look();
+    browse.go();
     filesShown.go();
+    changed(before,center);
     closeFiles.go();
     filesClosed.go();
+    same(before,center);
     Files.move(browsed,moved);
     tileChanged.go();
-    projectMenuAgain.go();
-    browseFilesAgain.go();
+    browseAgain.go();
     noteShown.go();
-    stabilize();
-    checkContent(notes,"Nothing is opened: nothing exists at\n"+browsed+"\n");
-    ok.go();
-    noteGone.go();
+    changed(before,center);
     stabilize();
     assertFalse(Files.exists(browsed));
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    closeDialog.go();
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
 }

@@ -1,5 +1,6 @@
 package agentTools;
 
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.List;
@@ -9,54 +10,21 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class OpenWithChoiceTest extends ManagerTest{
-  final List<String> console= List.of(data,"eclipse","choice","console.txt");
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18500))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
-    on("windows",()->click(val(200),val(400))));
-  final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
-    on("windows",()->click(val(332),val(94))));
-  final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(21600))));
-  final Action compile= action("compile",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
-    on("windows",()->click(val(102),val(67))));
-  final Action compiled= action("compiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(35200))));
-  final Action appsShownFiles= action("appsShownFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(36700))));
-  final Action terminalShownFiles= action("terminalShownFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(40200))));
-  final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(53200))));
-  final Action openNote= action("openNote",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
-    on("windows",()->doubleClick(val(480),val(312))));
-  final Action chooserShown= action("chooserShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(55700))));
-  final Action pickSecond= action("pickSecond",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
-    on("windows",()->click(val(650),val(247))));
-  final Action runPicked= action("runPicked",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
-    on("windows",()->click(val(698),val(485))));
-  final Action ranSecond= action("ranSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(60900))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(62400))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(65900))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(75900))));
-  final Action closeFiles= action("closeFiles",
-    on("ubuntu_gnome",ManagerTest::unrecorded),
-    on("windows",()->click(val(1016),val(58))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
+  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
+  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action openNote= action("openNote",on("ubuntu_gnome",()->doubleClick(val(1984),val(915))));
+  final Action chooserShown= action("chooserShown",on("ubuntu_gnome",()->waitUntilTime(val(57000))));
+  final Action ranSecond= action("ranSecond",on("ubuntu_gnome",()->waitUntilTime(val(63000))));
+  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
+  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(70000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(67000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var choice= filesIOFolder.resolve("choice");
@@ -66,48 +34,42 @@ final class OpenWithChoiceTest extends ManagerTest{
     Fs.ensureDir(choice.resolve("_hello").resolve("icons"));
     Fs.ofV(()->ImageIO.write(new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB),"png",choice.resolve("_hello").resolve("icons").resolve("hello.png").toFile()));
     Fs.writeUtf8(choice.resolve("note.ffile123"),"dear reader\n");
-    launchScript("first",choice);
+    launchScript("first",choice.resolve("choice.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
+    compile.go();
+    compiled.go();
+    shell("nohup setsid -f xdg-open \""+choice+"\" >/dev/null 2>&1\n");
+    runInTerminal(appsShownFiles,terminalShownFiles);
+    filesShown.go();
+    var files= look();
+    openNote.go();
+    chooserShown.go();
+    changed(files,new Rectangle(1800,1000,240,100));
+    keys(KeyEvent.VK_DOWN);
+    keys(KeyEvent.VK_ENTER);
+    ranSecond.go();
     stabilize();
     checkContent(info,"""
       {
-        "choice": {
-          "path": "Str:%s",
-          "kind": "code"
-        }
+        "projects": {
+          "choice": {
+            "path": "Str:%s",
+            "kind": "code",
+            "mains": ["hello.Second"]
+          }
+        },
+        "systemExtensions": []
       }
       """.formatted(slashed(choice)));
-    compile.go();
-    compiled.go();
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(console,"--- compiling choice ---\n--- compile done ---\n");
-    shell("xdg-open \""+choice+"\"\n");
-    runInTerminal(appsShownFiles,terminalShownFiles);
-    filesShown.go();
-    openNote.go();
-    chooserShown.go();
-    pickSecond.go();
-    runPicked.go();
-    ranSecond.go();
-    stabilize();
-    checkContent(console,"""
-      --- compiling choice ---
-      --- compile done ---
-      --- running hello.Second ---
-      second
-      --- hello.Second exited with 0 after [###]s ---
-      """);
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
     closeFiles.go();
+    filesClosed.go();
   }
 }

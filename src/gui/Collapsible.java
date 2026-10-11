@@ -2,6 +2,7 @@ package gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 
@@ -36,6 +37,7 @@ final class Collapsible extends JPanel{
     add(body,BorderLayout.CENTER);
     setOpen(open);
   }
+  @Override public Dimension getMaximumSize(){ return new Dimension(Integer.MAX_VALUE,getPreferredSize().height); }
   void setOpen(boolean open){
     body.setVisible(open);
     head.setText((open ? "[-] " : "[+] ")+title);

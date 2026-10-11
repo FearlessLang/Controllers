@@ -1,60 +1,22 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
+import java.awt.Rectangle;
 import java.util.List;
 
 import tools.Fs;
 
 final class RecompileAfterEditTest extends ManagerTest{
-  static final List<String> console= List.of(data,"eclipse","draft","console.txt");
   static final String first= "use base.Main as Main;\n\nFirst:Main{s->base.Debug#(\"first\")}\n";
-  static final String compiled= "--- compiling draft ---\n--- compile done ---\n";
-  static final String states= """
-    {
-      "draft": {
-        "folder": "Str:%s",
-        "kind": "code",
-        "running": "",
-        "runs": "0",
-        "lastRun": "",
-        "exit": "-1",
-        "mains": %s,
-        "problem": {}
-      }
-    }
-    """;
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusTiles= action("focusTiles",
-    on("ubuntu_gnome",()->click(val(200),val(1500))),
-    on("windows",()->click(val(200),val(400))));
-  final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(400),val(139))),
-    on("windows",()->click(val(332),val(94))));
-  final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(21500))));
-  final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action firstCompiled= action("firstCompiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(35000))));
-  final Action editNoticed= action("editNoticed",
-    on("ubuntu_gnome",()->waitUntilTime(val(38000))));
-  final Action compileEdited= action("compileEdited",
-    on("ubuntu_gnome",()->click(val(164),val(111))),
-    on("windows",()->click(val(102),val(67))));
-  final Action editedCompiled= action("editedCompiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(52000))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(53500))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(57000))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(67000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action firstCompiled= action("firstCompiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action editNoticed= action("editNoticed",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
+  final Action compileEdited= action("compileEdited",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action editedCompiled= action("editedCompiled",on("ubuntu_gnome",()->waitUntilTime(val(59000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(64000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var draft= filesIOFolder.resolve("draft");
@@ -62,41 +24,31 @@ final class RecompileAfterEditTest extends ManagerTest{
     Fs.rmTree(draft);
     Fs.writeUtf8(draft.resolve("draft.fearless"),"\n");
     Fs.writeUtf8(source,first);
-    launchScript("first",draft);
+    launchScript("first",draft.resolve("draft.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    focusTiles.go();
-    keys(KeyEvent.VK_F8);
-    keys(KeyEvent.VK_HOME);
     becomeCode.go();
     codeShown.go();
     compile.go();
     firstCompiled.go();
     stabilize();
-    checkContent(console,compiled);
-    checkContent(state,states.formatted(escaped(draft),"""
-      {
-            "draft.First": "_draft/_rank_app.fear"
-          }"""));
+    checkContent(List.of("draft",".fearless_out","mains.info"),"{\n  \"draft.First\": [###]\n}\n");
+    var button= new Rectangle(500,100,160,24);
+    var runnable= look();
     Fs.writeUtf8(source,first+"Second:Main{s->base.Debug#(\"second\")}\n");
     stabilize();
     editNoticed.go();
-    stabilize();
-    checkContent(state,states.formatted(escaped(draft),"{}"));
-    checkContent(console,compiled);
+    changed(runnable,button);
+    var outdated= look();
     compileEdited.go();
     editedCompiled.go();
+    changed(outdated,button);
     stabilize();
-    checkContent(console,compiled+compiled);
-    checkContent(state,states.formatted(escaped(draft),"""
-      {
-            "draft.First": "_draft/_rank_app.fear",
-            "draft.Second": "_draft/_rank_app.fear"
-          }"""));
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    checkContent(List.of("draft",".fearless_out","mains.info"),"{\n  \"draft.First\": [###],\n  \"draft.Second\": [###]\n}\n");
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"137\n");
+    checkContent(List.of("first.exit"),"0\n");
   }
 }

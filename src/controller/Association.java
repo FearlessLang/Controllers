@@ -35,5 +35,9 @@ public final class Association{
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
   }
+  static List<String> others(){
+    var mine= identity(launcher());
+    return FileAssociations.identities(belongsToFamily).stream().filter(i->!i.equals(mine)).toList();
+  }
   static void eradicateAll(){ FileAssociations.eradicateAll(belongsToFamily,Violation::associationLeftHalfDone); }
 }

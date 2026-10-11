@@ -15,7 +15,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import core.TName;
 import tools.Fs;
 
 final class NamesTest{
@@ -51,14 +50,14 @@ final class NamesTest{
   @Test void aFreeNameIsKeptAndGetsAMarkerFile(@TempDir Path dir){
     var project= folder(dir,"someproject");
     assertEquals("someproject",Names.makeUnique(project,Set.of("other")));
-    assertEquals("someproject",Names.compactName(project));
+    assertEquals(Optional.empty(),Names.markerProblem(project,"someproject"));
     assertTrue(Files.isRegularFile(project.resolve("someproject.fearless")));
   }
   @Test void makeUniqueIsIdempotentOnAnAlreadyMarkedFolder(@TempDir Path dir){
     var project= folder(dir,"someproject");
     Names.makeUnique(project,Set.of("other"));
     assertEquals("someproject",Names.makeUnique(project,Set.of("other")));
-    assertEquals("someproject",Names.compactName(project));
+    assertEquals(Optional.empty(),Names.markerProblem(project,"someproject"));
   }
   @Test void anUnsafeFolderNameIsMadeAcceptableEvenWithNoCollision(@TempDir Path dir){
     var project= folder(dir,"someProject");
@@ -68,14 +67,14 @@ final class NamesTest{
   @Test void aTakenNameGetsANumberAndANewFearlessFile(@TempDir Path dir){
     var project= folder(dir,"someProject");
     assertEquals("someproject2",Names.makeUnique(project,Set.of("someproject")));
-    assertEquals("someproject2",Names.compactName(project));
+    assertEquals(Optional.empty(),Names.markerProblem(project,"someproject2"));
     assertFalse(Fs.readUtf8(project.resolve("someproject2.fearless")).isEmpty());
   }
   @Test void theChosenNameIsTheFolderNameMadeAcceptableAndFree(@TempDir Path dir){
     var project= folder(dir,"helloWorld");
     Fs.writeUtf8(project.resolve("start.fearless"),"");
     assertEquals("helloworld2",Names.makeUnique(project,Set.of("start","helloworld")));
-    assertEquals("helloworld2",Names.compactName(project));
+    assertEquals(Optional.empty(),Names.markerProblem(project,"helloworld2"));
   }
   @Test void anExistingFearlessFileIsRenamedNotDuplicated(@TempDir Path dir){
     var project= folder(dir,"someProject");
@@ -111,7 +110,7 @@ final class NamesTest{
     Fs.writeUtf8(project.resolve("other.fearless"),"");
     assertTrue(Names.markerProblem(project,"my_game").orElseThrow().contains("More than one"));
   }
-  @Test void everyChosenNameIsAValidFreeNameWithAValidPackageName(@TempDir Path dir){
+  @Test void everyChosenNameIsAValidFreeName(@TempDir Path dir){
     var taken= new HashSet<String>();
     var names= List.of("com","lpt","con","aux","a".repeat(250),"---","1abc","_","base","rank","caf\u00e9","\u65e5\u672c","\u00c4rger","Com");
     for (var i= 0; i < 12; i++){
@@ -119,7 +118,6 @@ final class NamesTest{
         var chosen= Names.makeUnique(folder(dir.resolve(i+"_"+names.indexOf(n)),n),Set.copyOf(taken));
         assertTrue(Names.isName(chosen),chosen);
         assertTrue(taken.add(chosen),chosen);
-        assertTrue(TName.isPkgName(Names.pkgName(chosen)),chosen);
       }
     }
   }
@@ -131,13 +129,5 @@ final class NamesTest{
     assertEquals(List.of(project.resolve("hello.fearless")),Names.list(project));
     assertEquals("kept\n",Fs.readUtf8(project.resolve("hello.fearless")));
     assertEquals(Optional.empty(),Names.markerProblem(project,"hello"));
-  }
-  @Test void pkgNameIsTheAliasMadeAcceptable(){
-    assertEquals("eclipseexample",Names.pkgName("eclipseexample"));
-    assertEquals("foo",Names.pkgName("_foo"));
-    assertEquals("app_base",Names.pkgName("base"));
-    assertEquals("app_rank",Names.pkgName("rank"));
-    assertEquals("app_",Names.pkgName("_"));
-    assertTrue(core.TName.isPkgName(Names.pkgName("_")));
   }
 }

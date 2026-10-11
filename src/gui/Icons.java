@@ -19,7 +19,7 @@ import javax.swing.Icon;
 
 import controller.Association;
 import controller.Project;
-import controller.Messages;
+import managerMessages.Violation;
 import userMessages.UserError;
 import utils.Range;
 
@@ -39,10 +39,10 @@ public final class Icons{
   static Image read(Path file){
     try{
       var res= ImageIO.read(file.toFile());
-      if (res == null){ throw Messages.couldNotDecodeIcon(file); }
+      if (res == null){ throw Violation.couldNotDecodeIcon(file); }
       return res;
     }
-    catch(IOException e){ throw Messages.couldNotLoadIcon(file,e); }
+    catch(IOException e){ throw Violation.couldNotLoadIcon(file,e); }
   }
   //Four coloured quarters chosen by the name, under the first two letters of the name.
   static BufferedImage generated(String name, int size){

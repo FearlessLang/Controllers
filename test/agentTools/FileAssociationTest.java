@@ -1,109 +1,65 @@
 package agentTools;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 
+import tools.Fs;
+
 final class FileAssociationTest extends ManagerTest{
-  final Action appsShownForFiles= action("appsShownForFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShownForFiles= action("terminalShownForFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action focusFiles= action("focusFiles",
-    on("ubuntu_gnome",()->click(val(2200),val(1200))),
-    on("windows",()->click(val(700),val(450))));
-  final Action genericShown= action("genericShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(22000))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(23500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(27000))));
-  final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(40000))));
-  final Action sendManagerAway= action("sendManagerAway",
-    on("ubuntu_gnome",()->click(val(3754),val(48))),
-    on("windows",()->click(val(1162),val(11))));
-  final Action managerAway= action("managerAway",
-    on("ubuntu_gnome",()->waitUntilTime(val(43000))));
-  final Action iconChanged= action("iconChanged",
-    on("ubuntu_gnome",()->waitUntilTime(val(47000))));
-  final Action bringManagerBack= action("bringManagerBack",
-    on("ubuntu_gnome",()->click(val(32),val(386))),
-    on("windows",()->click(val(860),val(696))));
-  final Action managerBack= action("managerBack",
-    on("ubuntu_gnome",()->waitUntilTime(val(51000))));
-  final Action managerMenu= action("managerMenu",
-    on("ubuntu_gnome",()->click(val(98),val(79))),
-    on("windows",()->click(val(31),val(33))));
-  final Action forgetAssociation= action("forgetAssociation",
-    on("ubuntu_gnome",()->click(val(128),val(191))),
-    on("windows",()->click(val(61),val(145))));
-  final Action dialogShown= action("dialogShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(55500))));
-  final Action yes= action("yes",
-    on("ubuntu_gnome",()->click(val(1928),val(1154))),
-    on("windows",()->click(val(614),val(387))));
-  final Action managerForgot= action("managerForgot",
-    on("ubuntu_gnome",()->waitUntilTime(val(58500))));
-  final Action iconReverted= action("iconReverted",
-    on("ubuntu_gnome",()->waitUntilTime(val(62500))));
-  final Action appsShownAgain= action("appsShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(64000))));
-  final Action terminalShownAgain= action("terminalShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(67500))));
-  final Action managerShownAgain= action("managerShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(80500))));
-  final Action sendManagerAwayAgain= action("sendManagerAwayAgain",
-    on("ubuntu_gnome",()->click(val(3754),val(48))),
-    on("windows",()->click(val(1162),val(11))));
-  final Action managerAwayAgain= action("managerAwayAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(83500))));
-  final Action iconChangedAgain= action("iconChangedAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(87500))));
-  final Action appsShownToEnd= action("appsShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(89000))));
-  final Action terminalShownToEnd= action("terminalShownToEnd",
-    on("ubuntu_gnome",()->waitUntilTime(val(92500))));
-  final Action managerEnded= action("managerEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(102500))));
-  final Action closeFiles= action("closeFiles",
-    on("ubuntu_gnome",()->click(val(2374),val(842))),
-    on("windows",()->click(val(1016),val(58))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
+  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
+  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action focusFiles= action("focusFiles",on("ubuntu_gnome",()->click(val(2200),val(1200))));
+  final Action associatedShown= action("associatedShown",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action managerMenuBehind= action("managerMenuBehind",on("ubuntu_gnome",()->click(val(99),val(79))));
+  final Action managerReset= action("managerReset",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
+  final Action genericShown= action("genericShown",on("ubuntu_gnome",()->waitUntilTime(val(46000))));
+  final Action appsShownAgain= action("appsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(47500))));
+  final Action terminalShownAgain= action("terminalShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(51000))));
+  final Action managerShownAgain= action("managerShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(64000))));
+  final Action associatedAgain= action("associatedAgain",on("ubuntu_gnome",()->waitUntilTime(val(76000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(81000))));
+  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
-    shell("nohup setsid -f xdg-open \""+project+"\" >/dev/null 2>&1\n");
-    runInTerminal(appsShownForFiles,terminalShownForFiles);
-    filesShown.go();
-    reload(genericShown);
+    var icon= new Rectangle(1840,880,64,64);
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    sendManagerAway.go();
-    managerAway.go();
-    reload(iconChanged);
-    bringManagerBack.go();
-    managerBack.go();
-    managerMenu.go();
-    forgetAssociation.go();
-    dialogShown.go();
-    yes.go();
-    managerForgot.go();
+    shell("nohup setsid -f xdg-open \""+project+"\" >/dev/null 2>&1\n");
+    runInTerminal(appsShownFiles,terminalShownFiles);
+    filesShown.go();
+    reload(associatedShown);
+    var associated= look();
+    managerMenuBehind.go();
+    resetManager.go();
+    managerReset.go();
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
-    reload(iconReverted);
+    assertFalse(Files.exists(filesIOFolder.resolve(data)));
+    reload(genericShown);
+    changed(associated,icon);
     launchScript("second");
     runInTerminal(appsShownAgain,terminalShownAgain);
     managerShownAgain.go();
-    sendManagerAwayAgain.go();
-    managerAwayAgain.go();
-    reload(iconChangedAgain);
-    endScript();
-    runInTerminal(appsShownToEnd,terminalShownToEnd);
-    managerEnded.go();
+    associatedAgain.go();
+    var query= Fs.of(()->new ProcessBuilder("xdg-mime","query","default","application/x-fearless").start());
+    assertEquals(app.getFileName()+".desktop\n",new String(query.getInputStream().readAllBytes(),StandardCharsets.UTF_8));
+    managerMenu.go();
+    quitManager.go();
+    managerQuit.go();
     stabilize();
-    checkContent(List.of("second.exit"),"137\n");
+    checkContent(List.of("second.exit"),"0\n");
     closeFiles.go();
   }
   void reload(Action reloaded) throws Throwable{
