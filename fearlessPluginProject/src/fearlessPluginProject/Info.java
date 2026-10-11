@@ -4,15 +4,17 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-/// Reads the Info files the manager writes (fileSupport.Info in Coordinator): objects {...} of
-/// strings "..." (escapes \" \\ \n) and objects; an object becomes a Map in field order.
+/// Reads the Info files the manager writes (fileSupport.Info in Coordinator): objects {...},
+/// lists [...] and strings "..." (escapes \" \\ \n); an object becomes a Map in field order.
 /// A text that may hold characters outside the Fearless character set (a path, a compile error)
 /// is tagged, as controller.TaggedText writes it: "Str:" then the text, "UStr:" then the text as
 /// UStr.escape prints it, or "Base16:" then the bytes naming a path on this system.
@@ -34,6 +36,7 @@ final class Info{
     catch(IndexOutOfBoundsException e){ throw p.bad("more text"); }
   }
   @SuppressWarnings("unchecked") static Map<String,Object> obj(Object value){ return (Map<String,Object>)value; }
+  @SuppressWarnings("unchecked") static List<Object> lst(Object value){ return (List<Object>)value; }
   static String tagged(Object value){
     var s= (String)value;
     if (s.startsWith("Str:")){ return s.substring("Str:".length()); }
@@ -63,7 +66,17 @@ final class Info{
   }
   private Object value(){
     ws();
-    return text.charAt(i) == '"' ? str() : obj();
+    var c= text.charAt(i);
+    return c == '"' ? str() : c == '[' ? lst() : obj();
+  }
+  private List<Object> lst(){
+    var res= new ArrayList<Object>();
+    expect('[');
+    if (next(']')){ return res; }
+    do{ res.add(value()); }
+    while(next(','));
+    expect(']');
+    return res;
   }
   private Map<String,Object> obj(){
     var res= new LinkedHashMap<String,Object>();

@@ -18,13 +18,13 @@ import org.eclipse.ui.console.PatternMatchEvent;
 import org.eclipse.ui.console.TextConsole;
 import org.eclipse.ui.ide.IDE;
 
-/// Registered on org.eclipse.ui.console.consolePatternMatchListeners for the project
-/// consoles (FearlessWatcher.consoleType) and the consoles of a Process: in a stack frame
+/// Registered on org.eclipse.ui.console.consolePatternMatchListeners for the consoles of a
+/// Process: in a stack frame
 /// "error line: N in file F" and in a compile error header "In file: fear:/F", F is a link
 /// opening that file at line N. A compile error carries its N on the numbered source line
 /// "N| " below the header; the console fills in pieces, so that line is looked up when the
 /// link is used. F is relative to the project folder, so it is found in the src folder of
-/// the mirrored project the console is named after, or whose Process the console shows.
+/// the mirrored project whose Process the console shows.
 public final class Links implements IPatternMatchListenerDelegate{
   private static final Pattern at= Pattern.compile("error line: (\\d+) in file (\\S+)|In file: fear:/(\\S+)");
   private static final Pattern numbered= Pattern.compile("(\\d+)\\| .*");
@@ -40,7 +40,7 @@ public final class Links implements IPatternMatchListenerDelegate{
     m.matches();
     var frame= m.group(1) != null;
     var file= m.group(frame ? 2 : 3);
-    var alias= console instanceof IConsole c ? c.getProcess().getAttribute(Process.aliasAttr) : console.getName().substring(FearlessWatcher.consolePrefix.length());
+    var alias= ((IConsole)console).getProcess().getAttribute(Process.aliasAttr);
     var f= ResourcesPlugin.getWorkspace().getRoot().getProject(alias).getFolder(FearlessWatcher.srcName).getFile(new Path(file));
     if (!f.exists()){ return; }
     IntSupplier line= frame ? ()->Integer.parseInt(m.group(1)) : ()->numberedLineAfter(console.getDocument(), offset);

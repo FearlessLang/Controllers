@@ -19,11 +19,10 @@ import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.debug.core.model.IStreamsProxy;
 
-/// A main the manager is running, shown as Eclipse shows a process it started itself: in
-/// the Debug view, and in the Console view with its output and its Terminate button. The
-/// watcher starts it when the manager's state counts a new run, appends the output the manager
-/// writes meanwhile, and ends it when the state names no running main; Terminate asks the
-/// manager to end the job.
+/// The job Eclipse follows, shown as Eclipse shows a process it started itself: in the Debug
+/// view, and in the Console view with its output and its Terminate button. Job starts it,
+/// appends what the manager sends through the port, and ends it when the manager closes the
+/// connection; Terminate asks the manager to end the job.
 public final class Process extends PlatformObject implements IProcess{
   static final String type= "fearless";
   static final String aliasAttr= "fearlessPluginProject.alias";
@@ -32,7 +31,6 @@ public final class Process extends PlatformObject implements IProcess{
   private final String label;
   private final Map<String,String> attributes= new HashMap<>();
   private final Stream out= new Stream();
-  private int exit;
   private boolean terminated;
   private Process(ILaunch launch, String alias, String label){
     this.launch= launch;
@@ -50,15 +48,14 @@ public final class Process extends PlatformObject implements IProcess{
     return res;
   }
   void append(String text){ out.append(text); }
-  void ended(int exit){
-    this.exit= exit;
+  void ended(){
     terminated= true;
     fire(DebugEvent.TERMINATE);
   }
   private void fire(int kind){ DebugPlugin.getDefault().fireDebugEventSet(new DebugEvent[]{new DebugEvent(this, kind)}); }
   @Override public boolean canTerminate(){ return !terminated; }
   @Override public boolean isTerminated(){ return terminated; }
-  @Override public void terminate(){ ManagerLink.send("terminate", alias); }
+  @Override public void terminate(){ ManagerLink.send("Terminate", alias); }
   @Override public String getLabel(){ return label; }
   @Override public ILaunch getLaunch(){ return launch; }
   @Override public IStreamsProxy getStreamsProxy(){ return out; }
@@ -66,7 +63,7 @@ public final class Process extends PlatformObject implements IProcess{
   @Override public String getAttribute(String key){ return attributes.get(key); }
   @Override public int getExitValue() throws DebugException{
     if (!terminated){ throw new DebugException(Status.error(label+" has not ended yet")); }
-    return exit;
+    return 0;
   }
   /// The output stream of the process, which is also its own streams proxy; a Fearless
   /// program run by the manager has no error stream and takes no input from the console.
