@@ -20,7 +20,7 @@ import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
 
 /// File > New > Fearless Project: a folder, made if missing and registered with the
-/// manager by a register message; the manager fills an empty folder with a hello world.
+/// manager by a Register message.
 public final class NewProjectWizard extends Wizard implements INewWizard{
   private final Page page= new Page();
   @Override public void init(IWorkbench workbench, IStructuredSelection selection){ setWindowTitle("New Fearless Project"); }
@@ -29,7 +29,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     var folder= Path.of(page.folder.getText().strip()).toAbsolutePath();
     try{ Files.createDirectories(folder); }
     catch(IOException e){ throw new UncheckedIOException(e); }
-    ManagerLink.send("register", ManagerLink.pathText(folder.toString()));
+    ManagerLink.send("Register", ManagerLink.pathArg(folder));
     return true;
   }
   private static final class Page extends WizardPage{
@@ -37,7 +37,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     Page(){
       super("folder");
       setTitle("Fearless Project");
-      setDescription("The folder of the project: an empty or missing one gets a hello world, one holding Fearless code is registered as it is.");
+      setDescription("The folder of the project: a missing one is made, and the folder is registered as it is.");
     }
     @Override public void createControl(Composite parent){
       var root= new Composite(parent, SWT.NONE);

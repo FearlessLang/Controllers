@@ -96,10 +96,7 @@
     <consolePatternMatchListener id="fearlessPluginProject.links" class="fearlessPluginProject.Links"
       regex="error line: \d+ in file \S+|In file: fear:/\S+">
       <enablement>
-        <or>
-          <test property="org.eclipse.ui.console.consoleTypeTest" value="fearlessPluginProject.project"/>
-          <test property="org.eclipse.debug.ui.processTypeTest" value="fearless"/>
-        </or>
+        <test property="org.eclipse.debug.ui.processTypeTest" value="fearless"/>
       </enablement>
     </consolePatternMatchListener>
   </extension>
@@ -137,6 +134,18 @@
       </contextualLaunch>
       <configurationType id="fearlessPluginProject.launch"/>
     </shortcut>
+  </extension>
+
+  <extension point="org.eclipse.ui.handlers">
+    <handler commandId="org.eclipse.ui.file.save" class="fearlessPluginProject.Save">
+      <activeWhen>
+        <with variable="activeEditorInput">
+          <adapt type="org.eclipse.core.resources.IResource">
+            <test property="org.eclipse.core.resources.projectNature" value="fearlessPluginProject.nature"/>
+          </adapt>
+        </with>
+      </activeWhen>
+    </handler>
   </extension>
 
   <extension point="org.eclipse.ui.commands">

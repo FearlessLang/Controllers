@@ -33,13 +33,13 @@ public final class Shortcut implements ILaunchShortcut{
   @Override public void launch(IEditorPart editor, String mode){ launch(Adapters.adapt(editor.getEditorInput(), IResource.class), mode); }
   private static void launch(IResource resource, String mode){
     var project= resource.getProject();
-    var p= ManagerLink.project(project.getName());
+    var mains= ManagerLink.mains(ManagerLink.project(project.getName()).folder());
     var file= resource instanceof IFile f ? f.getProjectRelativePath().removeFirstSegments(1).toString() : "";
-    var inFile= p.mains().entrySet().stream().filter(e->e.getValue().equals(file)).map(Map.Entry::getKey).toList();
-    var offered= inFile.isEmpty() ? List.copyOf(p.mains().keySet()) : inFile;
+    var inFile= mains.entrySet().stream().filter(e->e.getValue().equals(file)).map(Map.Entry::getKey).toList();
+    var offered= inFile.isEmpty() ? List.copyOf(mains.keySet()) : inFile;
     var main= offered.size() > 1 ? choose(offered) : Optional.of(offered.isEmpty() ? "" : offered.getFirst());
     if (main.isEmpty()){ return; }
-    IResource mapped= main.get().isEmpty() ? project : project.getFolder(FearlessWatcher.srcName).getFile(new Path(p.mains().get(main.get())));
+    IResource mapped= main.get().isEmpty() ? project : project.getFolder(FearlessWatcher.srcName).getFile(new Path(mains.get(main.get())));
     try{ DebugUITools.launch(configuration(project.getName(), main.get(), mapped), mode); }
     catch(CoreException e){ throw new IllegalStateException(e); }
   }
