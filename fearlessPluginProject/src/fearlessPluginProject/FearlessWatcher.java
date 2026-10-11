@@ -36,7 +36,7 @@ import org.osgi.framework.FrameworkUtil;
 public final class FearlessWatcher extends Job implements IStartup{
   static final String srcName= "src";
   private static final String problemType= "fearlessPluginProject.problem";
-  private static final Pattern at= Pattern.compile("(?m)^In file: fear:/(\\S+)\\n\\n(\\d+)\\| ");
+  private static final Pattern at= Pattern.compile("(?m)^In file: fear:/(\\S+)\\n(?:.*\\n)*?(\\d+)\\| .*\\n *\\| [ ^~-]*\\^");
   private static volatile boolean stopped;
   private final Map<String,String> reports= new HashMap<>();
   private final Map<String,String> marks= new HashMap<>();

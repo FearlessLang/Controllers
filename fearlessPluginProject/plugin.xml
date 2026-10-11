@@ -25,9 +25,28 @@
       class="fearlessPluginProject.FearlessPerspective" icon="icons/fearless16.png"/>
   </extension>
 
+  <extension point="org.eclipse.ui.perspectiveExtensions">
+    <perspectiveExtension targetID="fearlessPluginProject.perspective">
+      <hiddenMenuItem id="org.eclipse.ui.run"/>
+      <hiddenToolBarItem id="newWizardDropDown"/>
+      <hiddenToolBarItem id="org.eclipse.ui.file.saveAll"/>
+      <hiddenToolBarItem id="org.eclipse.ui.window.pinEditor"/>
+      <hiddenToolBarItem id="org.eclipse.debug.internal.ui.actions.RunDropDownAction"/>
+      <hiddenToolBarItem id="org.eclipse.debug.internal.ui.actions.DebugDropDownAction"/>
+      <hiddenToolBarItem id="org.eclipse.debug.internal.ui.actions.ProfileDropDownAction"/>
+      <hiddenToolBarItem id="org.eclipse.eclemma.ui.actions.CoverageDropDownAction"/>
+      <hiddenToolBarItem id="org.eclipse.ui.externaltools.ExternalToolMenuDelegateToolbar"/>
+      <hiddenToolBarItem id="org.eclipse.mylyn.tasks.ui.command.openTask"/>
+      <hiddenToolBarItem id="org.eclipse.terminal.view.ui.toolbar"/>
+      <hiddenToolBarItem id="org.eclipse.terminal.view.ui.commands.launchToolbar"/>
+    </perspectiveExtension>
+  </extension>
+
   <extension point="org.eclipse.ui.views">
     <view id="fearlessPluginProject.explorer" name="Fearless Explorer" icon="icons/fearless16.png"
       class="org.eclipse.ui.navigator.CommonNavigator"/>
+    <view id="fearlessPluginProject.output" name="Output" icon="icons/fearless16.png"
+      class="fearlessPluginProject.Output"/>
   </extension>
 
   <extension point="org.eclipse.ui.navigator.viewer">
@@ -92,50 +111,6 @@
     <themeAssociation themeId="fearlessPluginProject.dark" scopeName="source.fearless" whenDark="true"/>
   </extension>
 
-  <extension point="org.eclipse.ui.console.consolePatternMatchListeners">
-    <consolePatternMatchListener id="fearlessPluginProject.links" class="fearlessPluginProject.Links"
-      regex="error line: \d+ in file \S+|In file: fear:/\S+">
-      <enablement>
-        <test property="org.eclipse.debug.ui.processTypeTest" value="fearless"/>
-      </enablement>
-    </consolePatternMatchListener>
-  </extension>
-
-  <extension point="org.eclipse.debug.core.launchConfigurationTypes">
-    <launchConfigurationType id="fearlessPluginProject.launch" name="Fearless Program" modes="run"
-      delegate="fearlessPluginProject.Launcher"/>
-  </extension>
-
-  <extension point="org.eclipse.debug.ui.launchConfigurationTypeImages">
-    <launchConfigurationTypeImage id="fearlessPluginProject.launchImage"
-      configTypeID="fearlessPluginProject.launch" icon="icons/fearless16.png"/>
-  </extension>
-
-  <extension point="org.eclipse.debug.ui.launchConfigurationTabGroups">
-    <launchConfigurationTabGroup id="fearlessPluginProject.launchTabs"
-      type="fearlessPluginProject.launch" class="fearlessPluginProject.LaunchTab"/>
-  </extension>
-
-  <extension point="org.eclipse.debug.ui.launchShortcuts">
-    <shortcut id="fearlessPluginProject.shortcut" label="Fearless Program" modes="run"
-      icon="icons/fearless16.png" class="fearlessPluginProject.Shortcut">
-      <contextualLaunch>
-        <enablement>
-          <with variable="selection">
-            <count value="1"/>
-            <iterate>
-              <adapt type="org.eclipse.core.resources.IResource">
-                <test property="org.eclipse.core.resources.projectNature" value="fearlessPluginProject.nature"/>
-              </adapt>
-            </iterate>
-          </with>
-        </enablement>
-        <contextLabel mode="run" label="Fearless Program"/>
-      </contextualLaunch>
-      <configurationType id="fearlessPluginProject.launch"/>
-    </shortcut>
-  </extension>
-
   <extension point="org.eclipse.ui.handlers">
     <handler commandId="org.eclipse.ui.file.save" class="fearlessPluginProject.Save">
       <activeWhen>
@@ -150,32 +125,18 @@
 
   <extension point="org.eclipse.ui.commands">
     <command id="fearlessPluginProject.main" name="Fearless Main Button" defaultHandler="fearlessPluginProject.MainButton"/>
-    <command id="fearlessPluginProject.terminate" name="Terminate Fearless Programs" defaultHandler="fearlessPluginProject.Terminate"/>
   </extension>
 
   <extension point="org.eclipse.ui.menus">
-    <menuContribution locationURI="toolbar:org.eclipse.debug.ui.launchActionSet?after=additions">
-      <command commandId="fearlessPluginProject.main" tooltip="Run"
-        icon="platform:/plugin/org.eclipse.debug.ui/icons/full/obj16/lrun_obj.png">
-        <visibleWhen checkEnabled="false">
-          <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
-        </visibleWhen>
-      </command>
-      <command commandId="fearlessPluginProject.terminate" tooltip="Terminate the running Fearless programs"
-        icon="platform:/plugin/org.eclipse.debug.ui/icons/full/elcl16/terminate_co.png"
-        disabledIcon="platform:/plugin/org.eclipse.debug.ui/icons/full/dlcl16/terminate_co.png">
-        <visibleWhen checkEnabled="false">
-          <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
-        </visibleWhen>
-      </command>
-    </menuContribution>
-    <menuContribution locationURI="menu:org.eclipse.ui.run?after=additions">
-      <command commandId="fearlessPluginProject.terminate" label="Terminate Fearless Programs"
-        icon="platform:/plugin/org.eclipse.debug.ui/icons/full/elcl16/terminate_co.png">
-        <visibleWhen checkEnabled="false">
-          <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
-        </visibleWhen>
-      </command>
+    <menuContribution locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+      <toolbar id="fearlessPluginProject.toolbar">
+        <command commandId="fearlessPluginProject.main" tooltip="Run"
+          icon="platform:/plugin/org.eclipse.debug.ui/icons/full/obj16/lrun_obj.png">
+          <visibleWhen checkEnabled="false">
+            <with variable="activeWorkbenchWindow.activePerspective"><equals value="fearlessPluginProject.perspective"/></with>
+          </visibleWhen>
+        </command>
+      </toolbar>
     </menuContribution>
     <menuContribution locationURI="popup:org.eclipse.ui.popup.any?after=additions">
       <menu id="fearlessPluginProject.menu" label="Fearless" icon="icons/fearless16.png">
