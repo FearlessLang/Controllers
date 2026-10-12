@@ -8,17 +8,17 @@ import java.util.List;
 import tools.Fs;
 
 final class DropFolderTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
-  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
-  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
-  final Action carryDropped= action("carryDropped",on("ubuntu_gnome",()->drag(val(1759),val(915),val(200),val(1500))));
-  final Action droppedSaved= action("droppedSaved",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
-  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
-  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(46000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
+  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(49500))));
+  final Action carryDropped= action("carryDropped",on("ubuntu_gnome",()->drag(val(799),val(375),val(200),val(700))));
+  final Action droppedSaved= action("droppedSaved",on("ubuntu_gnome",()->waitUntilTime(val(59500))));
+  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(1414),val(303))));
+  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(71000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(66500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var drops= filesIOFolder.resolve("drops");

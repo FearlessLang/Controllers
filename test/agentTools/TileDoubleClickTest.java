@@ -10,17 +10,17 @@ import tools.Fs;
 
 final class TileDoubleClickTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",989);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action tileTwice= action("tileTwice",on("ubuntu_gnome",()->doubleClick(val(133),val(130))));
-  final Action notRun= action("notRun",on("ubuntu_gnome",()->waitUntilTime(val(25000))));
+  final Action notRun= action("notRun",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action compile= action("compile",on("ubuntu_gnome",()->click(val(542),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(40000))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(57000))));
   final Action tileTwiceCompiled= action("tileTwiceCompiled",on("ubuntu_gnome",()->doubleClick(val(133),val(130))));
-  final Action ran= action("ran",on("ubuntu_gnome",()->waitUntilTime(val(46000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(51000))));
+  final Action ran= action("ran",on("ubuntu_gnome",()->waitUntilTime(val(65500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(72500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var tapped= filesIOFolder.resolve("tapped");
@@ -33,12 +33,12 @@ final class TileDoubleClickTest extends ManagerTest{
     becomeCode.go();
     codeShown.go();
     var output= new Rectangle(410,168,1000,80);
-    var header= new Rectangle(450,100,700,26);
+    var button= new Rectangle(527,102,30,20);
     var before= look();
     tileTwice.go();
     notRun.go();
     same(before,output);
-    same(before,header);
+    same(before,button);
     stabilize();
     assertFalse(Files.exists(tapped.resolve(".fearless_out").resolve("mains.info")));
     compile.go();

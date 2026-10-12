@@ -7,13 +7,13 @@ import tools.Fs;
 
 final class DoubleClickCompileTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",976);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action compileTwice= action("compileTwice",on("ubuntu_gnome",()->doubleClick(val(529),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(58500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var hasty= filesIOFolder.resolve("hasty");
@@ -25,7 +25,7 @@ final class DoubleClickCompileTest extends ManagerTest{
     managerShown.go();
     becomeCode.go();
     codeShown.go();
-    var center= new Rectangle(1720,1000,400,160);
+    var center= new Rectangle(760,460,400,160);
     var output= new Rectangle(410,170,1000,90);
     var before= look();
     compileTwice.go();

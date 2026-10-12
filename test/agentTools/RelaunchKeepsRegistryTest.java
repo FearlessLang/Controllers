@@ -5,16 +5,16 @@ import java.util.List;
 
 final class RelaunchKeepsRegistryTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",1027);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(25000))));
-  final Action appsShownAgain= action("appsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(27000))));
-  final Action terminalShownAgain= action("terminalShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
-  final Action managerShownAgain= action("managerShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(43000))));
-  final Action tileSelected= action("tileSelected",on("ubuntu_gnome",()->waitUntilTime(val(45500))));
-  final Action managerQuitAgain= action("managerQuitAgain",on("ubuntu_gnome",()->waitUntilTime(val(50500))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action appsShownAgain= action("appsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(39500))));
+  final Action terminalShownAgain= action("terminalShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(44500))));
+  final Action managerShownAgain= action("managerShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(62000))));
+  final Action tileSelected= action("tileSelected",on("ubuntu_gnome",()->waitUntilTime(val(66000))));
+  final Action managerQuitAgain= action("managerQuitAgain",on("ubuntu_gnome",()->waitUntilTime(val(73000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");

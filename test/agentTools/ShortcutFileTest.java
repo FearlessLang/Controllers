@@ -12,22 +12,22 @@ import tools.Fs;
 
 final class ShortcutFileTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",1012);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action compile= action("compile",on("ubuntu_gnome",()->click(val(565),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
   final Action shortcutIcon= action("shortcutIcon",on("ubuntu_gnome",()->doubleClick(val(476),val(162))));
-  final Action ranFromManager= action("ranFromManager",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
-  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(42500))));
-  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(46000))));
-  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(57000))));
-  final Action openShortcut= action("openShortcut",on("ubuntu_gnome",()->doubleClick(val(1872),val(915))));
-  final Action ranFromFiles= action("ranFromFiles",on("ubuntu_gnome",()->waitUntilTime(val(64000))));
-  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
-  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(66000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(71000))));
+  final Action ranFromManager= action("ranFromManager",on("ubuntu_gnome",()->waitUntilTime(val(58500))));
+  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(61500))));
+  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(66500))));
+  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(82000))));
+  final Action openShortcut= action("openShortcut",on("ubuntu_gnome",()->doubleClick(val(912),val(375))));
+  final Action ranFromFiles= action("ranFromFiles",on("ubuntu_gnome",()->waitUntilTime(val(92000))));
+  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(1414),val(303))));
+  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(95500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(102500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var shortcuts= filesIOFolder.resolve("shortcuts");

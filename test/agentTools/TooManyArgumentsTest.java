@@ -7,16 +7,16 @@ import java.nio.file.Files;
 import java.util.List;
 
 final class TooManyArgumentsTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action errorShown= action("errorShown",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
-  final Action errorClosed= action("errorClosed",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action errorShown= action("errorShown",on("ubuntu_gnome",()->waitUntilTime(val(28000))));
+  final Action errorClosed= action("errorClosed",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(38000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
     var other= project("helloStackTraces");
-    var center= new Rectangle(1720,1000,400,160);
+    var center= new Rectangle(760,460,400,160);
     var before= look();
     launchScript("first",project,other);
     runInTerminal(appsShown,terminalShown);

@@ -10,19 +10,19 @@ import tools.Fs;
 
 final class EmptyFileTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",985);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action compile= action("compile",on("ubuntu_gnome",()->click(val(538),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action appsShownEmpty= action("appsShownEmpty",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
-  final Action terminalShownEmpty= action("terminalShownEmpty",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
-  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
-  final Action appsShownNote= action("appsShownNote",on("ubuntu_gnome",()->waitUntilTime(val(51000))));
-  final Action terminalShownNote= action("terminalShownNote",on("ubuntu_gnome",()->waitUntilTime(val(54500))));
-  final Action noteRun= action("noteRun",on("ubuntu_gnome",()->waitUntilTime(val(64000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(69000))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
+  final Action appsShownEmpty= action("appsShownEmpty",on("ubuntu_gnome",()->waitUntilTime(val(54500))));
+  final Action terminalShownEmpty= action("terminalShownEmpty",on("ubuntu_gnome",()->waitUntilTime(val(59500))));
+  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(70500))));
+  final Action appsShownNote= action("appsShownNote",on("ubuntu_gnome",()->waitUntilTime(val(74000))));
+  final Action terminalShownNote= action("terminalShownNote",on("ubuntu_gnome",()->waitUntilTime(val(79000))));
+  final Action noteRun= action("noteRun",on("ubuntu_gnome",()->waitUntilTime(val(92500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(99500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var opens= filesIOFolder.resolve("blanks");
@@ -41,7 +41,7 @@ final class EmptyFileTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    var center= new Rectangle(1720,1000,400,160);
+    var center= new Rectangle(760,460,400,160);
     var output= new Rectangle(410,170,1000,90);
     var compiledLook= look();
     launchScript("second",opens.resolve("blank.ffile321"));

@@ -7,17 +7,21 @@ import java.nio.file.Files;
 import java.util.List;
 
 final class WindowCloseTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action managerHidden= action("managerHidden",on("ubuntu_gnome",()->waitUntilTime(val(20000))));
-  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(21500))));
-  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(25000))));
-  final Action managerBack= action("managerBack",on("ubuntu_gnome",()->waitUntilTime(val(33000))));
-  final Action hiddenAgain= action("hiddenAgain",on("ubuntu_gnome",()->waitUntilTime(val(35000))));
-  final Action trayMenuShown= action("trayMenuShown",on("ubuntu_gnome",()->waitUntilTime(val(36500))));
-  final Action backFromTray= action("backFromTray",on("ubuntu_gnome",()->waitUntilTime(val(40000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action managerHidden= action("managerHidden",on("ubuntu_gnome",()->waitUntilTime(val(29500))));
+  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(32500))));
+  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
+  final Action managerBack= action("managerBack",on("ubuntu_gnome",()->waitUntilTime(val(48500))));
+  final Action hiddenAgain= action("hiddenAgain",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action trayMenuShown= action("trayMenuShown",on("ubuntu_gnome",()->waitUntilTime(val(55000))));
+  final Action backFromTray= action("backFromTray",on("ubuntu_gnome",()->waitUntilTime(val(60000))));
+  final Action hiddenThird= action("hiddenThird",on("ubuntu_gnome",()->waitUntilTime(val(63500))));
+  final Action trayIconRight= action("trayIconRight",on("ubuntu_gnome",()->rightClick(val(1736),val(15))));
+  final Action trayMenuShownAgain= action("trayMenuShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(66500))));
+  final Action trayQuit= action("trayQuit",on("ubuntu_gnome",()->click(val(1706),val(117))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(73000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
@@ -45,8 +49,12 @@ final class WindowCloseTest extends ManagerTest{
     trayShow.go();
     backFromTray.go();
     same(shown,tiles);
-    managerMenu.go();
-    quitManager.go();
+    closeWindow.go();
+    hiddenThird.go();
+    changed(shown,tiles);
+    trayIconRight.go();
+    trayMenuShownAgain.go();
+    trayQuit.go();
     managerQuit.go();
     stabilize();
     checkContent(List.of("first.exit"),"0\n");

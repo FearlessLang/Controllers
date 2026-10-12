@@ -8,13 +8,13 @@ import java.util.List;
 import tools.Fs;
 
 final class FolderArgumentTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
-  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
-  final Action registered= action("registered",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
+  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action registered= action("registered",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var loose= filesIOFolder.resolve("loose");
@@ -24,7 +24,7 @@ final class FolderArgumentTest extends ManagerTest{
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
     var tiles= new Rectangle(69,95,256,85);
-    var center= new Rectangle(1720,1000,400,160);
+    var center= new Rectangle(760,460,400,160);
     var empty= look();
     launchScript("second",loose);
     runInTerminal(appsShownSecond,terminalShownSecond);

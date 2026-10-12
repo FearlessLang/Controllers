@@ -10,18 +10,18 @@ import java.util.List;
 import tools.Fs;
 
 final class MalformedRegistryTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
-  final Action appsShownMalformed= action("appsShownMalformed",on("ubuntu_gnome",()->waitUntilTime(val(25000))));
-  final Action terminalShownMalformed= action("terminalShownMalformed",on("ubuntu_gnome",()->waitUntilTime(val(28500))));
-  final Action errorShown= action("errorShown",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
-  final Action errorDismissed= action("errorDismissed",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
-  final Action appsShownFresh= action("appsShownFresh",on("ubuntu_gnome",()->waitUntilTime(val(47000))));
-  final Action terminalShownFresh= action("terminalShownFresh",on("ubuntu_gnome",()->waitUntilTime(val(50500))));
-  final Action freshShown= action("freshShown",on("ubuntu_gnome",()->waitUntilTime(val(63500))));
-  final Action freshQuit= action("freshQuit",on("ubuntu_gnome",()->waitUntilTime(val(68500))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(33000))));
+  final Action appsShownMalformed= action("appsShownMalformed",on("ubuntu_gnome",()->waitUntilTime(val(36500))));
+  final Action terminalShownMalformed= action("terminalShownMalformed",on("ubuntu_gnome",()->waitUntilTime(val(41500))));
+  final Action errorShown= action("errorShown",on("ubuntu_gnome",()->waitUntilTime(val(60500))));
+  final Action errorDismissed= action("errorDismissed",on("ubuntu_gnome",()->waitUntilTime(val(65000))));
+  final Action appsShownFresh= action("appsShownFresh",on("ubuntu_gnome",()->waitUntilTime(val(68500))));
+  final Action terminalShownFresh= action("terminalShownFresh",on("ubuntu_gnome",()->waitUntilTime(val(73500))));
+  final Action freshShown= action("freshShown",on("ubuntu_gnome",()->waitUntilTime(val(91500))));
+  final Action freshQuit= action("freshQuit",on("ubuntu_gnome",()->waitUntilTime(val(98500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
@@ -51,7 +51,7 @@ final class MalformedRegistryTest extends ManagerTest{
     launchScript("second");
     runInTerminal(appsShownMalformed,terminalShownMalformed);
     errorShown.go();
-    changed(before,new Rectangle(1720,1000,400,160));
+    changed(before,new Rectangle(760,460,400,160));
     stabilize();
     assertFalse(Files.exists(filesIOFolder.resolve("second.exit")));
     assertTrue(Files.exists(filesIOFolder.resolve(data)));

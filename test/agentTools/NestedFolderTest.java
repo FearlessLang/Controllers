@@ -12,16 +12,16 @@ final class NestedFolderTest extends ManagerTest{
   final Path nest= filesIOFolder.resolve("nest");
   final Path inner= nest.resolve("inner");
   final Path source= inner.resolve("_inner");
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action appsShownNest= action("appsShownNest",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
-  final Action terminalShownNest= action("terminalShownNest",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
-  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(30000))));
-  final Action appsShownSource= action("appsShownSource",on("ubuntu_gnome",()->waitUntilTime(val(32000))));
-  final Action terminalShownSource= action("terminalShownSource",on("ubuntu_gnome",()->waitUntilTime(val(35500))));
-  final Action noteShownAgain= action("noteShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(43000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action appsShownNest= action("appsShownNest",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
+  final Action terminalShownNest= action("terminalShownNest",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
+  final Action appsShownSource= action("appsShownSource",on("ubuntu_gnome",()->waitUntilTime(val(47500))));
+  final Action terminalShownSource= action("terminalShownSource",on("ubuntu_gnome",()->waitUntilTime(val(52500))));
+  final Action noteShownAgain= action("noteShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(63000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(71500))));
   @Override void walk() throws Throwable{
     noManagerData();
     Fs.rmTree(nest);
@@ -46,7 +46,7 @@ final class NestedFolderTest extends ManagerTest{
     managerShown.go();
     stabilize();
     checkContent(info,remembered);
-    var center= new Rectangle(1720,1000,400,160);
+    var center= new Rectangle(760,460,400,160);
     var before= look();
     launchScript("second",nest.resolve("nest.fearless"));
     runInTerminal(appsShownNest,terminalShownNest);

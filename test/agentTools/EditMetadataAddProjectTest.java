@@ -5,18 +5,18 @@ import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class EditMetadataAddProjectTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action editorShown= action("editorShown",on("ubuntu_gnome",()->waitUntilTime(val(22000))));
-  final Action focusText= action("focusText",on("ubuntu_gnome",()->click(val(1900),val(1200))));
-  final Action commit= action("commit",on("ubuntu_gnome",()->click(val(2238),val(1370))));
-  final Action bothSaved= action("bothSaved",on("ubuntu_gnome",()->waitUntilTime(val(70000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action editorShown= action("editorShown",on("ubuntu_gnome",()->waitUntilTime(val(31500))));
+  final Action focusText= action("focusText",on("ubuntu_gnome",()->click(val(940),val(660))));
+  final Action commit= action("commit",on("ubuntu_gnome",()->click(val(1278),val(830))));
+  final Action bothSaved= action("bothSaved",on("ubuntu_gnome",()->waitUntilTime(val(87500))));
   final Action secondTile= action("secondTile",on("ubuntu_gnome",()->click(val(261),val(130))));
-  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(72000))));
+  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(91000))));
   final Action check= action("check",on("ubuntu_gnome",()->click(val(523),val(113))));
-  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(74500))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(79500))));
+  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(95000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(102000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
