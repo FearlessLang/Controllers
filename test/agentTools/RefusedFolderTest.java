@@ -9,13 +9,27 @@ import java.util.List;
 import tools.Fs;
 
 final class RefusedFolderTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(27500))));
-  final Action appsShownAgain= action("appsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
-  final Action terminalShownAgain= action("terminalShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action noteShownAgain= action("noteShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(46500))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(55000))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action noteShown= action("noteShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(27500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(34500))));
+  final Action appsShownAgain= action("appsShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(31000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(39000))));
+  final Action terminalShownAgain= action("terminalShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(36000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(45000))));
+  final Action noteShownAgain= action("noteShownAgain",
+    on("ubuntu_gnome",()->waitUntilTime(val(46500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(58500))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(55000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(69000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var gone= filesIOFolder.resolve("gone");

@@ -8,13 +8,27 @@ import java.util.List;
 import tools.Fs;
 
 final class FolderArgumentTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
-  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
-  final Action registered= action("registered",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+  final Action appsShownSecond= action("appsShownSecond",
+    on("ubuntu_gnome",()->waitUntilTime(val(29000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(36500))));
+  final Action terminalShownSecond= action("terminalShownSecond",
+    on("ubuntu_gnome",()->waitUntilTime(val(34000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(42500))));
+  final Action registered= action("registered",
+    on("ubuntu_gnome",()->waitUntilTime(val(45000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(56500))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(52000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(65000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var loose= filesIOFolder.resolve("loose");
@@ -23,7 +37,7 @@ final class FolderArgumentTest extends ManagerTest{
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    var tiles= new Rectangle(69,95,256,85);
+    var tiles= inWindow(69,95,256,85);
     var empty= look();
     launchScript("second",loose);
     runInTerminal(appsShownSecond,terminalShownSecond);

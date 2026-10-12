@@ -8,15 +8,33 @@ import java.util.List;
 import tools.Fs;
 
 final class ForgetProjectTest extends ManagerTest{
-  final Action forgetIdle= header("forgetIdle",1132);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action appsShownOther= action("appsShownOther",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
-  final Action terminalShownOther= action("terminalShownOther",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
-  final Action otherShown= action("otherShown",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
-  final Action forgotten= action("forgotten",on("ubuntu_gnome",()->waitUntilTime(val(49500))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(56500))));
+  final Action forgetIdle= action("forgetIdle",
+    on("ubuntu_gnome",()->click(val(1132),val(113))),
+    on("xubuntu_xfce",()->click(val(1158),val(93))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+  final Action appsShownOther= action("appsShownOther",
+    on("ubuntu_gnome",()->waitUntilTime(val(29000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(36500))));
+  final Action terminalShownOther= action("terminalShownOther",
+    on("ubuntu_gnome",()->waitUntilTime(val(34000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(42500))));
+  final Action otherShown= action("otherShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(45000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(56500))));
+  final Action forgotten= action("forgotten",
+    on("ubuntu_gnome",()->waitUntilTime(val(49500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(62000))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(56500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(71000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
