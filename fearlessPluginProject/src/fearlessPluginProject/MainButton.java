@@ -201,6 +201,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
         var segments= StreamSupport.stream(folder.relativize(p).spliterator(), false).map(Path::toString).toList();
         if (invisible(segments) || generatedTests(p)){ continue; }
         if (!Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)){ throw new Invalid(); }
+        dated(stamp(p));
         if (!segments.getLast().endsWith(".zip")){ res.add(new Ref(segments, stamp(p))); continue; }
         try(var in= Files.newInputStream(p)){ zip(unzipped(segments), in, stamp(p), res); }
       }
@@ -219,10 +220,12 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     for (var e= zip.getNextEntry(); e != null; e= zip.getNextEntry()){
       if (e.isDirectory()){ continue; }
       var segments= Stream.concat(at.stream(), Stream.of(e.getName().split("/"))).toList();
+      if (!invisible(segments)){ dated(e.getTime()); }
       if (e.getName().endsWith(".zip")){ zip(unzipped(segments), new ByteArrayInputStream(zip.readAllBytes()), stamp, res); continue; }
       res.add(new Ref(segments, stamp));
     }
   }
+  private static void dated(long t){ if (t <= 0 || t > System.currentTimeMillis()+5_000){ throw new Invalid(); } }
   private static List<String> unzipped(List<String> segments){
     var last= segments.getLast();
     return Stream.concat(segments.stream().limit(segments.size()-1), Stream.of(last.substring(0, last.length()-4))).toList();

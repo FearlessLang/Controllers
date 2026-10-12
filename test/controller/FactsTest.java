@@ -35,7 +35,12 @@ final class FactsTest{
     Fs.writeUtf8(res.resolve("_hello").resolve("_rank_app.fear"),"use base.Main as Main;\n");
     Fs.writeUtf8(res.resolve("readme"),"hi\n");
     Fs.writeUtf8(res.resolve(name.toLowerCase()+".fearless"),"");
+    backdated(res);
     return res;
+  }
+  static void backdated(Path folder){
+    var old= FileTime.fromMillis(System.currentTimeMillis()-3_600_000);
+    Fs.walkV(folder,s->s.filter(Files::isRegularFile).forEach(f->Fs.ofV(()->Files.setLastModifiedTime(f,old))));
   }
   static void cache(Path project, String pkg, long stamp){ cache(project,pkg,stamp,"{}\n"); }
   static void cache(Path project, String pkg, long stamp, String mainsInfo){ cache(project,pkg,stamp,mainsInfo,"base"); }
@@ -49,7 +54,7 @@ final class FactsTest{
     Fs.writeUtf8(file,content);
     Fs.ofV(()->Files.setLastModifiedTime(file,FileTime.fromMillis(stamp)));
   }
-  static long after(Path project){ return Fs.walk(project,s->s.filter(Files::isRegularFile).mapToLong(Fs::lastModified).max().orElse(0))+1000; }
+  static long after(Path project){ return Fs.walk(project,s->s.filter(Files::isRegularFile).mapToLong(Fs::lastModified).max().orElse(0))+1; }
   static boolean upToDate(Facts f){ return f.stale().isEmpty(); }
   //A log or an Eclipse report lands after the build stamp, inside the project folder
   @Test void whatFearlessWritesAboutAProjectIsNotCountedAsSource(@TempDir Path dir){
@@ -181,15 +186,10 @@ final class FactsTest{
       }
     });
   }
-  //Files older than 1970 and no cache: the built check reads the missing .built file on every try
-  @Test void aFileMissingOnEveryTryIsAProblemNotAHang(@TempDir Path dir){
+  @Test void aFileDatedAtTheStartOf1970IsAProblem(@TempDir Path dir){
     var project= project(dir,"someProject");
     Fs.ofV(()->Files.setLastModifiedTime(project.resolve("_hello").resolve("_rank_app.fear"),FileTime.fromMillis(-5000)));
-    same("""
-      The folder of this project can not be read:
-      [###]someProject
-      no such file: [###]hello.built
-      Give Fearless access to it, or forget this project.""",assertTimeoutPreemptively(Duration.ofSeconds(60),()->Facts.of(project,"someproject",Kind.code)).problem().orElseThrow());
+    same("[###]Path: \"_hello/_rank_app.fear\"\n\nThis file is dated 19[###]",Facts.of(project,"someproject",Kind.code).problem().orElseThrow());
   }
   @Test void anUnreadableFolderIsAProblemNotACrash(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
