@@ -48,7 +48,7 @@ public final class Tray{
     tray.addPropertyChangeListener("trayIcons",gone);
     return true;
   }
-  static JPopupMenu menu(){
+  private static JPopupMenu menu(){
     var res= new JPopupMenu();
     res.add(Window.item("Show manager",()->Main.command("Show")));
     res.addSeparator();
