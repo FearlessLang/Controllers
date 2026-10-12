@@ -11,21 +11,21 @@ import tools.Fs;
 
 final class OpenWithChoiceTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",983);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action compile= action("compile",on("ubuntu_gnome",()->click(val(536),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
-  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
-  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
-  final Action openNote= action("openNote",on("ubuntu_gnome",()->doubleClick(val(1984),val(915))));
-  final Action chooserShown= action("chooserShown",on("ubuntu_gnome",()->waitUntilTime(val(57000))));
-  final Action ranSecond= action("ranSecond",on("ubuntu_gnome",()->waitUntilTime(val(63000))));
-  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
-  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(70000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(67000))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
+  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(54500))));
+  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(59500))));
+  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(75000))));
+  final Action openNote= action("openNote",on("ubuntu_gnome",()->doubleClick(val(1024),val(375))));
+  final Action chooserShown= action("chooserShown",on("ubuntu_gnome",()->waitUntilTime(val(82000))));
+  final Action ranSecond= action("ranSecond",on("ubuntu_gnome",()->waitUntilTime(val(90500))));
+  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(1414),val(303))));
+  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(100500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(96000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var choice= filesIOFolder.resolve("choice");
@@ -48,7 +48,7 @@ final class OpenWithChoiceTest extends ManagerTest{
     var files= look();
     openNote.go();
     chooserShown.go();
-    changed(files,new Rectangle(1800,1000,240,100));
+    changed(files,new Rectangle(840,460,240,100));
     keys(KeyEvent.VK_DOWN);
     keys(KeyEvent.VK_ENTER);
     ranSecond.go();

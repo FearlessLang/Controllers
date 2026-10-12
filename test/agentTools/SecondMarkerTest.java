@@ -9,16 +9,16 @@ import java.util.List;
 import tools.Fs;
 
 final class SecondMarkerTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action secondNoticed= action("secondNoticed",on("ubuntu_gnome",()->waitUntilTime(val(25000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action secondNoticed= action("secondNoticed",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action check= action("check",on("ubuntu_gnome",()->click(val(527),val(113))));
-  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(28000))));
-  final Action secondGone= action("secondGone",on("ubuntu_gnome",()->waitUntilTime(val(35000))));
+  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(40500))));
+  final Action secondGone= action("secondGone",on("ubuntu_gnome",()->waitUntilTime(val(50500))));
   final Action checkAgain= action("checkAgain",on("ubuntu_gnome",()->click(val(527),val(113))));
-  final Action checkedAgain= action("checkedAgain",on("ubuntu_gnome",()->waitUntilTime(val(37000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
+  final Action checkedAgain= action("checkedAgain",on("ubuntu_gnome",()->waitUntilTime(val(54000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(61000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var twice= filesIOFolder.resolve("twice");

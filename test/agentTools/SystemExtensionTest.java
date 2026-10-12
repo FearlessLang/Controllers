@@ -10,23 +10,23 @@ import tools.Fs;
 
 final class SystemExtensionTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",980);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action compile= action("compile",on("ubuntu_gnome",()->click(val(533),val(113))));
-  final Action questionShown= action("questionShown",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action allowed= action("allowed",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
+  final Action questionShown= action("questionShown",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
+  final Action allowed= action("allowed",on("ubuntu_gnome",()->waitUntilTime(val(56000))));
   final Action compileAgain= action("compileAgain",on("ubuntu_gnome",()->click(val(533),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(54000))));
-  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(55500))));
-  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(59000))));
-  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(70000))));
-  final Action openLetter= action("openLetter",on("ubuntu_gnome",()->doubleClick(val(1872),val(915))));
-  final Action letterRun= action("letterRun",on("ubuntu_gnome",()->waitUntilTime(val(77000))));
-  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
-  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(79000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(84000))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(77000))));
+  final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(80000))));
+  final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(85000))));
+  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(100500))));
+  final Action openLetter= action("openLetter",on("ubuntu_gnome",()->doubleClick(val(912),val(375))));
+  final Action letterRun= action("letterRun",on("ubuntu_gnome",()->waitUntilTime(val(110500))));
+  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(1414),val(303))));
+  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(114000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(121000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var opens= filesIOFolder.resolve("opens");
@@ -42,7 +42,7 @@ final class SystemExtensionTest extends ManagerTest{
     managerShown.go();
     becomeCode.go();
     codeShown.go();
-    var center= new Rectangle(1720,1000,400,160);
+    var center= new Rectangle(760,460,400,160);
     var before= look();
     compile.go();
     questionShown.go();

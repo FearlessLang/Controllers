@@ -4,13 +4,13 @@ import java.awt.Rectangle;
 import java.util.List;
 
 final class LaunchOnFileTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action appsShownOnFolder= action("appsShownOnFolder",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
-  final Action terminalShownOnFolder= action("terminalShownOnFolder",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
-  final Action selected= action("selected",on("ubuntu_gnome",()->waitUntilTime(val(30000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action appsShownOnFolder= action("appsShownOnFolder",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
+  final Action terminalShownOnFolder= action("terminalShownOnFolder",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action selected= action("selected",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(52500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
@@ -34,7 +34,7 @@ final class LaunchOnFileTest extends ManagerTest{
     launchScript("second",project);
     runInTerminal(appsShownOnFolder,terminalShownOnFolder);
     selected.go();
-    same(before,new Rectangle(1720,1000,400,160));
+    same(before,new Rectangle(760,460,400,160));
     same(before,new Rectangle(69,95,1100,85));
     stabilize();
     checkContent(List.of("second.exit"),"0\n");

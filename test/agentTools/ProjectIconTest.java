@@ -14,15 +14,15 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class ProjectIconTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action ownIconShown= action("ownIconShown",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
-  final Action invalidShown= action("invalidShown",on("ubuntu_gnome",()->waitUntilTime(val(28000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action ownIconShown= action("ownIconShown",on("ubuntu_gnome",()->waitUntilTime(val(33000))));
+  final Action invalidShown= action("invalidShown",on("ubuntu_gnome",()->waitUntilTime(val(40000))));
   final Action check= action("check",on("ubuntu_gnome",()->click(val(504),val(113))));
-  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
-  final Action ownIconBack= action("ownIconBack",on("ubuntu_gnome",()->waitUntilTime(val(37000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
+  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(44500))));
+  final Action ownIconBack= action("ownIconBack",on("ubuntu_gnome",()->waitUntilTime(val(53000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(60000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var pic= filesIOFolder.resolve("pic");

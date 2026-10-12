@@ -17,15 +17,15 @@ final class ConnectEclipseTest extends ManagerTest{
   final Path plugins= dropins.resolve("fearless").resolve("plugins");
   final Path lib= app.resolve("lib").resolve("app");
   final Path shipped= lib.resolve("eclipsePlugin");
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action chooserShown= action("chooserShown",on("ubuntu_gnome",()->waitUntilTime(val(21500))));
-  final Action fileName= action("fileName",on("ubuntu_gnome",()->click(val(2000),val(1180))));
-  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(33000))));
-  final Action chooserShownAgain= action("chooserShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(37000))));
-  final Action connected= action("connected",on("ubuntu_gnome",()->waitUntilTime(val(48000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(53000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action chooserShown= action("chooserShown",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
+  final Action fileName= action("fileName",on("ubuntu_gnome",()->click(val(1040),val(640))));
+  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(47000))));
+  final Action chooserShownAgain= action("chooserShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(52500))));
+  final Action connected= action("connected",on("ubuntu_gnome",()->waitUntilTime(val(68000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(75000))));
   @Override void walk() throws Throwable{
     noManagerData();
     Fs.rmTree(ide);
@@ -37,7 +37,7 @@ final class ConnectEclipseTest extends ManagerTest{
     launchScript("first");
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    var center= new Rectangle(1720,1000,400,160);
+    var center= new Rectangle(760,460,400,160);
     var before= look();
     managerMenu.go();
     connectEclipse.go();

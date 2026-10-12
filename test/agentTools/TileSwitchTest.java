@@ -4,19 +4,19 @@ import java.awt.Rectangle;
 import java.util.List;
 
 final class TileSwitchTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
   final Action checkHello= action("checkHello",on("ubuntu_gnome",()->click(val(580),val(113))));
-  final Action helloChecked= action("helloChecked",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(22500))));
-  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action helloChecked= action("helloChecked",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
+  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(33500))));
+  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(38500))));
+  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(49500))));
   final Action helloTile= action("helloTile",on("ubuntu_gnome",()->click(val(133),val(130))));
-  final Action helloShown= action("helloShown",on("ubuntu_gnome",()->waitUntilTime(val(36500))));
+  final Action helloShown= action("helloShown",on("ubuntu_gnome",()->waitUntilTime(val(53500))));
   final Action startTile= action("startTile",on("ubuntu_gnome",()->click(val(261),val(130))));
-  final Action startShown= action("startShown",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
+  final Action startShown= action("startShown",on("ubuntu_gnome",()->waitUntilTime(val(57500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(64500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");

@@ -7,15 +7,15 @@ import java.util.List;
 import tools.Fs;
 
 final class EditMetadataRenameTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action editorShown= action("editorShown",on("ubuntu_gnome",()->waitUntilTime(val(22000))));
-  final Action nameOld= action("nameOld",on("ubuntu_gnome",()->doubleClick(val(1606),val(882))));
-  final Action commit= action("commit",on("ubuntu_gnome",()->click(val(2238),val(1370))));
-  final Action renamed= action("renamed",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
-  final Action markerSeen= action("markerSeen",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action editorShown= action("editorShown",on("ubuntu_gnome",()->waitUntilTime(val(31500))));
+  final Action nameOld= action("nameOld",on("ubuntu_gnome",()->doubleClick(val(646),val(342))));
+  final Action commit= action("commit",on("ubuntu_gnome",()->click(val(1278),val(830))));
+  final Action renamed= action("renamed",on("ubuntu_gnome",()->waitUntilTime(val(41500))));
+  final Action markerSeen= action("markerSeen",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(58500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var old= filesIOFolder.resolve("old");

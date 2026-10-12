@@ -9,15 +9,15 @@ import java.util.List;
 import tools.Fs;
 
 final class AliasClashTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
-  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
-  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
+  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
+  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
   final Action check= action("check",on("ubuntu_gnome",()->click(val(529),val(113))));
-  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
+  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(49500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(56500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var twins= filesIOFolder.resolve("twins");

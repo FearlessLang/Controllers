@@ -10,21 +10,21 @@ import utils.OneOr;
 
 final class LogsSectionTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",971);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action compile= action("compile",on("ubuntu_gnome",()->click(val(524),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
   final Action openLogs= action("openLogs",on("ubuntu_gnome",()->click(val(450),val(387))));
-  final Action logsShown= action("logsShown",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
+  final Action logsShown= action("logsShown",on("ubuntu_gnome",()->waitUntilTime(val(54500))));
   final Action run= action("run",on("ubuntu_gnome",()->click(val(524),val(113))));
-  final Action ran= action("ran",on("ubuntu_gnome",()->waitUntilTime(val(43000))));
-  final Action logsButton= action("logsButton",on("ubuntu_gnome",()->click(val(3800),val(386))));
-  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(47000))));
-  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
-  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(54000))));
+  final Action ran= action("ran",on("ubuntu_gnome",()->waitUntilTime(val(62000))));
+  final Action logsButton= action("logsButton",on("ubuntu_gnome",()->click(val(1880),val(386))));
+  final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(67500))));
+  final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(1414),val(303))));
+  final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(71000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(78000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var diary= filesIOFolder.resolve("diary");
@@ -59,7 +59,7 @@ final class LogsSectionTest extends ManagerTest{
     var listed= look();
     logsButton.go();
     filesShown.go();
-    changed(listed,new Rectangle(1600,900,600,400));
+    changed(listed,new Rectangle(640,360,600,400));
     closeFiles.go();
     filesClosed.go();
     managerMenu.go();

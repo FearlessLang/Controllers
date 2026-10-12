@@ -7,17 +7,17 @@ import tools.Fs;
 
 final class CloseProgramWindowTest extends ManagerTest{
   final Action becomeCode= header("becomeCode",967);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
+  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
   final Action compile= action("compile",on("ubuntu_gnome",()->click(val(520),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
   final Action run= action("run",on("ubuntu_gnome",()->click(val(520),val(113))));
-  final Action programShown= action("programShown",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
-  final Action closeProgram= action("closeProgram",on("ubuntu_gnome",()->click(val(1997),val(1067))));
-  final Action programEnded= action("programEnded",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(50000))));
+  final Action programShown= action("programShown",on("ubuntu_gnome",()->waitUntilTime(val(60000))));
+  final Action closeProgram= action("closeProgram",on("ubuntu_gnome",()->click(val(1037),val(527))));
+  final Action programEnded= action("programEnded",on("ubuntu_gnome",()->waitUntilTime(val(64500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(71500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var shut= filesIOFolder.resolve("shut");
@@ -38,8 +38,8 @@ final class CloseProgramWindowTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    var program= new Rectangle(1890,1050,126,94);
-    var button= new Rectangle(500,100,160,24);
+    var program= new Rectangle(930,510,126,94);
+    var button= new Rectangle(505,102,30,20);
     var before= look();
     run.go();
     programShown.go();

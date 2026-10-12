@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -38,8 +39,13 @@ abstract class ManagerTest{
   abstract void walk() throws Throwable;
   @Test void test() throws Throwable{
     start= System.currentTimeMillis();
-    walk();
+    try{ walk(); }
+    finally{
+      ProcessHandle.allProcesses().filter(this::ofApp).forEach(ProcessHandle::destroyForcibly);
+      inGuest("pkill -KILL -f '^"+app+"/'; true");
+    }
   }
+  boolean ofApp(ProcessHandle p){ return p.info().command().filter(c->c.startsWith(app.toString())).isPresent(); }
   Action action(String name, On... ons){ return new Action(this,name,OneOr.of(name+" on "+desk,Stream.of(ons).filter(o->o.desk().equals(desk))).steps()); }
   static On on(String desk, Run steps){ return new On(desk,steps); }
   record Action(ManagerTest m, String name, Run run){
@@ -66,6 +72,11 @@ abstract class ManagerTest{
   }
   void click(int x, int y){ pilot.click(x,y); }
   void doubleClick(int x, int y){ pilot.doubleClick(x,y); }
+  void rightClick(int x, int y){
+    var right= Set.of(Pilot.Button.right);
+    pilot.glide(x,y,Pilot.none,x,y,right);
+    pilot.glide(x,y,right,x,y,Pilot.none);
+  }
   void drag(int x0, int y0, int x1, int y1){ pilot.drag(x0,y0,x1,y1); }
   void type(String text){ text.chars().forEach(this::type); }
   void type(int c){
@@ -76,12 +87,13 @@ abstract class ManagerTest{
     pilot.chord(code);
   }
   void keys(int... codes){ pilot.chord(codes); }
-  void stabilize(){
+  void stabilize(){ inGuest("sync; echo 3 >/proc/sys/vm/drop_caches"); }
+  static void inGuest(String script){
     if (!Fs.isLinux()){ return; }
-    OneOr.opt("one guest alive",virsh("list","--name").lines().filter(l->!l.isBlank())).ifPresent(ManagerTest::flush);
+    OneOr.opt("one guest alive",virsh("list","--name").lines().filter(l->!l.isBlank())).ifPresent(g->inGuest(g,script));
   }
-  static void flush(String guest){
-    var pid= virsh("qemu-agent-command",guest,"{\"execute\":\"guest-exec\",\"arguments\":{\"path\":\"/bin/sh\",\"arg\":[\"-c\",\"sync; echo 3 >/proc/sys/vm/drop_caches\"]}}").replaceAll("\\D","");
+  static void inGuest(String guest, String script){
+    var pid= virsh("qemu-agent-command",guest,"{\"execute\":\"guest-exec\",\"arguments\":{\"path\":\"/bin/sh\",\"arg\":[\"-c\",\""+script+"\"]}}").replaceAll("\\D","");
     var status= "{\"execute\":\"guest-exec-status\",\"arguments\":{\"pid\":"+pid+"}}";
     var done= virsh("qemu-agent-command",guest,status);
     for (; !done.contains("\"exited\":true"); done= virsh("qemu-agent-command",guest,status)){ Pilot.pause(100); }
@@ -103,11 +115,11 @@ abstract class ManagerTest{
   final Action connectEclipse= action("connectEclipse",on("ubuntu_gnome",()->click(val(126),val(145))));
   final Action resetManager= action("resetManager",on("ubuntu_gnome",()->click(val(90),val(191))));
   final Action quitManager= action("quitManager",on("ubuntu_gnome",()->click(val(88),val(212))));
-  final Action closeWindow= action("closeWindow",on("ubuntu_gnome",()->click(val(3822),val(50))));
+  final Action closeWindow= action("closeWindow",on("ubuntu_gnome",()->click(val(1902),val(50))));
   final Action firstTile= action("firstTile",on("ubuntu_gnome",()->click(val(133),val(130))));
   Action header(String name, int x){ return action(name,on("ubuntu_gnome",()->click(val(x),val(113)))); }
-  final Action trayIcon= action("trayIcon",on("ubuntu_gnome",()->click(val(3655),val(15))));
-  final Action trayShow= action("trayShow",on("ubuntu_gnome",()->click(val(3625),val(60))));
+  final Action trayIcon= action("trayIcon",on("ubuntu_gnome",()->click(val(1736),val(15))));
+  final Action trayShow= action("trayShow",on("ubuntu_gnome",()->click(val(1709),val(62))));
   final Action closeDialog= action("closeDialog",on("ubuntu_gnome",()->keys(KeyEvent.VK_ENTER)));
   void park(){
     var s= Toolkit.getDefaultToolkit().getScreenSize();
@@ -124,7 +136,7 @@ abstract class ManagerTest{
   void same(BufferedImage before, Rectangle r){ assertEquals(0L,differing(before,look(),r)); }
   void changed(BufferedImage before, Rectangle r){ assertNotEquals(0L,differing(before,look(),r)); }
   final Action showApps= action("showApps",on("ubuntu_gnome",()->click(val(34),val(16))),on("debian_gnome_x11",()->click(val(1920),val(1080))),on("xubuntu_xfce",()->click(val(1920),val(1080))),on("debian_cinnamon",()->click(val(1920),val(1000))),on("debian_mate",()->click(val(1920),val(1080))),on("lubuntu_lxqt",()->click(val(1920),val(1080))),on("kubuntu_plasma",()->click(val(1920),val(1200))),on("void_i3",()->click(val(1920),val(1080))),on("arch_sway",()->click(val(1920),val(1080))),on("omarchy_hyprland",()->click(val(1920),val(1080))),on("fedora_gnome",()->doubleClick(val(1920),val(1080))),on("opensuse_plasma",()->click(val(1920),val(1080))),on("fedora_cosmic",()->click(val(1920),val(1000))),on("windows",ManagerTest::unrecorded));
-  final Action openTerminal= action("openTerminal",on("ubuntu_gnome",()->type("terminal\n")),on("debian_gnome_x11",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("xubuntu_xfce",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("debian_cinnamon",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("debian_mate",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("lubuntu_lxqt",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("kubuntu_plasma",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("void_i3",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("arch_sway",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("omarchy_hyprland",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("fedora_gnome",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("opensuse_plasma",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("fedora_cosmic",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("windows",ManagerTest::unrecorded));
+  final Action openTerminal= action("openTerminal",on("ubuntu_gnome",()->click(val(33),val(320))),on("debian_gnome_x11",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("xubuntu_xfce",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("debian_cinnamon",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("debian_mate",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("lubuntu_lxqt",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("kubuntu_plasma",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("void_i3",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("arch_sway",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("omarchy_hyprland",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("fedora_gnome",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("opensuse_plasma",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("fedora_cosmic",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("windows",ManagerTest::unrecorded));
   final Action runShell= action("runShell",on("ubuntu_gnome",this::typeRunSh),on("debian_gnome_x11",this::typeRunSh),on("xubuntu_xfce",this::typeRunSh),on("debian_cinnamon",this::typeRunSh),on("debian_mate",this::typeRunSh),on("lubuntu_lxqt",this::typeRunSh),on("kubuntu_plasma",this::typeRunSh),on("void_i3",this::typeRunSh),on("arch_sway",this::typeRunSh),on("omarchy_hyprland",this::typeRunSh),on("fedora_gnome",this::typeRunSh),on("opensuse_plasma",this::typeRunSh),on("fedora_cosmic",this::typeRunSh),on("windows",ManagerTest::unrecorded));
   void typeRunSh(){ type("sh "+filesIOFolder.resolve("run.sh")+"; exit\n"); }
   static void unrecorded(){ throw Bug.todo(); }

@@ -9,18 +9,18 @@ import java.util.List;
 import tools.Fs;
 
 final class RefusedFolderTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
-  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(19000))));
-  final Action appsShownAgain= action("appsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action terminalShownAgain= action("terminalShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(24500))));
-  final Action noteShownAgain= action("noteShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(32000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(38000))));
+  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
+  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
+  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(27500))));
+  final Action appsShownAgain= action("appsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
+  final Action terminalShownAgain= action("terminalShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
+  final Action noteShownAgain= action("noteShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(46500))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(55000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var gone= filesIOFolder.resolve("gone");
     var folder= filesIOFolder.resolve(data);
-    var center= new Rectangle(1720,1000,400,160);
+    var center= new Rectangle(760,460,400,160);
     Fs.rmTree(gone);
     var before= look();
     launchScript("first",gone.resolve("gone.fearless"));
