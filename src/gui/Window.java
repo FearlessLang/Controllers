@@ -70,7 +70,7 @@ public final class Window implements Manager.View{
   public final JFrame frame= new JFrame("Fearless Manager");
   private final Main main;
   private final Path info;
-  final Tiles tiles= new Tiles(name->Main.command("Select",name));
+  final Tiles tiles= new Tiles(name->Main.command("Show",name));
   final JSplitPane split= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,tiles,new JPanel());
   private final Map<Path,Panel> panels= new HashMap<>();
   private final Map<Path,JDialog> editors= new HashMap<>();

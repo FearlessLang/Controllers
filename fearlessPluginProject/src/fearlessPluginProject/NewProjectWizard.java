@@ -59,28 +59,28 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       return Status.error("The manager did not register "+folder+" within 30 seconds: make it code from the manager.");
     }).schedule();
   }
-  private static final List<String> demos= List.of("", "Hello world", "Simple GUI", "Notes app: a Shortcut and an OpenWith");
+  private static final List<String> demos= List.of("", "Hello world", "Simple GUI", "Shortcut and OpenWith");
   private static void write(Path folder, String demo) throws IOException{
     switch(demo){
       case "Hello world" -> Files.writeString(Files.createDirectories(folder.resolve("_hello")).resolve("_rank_app.fear"), hello);
       case "Simple GUI" -> Files.writeString(Files.createDirectories(folder.resolve("_gui")).resolve("_rank_app.fear"), gui);
       default -> {
-        var icons= Files.createDirectories(folder.resolve("_notes").resolve("icons"));
-        Files.writeString(folder.resolve("_notes").resolve("_rank_app.fear"), notes);
+        var icons= Files.createDirectories(folder.resolve("_open").resolve("icons"));
+        Files.writeString(folder.resolve("_open").resolve("_rank_app.fear"), open);
         png(icons.resolve("app.png"), true);
-        png(icons.resolve("note.png"), false);
+        png(icons.resolve("file.png"), false);
       }
     }
   }
   private static void png(Path file, boolean app){
     var data= new ImageData(64, 64, 24, new PaletteData(0xFF0000, 0xFF00, 0xFF));
-    for (int y= 0; y < 64; y++){ for (int x= 0; x < 64; x++){ data.setPixel(x, y, app ? appPixel(x, y) : notePixel(x, y)); } }
+    for (int y= 0; y < 64; y++){ for (int x= 0; x < 64; x++){ data.setPixel(x, y, app ? appPixel(x, y) : filePixel(x, y)); } }
     var loader= new ImageLoader();
     loader.data= new ImageData[]{data};
     loader.save(file.toString(), SWT.IMAGE_PNG);
   }
   private static int appPixel(int x, int y){ return x >= 22 && x <= 46 && Math.abs(y-32) <= (46-x)/2 ? 0xFFFFFF : 0x2F6FD0; }
-  private static int notePixel(int x, int y){
+  private static int filePixel(int x, int y){
     var border= x < 3 || x > 60 || y < 3 || y > 60;
     var line= x > 10 && x < 54 && y > 12 && y < 54 && y % 8 == 0;
     return border ? 0xB08A00 : line ? 0x8A8A8A : 0xFFE680;
@@ -111,7 +111,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
         }
       }
     """;
-  private static final String notes= """
+  private static final String open= """
     use base.Main as Main;
     use base.Shortcut as Shortcut;
     use base.OpenWith as OpenWith;
@@ -119,20 +119,20 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     use base.Frame as Frame;
     use base.Color as Color;
 
-    Notes: Main, Shortcut[IconsApp] { sys -> sys.gui.run NotesFrame }
-    NoteViewer: Main, OpenWith[IconsNote] { sys -> sys.gui.run NoteFrame }
-    NotesFrame: Consumer[mut Frame]{::
-      .title "Notes"
+    ByShortcut: Main, Shortcut[IconsApp] { sys -> sys.gui.run ShortcutFrame }
+    ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.run OpenWithFrame }
+    ShortcutFrame: Consumer[mut Frame]{::
+      .title "Shortcut"
       .content{::
         .background (Color.ghostWhite)
-        .label{:: .text "Started from the shortcut file notes.fapp... in the project folder." }
+        .label{:: .text "Started from the shortcut file by_shortcut.fapp... in the project folder." }
         }
       }
-    NoteFrame: Consumer[mut Frame]{::
-      .title "Note"
+    OpenWithFrame: Consumer[mut Frame]{::
+      .title "OpenWith"
       .content{::
         .background (Color.rubberDuck)
-        .label{:: .text "Started by opening a file with the note icon." }
+        .label{:: .text "Started by opening a file with the file icon." }
         }
       }
     """;

@@ -72,7 +72,7 @@ final class Panel{
   private final Collapsible logs= new Collapsible("Logs",half(logList),false,small("Logs",this::openLogs));
   private final JButton openDocs= small("Open docs",this::openDocs);
   private final JButton action= named(small("Compile",this::act),"action");
-  private final JButton clean= small("Delete cache",()->Main.command("Clean",this.project.alias()));
+  private final JButton deleteCache= small("Delete cache",()->Main.command("DeleteCache",this.project.alias()));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
   private Object shown= List.of();
@@ -94,7 +94,7 @@ final class Panel{
     header.add(kinds);
     header.add(small("Browse",()->Window.open(refuse,project.folder())));
     header.add(small("Forget",()->Main.command("Forget",project.alias())));
-    header.add(clean);
+    header.add(deleteCache);
     var top= new JPanel();
     top.setLayout(new BoxLayout(top,BoxLayout.Y_AXIS));
     Stream.of(header,shortcuts).forEach(top::add);
@@ -177,7 +177,7 @@ final class Panel{
     action.setHorizontalTextPosition(JButton.LEADING);
     action.setEnabled(a != Project.Action.run || !p.knownMains().isEmpty());
     openDocs.setEnabled(p.mains().isPresent());
-    clean.setVisible(p.kind() == Kind.code);
+    deleteCache.setVisible(p.kind() == Kind.code);
     fillKinds(p);
     fillShortcuts(p,claimed);
     fillClaims(p,claimed);

@@ -30,7 +30,7 @@ final class ManagerFolderTest{
     assertEquals("OpenWithOrShortcut\nStr:"+here.resolve("notes.htm"),Main.message("notes.htm"));
     assertEquals("Show",Main.message());
     assertEquals("Quit",Main.message("FearlessCommandQuit"));
-    assertEquals("Select\nhello_world",Main.message("FearlessCommandSelect","hello_world"));
+    assertEquals("Show\nhello_world",Main.message("FearlessCommandShow","hello_world"));
     assertEquals("Run\nhello_world\nhello.Hello1",Main.message("FearlessCommandRun","hello_world","hello.Hello1"));
     assertEquals("Run\nhello_world\nhello.Hello1 hello.Hello3\nPort:51234",Main.message("FearlessCommandRun","hello_world","hello.Hello1","hello.Hello3","Port:51234"));
     assertEquals("Run\nhello_world\n\nPort:51234",Main.message("FearlessCommandRun","hello_world","Port:51234"));
@@ -53,7 +53,7 @@ final class ManagerFolderTest{
   @Test void theMessagesOfARunThatIsNotTheManagerAreAnInvalidCall(){
     same("InvalidCall\nFearless was started with the argument \"FearlessCommandFatalError\", but [###]",Main.message("FearlessCommandFatalError","x"));
     same("InvalidCall\nFearless was started with the argument \"FearlessCommandInvalidCall\", but [###]",Main.message("FearlessCommandInvalidCall"));
-    same("InvalidCall\nFearless was started with an argument holding a newline[###]",Main.message("FearlessCommandSelect","a\nb"));
+    same("InvalidCall\nFearless was started with an argument holding a newline[###]",Main.message("FearlessCommandShow","a\nb"));
   }
   @Test void aStartedFileIsTheFolderAround(@TempDir Path dir){
     var project= folder(dir,"myProject");

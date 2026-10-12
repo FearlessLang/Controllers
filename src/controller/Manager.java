@@ -100,8 +100,9 @@ public final class Manager{
   private static final Map<String,List<Integer>> verbs= verbs();
   private static Map<String,List<Integer>> verbs(){
     var res= new LinkedHashMap<String,List<Integer>>();
-    Stream.of("Show","Quit","Reset").forEach(v->res.put(v,List.of(0)));
-    Stream.of("Register","ConnectEclipse","EditMetadata","OpenWithOrShortcut","Select","Check","Terminate","Clean","Forget").forEach(v->res.put(v,List.of(1)));
+    res.put("Show",List.of(0,1));
+    Stream.of("Quit","Reset").forEach(v->res.put(v,List.of(0)));
+    Stream.of("Register","ConnectEclipse","EditMetadata","OpenWithOrShortcut","Check","Terminate","DeleteCache","Forget").forEach(v->res.put(v,List.of(1)));
     res.put("Run",List.of(1,2,3));
     res.put("Compile",List.of(1,2));
     res.put("Kind",List.of(2));
@@ -185,7 +186,7 @@ public final class Manager{
       var claims= accepted(f);
       l.claims= Project.noClaims;
       if (Project.claimants(f,alias(f),claims).allMatch(this::allowed)){ l.claims= claims; return; }
-      uncache(f).ifPresent(w->output(f,Report.cleanFailed(w)));
+      uncache(f).ifPresent(w->output(f,Report.cacheNotDeleted(w)));
     }
     catch(Refused e){ l.claims= Project.noClaims; failed(f,0,e.getMessage()); }
   }
@@ -237,8 +238,8 @@ public final class Manager{
     var takes= verbs.get(verb);
     if (takes == null){ throw new Refused(Report.unknownVerb(verb,List.copyOf(verbs.keySet()))); }
     if (!takes.contains(args.size())){ throw new Refused(Report.wrongLines(verb,args,takes)); }
+    if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch(verb){
-      case "Show" -> view.show();
       case "Quit" -> exit.quit();
       case "Reset" -> exit.reset();
       case "Register" -> register(path(verb,args.getFirst()));
@@ -259,12 +260,12 @@ public final class Manager{
     var f= registry.named(name).orElseThrow(()->new Refused(Report.unknownProject(verb,name,registry.all().stream().map(Entry::alias).toList()))).path();
     scan(f);
     switch(verb){
-      case "Select" -> { selected= Optional.of(f); view.show(); }
+      case "Show" -> { selected= Optional.of(f); view.show(); }
       case "Run" -> followed(args.size() > 2 ? args.get(2) : "",fl->run(f,args.size() > 1 ? args.get(1) : "",fl));
       case "Compile" -> followed(args.size() > 1 ? args.get(1) : "",fl->compile(f,fl));
       case "Check" -> check(f);
       case "Terminate" -> terminate(f);
-      case "Clean" -> clean(f);
+      case "DeleteCache" -> deleteCache(f);
       case "Kind" -> kind(f,args.get(1));
       case "Forget" -> forget(f);
       case "Link" -> link(f,args.get(1));
@@ -321,6 +322,7 @@ public final class Manager{
     var p= project(f);
     view.clear(f);
     output(f,p.problem().or(()->p.facts().stale()).orElse(Report.checkFine(p.alias())).stripTrailing()+"\n");
+    if (Files.isDirectory(f)){ errorFile(f,"check_error.txt",p.problem()); }
   }
   private void next(Path f){
     var l= live.get(f);
@@ -401,21 +403,24 @@ public final class Manager{
     catch(UncheckedIOException e){ throw new Refused(Report.claimsNotSaved(e.getCause())); }
   }
   private void succeeded(Path f, Live l){
-    var out= f.resolve(Facts.outDir);
     Project.shortcuts(Project.claimants(f,alias(f),l.claims)).stream().map(f::resolve).filter(p->Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p->shortcut(f,p));
     unclaimedIcons(f,l.claims);
-    try{ Files.deleteIfExists(out.resolve("compile_error.txt")); }
-    catch(IOException e){ output(f,Report.notWritten("compile_error.txt",e)); }
+    errorFile(f,"compile_error.txt",Optional.empty());
   }
   private void failed(Path f, int ec, String why){
-    var out= f.resolve(Facts.outDir);
     if (ec == 0){ output(f,why.stripTrailing()+"\n"); }
+    try{ Files.deleteIfExists(f.resolve(Facts.outDir).resolve("mains.info")); }
+    catch(IOException e){ output(f,Report.notWritten("mains.info",e)); }
+    errorFile(f,"compile_error.txt",Optional.of(why));
+  }
+  private void errorFile(Path f, String name, Optional<String> why){
+    var file= f.resolve(Facts.outDir).resolve(name);
     try{
-      Files.deleteIfExists(out.resolve("mains.info"));
-      Files.createDirectories(out);
-      Files.writeString(out.resolve("compile_error.txt"),why);
+      if (why.isEmpty()){ Files.deleteIfExists(file); return; }
+      Files.createDirectories(file.getParent());
+      Files.writeString(file,why.get());
     }
-    catch(IOException e){ output(f,Report.notWritten("compile_error.txt",e)); }
+    catch(IOException e){ output(f,Report.notWritten(name,e)); }
   }
   private void allow(List<Project.Claimant> refused){
     var extensions= new TreeSet<>(registry.extensions());
@@ -444,10 +449,10 @@ public final class Manager{
     var known= project(f).knownMains();
     registry.update(f,e->e.withMains(e.mains().stream().filter(known::contains).toList()));
   }
-  private void clean(Path f){
-    idle(f,"Clean");
+  private void deleteCache(Path f){
+    idle(f,"DeleteCache");
     selected= Optional.of(f);
-    uncache(f).ifPresent(w->output(f,Report.cleanFailed(w)));
+    uncache(f).ifPresent(w->output(f,Report.cacheNotDeleted(w)));
     live.get(f).claims= Project.noClaims;
     scan(f);
   }

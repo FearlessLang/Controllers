@@ -18,5 +18,5 @@ public final class Builder extends IncrementalProjectBuilder{
     if (Follow.followed().isEmpty()){ Follow.compile(alias); }
     return null;
   }
-  @Override protected void clean(IProgressMonitor monitor){ ManagerLink.send("Clean", getProject().getName()); }
+  @Override protected void clean(IProgressMonitor monitor){ ManagerLink.send("DeleteCache", getProject().getName()); }
 }

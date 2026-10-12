@@ -273,7 +273,7 @@ final class ManagerTest{
     send(m,"Register",TaggedText.of(hello.toString()));
     assertEquals(List.of("hello "+hello,"other "+other),listed(m));
     assertEquals(Optional.of(hello),m.state().selected());
-    send(m,"Select","other");
+    send(m,"Show","other");
     assertEquals(Optional.of(other),m.state().selected());
     assertEquals(List.of(),view.refused);
   }
@@ -313,7 +313,7 @@ final class ManagerTest{
     same("--- compiling hello ---\nbroken source\n--- compile failed with 1 ---\n",view.out(hello));
     var error= hello.resolve(Facts.outDir).resolve("compile_error.txt");
     assertEquals("broken source\n",Fs.readUtf8(error));
-    assertEquals(Project.State.codeOutdated,project(m,hello).state());
+    assertEquals(Project.State.codeNoCache,project(m,hello).state());
     assertEquals(Optional.empty(),project(m,hello).problem());
     infos.remove("hello");
     compiled(m,"hello");
@@ -327,7 +327,7 @@ final class ManagerTest{
     assertEquals(List.of(hello),view.cleared);
     assertEquals(Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear")),project(m,hello).mains());
   }
-  @Test void aBusyProjectRefusesJobsCleanKindAndForgetThenTerminateEndsTheJob(@TempDir Path dir){
+  @Test void aBusyProjectRefusesJobsDeleteCacheKindAndForgetThenTerminateEndsTheJob(@TempDir Path dir){
     var m= manager(dir,"hello.Slow");
     var hello= code(m,dir,"hello");
     compiled(m,"hello");
@@ -337,7 +337,7 @@ final class ManagerTest{
     assertEquals(Project.Action.terminate,project(m,hello).action());
     send(m,"Run","hello","hello.Slow");
     send(m,"Compile","hello");
-    send(m,"Clean","hello");
+    send(m,"DeleteCache","hello");
     send(m,"Kind","hello","idle");
     send(m,"Forget","hello");
     send(m,"Terminate","hello");
@@ -348,7 +348,7 @@ final class ManagerTest{
       --- terminating hello.Slow ---
       --- hello.Slow exited with [###] after [###]s ---
       """,view.out(hello));
-    assertEquals(Stream.of("Run","Compile","Clean","Kind","Forget").map(v->"The manager was asked \""+v+"\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.").toList(),view.refused);
+    assertEquals(Stream.of("Run","Compile","DeleteCache","Kind","Forget").map(v->"The manager was asked \""+v+"\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.").toList(),view.refused);
     assertEquals(Kind.code,project(m,hello).kind());
   }
   @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
@@ -404,8 +404,8 @@ final class ManagerTest{
     send(m,"Forget","hello");
     assertEquals(List.of(),listed(m));
     assertEquals(Optional.empty(),m.state().selected());
-    send(m,"Select","hello");
-    assertEquals("The manager was asked \"Select\" on the project \"hello\", but no project is named \"hello\".\nNo project is registered.",view.refused.getLast());
+    send(m,"Show","hello");
+    assertEquals("The manager was asked \"Show\" on the project \"hello\", but no project is named \"hello\".\nNo project is registered.",view.refused.getLast());
     assertTrue(Files.isRegularFile(hello.resolve("hello.fearless")));
   }
   @Test void aRequestNamesARegisteredProject(@TempDir Path dir){
@@ -429,7 +429,7 @@ final class ManagerTest{
     send(m,"Forget","hello","now");
     send(m,"Run");
     assertEquals(5,view.refused.size());
-    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Select\", \"Check\", \"Terminate\", \"Clean\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\".",view.refused.get(0));
+    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\".",view.refused.get(0));
     assertEquals("The manager was asked to change the kind of \"hello\" to \"library\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".",view.refused.get(1));
     assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link.",view.refused.get(2));
     assertEquals("The manager was asked \"Forget\" with 2 arguments, but \"Forget\" takes 1.\nThe arguments are:\n  \"hello\"\n  \"now\"",view.refused.get(3));
@@ -518,8 +518,14 @@ final class ManagerTest{
     Fs.writeUtf8(data.resolve("Bad Name.txt"),"");
     send(m,"Check","data");
     same("[###]Bad Name.txt[###]",view.out(data));
+    var checkError= data.resolve(Facts.outDir).resolve("check_error.txt");
+    same("[###]Bad Name.txt[###]",Fs.readUtf8(checkError));
     assertEquals(Project.State.dataInvalid,project(m,data).state());
     assertEquals(Project.Action.check,project(m,data).action());
+    Fs.ofV(()->Files.delete(data.resolve("Bad Name.txt")));
+    send(m,"Check","data");
+    assertEquals("The project \"data\" is valid, and up to date.\n",view.out(data));
+    assertFalse(Files.exists(checkError));
     var hello= code(m,dir,"hello");
     send(m,"Check","hello");
     assertEquals("This project has no compiled cache: compiling it makes one.\n",view.out(hello));
@@ -571,7 +577,7 @@ final class ManagerTest{
     var data= data(dir);
     send(m,"Register",TaggedText.of(data.toString()));
     Fs.rmTree(data);
-    send(m,"Select","data");
+    send(m,"Show","data");
     assertEquals(Optional.of(data),m.state().selected());
     assertEquals(List.of(),view.refused);
     send(m,"Check","data");
@@ -587,7 +593,7 @@ final class ManagerTest{
     var data= data(dir);
     send(m,"Register",TaggedText.of(data.toString()));
     view.visible= false;
-    for (var request: List.of(List.of("Link","data","other read Other"),List.of("Select","data"),List.of("Terminate","data"),List.of("Kind","data","library"))){
+    for (var request: List.of(List.of("Link","data","other read Other"),List.of("Show","data"),List.of("Terminate","data"),List.of("Kind","data","library"))){
       var valid= Files.exists(data);
       if (valid){ Fs.rmTree(data); } else { data(dir); Fs.writeUtf8(data.resolve("data.fearless"),""); }
       send(m,request.toArray(String[]::new));
@@ -637,7 +643,7 @@ final class ManagerTest{
     send(again,"Kind","data","code");
     Fs.writeUtf8(cache.resolve("a.built"),"");
     mode(cache,"r-xr-xr-x");
-    send(again,"Clean","data");
+    send(again,"DeleteCache","data");
     same("--- the compiled cache is not deleted: access denied: [###]a.built ---\n",view.out(cached));
     List.of(closed,readOnly,cache,hidden).forEach(p->mode(p,"rwxr-xr-x"));
   }
@@ -717,7 +723,7 @@ final class ManagerTest{
     var m= manager(dir,f->{ reads.add(f); throw Report.launchPathNotFound(dir.resolve("gone")); });
     var hello= code(m,dir,"hello");
     compiled(m,"hello");
-    send(m,"Select","hello");
+    send(m,"Show","hello");
     send(m,"Check","hello");
     assertEquals(List.of(hello),reads);
     var p= project(m,hello);
@@ -904,7 +910,7 @@ final class ManagerTest{
       "fapp042",List.of("hello::hello.Hello shortcut base.IconsConflict"),
       "fapp010",List.of("other::other.Other shortcut base.IconsConflict"),
       "foo",List.of("hello::hello.Hello openWith hello.IconsFoo","other::other.Other openWith hello.IconsFoo")),claimed(m));
-    send(m,"Clean","hello");
+    send(m,"DeleteCache","hello");
     assertEquals(Map.of("fapp010",List.of("other::other.Other shortcut base.IconsConflict"),"foo",List.of("other::other.Other openWith hello.IconsFoo")),claimed(m));
     send(m,"Kind","other","idle");
     assertEquals(Map.of(),claimed(m));
@@ -1210,11 +1216,11 @@ final class ManagerTest{
       ".fapp010 hello/.fearless_out/icons/base.IconsConflict.png",
       ".foo manager/icons/base.IconsConflict.png"),wanted(dir));
     var calls= associated.size();
-    send(m,"Select","hello");
+    send(m,"Show","hello");
     touch(dir.resolve("hello"));
     compiled(m,"hello");
     assertEquals(calls,associated.size());
-    send(m,"Clean","hello");
+    send(m,"DeleteCache","hello");
     assertEquals(List.of(".fapp004 other/.fearless_out/icons/base.IconsConflict.png",".foo other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
     send(m,"Forget","other");
     assertEquals(List.of(".foo manager/icons/base.IconsConflict.png"),wanted(dir));
@@ -1302,7 +1308,7 @@ final class ManagerTest{
     infos.put("other",claiming("other.Other","fapp002","qux"));
     compiled(m,"hello","other");
     Fs.rmTree(hello.resolve(Facts.outDir));
-    send(m,"Select","other");
+    send(m,"Show","other");
     same("[###]--- the icon file of a claim of this project is gone: "+icons(hello).resolve("base.IconsConflict.png")+"; the project claims no extension until it is compiled again ---\n",view.out(hello));
     assertEquals(Project.noClaims,project(m,hello).claims());
     assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png",".foo manager/icons/base.IconsConflict.png",".qux other/.fearless_out/icons/hello.IconsFoo.png"),wanted(dir));
@@ -1338,7 +1344,7 @@ final class ManagerTest{
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
     Fs.writeUtf8(hello.resolve("foo_bar.fapp010"),"kept\n");
     Fs.ofV(()->Files.move(hello.resolve(auto),dir.resolve(auto)));
-    send(m,"Select","hello");
+    send(m,"Show","hello");
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
     touch(hello);
     compiled(m,"hello");
@@ -1421,7 +1427,7 @@ final class ManagerTest{
     allow(m,dir,"foo");
     infos.put("hello",claiming("hello.Hello","fapp001","foo"));
     compiled(m,"hello");
-    send(m,"Select","other");
+    send(m,"Show","other");
     open(m,doc(dir,"a.foo"));
     idle(m);
     same(running("hello.Hello"),view.out(hello));
