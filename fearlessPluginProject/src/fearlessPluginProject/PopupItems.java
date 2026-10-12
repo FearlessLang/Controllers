@@ -37,7 +37,7 @@ public final class PopupItems extends CompoundContributionItem{
     var kinds= p.kind().equals("idle") ? List.of(List.of("Become data", "data:readOnly"), List.of("Become editable data", "data:readWrite"), List.of("Become code", "code")) : List.of(List.of("Back to idle", "idle"));
     kinds.forEach(k->res.add(action(k.get(0), ()->ManagerLink.send("Kind", alias, k.get(1)))));
     res.add(new Separator());
-    res.add(action("Show in manager", ()->ManagerLink.send("Select", alias)));
+    res.add(action("Show in manager", ()->ManagerLink.send("Show", alias)));
     res.add(action("Forget project", ()->ManagerLink.send("Forget", alias)));
     return res.toArray(IContributionItem[]::new);
   }

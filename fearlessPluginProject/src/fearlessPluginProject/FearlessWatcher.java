@@ -88,13 +88,18 @@ public final class FearlessWatcher extends Job implements IStartup{
   }
   private void reflect(IProject project, ManagerLink.Project p) throws CoreException{
     var alias= project.getName();
-    var problem= ManagerLink.compileError(p.folder()).orElse("");
+    var problem= ManagerLink.error(p.folder(), "compile_error.txt").orElse("");
+    var check= ManagerLink.error(p.folder(), "check_error.txt").orElse("");
     var m= at.matcher(problem);
     var found= m.find();
     var on= found ? project.getFolder(srcName).getFile(new Path(m.group(1))) : project;
     var target= found && on.exists() ? on : project;
-    var key= problem+" on "+target.getFullPath();
-    if (!key.equals(marks.put(alias, key))){ mark(project, target, problem, found && target != project ? Integer.parseInt(m.group(2)) : 0); }
+    var key= problem+" on "+target.getFullPath()+"\n"+check;
+    if (!key.equals(marks.put(alias, key))){
+      project.deleteMarkers(problemType, true, IResource.DEPTH_INFINITE);
+      mark(target, problem, found && target != project ? Integer.parseInt(m.group(2)) : 0);
+      mark(project, check, 0);
+    }
     var report= UnitTests.report(alias, p.folder());
     if (report.isEmpty() || report.get().equals(reports.put(alias, report.get()))){ return; }
     var copy= Platform.getStateLocation(FrameworkUtil.getBundle(getClass())).append("report.xml").toFile().toPath();
@@ -102,8 +107,7 @@ public final class FearlessWatcher extends Job implements IStartup{
     catch(IOException e){ throw new UncheckedIOException(e); }
     JUnitCore.importTestRunSession(copy.toFile());
   }
-  private static void mark(IProject project, IResource on, String problem, int line) throws CoreException{
-    project.deleteMarkers(problemType, true, IResource.DEPTH_INFINITE);
+  private static void mark(IResource on, String problem, int line) throws CoreException{
     if (problem.isEmpty()){ return; }
     var marker= on.createMarker(problemType);
     if (line > 0){ marker.setAttribute(IMarker.LINE_NUMBER, line); }

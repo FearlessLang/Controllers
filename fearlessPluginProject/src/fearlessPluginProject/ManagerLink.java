@@ -5,8 +5,12 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,9 +54,35 @@ public final class ManagerLink{
     if (Files.exists(file)){ Info.parse(file).forEach((main,m)->res.put(main, (String)Info.lst(m).getFirst())); }
     return res;
   }
-  static Optional<String> compileError(Path folder){
-    var file= out(folder).resolve("compile_error.txt");
-    return Files.exists(file) ? Optional.of(read(file)) : Optional.empty();
+  static Optional<String> error(Path folder, String name){
+    var file= out(folder).resolve(name);
+    if (!Files.exists(file)){ return Optional.empty(); }
+    return changed(folder) > stamp(file) ? Optional.empty() : Optional.of(read(file));
+  }
+  private static long changed(Path folder){
+    var res= new long[]{stamp(manager.resolve("projects.info"))};
+    var visitor= new SimpleFileVisitor<Path>(){
+      @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes a){
+        if (dir.equals(out(folder))){ return FileVisitResult.SKIP_SUBTREE; }
+        res[0]= Math.max(res[0], a.lastModifiedTime().toMillis());
+        return FileVisitResult.CONTINUE;
+      }
+      @Override public FileVisitResult visitFile(Path file, BasicFileAttributes a){
+        res[0]= Math.max(res[0], a.lastModifiedTime().toMillis());
+        return FileVisitResult.CONTINUE;
+      }
+      @Override public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException{
+        if (e instanceof NoSuchFileException){ return FileVisitResult.CONTINUE; }
+        throw e;
+      }
+    };
+    try{ Files.walkFileTree(folder, visitor); }
+    catch(IOException e){ throw new UncheckedIOException(e); }
+    return res[0];
+  }
+  private static long stamp(Path file){
+    try{ return Files.getLastModifiedTime(file).toMillis(); }
+    catch(IOException e){ throw new UncheckedIOException(e); }
   }
   static String pathArg(Path path){
     var text= path.toString();

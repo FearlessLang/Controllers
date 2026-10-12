@@ -57,7 +57,8 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     Optional<Icon> icon= Optional.empty();
     try{ icon= icon(folder); }
     catch(UserError e){ if (problem.isEmpty()){ problem= Optional.of(e.getMessage()); } }
-    var hasCache= Files.isDirectory(folder.resolve(outDir));
+    var out= folder.resolve(outDir);
+    var hasCache= Files.isDirectory(out) && Names.list(out).stream().anyMatch(p->p.getFileName().toString().endsWith(".built"));
     var stalePkgs= built.entrySet().stream().filter(e->!e.getValue()).map(Map.Entry::getKey).toList();
     var stale= kind != Kind.code ? Optional.<String>empty()
       : !hasCache || built.isEmpty() ? Optional.of(Report.noCache())

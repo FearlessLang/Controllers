@@ -153,7 +153,7 @@ public final class Report{
   public static String stalePackages(List<String> pkgs){ return "The compiled cache does not match the files of the package"+(pkgs.size() == 1 ? " " : "s ")+quoted(pkgs)+": compiling the project compiles "+(pkgs.size() == 1 ? "it" : "them")+"."; }
   public static String packagesToCompile(){ return "The mains of this project are not known: compiling the project makes them known."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
-  public static String cleanFailed(String why){ return "--- the compiled cache is not deleted: "+why+" ---\n"; }
+  public static String cacheNotDeleted(String why){ return "--- the compiled cache is not deleted: "+why+" ---\n"; }
   public static String notWritten(String file, IOException e){ return "--- "+file+" is not written: "+fileFailure(e)+" ---\n"; }
 
   //-- projects.info
@@ -188,6 +188,7 @@ public final class Report{
   public static String noEclipse(Path chosen){
     return "Eclipse is not connected: no Eclipse folder, a folder holding the file \".eclipseproduct\", is found from\n"+path(chosen.toString())+"\nSelect the Eclipse folder, a file in it, a file in a folder of it, or a folder holding only the Eclipse folder.";
   }
+  public static String eclipseConnected(Path eclipse){ return "Eclipse is connected:\n"+path(eclipse.toString())+"\nRestart Eclipse if it is running: Eclipse loads the Fearless plugin when it starts.\nThen open the Fearless perspective: Window > Perspective > Open Perspective > Other... > Fearless."; }
   public static String eclipseNotConnected(Path chosen, IOException e){ return "Eclipse is not connected from\n"+path(chosen.toString())+"\n"+fileFailure(e); }
 
   //-- opening a file
