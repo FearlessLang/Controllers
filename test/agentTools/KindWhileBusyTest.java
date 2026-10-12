@@ -14,6 +14,7 @@ final class KindWhileBusyTest extends ManagerTest{
   final Action run= action("run",on("ubuntu_gnome",()->click(val(523),val(113))));
   final Action programShown= action("programShown",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
   final Action backToIdleBusy= action("backToIdleBusy",on("ubuntu_gnome",()->click(val(733),val(113))));
+  final Action forgetBusy= action("forgetBusy",on("ubuntu_gnome",()->click(val(892),val(113))));
   final Action ignored= action("ignored",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
   final Action terminate= action("terminate",on("ubuntu_gnome",()->click(val(523),val(113))));
   final Action terminated= action("terminated",on("ubuntu_gnome",()->waitUntilTime(val(48000))));
@@ -41,15 +42,16 @@ final class KindWhileBusyTest extends ManagerTest{
       """.formatted(slashed(gui));
     var header= new Rectangle(560,100,600,26);
     var center= new Rectangle(1720,1000,400,160);
-    var kind= new Rectangle(693,102,80,22);
+    var greyed= new Rectangle(693,102,330,22);
     var compiledLook= look();
     run.go();
     programShown.go();
     var running= look();
     changed(compiledLook,header);
     backToIdleBusy.go();
+    forgetBusy.go();
     ignored.go();
-    same(running,kind);
+    same(running,greyed);
     same(compiledLook,center);
     stabilize();
     checkContent(info,code);

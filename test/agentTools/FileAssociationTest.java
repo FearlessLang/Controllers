@@ -2,6 +2,7 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
@@ -21,13 +22,18 @@ final class FileAssociationTest extends ManagerTest{
   final Action focusFiles= action("focusFiles",on("ubuntu_gnome",()->click(val(2200),val(1200))));
   final Action associatedShown= action("associatedShown",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action managerMenuBehind= action("managerMenuBehind",on("ubuntu_gnome",()->click(val(99),val(79))));
-  final Action managerReset= action("managerReset",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
-  final Action genericShown= action("genericShown",on("ubuntu_gnome",()->waitUntilTime(val(46000))));
-  final Action appsShownAgain= action("appsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(47500))));
-  final Action terminalShownAgain= action("terminalShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(51000))));
-  final Action managerShownAgain= action("managerShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(64000))));
-  final Action associatedAgain= action("associatedAgain",on("ubuntu_gnome",()->waitUntilTime(val(76000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(81000))));
+  final Action resetAsked= action("resetAsked",on("ubuntu_gnome",()->waitUntilTime(val(39500))));
+  final Action cancelReset= action("cancelReset",on("ubuntu_gnome",()->click(val(1986),val(1136))));
+  final Action resetCancelled= action("resetCancelled",on("ubuntu_gnome",()->waitUntilTime(val(41500))));
+  final Action resetAskedAgain= action("resetAskedAgain",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
+  final Action confirmReset= action("confirmReset",on("ubuntu_gnome",()->click(val(1918),val(1136))));
+  final Action managerReset= action("managerReset",on("ubuntu_gnome",()->waitUntilTime(val(47000))));
+  final Action genericShown= action("genericShown",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
+  final Action appsShownAgain= action("appsShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(53500))));
+  final Action terminalShownAgain= action("terminalShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(57000))));
+  final Action managerShownAgain= action("managerShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(70000))));
+  final Action associatedAgain= action("associatedAgain",on("ubuntu_gnome",()->waitUntilTime(val(82000))));
+  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(87000))));
   final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
   @Override void walk() throws Throwable{
     noManagerData();
@@ -43,6 +49,16 @@ final class FileAssociationTest extends ManagerTest{
     var associated= look();
     managerMenuBehind.go();
     resetManager.go();
+    resetAsked.go();
+    cancelReset.go();
+    resetCancelled.go();
+    stabilize();
+    assertTrue(Files.exists(filesIOFolder.resolve(data).resolve("projects.info")));
+    assertFalse(Files.exists(filesIOFolder.resolve("first.exit")));
+    managerMenu.go();
+    resetManager.go();
+    resetAskedAgain.go();
+    confirmReset.go();
     managerReset.go();
     stabilize();
     checkContent(List.of("first.exit"),"0\n");

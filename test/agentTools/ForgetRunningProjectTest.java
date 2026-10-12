@@ -14,7 +14,7 @@ final class ForgetRunningProjectTest extends ManagerTest{
   final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action run= action("run",on("ubuntu_gnome",()->click(val(523),val(113))));
   final Action programShown= action("programShown",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
-  final Action refusalShown= action("refusalShown",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
+  final Action ignored= action("ignored",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
   final Action terminate= action("terminate",on("ubuntu_gnome",()->click(val(523),val(113))));
   final Action terminated= action("terminated",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
   final Action forgotten= action("forgotten",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
@@ -40,16 +40,18 @@ final class ForgetRunningProjectTest extends ManagerTest{
         "systemExtensions": []
       }
       """.formatted(slashed(gui));
+    var center= new Rectangle(1720,1000,400,160);
+    var greyed= new Rectangle(693,102,330,22);
+    var compiledLook= look();
     run.go();
     programShown.go();
     var running= look();
     forget.go();
-    refusalShown.go();
-    var center= new Rectangle(1720,1040,150,80);
-    changed(running,center);
+    ignored.go();
+    same(running,greyed);
+    same(compiledLook,center);
     stabilize();
     checkContent(info,code);
-    closeDialog.go();
     terminate.go();
     terminated.go();
     forget.go();

@@ -18,7 +18,7 @@ final class ShortcutFileTest extends ManagerTest{
   final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
   final Action compile= action("compile",on("ubuntu_gnome",()->click(val(565),val(113))));
   final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action shortcutIcon= action("shortcutIcon",on("ubuntu_gnome",()->doubleClick(val(430),val(144))));
+  final Action shortcutIcon= action("shortcutIcon",on("ubuntu_gnome",()->doubleClick(val(476),val(162))));
   final Action ranFromManager= action("ranFromManager",on("ubuntu_gnome",()->waitUntilTime(val(41000))));
   final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(42500))));
   final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(46000))));
@@ -45,7 +45,7 @@ final class ShortcutFileTest extends ManagerTest{
     compiled.go();
     stabilize();
     assertEquals(List.of("hello.fapp"),Fs.walk(shortcuts,s->s.filter(p->p.getParent().equals(shortcuts)).map(p->p.getFileName().toString().replaceAll("[0-9]{3}$","")).filter(n->n.startsWith("hello.")).toList()));
-    var output= new Rectangle(410,200,1000,60);
+    var output= new Rectangle(410,256,1000,60);
     var compiledLook= look();
     shortcutIcon.go();
     ranFromManager.go();

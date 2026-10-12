@@ -23,7 +23,7 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     managerShown.go();
     becomeCode.go();
     codeShown.go();
-    var panel= new Rectangle(410,95,500,60);
+    var panel= new Rectangle(410,95,420,60);
     var selected= look();
     var remembered= """
       {
