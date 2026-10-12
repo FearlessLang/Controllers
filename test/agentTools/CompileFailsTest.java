@@ -8,16 +8,36 @@ import java.util.List;
 import tools.Fs;
 
 final class CompileFailsTest extends ManagerTest{
-  final Action becomeCode= header("becomeCode",990);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(543),val(113))));
-  final Action compileFailed= action("compileFailed",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
-  final Action compileFixed= action("compileFixed",on("ubuntu_gnome",()->click(val(543),val(113))));
-  final Action fixedCompiled= action("fixedCompiled",on("ubuntu_gnome",()->waitUntilTime(val(74000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(81000))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(990),val(113))),
+    on("xubuntu_xfce",()->click(val(996),val(93))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(543),val(113))),
+    on("xubuntu_xfce",()->click(val(502),val(93))));
+  final Action compileFailed= action("compileFailed",
+    on("ubuntu_gnome",()->waitUntilTime(val(51500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(64500))));
+  final Action compileFixed= action("compileFixed",
+    on("ubuntu_gnome",()->click(val(543),val(113))),
+    on("xubuntu_xfce",()->click(val(502),val(93))));
+  final Action fixedCompiled= action("fixedCompiled",
+    on("ubuntu_gnome",()->waitUntilTime(val(74000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(92500))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(81000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(101500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var broken= filesIOFolder.resolve("broken");

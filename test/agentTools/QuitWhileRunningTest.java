@@ -6,16 +6,36 @@ import java.awt.Rectangle;
 import java.util.List;
 
 final class QuitWhileRunningTest extends ManagerTest{
-  final Action becomeCode= header("becomeCode",970);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(523),val(113))));
-  final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
-  final Action run= action("run",on("ubuntu_gnome",()->click(val(523),val(113))));
-  final Action programShown= action("programShown",on("ubuntu_gnome",()->waitUntilTime(val(60000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(67000))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(970),val(113))),
+    on("xubuntu_xfce",()->click(val(976),val(93))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+  final Action codeShown= action("codeShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+  final Action compile= action("compile",
+    on("ubuntu_gnome",()->click(val(523),val(113))),
+    on("xubuntu_xfce",()->click(val(481),val(93))));
+  final Action compiled= action("compiled",
+    on("ubuntu_gnome",()->waitUntilTime(val(51500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(64500))));
+  final Action run= action("run",
+    on("ubuntu_gnome",()->click(val(523),val(113))),
+    on("xubuntu_xfce",()->click(val(466),val(93))));
+  final Action programShown= action("programShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(60000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(75000))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(67000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(84000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var gui= project("testGui1");
@@ -36,7 +56,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     managerQuit.go();
     stabilize();
     checkContent(List.of("first.exit"),"0\n");
-    changed(before,new Rectangle(100,200,200,400));
+    changed(before,inWindow(100,200,200,400));
     assertEquals(List.of(),ProcessHandle.allProcesses().filter(h->h.info().command().orElse("").endsWith("java")).map(h->h.info().commandLine().orElse("")).filter(c->c.contains("gui_example.Foo")).toList());
   }
 }

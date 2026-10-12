@@ -3,7 +3,6 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,15 +13,33 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class ProjectIconTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action ownIconShown= action("ownIconShown",on("ubuntu_gnome",()->waitUntilTime(val(33000))));
-  final Action invalidShown= action("invalidShown",on("ubuntu_gnome",()->waitUntilTime(val(40000))));
-  final Action check= action("check",on("ubuntu_gnome",()->click(val(504),val(113))));
-  final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(44500))));
-  final Action ownIconBack= action("ownIconBack",on("ubuntu_gnome",()->waitUntilTime(val(53000))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(60000))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+  final Action ownIconShown= action("ownIconShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(33000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(41500))));
+  final Action invalidShown= action("invalidShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(40000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(50000))));
+  final Action check= action("check",
+    on("ubuntu_gnome",()->click(val(504),val(113))),
+    on("xubuntu_xfce",()->click(val(454),val(93))));
+  final Action checked= action("checked",
+    on("ubuntu_gnome",()->waitUntilTime(val(44500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(56000))));
+  final Action ownIconBack= action("ownIconBack",
+    on("ubuntu_gnome",()->waitUntilTime(val(53000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(66500))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(60000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(75000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var pic= filesIOFolder.resolve("pic");
@@ -33,8 +50,8 @@ final class ProjectIconTest extends ManagerTest{
     launchScript("first",pic.resolve("pic.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    var tile= new Rectangle(69,95,128,85);
-    var output= new Rectangle(410,168,1000,80);
+    var tile= inWindow(69,95,128,85);
+    var output= inWindow(410,168,1000,80);
     var madeUp= look();
     png(icons.resolve("face.png"),0xC03090);
     stabilize();

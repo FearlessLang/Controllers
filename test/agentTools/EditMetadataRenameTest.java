@@ -1,21 +1,38 @@
 package agentTools;
 
-import java.awt.Rectangle;
 import java.nio.file.Files;
 import java.util.List;
 
 import tools.Fs;
 
 final class EditMetadataRenameTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action editorShown= action("editorShown",on("ubuntu_gnome",()->waitUntilTime(val(31500))));
-  final Action nameOld= action("nameOld",on("ubuntu_gnome",()->doubleClick(val(646),val(342))));
-  final Action commit= action("commit",on("ubuntu_gnome",()->click(val(1278),val(830))));
-  final Action renamed= action("renamed",on("ubuntu_gnome",()->waitUntilTime(val(41500))));
-  final Action markerSeen= action("markerSeen",on("ubuntu_gnome",()->waitUntilTime(val(51500))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(58500))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+  final Action editorShown= action("editorShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(31500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(39500))));
+  final Action nameOld= action("nameOld",
+    on("ubuntu_gnome",()->doubleClick(val(646),val(342))),
+    on("xubuntu_xfce",()->doubleClick(val(613),val(339))));
+  final Action commit= action("commit",
+    on("ubuntu_gnome",()->click(val(1278),val(830))),
+    on("xubuntu_xfce",()->click(val(1245),val(827))));
+  final Action renamed= action("renamed",
+    on("ubuntu_gnome",()->waitUntilTime(val(41500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(52000))));
+  final Action markerSeen= action("markerSeen",
+    on("ubuntu_gnome",()->waitUntilTime(val(51500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(64500))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(58500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(73500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var old= filesIOFolder.resolve("old");
@@ -25,7 +42,7 @@ final class EditMetadataRenameTest extends ManagerTest{
     launchScript("first",old.resolve("old.fearless"));
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
-    var tile= new Rectangle(69,95,128,85);
+    var tile= inWindow(69,95,128,85);
     var valid= look();
     managerMenu.go();
     editMetadata.go();

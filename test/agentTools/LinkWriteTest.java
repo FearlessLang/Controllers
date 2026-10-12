@@ -8,27 +8,69 @@ import java.util.List;
 import tools.Fs;
 
 final class LinkWriteTest extends ManagerTest{
-  final Action becomeEditableData= header("becomeEditableData",842);
-  final Action becomeCode= header("becomeCode",974);
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action dataSaved= action("dataSaved",on("ubuntu_gnome",()->waitUntilTime(val(30500))));
-  final Action appsShownTeller= action("appsShownTeller",on("ubuntu_gnome",()->waitUntilTime(val(33500))));
-  final Action terminalShownTeller= action("terminalShownTeller",on("ubuntu_gnome",()->waitUntilTime(val(38500))));
-  final Action tellerShown= action("tellerShown",on("ubuntu_gnome",()->waitUntilTime(val(49500))));
-  final Action codeSaved= action("codeSaved",on("ubuntu_gnome",()->waitUntilTime(val(54000))));
-  final Action openLinks= action("openLinks",on("ubuntu_gnome",()->click(val(450),val(356))));
-  final Action linksShown= action("linksShown",on("ubuntu_gnome",()->waitUntilTime(val(57500))));
-  final Action writeField= action("writeField",on("ubuntu_gnome",()->click(val(768),val(398))));
-  final Action editsSaved= action("editsSaved",on("ubuntu_gnome",()->waitUntilTime(val(64500))));
-  final Action readField= action("readField",on("ubuntu_gnome",()->click(val(560),val(398))));
-  final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(71500))));
-  final Action readFieldAgain= action("readFieldAgain",on("ubuntu_gnome",()->click(val(560),val(398))));
-  final Action readEmptied= action("readEmptied",on("ubuntu_gnome",()->waitUntilTime(val(77000))));
-  final Action writeFieldAgain= action("writeFieldAgain",on("ubuntu_gnome",()->click(val(768),val(398))));
-  final Action writeEmptied= action("writeEmptied",on("ubuntu_gnome",()->waitUntilTime(val(82500))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(89500))));
+  final Action becomeEditableData= action("becomeEditableData",
+    on("ubuntu_gnome",()->click(val(842),val(113))),
+    on("xubuntu_xfce",()->click(val(828),val(93))));
+  final Action becomeCode= action("becomeCode",
+    on("ubuntu_gnome",()->click(val(974),val(113))),
+    on("xubuntu_xfce",()->click(val(980),val(93))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+  final Action dataSaved= action("dataSaved",
+    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+  final Action appsShownTeller= action("appsShownTeller",
+    on("ubuntu_gnome",()->waitUntilTime(val(33500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(42000))));
+  final Action terminalShownTeller= action("terminalShownTeller",
+    on("ubuntu_gnome",()->waitUntilTime(val(38500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(48500))));
+  final Action tellerShown= action("tellerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(49500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(62000))));
+  final Action codeSaved= action("codeSaved",
+    on("ubuntu_gnome",()->waitUntilTime(val(54000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(67500))));
+  final Action openLinks= action("openLinks",
+    on("ubuntu_gnome",()->click(val(450),val(356))),
+    on("xubuntu_xfce",()->click(val(383),val(336))));
+  final Action linksShown= action("linksShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(57500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(72000))));
+  final Action writeField= action("writeField",
+    on("ubuntu_gnome",()->click(val(768),val(398))),
+    on("xubuntu_xfce",()->click(val(701),val(378))));
+  final Action editsSaved= action("editsSaved",
+    on("ubuntu_gnome",()->waitUntilTime(val(64500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(81000))));
+  final Action readField= action("readField",
+    on("ubuntu_gnome",()->click(val(560),val(398))),
+    on("xubuntu_xfce",()->click(val(493),val(378))));
+  final Action noteShown= action("noteShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(71500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(89500))));
+  final Action readFieldAgain= action("readFieldAgain",
+    on("ubuntu_gnome",()->click(val(560),val(398))),
+    on("xubuntu_xfce",()->click(val(493),val(378))));
+  final Action readEmptied= action("readEmptied",
+    on("ubuntu_gnome",()->waitUntilTime(val(77000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(96500))));
+  final Action writeFieldAgain= action("writeFieldAgain",
+    on("ubuntu_gnome",()->click(val(768),val(398))),
+    on("xubuntu_xfce",()->click(val(701),val(378))));
+  final Action writeEmptied= action("writeEmptied",
+    on("ubuntu_gnome",()->waitUntilTime(val(82500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(103500))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(89500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(112000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var ledger= filesIOFolder.resolve("ledger");

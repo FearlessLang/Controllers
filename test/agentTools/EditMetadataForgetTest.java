@@ -4,17 +4,39 @@ import java.awt.event.KeyEvent;
 import java.util.List;
 
 final class EditMetadataForgetTest extends ManagerTest{
-  final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(3500))));
-  final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(8500))));
-  final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
-  final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(29000))));
-  final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
-  final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(45000))));
-  final Action editorShown= action("editorShown",on("ubuntu_gnome",()->waitUntilTime(val(50500))));
-  final Action focusText= action("focusText",on("ubuntu_gnome",()->click(val(940),val(660))));
-  final Action commit= action("commit",on("ubuntu_gnome",()->click(val(1278),val(830))));
-  final Action onlySaved= action("onlySaved",on("ubuntu_gnome",()->waitUntilTime(val(93500))));
-  final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(100500))));
+  final Action appsShown= action("appsShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+  final Action terminalShown= action("terminalShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+  final Action managerShown= action("managerShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+  final Action appsShownSecond= action("appsShownSecond",
+    on("ubuntu_gnome",()->waitUntilTime(val(29000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(36500))));
+  final Action terminalShownSecond= action("terminalShownSecond",
+    on("ubuntu_gnome",()->waitUntilTime(val(34000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(42500))));
+  final Action secondShown= action("secondShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(45000))),
+    on("xubuntu_xfce",()->waitUntilTime(val(56500))));
+  final Action editorShown= action("editorShown",
+    on("ubuntu_gnome",()->waitUntilTime(val(50500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(63500))));
+  final Action focusText= action("focusText",
+    on("ubuntu_gnome",()->click(val(940),val(660))),
+    on("xubuntu_xfce",()->click(val(907),val(657))));
+  final Action commit= action("commit",
+    on("ubuntu_gnome",()->click(val(1278),val(830))),
+    on("xubuntu_xfce",()->click(val(1245),val(827))));
+  final Action onlySaved= action("onlySaved",
+    on("ubuntu_gnome",()->waitUntilTime(val(93500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(117000))));
+  final Action managerQuit= action("managerQuit",
+    on("ubuntu_gnome",()->waitUntilTime(val(100500))),
+    on("xubuntu_xfce",()->waitUntilTime(val(126000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
