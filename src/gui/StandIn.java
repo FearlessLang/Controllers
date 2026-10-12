@@ -27,7 +27,7 @@ final class StandIn{
     var icon= new JLabel(new ImageIcon(Icons.app().getScaledInstance(side,side,Image.SCALE_SMOOTH)));
     var menu= Tray.menu();
     icon.addMouseListener(new MouseAdapter(){
-      @Override public void mousePressed(MouseEvent e){ menu.show(icon,e.getX(),e.getY()); }
+      @Override public void mouseClicked(MouseEvent e){ menu.show(icon,e.getX(),e.getY()); }
     });
     res.add(icon);
     return res;
