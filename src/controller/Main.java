@@ -87,7 +87,8 @@ public final class Main implements Manager.Exit{
     try{ path= Path.of(args[0]).toAbsolutePath().normalize(); }
     catch(InvalidPathException e){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
     if (args[0].isBlank() || path.getFileName() == null){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
-    var verb= path.getFileName().toString().endsWith(Names.ext) ? "Register" : "OpenWithOrShortcut";
+    var project= Files.isDirectory(path) || path.getFileName().toString().endsWith(Names.ext);
+    var verb= project ? "Register" : "OpenWithOrShortcut";
     return verb+"\n"+TaggedText.line(path.toString());
   }
   public static void command(String verb, String... args){

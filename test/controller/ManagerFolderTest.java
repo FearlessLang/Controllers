@@ -28,6 +28,7 @@ final class ManagerFolderTest{
     var here= Path.of("").toAbsolutePath();
     assertEquals("Register\nStr:"+here.resolve("myProject").resolve("hello.fearless"),Main.message(Path.of("myProject","sub","..","hello.fearless").toString()));
     assertEquals("OpenWithOrShortcut\nStr:"+here.resolve("notes.htm"),Main.message("notes.htm"));
+    assertEquals("Register\nStr:"+here,Main.message("."));
     assertEquals("Show",Main.message());
     assertEquals("Quit",Main.message("FearlessCommandQuit"));
     assertEquals("Show\nhello_world",Main.message("FearlessCommandShow","hello_world"));

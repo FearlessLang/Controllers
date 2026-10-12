@@ -152,6 +152,7 @@ public final class Report{
   public static String noCache(){ return "This project has no compiled cache: compiling it makes one."; }
   public static String stalePackages(List<String> pkgs){ return "The compiled cache does not match the files of the package"+(pkgs.size() == 1 ? " " : "s ")+quoted(pkgs)+": compiling the project compiles "+(pkgs.size() == 1 ? "it" : "them")+"."; }
   public static String packagesToCompile(){ return "The mains of this project are not known: compiling the project makes them known."; }
+  public static String resetQuestion(){ return "Reset ends the manager and every job it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
   public static String cacheNotDeleted(String why){ return "--- the compiled cache is not deleted: "+why+" ---\n"; }
   public static String notWritten(String file, IOException e){ return "--- "+file+" is not written: "+fileFailure(e)+" ---\n"; }

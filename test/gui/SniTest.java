@@ -93,7 +93,7 @@ final class SniTest{
     assertEquals("Fearless Manager",seen.get("Title"));
     assertEquals("Active",seen.get("Status"));
     assertEquals("/MenuBar",seen.get("Menu"));
-    assertEquals("0",seen.get("ItemIsMenu"));
+    assertEquals("1",seen.get("ItemIsMenu"));
     assertEquals("[2x2:80ff0010 00000000 00000000 ff00ff00]",seen.get("IconPixmap"));
     assertEquals("[]Fearless Manager|",seen.get("ToolTip"));
   }
