@@ -24,13 +24,13 @@ final class FolderArgumentTest extends ManagerTest{
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
     var tiles= new Rectangle(69,95,256,85);
-    var center= new Rectangle(760,460,400,160);
     var empty= look();
     launchScript("second",loose);
     runInTerminal(appsShownSecond,terminalShownSecond);
     registered.go();
     changed(empty,tiles);
-    same(empty,center);
+    var shown= look();
+    assertEquals(0L,differing(shown.getSubimage(760,460,400,160),shown.getSubimage(760,860,400,160),new Rectangle(0,0,400,160)));
     stabilize();
     checkContent(List.of("second.exit"),"0\n");
     checkContent(info,"""

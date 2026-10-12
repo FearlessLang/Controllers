@@ -39,8 +39,10 @@ abstract class ManagerTest{
   abstract void walk() throws Throwable;
   @Test void test() throws Throwable{
     start= System.currentTimeMillis();
-    walk();
+    try{ walk(); }
+    finally{ ProcessHandle.allProcesses().filter(this::ofApp).forEach(ProcessHandle::destroyForcibly); }
   }
+  boolean ofApp(ProcessHandle p){ return p.info().command().filter(c->c.startsWith(app.toString())).isPresent(); }
   Action action(String name, On... ons){ return new Action(this,name,OneOr.of(name+" on "+desk,Stream.of(ons).filter(o->o.desk().equals(desk))).steps()); }
   static On on(String desk, Run steps){ return new On(desk,steps); }
   record Action(ManagerTest m, String name, Run run){
