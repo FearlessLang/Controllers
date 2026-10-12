@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
@@ -119,7 +120,9 @@ final class Sni{
       case "GetLayout(iias)" -> reply(m,"u(ia{sv}av)",layout());
       case "GetGroupProperties(aias)" -> reply(m,"a(ia{sv})",groupProperties());
       case "AboutToShow(i)" -> reply(m,"b",new Writer().u32(0));
+      case "AboutToShowGroup(ai)" -> reply(m,"aiai",new Writer().u32(0).u32(0));
       case "Event(isvu)" -> event(m);
+      case "EventGroup(a(isvu))" -> eventGroup(m);
       case "Introspect()" -> introspect(m);
       case "ContextMenu(ii)" -> { activate.run(); reply(m,"",new Writer()); }
       case "SecondaryActivate(ii)","Scroll(is)" -> reply(m,"",new Writer());
@@ -134,8 +137,27 @@ final class Sni{
     var id= m.body().u32();
     var clicked= m.body().str().equals("clicked");
     reply(m,"",new Writer());
-    if (clicked && id == 1){ activate.run(); }
-    if (clicked && id == 3){ quit.run(); }
+    if (clicked){ clicked(id); }
+  }
+  private void eventGroup(Msg m) throws IOException{
+    var r= m.body();
+    int n= r.u32();
+    r.pad(8);
+    int end= r.pos+n;
+    var clicked= new ArrayList<Integer>();
+    while (r.pos < end){
+      r.pad(8);
+      int id= r.u32();
+      if (r.str().equals("clicked")){ clicked.add(id); }
+      r.skip("v",0);
+      r.u32();
+    }
+    reply(m,"ai",new Writer().u32(0));
+    clicked.forEach(this::clicked);
+  }
+  private void clicked(int id){
+    if (id == 1){ activate.run(); }
+    if (id == 3){ quit.run(); }
   }
   private void signal(Msg m) throws IOException{
     var watched= m.sender().equals(bus) && m.member().equals("NameOwnerChanged") && m.body().str().equals(watcher);

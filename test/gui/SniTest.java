@@ -167,7 +167,7 @@ final class SniTest{
       var e= assertThrows(UserError.class,()->new Sni(socket,()->log.add("activate"),()->log.add("quit"),icon).serve());
       bus.get();
       assertEquals(Violation.trayIconRemoved().getMessage(),e.getMessage());
-      assertEquals(List.of("activate","activate","quit"),log);
+      assertEquals(List.of("activate","activate","activate","quit"),log);
     }
     finally{ Files.deleteIfExists(socket); Files.delete(dir); }
   }
@@ -196,6 +196,15 @@ final class SniTest{
     Sni.write(c,msg(1,1,11,clicked(1),fromWatcher(Sni.menu,"Event","isvu")));
     Sni.write(c,msg(1,0,12,clicked(1),fromWatcher(Sni.menu,"Event","isvu")));
     answer(c,2,12);
+    Sni.write(c,msg(1,0,18,new Writer().array(4,w->w.u32(0).u32(1)),fromWatcher(Sni.menu,"AboutToShowGroup","ai")));
+    var shown= answer(c,2,18);
+    assertEquals("aiai",shown.signature());
+    assertEquals(0,shown.body().u32());
+    assertEquals(0,shown.body().u32());
+    Sni.write(c,msg(1,0,19,new Writer().array(8,w->w.pad(8).u32(2).str("hovered").sig("s").str("").u32(0).pad(8).u32(1).str("clicked").sig("s").str("").u32(0)),fromWatcher(Sni.menu,"EventGroup","a(isvu)")));
+    var group= answer(c,2,19);
+    assertEquals("ai",group.signature());
+    assertEquals(0,group.body().u32());
     Sni.write(c,msg(1,0,13,new Writer().str("com.canonical.dbusmenu").str("Version"),fromWatcher(Sni.menu,"Get","ss")));
     var version= answer(c,2,13);
     assertEquals("v",version.signature());
