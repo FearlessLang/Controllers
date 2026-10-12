@@ -1,6 +1,9 @@
 package agentTools;
 
 import java.awt.AWTException;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.MouseInfo;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
@@ -63,6 +66,16 @@ public final class Pilot{
     var img= robot.createScreenCapture(new Rectangle(Toolkit.getDefaultToolkit().getScreenSize()));
     assert !blank(img);
     return img;
+  }
+  public BufferedImage seen(){
+    var res= shot();
+    var at= MouseInfo.getPointerInfo().getLocation();
+    var g= res.createGraphics();
+    g.setColor(new Color(0xa020f0));
+    g.setStroke(new BasicStroke(3));
+    g.drawOval(at.x-8,at.y-8,16,16);
+    g.dispose();
+    return res;
   }
   private static boolean blank(BufferedImage img){
     var px= img.getRGB(0,0,img.getWidth(),img.getHeight(),null,0,img.getWidth());
