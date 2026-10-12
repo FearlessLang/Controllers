@@ -40,7 +40,10 @@ abstract class ManagerTest{
   @Test void test() throws Throwable{
     start= System.currentTimeMillis();
     try{ walk(); }
-    finally{ ProcessHandle.allProcesses().filter(this::ofApp).forEach(ProcessHandle::destroyForcibly); }
+    finally{
+      ProcessHandle.allProcesses().filter(this::ofApp).forEach(ProcessHandle::destroyForcibly);
+      inGuest("pkill -KILL -f '^"+app+"/'; true");
+    }
   }
   boolean ofApp(ProcessHandle p){ return p.info().command().filter(c->c.startsWith(app.toString())).isPresent(); }
   Action action(String name, On... ons){ return new Action(this,name,OneOr.of(name+" on "+desk,Stream.of(ons).filter(o->o.desk().equals(desk))).steps()); }
@@ -84,12 +87,13 @@ abstract class ManagerTest{
     pilot.chord(code);
   }
   void keys(int... codes){ pilot.chord(codes); }
-  void stabilize(){
+  void stabilize(){ inGuest("sync; echo 3 >/proc/sys/vm/drop_caches"); }
+  static void inGuest(String script){
     if (!Fs.isLinux()){ return; }
-    OneOr.opt("one guest alive",virsh("list","--name").lines().filter(l->!l.isBlank())).ifPresent(ManagerTest::flush);
+    OneOr.opt("one guest alive",virsh("list","--name").lines().filter(l->!l.isBlank())).ifPresent(g->inGuest(g,script));
   }
-  static void flush(String guest){
-    var pid= virsh("qemu-agent-command",guest,"{\"execute\":\"guest-exec\",\"arguments\":{\"path\":\"/bin/sh\",\"arg\":[\"-c\",\"sync; echo 3 >/proc/sys/vm/drop_caches\"]}}").replaceAll("\\D","");
+  static void inGuest(String guest, String script){
+    var pid= virsh("qemu-agent-command",guest,"{\"execute\":\"guest-exec\",\"arguments\":{\"path\":\"/bin/sh\",\"arg\":[\"-c\",\""+script+"\"]}}").replaceAll("\\D","");
     var status= "{\"execute\":\"guest-exec-status\",\"arguments\":{\"pid\":"+pid+"}}";
     var done= virsh("qemu-agent-command",guest,status);
     for (; !done.contains("\"exited\":true"); done= virsh("qemu-agent-command",guest,status)){ Pilot.pause(100); }
