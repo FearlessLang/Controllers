@@ -7,11 +7,7 @@ import java.awt.event.MouseEvent;
 
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
-import javax.swing.JPopupMenu;
 import javax.swing.JWindow;
-import javax.swing.SwingUtilities;
-
-import controller.Main;
 
 final class StandIn{
   private static final int side= 32;
@@ -29,14 +25,9 @@ final class StandIn{
     res.setAlwaysOnTop(true);
     res.setSize(side,side);
     var icon= new JLabel(new ImageIcon(Icons.app().getScaledInstance(side,side,Image.SCALE_SMOOTH)));
-    var menu= new JPopupMenu();
-    menu.add(Window.item("Show manager",()->Main.command("Show")));
-    menu.add(Window.item("Quit manager",()->Main.command("Quit")));
+    var menu= Tray.menu();
     icon.addMouseListener(new MouseAdapter(){
-      @Override public void mousePressed(MouseEvent e){
-        if (SwingUtilities.isRightMouseButton(e)){ menu.show(icon,e.getX(),e.getY()); return; }
-        if (SwingUtilities.isLeftMouseButton(e)){ Main.command("Show"); }
-      }
+      @Override public void mousePressed(MouseEvent e){ menu.show(icon,e.getX(),e.getY()); }
     });
     res.add(icon);
     return res;

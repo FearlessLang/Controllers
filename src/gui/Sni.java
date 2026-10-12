@@ -25,7 +25,7 @@ import utils.Bug;
 
 /// The manager's icon on a Linux desktop: a StatusNotifierItem served on the session bus.
 /// The desktop's watcher (org.kde.StatusNotifierWatcher) reads the item's properties and
-/// calls Activate or ContextMenu when the icon is clicked; both show the window.
+/// opens the item's menu when the icon is clicked; ContextMenu, called by a desktop that draws no menu, shows the window.
 /// One thread reads the bus for the whole process life; the watcher leaving the bus, or
 /// the bus closing, stops the manager.
 final class Sni{
@@ -34,6 +34,11 @@ final class Sni{
   private static final String serviceUnknown= "org.freedesktop.DBus.Error.ServiceUnknown";
   static final String itemPath= "/StatusNotifierItem";
   static final String menu= "/MenuBar";
+  static final String introspection= "<node><interface name=\"org.kde.StatusNotifierItem\">"
+    +"<method name=\"ContextMenu\"><arg type=\"i\" direction=\"in\"/><arg type=\"i\" direction=\"in\"/></method>"
+    +"<method name=\"SecondaryActivate\"><arg type=\"i\" direction=\"in\"/><arg type=\"i\" direction=\"in\"/></method>"
+    +"<method name=\"Scroll\"><arg type=\"i\" direction=\"in\"/><arg type=\"s\" direction=\"in\"/></method>"
+    +"</interface></node>";
   static final List<List<String>> items= List.of(
     List.of("0","children-display","submenu"),
     List.of("1","label","Show manager"),
@@ -115,10 +120,15 @@ final class Sni{
       case "GetGroupProperties(aias)" -> reply(m,"a(ia{sv})",groupProperties());
       case "AboutToShow(i)" -> reply(m,"b",new Writer().u32(0));
       case "Event(isvu)" -> event(m);
-      case "Activate(ii)","SecondaryActivate(ii)","ContextMenu(ii)" -> { activate.run(); reply(m,"",new Writer()); }
-      case "Scroll(is)" -> reply(m,"",new Writer());
+      case "Introspect()" -> introspect(m);
+      case "ContextMenu(ii)" -> { activate.run(); reply(m,"",new Writer()); }
+      case "SecondaryActivate(ii)","Scroll(is)" -> reply(m,"",new Writer());
       default -> error(m,"org.freedesktop.DBus.Error.UnknownMethod","Fearless offers no method "+m.member()+"("+m.signature()+")");
     }
+  }
+  private void introspect(Msg m) throws IOException{
+    if (!m.path().equals(itemPath)){ error(m,"org.freedesktop.DBus.Error.UnknownMethod","Fearless offers no method Introspect() on "+m.path()); return; }
+    reply(m,"s",new Writer().str(introspection));
   }
   private void event(Msg m) throws IOException{
     var id= m.body().u32();
@@ -151,7 +161,7 @@ final class Sni{
       case "Title" -> w.sig("s").str("Fearless Manager");
       case "Status" -> w.sig("s").str("Active");
       case "Menu" -> w.sig("o").str(menu);
-      case "ItemIsMenu" -> w.sig("b").u32(0);
+      case "ItemIsMenu" -> w.sig("b").u32(1);
       case "IconPixmap" -> pixmaps(w.sig("a(iiay)"),icon);
       case "ToolTip" -> pixmaps(w.sig("(sa(iiay)ss)").pad(8).str("")).str("Fearless Manager").str("");
       case "Version" -> w.sig("u").u32(3);

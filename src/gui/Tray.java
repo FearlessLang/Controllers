@@ -1,12 +1,18 @@
 package gui;
 
 import java.awt.AWTException;
-import java.awt.MenuItem;
-import java.awt.PopupMenu;
+import java.awt.Point;
 import java.awt.SystemTray;
 import java.awt.TrayIcon;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Arrays;
+
+import javax.swing.JPopupMenu;
+import javax.swing.JWindow;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 
 import controller.Main;
 import managerMessages.Violation;
@@ -21,17 +27,19 @@ public final class Tray{
   public static boolean install(Window window){
     if (Fs.isLinux()){ return Sni.install(()->Main.command("Show"),()->Main.command("Quit"),Icons.app()); }
     if (!SystemTray.isSupported()){ return false; }
-    var show= new MenuItem("Show manager");
-    show.addActionListener(_->Main.command("Show"));
-    var quit= new MenuItem("Quit manager");
-    quit.addActionListener(_->Main.command("Quit"));
-    var menu= new PopupMenu();
-    menu.add(show);
-    menu.addSeparator();
-    menu.add(quit);
-    var icon= new TrayIcon(Icons.app(),"Fearless Manager",menu);
+    var menu= menu();
+    var anchor= new JWindow();
+    anchor.setAlwaysOnTop(true);
+    menu.addPopupMenuListener(new PopupMenuListener(){
+      @Override public void popupMenuWillBecomeVisible(PopupMenuEvent e){}
+      @Override public void popupMenuWillBecomeInvisible(PopupMenuEvent e){ anchor.setVisible(false); }
+      @Override public void popupMenuCanceled(PopupMenuEvent e){}
+    });
+    var icon= new TrayIcon(Icons.app(),"Fearless Manager");
     icon.setImageAutoSize(true);
-    icon.addActionListener(_->Main.command("Show"));
+    icon.addMouseListener(new MouseAdapter(){
+      @Override public void mouseReleased(MouseEvent e){ open(anchor,menu,e.getPoint()); }
+    });
     var tray= SystemTray.getSystemTray();
     try{ tray.add(icon); }
     catch(AWTException e){ throw Violation.couldNotAddTrayIcon(e); }
@@ -39,5 +47,17 @@ public final class Tray{
     tray.addPropertyChangeListener("systemTray",gone);
     tray.addPropertyChangeListener("trayIcons",gone);
     return true;
+  }
+  static JPopupMenu menu(){
+    var res= new JPopupMenu();
+    res.add(Window.item("Show manager",()->Main.command("Show")));
+    res.addSeparator();
+    res.add(Window.item("Quit manager",()->Main.command("Quit")));
+    return res;
+  }
+  private static void open(JWindow anchor, JPopupMenu menu, Point at){
+    anchor.setBounds(at.x,at.y,1,1);
+    anchor.setVisible(true);
+    menu.show(anchor,0,0);
   }
 }

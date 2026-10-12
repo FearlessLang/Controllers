@@ -70,8 +70,8 @@ public final class Window implements Manager.View{
   public final JFrame frame= new JFrame("Fearless Manager");
   private final Main main;
   private final Path info;
-  final Tiles tiles= new Tiles(name->Main.command("Show",name));
-  final JSplitPane split= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,tiles,new JPanel());
+  final Tiles tiles= new Tiles();
+  final JSplitPane split= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
   private final Map<Path,Panel> panels= new HashMap<>();
   private final Map<Path,JDialog> editors= new HashMap<>();
   private final StandIn standIn= new StandIn();
@@ -85,7 +85,7 @@ public final class Window implements Manager.View{
     this.info= info;
     split.setDividerLocation(320);
     frame.setJMenuBar(menuBar());
-    frame.add(split,BorderLayout.CENTER);
+    frame.add(tiles,BorderLayout.CENTER);
     frame.getRootPane().setTransferHandler(dropHandler());
     frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
     frame.addWindowListener(new WindowAdapter(){
@@ -212,8 +212,15 @@ public final class Window implements Manager.View{
   }
   private void place(Optional<Panel> next){
     shown= next;
+    var content= frame.getContentPane();
+    content.removeAll();
+    content.add(next.isEmpty() ? tiles : split,BorderLayout.CENTER);
+    content.revalidate();
+    content.repaint();
+    if (next.isEmpty()){ return; }
     var where= split.getWidth() > 0 ? Math.min(split.getDividerLocation(),split.getWidth()-minPanelWidth) : split.getDividerLocation();
-    split.setRightComponent(next.map(p->(Component)p.root).orElseGet(JPanel::new));
+    split.setLeftComponent(tiles);
+    split.setRightComponent(next.get().root);
     split.setDividerLocation(where);
   }
   private JMenuBar menuBar(){
@@ -225,10 +232,14 @@ public final class Window implements Manager.View{
     manager.add(item("Connect Eclipse...",()->choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into",p->Main.command("ConnectEclipse",Main.path(p)))));
     manager.add(item("Base documentation",()->open(this::refuseHere,Deployed.stdLib("baseCache").resolve("base.html"))));
     manager.addSeparator();
-    manager.add(item("Reset",()->Main.command("Reset")));
+    manager.add(item("Reset",this::reset));
     manager.add(item("Quit",()->Main.command("Quit")));
     res.add(manager);
     return res;
+  }
+  private void reset(){
+    var reset= JOptionPane.showOptionDialog(frame,Report.resetQuestion(),"Fearless",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE,null,new Object[]{"Reset","Cancel"},"Cancel");
+    if (reset == 0){ Main.command("Reset"); }
   }
   static JMenuItem item(String text, Runnable action){
     var res= new JMenuItem(text);
@@ -286,10 +297,25 @@ public final class Window implements Manager.View{
     return c;
   }
   static JButton small(String text, Runnable action){
-    var res= new JButton(text);
+    var res= new Small(text);
     res.setMargin(new Insets(0,6,0,6));
-    res.addActionListener(_->action.run());
+    res.addActionListener(_->res.press(action));
     return res;
+  }
+  @SuppressWarnings("serial")
+  private static final class Small extends JButton{
+    private boolean wanted= true;
+    private final Timer rest= new Timer(500,_->super.setEnabled(wanted));
+    Small(String text){ super(text); rest.setRepeats(false); }
+    @Override public void setEnabled(boolean b){
+      wanted= b;
+      if (!rest.isRunning()){ super.setEnabled(b); }
+    }
+    void press(Runnable action){
+      super.setEnabled(false);
+      rest.restart();
+      action.run();
+    }
   }
   static void open(Consumer<String> refuse, Path path){
     if (!Files.exists(path)){ refuse.accept(Report.nothingToOpen(path)); return; }

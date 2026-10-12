@@ -73,6 +73,7 @@ final class Panel{
   private final JButton openDocs= small("Open docs",this::openDocs);
   private final JButton action= named(small("Compile",this::act),"action");
   private final JButton deleteCache= small("Delete cache",()->Main.command("DeleteCache",this.project.alias()));
+  private final JButton forget= small("Forget",()->Main.command("Forget",this.project.alias()));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
   private Object shown= List.of();
@@ -93,7 +94,7 @@ final class Panel{
     header.add(openDocs);
     header.add(kinds);
     header.add(small("Browse",()->Window.open(refuse,project.folder())));
-    header.add(small("Forget",()->Main.command("Forget",project.alias())));
+    header.add(forget);
     header.add(deleteCache);
     var top= new JPanel();
     top.setLayout(new BoxLayout(top,BoxLayout.Y_AXIS));
@@ -178,6 +179,8 @@ final class Panel{
     action.setEnabled(a != Project.Action.run || !p.knownMains().isEmpty());
     openDocs.setEnabled(p.mains().isPresent());
     deleteCache.setVisible(p.kind() == Kind.code);
+    deleteCache.setEnabled(!p.busy());
+    forget.setEnabled(!p.busy());
     fillKinds(p);
     fillShortcuts(p,claimed);
     fillClaims(p,claimed);
@@ -193,7 +196,10 @@ final class Panel{
     shortcuts.removeAll();
     var mine= mine(p,claimed).filter(Project.Claimant::shortcut).toList();
     shortcuts.setVisible(!mine.isEmpty());
-    mine.forEach(c->shortcuts.add(doubleClicked(named(new JLabel(new ImageIcon(Icons.of(c,iconSize))),"shortcut "+c.main()+" "+c.claim().extension()),()->Main.command("OpenWithOrShortcut",Main.path(c.shortcutFile())))));
+    mine.forEach(c->shortcuts.add(doubleClicked(named(shortcut(c),"shortcut "+c.main()+" "+c.claim().extension()),()->Main.command("OpenWithOrShortcut",Main.path(c.shortcutFile())))));
+  }
+  private static JLabel shortcut(Project.Claimant c){
+    return Tiles.desktop(new JLabel(),new ImageIcon(Icons.of(c,Tiles.iconSize)),c.shortcutFile().getFileName().toString());
   }
   private static Stream<Project.Claimant> mine(Project p, Map<String,List<Project.Claimant>> claimed){
     return claimed.values().stream().flatMap(List::stream).filter(c->c.folder().equals(p.folder()));
