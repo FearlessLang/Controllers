@@ -3,6 +3,7 @@ package agentTools;
 import java.util.List;
 
 final class EditMetadataCommitTest extends ManagerTest{
+  final Action backToIdle= header("backToIdle",780);
   static final String registry= """
     {
       "projects": {

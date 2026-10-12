@@ -7,7 +7,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
-  final Action checkHello= action("checkHello",on("ubuntu_gnome",()->click(val(580),val(112))));
+  final Action checkHello= action("checkHello",on("ubuntu_gnome",()->click(val(580),val(113))));
   final Action helloChecked= action("helloChecked",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
   final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(22500))));
   final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
@@ -26,7 +26,7 @@ final class TileSwitchTest extends ManagerTest{
     managerShown.go();
     var panel= new Rectangle(410,95,1000,155);
     var name= new Rectangle(450,95,110,32);
-    var output= new Rectangle(410,190,1000,60);
+    var output= new Rectangle(410,168,1000,80);
     var helloEmpty= look();
     checkHello.go();
     helloChecked.go();

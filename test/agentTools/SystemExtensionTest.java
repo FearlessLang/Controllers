@@ -9,14 +9,15 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class SystemExtensionTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",980);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(533),val(113))));
   final Action questionShown= action("questionShown",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action allowed= action("allowed",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
-  final Action compileAgain= action("compileAgain",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compileAgain= action("compileAgain",on("ubuntu_gnome",()->click(val(533),val(113))));
   final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(54000))));
   final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(55500))));
   final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(59000))));
@@ -64,7 +65,7 @@ final class SystemExtensionTest extends ManagerTest{
       """.formatted(slashed(opens)));
     compileAgain.go();
     compiled.go();
-    var output= new Rectangle(410,190,1000,60);
+    var output= new Rectangle(410,168,1000,80);
     var compiledLook= look();
     shell("nohup setsid -f xdg-open \""+opens+"\" >/dev/null 2>&1\n");
     runInTerminal(appsShownFiles,terminalShownFiles);

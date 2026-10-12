@@ -10,11 +10,12 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class OpenWithChoiceTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",983);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(536),val(113))));
   final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action appsShownFiles= action("appsShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
   final Action terminalShownFiles= action("terminalShownFiles",on("ubuntu_gnome",()->waitUntilTime(val(41000))));

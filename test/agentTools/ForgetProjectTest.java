@@ -8,6 +8,7 @@ import java.util.List;
 import tools.Fs;
 
 final class ForgetProjectTest extends ManagerTest{
+  final Action forgetIdle= header("forgetIdle",1132);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));

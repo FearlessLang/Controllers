@@ -1,6 +1,6 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.awt.Rectangle;
 import java.nio.file.Files;
@@ -10,6 +10,9 @@ import java.util.List;
 import tools.Fs;
 
 final class LinkReadTest extends ManagerTest{
+  final Action becomeData= header("becomeData",714);
+  final Action becomeCode= header("becomeCode",986);
+  final Action backToIdle= header("backToIdle",726);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
@@ -18,16 +21,16 @@ final class LinkReadTest extends ManagerTest{
   final Action terminalShownReader= action("terminalShownReader",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
   final Action readerShown= action("readerShown",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
   final Action codeSaved= action("codeSaved",on("ubuntu_gnome",()->waitUntilTime(val(37000))));
-  final Action openLinks= action("openLinks",on("ubuntu_gnome",()->click(val(450),val(379))));
+  final Action openLinks= action("openLinks",on("ubuntu_gnome",()->click(val(450),val(356))));
   final Action linksShown= action("linksShown",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
-  final Action readField= action("readField",on("ubuntu_gnome",()->click(val(560),val(421))));
+  final Action readField= action("readField",on("ubuntu_gnome",()->click(val(560),val(398))));
   final Action readsSaved= action("readsSaved",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
   final Action storeTile= action("storeTile",on("ubuntu_gnome",()->click(val(261),val(130))));
   final Action storeShown= action("storeShown",on("ubuntu_gnome",()->waitUntilTime(val(46500))));
   final Action idleSaved= action("idleSaved",on("ubuntu_gnome",()->waitUntilTime(val(49500))));
   final Action readerTile= action("readerTile",on("ubuntu_gnome",()->click(val(133),val(130))));
   final Action readerShownAgain= action("readerShownAgain",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
-  final Action check= action("check",on("ubuntu_gnome",()->click(val(540),val(112))));
+  final Action check= action("check",on("ubuntu_gnome",()->click(val(539),val(113))));
   final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(55000))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(61000))));
   @Override void walk() throws Throwable{
@@ -77,9 +80,10 @@ final class LinkReadTest extends ManagerTest{
     var before= look();
     check.go();
     checked.go();
-    changed(before,new Rectangle(410,190,1000,60));
+    changed(before,new Rectangle(410,168,1000,80));
     stabilize();
-    assertFalse(Files.exists(reader.resolve(".fearless_out")));
+    assertEquals(List.of(".fearless_out/check_error.txt"),Fs.walk(reader.resolve(".fearless_out"),st->st.filter(Files::isRegularFile).map(p->slashed(reader.relativize(p))).toList()));
+    checkContent(List.of("links","reader",".fearless_out","check_error.txt"),"\"reads\" refers to \"store\", but the kind of \"store\" is \"idle\"; \"reads\" accepts only \"data:readOnly\" or \"data:readWrite\".");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

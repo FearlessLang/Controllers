@@ -6,13 +6,14 @@ import java.util.List;
 import tools.Fs;
 
 final class CloseProgramWindowTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",967);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(520),val(113))));
   final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action run= action("run",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action run= action("run",on("ubuntu_gnome",()->click(val(520),val(113))));
   final Action programShown= action("programShown",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
   final Action closeProgram= action("closeProgram",on("ubuntu_gnome",()->click(val(1997),val(1067))));
   final Action programEnded= action("programEnded",on("ubuntu_gnome",()->waitUntilTime(val(45000))));

@@ -15,7 +15,7 @@ final class AliasClashTest extends ManagerTest{
   final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(19500))));
   final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
   final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
-  final Action check= action("check",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action check= action("check",on("ubuntu_gnome",()->click(val(529),val(113))));
   final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
   @Override void walk() throws Throwable{
@@ -54,7 +54,7 @@ final class AliasClashTest extends ManagerTest{
     assertEquals(List.of("a/twin/_twin/_rank_app.fear","a/twin/twin.fearless","b/twin/_twin/_rank_app.fear","b/twin/twin2.fearless"),
       Fs.walk(twins,s->s.filter(Files::isRegularFile).map(p->slashed(twins.relativize(p))).sorted().toList()));
     checkContent(List.of("twins","b","twin","twin2.fearless"),"\n");
-    var output= new Rectangle(410,190,1000,60);
+    var output= new Rectangle(410,168,1000,80);
     var before= look();
     check.go();
     checked.go();

@@ -4,6 +4,7 @@ import java.awt.Rectangle;
 import java.util.List;
 
 final class RelaunchKeepsRegistryTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",1027);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
