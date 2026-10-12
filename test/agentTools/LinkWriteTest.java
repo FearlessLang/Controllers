@@ -8,6 +8,8 @@ import java.util.List;
 import tools.Fs;
 
 final class LinkWriteTest extends ManagerTest{
+  final Action becomeEditableData= header("becomeEditableData",842);
+  final Action becomeCode= header("becomeCode",974);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
@@ -16,15 +18,15 @@ final class LinkWriteTest extends ManagerTest{
   final Action terminalShownTeller= action("terminalShownTeller",on("ubuntu_gnome",()->waitUntilTime(val(26000))));
   final Action tellerShown= action("tellerShown",on("ubuntu_gnome",()->waitUntilTime(val(34000))));
   final Action codeSaved= action("codeSaved",on("ubuntu_gnome",()->waitUntilTime(val(37000))));
-  final Action openLinks= action("openLinks",on("ubuntu_gnome",()->click(val(450),val(379))));
+  final Action openLinks= action("openLinks",on("ubuntu_gnome",()->click(val(450),val(356))));
   final Action linksShown= action("linksShown",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
-  final Action writeField= action("writeField",on("ubuntu_gnome",()->click(val(760),val(421))));
+  final Action writeField= action("writeField",on("ubuntu_gnome",()->click(val(768),val(398))));
   final Action editsSaved= action("editsSaved",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
-  final Action readField= action("readField",on("ubuntu_gnome",()->click(val(560),val(421))));
+  final Action readField= action("readField",on("ubuntu_gnome",()->click(val(560),val(398))));
   final Action noteShown= action("noteShown",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
-  final Action readFieldAgain= action("readFieldAgain",on("ubuntu_gnome",()->click(val(560),val(421))));
+  final Action readFieldAgain= action("readFieldAgain",on("ubuntu_gnome",()->click(val(560),val(398))));
   final Action readEmptied= action("readEmptied",on("ubuntu_gnome",()->waitUntilTime(val(53000))));
-  final Action writeFieldAgain= action("writeFieldAgain",on("ubuntu_gnome",()->click(val(760),val(421))));
+  final Action writeFieldAgain= action("writeFieldAgain",on("ubuntu_gnome",()->click(val(768),val(398))));
   final Action writeEmptied= action("writeEmptied",on("ubuntu_gnome",()->waitUntilTime(val(57000))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(62000))));
   @Override void walk() throws Throwable{

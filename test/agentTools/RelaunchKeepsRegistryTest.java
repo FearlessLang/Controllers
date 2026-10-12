@@ -4,6 +4,7 @@ import java.awt.Rectangle;
 import java.util.List;
 
 final class RelaunchKeepsRegistryTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",1027);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
@@ -22,7 +23,7 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     managerShown.go();
     becomeCode.go();
     codeShown.go();
-    var panel= new Rectangle(410,95,500,60);
+    var panel= new Rectangle(410,95,420,60);
     var selected= look();
     var remembered= """
       {

@@ -14,7 +14,7 @@ final class EditMetadataAddProjectTest extends ManagerTest{
   final Action bothSaved= action("bothSaved",on("ubuntu_gnome",()->waitUntilTime(val(70000))));
   final Action secondTile= action("secondTile",on("ubuntu_gnome",()->click(val(261),val(130))));
   final Action secondShown= action("secondShown",on("ubuntu_gnome",()->waitUntilTime(val(72000))));
-  final Action check= action("check",on("ubuntu_gnome",()->click(val(520),val(112))));
+  final Action check= action("check",on("ubuntu_gnome",()->click(val(523),val(113))));
   final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(74500))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(79500))));
   @Override void walk() throws Throwable{
@@ -53,7 +53,7 @@ final class EditMetadataAddProjectTest extends ManagerTest{
       """.formatted(slashed(project),slashed(other)));
     secondTile.go();
     secondShown.go();
-    var output= new Rectangle(410,190,1000,60);
+    var output= new Rectangle(410,168,1000,80);
     var before= look();
     check.go();
     checked.go();

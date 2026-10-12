@@ -12,6 +12,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action tilesEnd= action("tilesEnd",on("ubuntu_gnome",()->listEnd(val(200),val(1500),val(385))));
   final Action managerHidden= action("managerHidden",on("ubuntu_gnome",()->waitUntilTime(val(20000))));
+  final Action tilesWhole= action("tilesWhole",on("ubuntu_gnome",()->listEnd(val(200),val(1500),val(3838))));
   final Action tilesGone= action("tilesGone",on("ubuntu_gnome",()->listEnd(val(200),val(1500),val(200))));
   final Action appsShownSecond= action("appsShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(21500))));
   final Action terminalShownSecond= action("terminalShownSecond",on("ubuntu_gnome",()->waitUntilTime(val(25000))));
@@ -53,7 +54,7 @@ final class DividerPlaceTest extends ManagerTest{
     launchScript("third");
     runInTerminal(appsShownThird,terminalShownThird);
     thirdShown.go();
-    tilesEnd.go();
+    tilesWhole.go();
     managerMenu.go();
     quitManager.go();
     thirdQuit.go();

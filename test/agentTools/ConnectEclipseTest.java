@@ -55,7 +55,7 @@ final class ConnectEclipseTest extends ManagerTest{
     fileName.go();
     type(dropins+"\n");
     connected.go();
-    same(before,center);
+    changed(before,center);
     stabilize();
     assertEquals(List.of(".eclipseproduct","dropins/fearless/manager.info","dropins/fearless/plugins/"+jar),files());
     assertEquals(-1L,Files.mismatch(shipped.resolve(jar),plugins.resolve(jar)));
@@ -67,6 +67,8 @@ final class ConnectEclipseTest extends ManagerTest{
         "baseCache": "Str:%s"
       }
       """.formatted(escaped(app),escaped(app.resolve("bin").resolve(app.getFileName())),escaped(filesIOFolder.resolve(data)),escaped(lib.resolve("stdLib").resolve("baseCache"))));
+    closeDialog.go();
+    same(before,center);
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

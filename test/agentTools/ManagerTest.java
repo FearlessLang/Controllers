@@ -105,13 +105,7 @@ abstract class ManagerTest{
   final Action quitManager= action("quitManager",on("ubuntu_gnome",()->click(val(88),val(212))));
   final Action closeWindow= action("closeWindow",on("ubuntu_gnome",()->click(val(3822),val(50))));
   final Action firstTile= action("firstTile",on("ubuntu_gnome",()->click(val(133),val(130))));
-  final Action becomeData= action("becomeData",on("ubuntu_gnome",()->click(val(468),val(140))));
-  final Action becomeEditableData= action("becomeEditableData",on("ubuntu_gnome",()->click(val(597),val(140))));
-  final Action becomeCode= action("becomeCode",on("ubuntu_gnome",()->click(val(727),val(140))));
-  final Action backToIdle= action("backToIdle",on("ubuntu_gnome",()->click(val(464),val(140))));
-  final Action forgetIdle= action("forgetIdle",on("ubuntu_gnome",()->click(val(889),val(140))));
-  final Action forget= action("forget",on("ubuntu_gnome",()->click(val(621),val(140))));
-  final Action clean= action("clean",on("ubuntu_gnome",()->click(val(683),val(140))));
+  Action header(String name, int x){ return action(name,on("ubuntu_gnome",()->click(val(x),val(113)))); }
   final Action trayIcon= action("trayIcon",on("ubuntu_gnome",()->click(val(3655),val(15))));
   final Action trayShow= action("trayShow",on("ubuntu_gnome",()->click(val(3625),val(60))));
   final Action closeDialog= action("closeDialog",on("ubuntu_gnome",()->keys(KeyEvent.VK_ENTER)));

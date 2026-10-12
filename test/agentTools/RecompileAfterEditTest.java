@@ -6,15 +6,16 @@ import java.util.List;
 import tools.Fs;
 
 final class RecompileAfterEditTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",971);
   static final String first= "use base.Main as Main;\n\nFirst:Main{s->base.Debug#(\"first\")}\n";
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(524),val(113))));
   final Action firstCompiled= action("firstCompiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action editNoticed= action("editNoticed",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
-  final Action compileEdited= action("compileEdited",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compileEdited= action("compileEdited",on("ubuntu_gnome",()->click(val(524),val(113))));
   final Action editedCompiled= action("editedCompiled",on("ubuntu_gnome",()->waitUntilTime(val(59000))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(64000))));
   @Override void walk() throws Throwable{

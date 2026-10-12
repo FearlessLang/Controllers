@@ -19,7 +19,7 @@ final class ProjectIconTest extends ManagerTest{
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action ownIconShown= action("ownIconShown",on("ubuntu_gnome",()->waitUntilTime(val(23000))));
   final Action invalidShown= action("invalidShown",on("ubuntu_gnome",()->waitUntilTime(val(28000))));
-  final Action check= action("check",on("ubuntu_gnome",()->click(val(520),val(112))));
+  final Action check= action("check",on("ubuntu_gnome",()->click(val(504),val(113))));
   final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(31000))));
   final Action ownIconBack= action("ownIconBack",on("ubuntu_gnome",()->waitUntilTime(val(37000))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(42000))));
@@ -34,7 +34,7 @@ final class ProjectIconTest extends ManagerTest{
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
     var tile= new Rectangle(69,95,128,85);
-    var output= new Rectangle(410,190,1000,60);
+    var output= new Rectangle(410,168,1000,80);
     var madeUp= look();
     png(icons.resolve("face.png"),0xC03090);
     stabilize();

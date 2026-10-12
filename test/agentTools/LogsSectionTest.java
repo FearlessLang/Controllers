@@ -9,17 +9,18 @@ import utils.Err;
 import utils.OneOr;
 
 final class LogsSectionTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",971);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(524),val(113))));
   final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action openLogs= action("openLogs",on("ubuntu_gnome",()->click(val(447),val(410))));
+  final Action openLogs= action("openLogs",on("ubuntu_gnome",()->click(val(450),val(387))));
   final Action logsShown= action("logsShown",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
-  final Action run= action("run",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action run= action("run",on("ubuntu_gnome",()->click(val(524),val(113))));
   final Action ran= action("ran",on("ubuntu_gnome",()->waitUntilTime(val(43000))));
-  final Action logsButton= action("logsButton",on("ubuntu_gnome",()->click(val(3798),val(410))));
+  final Action logsButton= action("logsButton",on("ubuntu_gnome",()->click(val(3800),val(386))));
   final Action filesShown= action("filesShown",on("ubuntu_gnome",()->waitUntilTime(val(47000))));
   final Action closeFiles= action("closeFiles",on("ubuntu_gnome",()->click(val(2374),val(843))));
   final Action filesClosed= action("filesClosed",on("ubuntu_gnome",()->waitUntilTime(val(49000))));
@@ -45,7 +46,7 @@ final class LogsSectionTest extends ManagerTest{
     compiled.go();
     openLogs.go();
     logsShown.go();
-    var list= new Rectangle(410,430,1000,40);
+    var list= new Rectangle(410,400,1000,60);
     var empty= look();
     run.go();
     ran.go();

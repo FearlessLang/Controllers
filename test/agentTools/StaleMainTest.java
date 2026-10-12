@@ -6,6 +6,7 @@ import java.util.List;
 import tools.Fs;
 
 final class StaleMainTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",979);
   static final String mains= "use base.Main as Main;\n\nFirst: Main{sys -> sys.out.println \"First\"}\nSecond: Main{sys -> sys.out.println \"Second\"}\n";
   static final String registry= """
     {
@@ -23,16 +24,16 @@ final class StaleMainTest extends ManagerTest{
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(532),val(113))));
   final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
-  final Action runV= action("runV",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action runV= action("runV",on("ubuntu_gnome",()->click(val(532),val(113))));
   final Action mainsShown= action("mainsShown",on("ubuntu_gnome",()->waitUntilTime(val(37500))));
-  final Action tickSecond= action("tickSecond",on("ubuntu_gnome",()->click(val(540),val(166))));
-  final Action tickThird= action("tickThird",on("ubuntu_gnome",()->click(val(540),val(190))));
-  final Action runTicked= action("runTicked",on("ubuntu_gnome",()->click(val(530),val(215))));
+  final Action tickSecond= action("tickSecond",on("ubuntu_gnome",()->click(val(526),val(164))));
+  final Action tickThird= action("tickThird",on("ubuntu_gnome",()->click(val(526),val(189))));
+  final Action runTicked= action("runTicked",on("ubuntu_gnome",()->click(val(535),val(213))));
   final Action runsDone= action("runsDone",on("ubuntu_gnome",()->waitUntilTime(val(44000))));
   final Action editNoticed= action("editNoticed",on("ubuntu_gnome",()->waitUntilTime(val(52000))));
-  final Action compileEdited= action("compileEdited",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action compileEdited= action("compileEdited",on("ubuntu_gnome",()->click(val(532),val(113))));
   final Action editedCompiled= action("editedCompiled",on("ubuntu_gnome",()->waitUntilTime(val(67000))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(72000))));
   @Override void walk() throws Throwable{

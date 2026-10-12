@@ -8,11 +8,13 @@ import java.nio.file.Files;
 import java.util.List;
 
 final class ClearCacheTest extends ManagerTest{
+  final Action becomeCode= header("becomeCode",1027);
+  final Action clean= header("clean",1010);
   final Action appsShown= action("appsShown",on("ubuntu_gnome",()->waitUntilTime(val(2000))));
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action codeShown= action("codeShown",on("ubuntu_gnome",()->waitUntilTime(val(21000))));
-  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(580),val(112))));
+  final Action compile= action("compile",on("ubuntu_gnome",()->click(val(580),val(113))));
   final Action compiled= action("compiled",on("ubuntu_gnome",()->waitUntilTime(val(36000))));
   final Action cacheCleared= action("cacheCleared",on("ubuntu_gnome",()->waitUntilTime(val(39000))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(44000))));

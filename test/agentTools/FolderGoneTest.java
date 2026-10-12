@@ -13,7 +13,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action terminalShown= action("terminalShown",on("ubuntu_gnome",()->waitUntilTime(val(5500))));
   final Action managerShown= action("managerShown",on("ubuntu_gnome",()->waitUntilTime(val(18000))));
   final Action goneNoticed= action("goneNoticed",on("ubuntu_gnome",()->waitUntilTime(val(24000))));
-  final Action check= action("check",on("ubuntu_gnome",()->click(val(530),val(112))));
+  final Action check= action("check",on("ubuntu_gnome",()->click(val(524),val(113))));
   final Action checked= action("checked",on("ubuntu_gnome",()->waitUntilTime(val(27000))));
   final Action tileBack= action("tileBack",on("ubuntu_gnome",()->waitUntilTime(val(33000))));
   final Action managerQuit= action("managerQuit",on("ubuntu_gnome",()->waitUntilTime(val(38000))));
@@ -29,7 +29,7 @@ final class FolderGoneTest extends ManagerTest{
     runInTerminal(appsShown,terminalShown);
     managerShown.go();
     var tile= new Rectangle(69,95,128,85);
-    var output= new Rectangle(410,190,1000,60);
+    var output= new Rectangle(410,168,1000,80);
     var valid= look();
     Files.move(gone,moved);
     stabilize();
