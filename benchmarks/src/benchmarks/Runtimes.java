@@ -67,15 +67,16 @@ public final class Runtimes{
     var c= new Coordinator(){
       @Override public Path modsPath(){ return ResolveResource.coordinatorJars; }
       @Override public BackendTools backendTools(String pkgName, SourceOracle oracle, OtherPackages other, List<Literal> core, CapabilityEnvironment capabilities){
-        return BackendTools.of(pkgName, oracle, other, core, scratch, baseCachePath(), scratch.resolve("_discardedTest","_discardedTest.fear"), rtPath, capabilities);
+        return BackendTools.of(pkgName, oracle, other, core, scratch, baseCachePath(), Optional.empty(), rtPath, capabilities);
       }
     };
     OutputOracle o= ()->scratch;
     var other= OtherPackages.empty();
     var oracle= c.sourceOracle(basePath);
     var rich= SourceOracleWithAutoload.ofBase(oracle);
-    var core= c.frontend("base", rich.sources(oracle.allFiles()), rich.oracle(), other, Map.of());
-    c.backend("base", core, rich.oracle(), other, new CapabilityEnvironment(rich.autoloadedAssets()));
+    var capabilities= new CapabilityEnvironment(rich.autoloadedAssets());
+    var core= c.frontend("base", rich.sources(Coordinator.withoutGeneratedTests("base", oracle.allFiles())), rich.oracle(), other, Map.of(), capabilities);
+    c.backend("base", core, rich.oracle(), other, capabilities);
     o.commitPkgApi("base", core, -1);
     Fs.copyFresh(scratch.resolve("base.json"), baseCache.resolve("base.json"));
     Fs.copyFresh(scratch.resolve("gen_java").resolve("base.jar"), baseCache.resolve("base.jar"));
