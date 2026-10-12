@@ -75,7 +75,7 @@ public final class Runtimes{
     var oracle= c.sourceOracle(basePath);
     var rich= SourceOracleWithAutoload.ofBase(oracle);
     var capabilities= new CapabilityEnvironment(rich.autoloadedAssets());
-    var core= c.frontend("base", rich.sources(Coordinator.withoutGeneratedTests("base", oracle.allFiles())), rich.oracle(), other, Map.of(), capabilities);
+    var core= c.frontend("base", rich.sources(oracle.allFiles()), rich.oracle(), other, Map.of(), capabilities);
     c.backend("base", core, rich.oracle(), other, capabilities);
     o.commitPkgApi("base", core, -1);
     Fs.copyFresh(scratch.resolve("base.json"), baseCache.resolve("base.json"));
