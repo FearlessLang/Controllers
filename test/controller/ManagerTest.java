@@ -167,6 +167,7 @@ final class ManagerTest{
     var res= dir.resolve(name);
     Fs.writeUtf8(res.resolve("_"+name).resolve("_rank_app.fear"),"Hello: base.Main{ sys -> sys.out.println(\"Hello World!\") }\n");
     Fs.writeUtf8(res.resolve(name+".fearless"),MakeDemo.markerContent);
+    FactsTest.backdated(res);
     send(m,"Register",TaggedText.of(res.toString()));
     send(m,"Kind",name,"code");
     return res;
@@ -756,7 +757,7 @@ final class ManagerTest{
       reads.add(f);
       var src= f.resolve("_hello").resolve("_rank_app.fear");
       Fs.writeUtf8(src,Fs.readUtf8(src)+"//saved\n");
-      Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(System.currentTimeMillis()+60_000)));
+      Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(FactsTest.after(f))));
       return Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear"));
     });
     var hello= code(m,dir,"hello");
@@ -878,7 +879,7 @@ final class ManagerTest{
   private static String compileError(Path project){ return Fs.readUtf8(project.resolve(Facts.outDir).resolve("compile_error.txt")); }
   private static void touch(Path project){
     var src= project.resolve("_"+project.getFileName()).resolve("_rank_app.fear");
-    Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(Fs.lastModified(src)+60_000)));
+    Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(FactsTest.after(project))));
   }
   @Test void aCompileClaimsTheExtensionsOfItsMainsInfoAndANewManagerClaimsThemAgain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
