@@ -9,8 +9,12 @@ import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
+
+import javax.imageio.ImageIO;
 
 import utils.Bug;
 
@@ -76,6 +80,15 @@ public final class Pilot{
     g.drawOval(at.x-8,at.y-8,16,16);
     g.dispose();
     return res;
+  }
+  public static void main(String[] args) throws IOException{
+    var pilot= new Pilot();
+    var img= switch(args[0]){
+      case "seen" -> pilot.seen();
+      case "shot" -> pilot.shot();
+      default -> throw Bug.of("The first argument is \"seen\" or \"shot\", not \""+args[0]+"\"");
+    };
+    ImageIO.write(img,"png",new File(args[1]));
   }
   private static boolean blank(BufferedImage img){
     var px= img.getRGB(0,0,img.getWidth(),img.getHeight(),null,0,img.getWidth());
