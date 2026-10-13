@@ -2,7 +2,6 @@ package agentTools;
 
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -12,12 +11,15 @@ final class SystemExtensionTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(980),val(113))),
     on("xubuntu_xfce",()->click(val(986),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openOpens= action("openOpens",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openOpensMarker= action("openOpensMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -30,6 +32,9 @@ final class SystemExtensionTest extends ManagerTest{
   final Action questionShown= action("questionShown",
     on("ubuntu_gnome",()->waitAfter(val(21000))),
     on("xubuntu_xfce",()->waitAfter(val(26000))));
+  final Action yesButton= action("yesButton",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action allowed= action("allowed",
     on("ubuntu_gnome",()->waitAfter(val(4500))),
     on("xubuntu_xfce",()->waitAfter(val(5500))));
@@ -39,43 +44,31 @@ final class SystemExtensionTest extends ManagerTest{
   final Action compiled= action("compiled",
     on("ubuntu_gnome",()->waitAfter(val(21000))),
     on("xubuntu_xfce",()->waitAfter(val(26500))));
-  final Action appsShownFiles= action("appsShownFiles",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(3500))));
-  final Action terminalShownFiles= action("terminalShownFiles",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
-  final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitAfter(val(15500))),
-    on("xubuntu_xfce",()->waitAfter(val(19500))));
   final Action openLetter= action("openLetter",
-    on("ubuntu_gnome",()->doubleClick(val(912),val(375))),
-    on("xubuntu_xfce",()->doubleClick(val(1015),val(425))));
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action letterRun= action("letterRun",
     on("ubuntu_gnome",()->waitAfter(val(10000))),
     on("xubuntu_xfce",()->waitAfter(val(12500))));
-  final Action closeFiles= action("closeFiles",
-    on("ubuntu_gnome",()->click(val(1414),val(303))),
-    on("xubuntu_xfce",()->click(val(1275),val(309))));
-  final Action filesClosed= action("filesClosed",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var opens= filesIOFolder.resolve("opens");
+    var opens= files.resolve("opens");
     var icons= opens.resolve("_hello").resolve("icons");
-    Fs.rmTree(opens);
     Fs.writeUtf8(opens.resolve("opens.fearless"),"\n");
     Fs.writeUtf8(opens.resolve("_hello").resolve("_rank_app.fear"),"use base.Main as Main;\nuse base.OpenWith as OpenWith;\n\nHello:Main, OpenWith[IconsHello,\"fzz\"]{s->base.Debug#(`hello`)}\n");
     Fs.ensureDir(icons);
     Fs.ofV(()->ImageIO.write(new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB),"png",icons.resolve("hello.png").toFile()));
     Fs.writeUtf8(opens.resolve("letter.fzz"),"dear reader\n");
-    launchScript("first",opens.resolve("opens.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openOpens.go();
+    openOpensMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     var center= new Rectangle(760,460,400,160);
@@ -84,8 +77,8 @@ final class SystemExtensionTest extends ManagerTest{
     questionShown.go();
     changed(before,center);
     stabilize();
-    checkContent(List.of("opens",".fearless_out","compile_error.txt"),"The system extension \"fzz\" of [###] of main \"hello.Hello\" is not in \"systemExtensions\" of projects.info.");
-    closeDialog.go();
+    checkContent(files.resolve("opens/.fearless_out/compile_error.txt"),"The system extension \"fzz\" of [###] of main \"hello.Hello\" is not in \"systemExtensions\" of projects.info.");
+    yesButton.go();
     allowed.go();
     stabilize();
     checkContent(info,"""
@@ -103,18 +96,15 @@ final class SystemExtensionTest extends ManagerTest{
     compiled.go();
     var output= inWindow(410,168,1000,80);
     var compiledLook= look();
-    shell("nohup setsid -f xdg-open \""+opens+"\" >/dev/null 2>&1\n");
-    runInTerminal(appsShownFiles,terminalShownFiles);
-    filesShown.go();
+    toFiles();
+    openOpens.go();
     openLetter.go();
+    closeFileManager.go();
     letterRun.go();
-    closeFiles.go();
-    filesClosed.go();
     changed(compiledLook,output);
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,output);
   }
 }

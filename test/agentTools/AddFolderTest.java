@@ -1,15 +1,8 @@
 package agentTools;
 
 import java.awt.Rectangle;
-import java.util.List;
 
 final class AddFolderTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -28,6 +21,9 @@ final class AddFolderTest extends ManagerTest{
   final Action fileName= action("fileName",
     on("ubuntu_gnome",()->click(val(1040),val(640))),
     on("xubuntu_xfce",()->click(val(1007),val(637))));
+  final Action openButton= action("openButton",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action tileShown= action("tileShown",
     on("ubuntu_gnome",()->waitAfter(val(13500))),
     on("xubuntu_xfce",()->waitAfter(val(17000))));
@@ -35,10 +31,9 @@ final class AddFolderTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
-    noManagerData();
     var project= project("helloWorld");
-    launchScript("first");
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
     var center= new Rectangle(760,460,400,160);
     var tiles= inWindow(69,95,128,85);
@@ -56,7 +51,8 @@ final class AddFolderTest extends ManagerTest{
     addFolder.go();
     chooserShownAgain.go();
     fileName.go();
-    type(project+"\n");
+    type(project.toString());
+    openButton.go();
     tileShown.go();
     changed(empty,tiles);
     stabilize();
@@ -74,7 +70,6 @@ final class AddFolderTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,tiles);
   }
 }

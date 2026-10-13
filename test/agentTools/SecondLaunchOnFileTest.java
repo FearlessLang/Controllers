@@ -1,23 +1,21 @@
 package agentTools;
 
-import java.util.List;
-
 final class SecondLaunchOnFileTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openHelloWorld= action("openHelloWorld",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openHelloWorldMarker= action("openHelloWorldMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
-  final Action appsShownSecond= action("appsShownSecond",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
-  final Action terminalShownSecond= action("terminalShownSecond",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+  final Action openHelloStackTraces= action("openHelloStackTraces",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openStartMarker= action("openStartMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome",()->waitAfter(val(10000))),
     on("xubuntu_xfce",()->waitAfter(val(12500))));
@@ -25,17 +23,21 @@ final class SecondLaunchOnFileTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
     var project= project("helloWorld");
     var other= project("helloStackTraces");
-    launchScript("first",project.resolve("hello_world.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
-    launchScript("second",other.resolve("start.fearless"));
-    runInTerminal(appsShownSecond,terminalShownSecond);
+    toFiles();
+    openHelloWorld.go();
+    openHelloWorldMarker.go();
+    closeFileManager.go();
+    toFiles();
+    openHelloStackTraces.go();
+    openStartMarker.go();
+    closeFileManager.go();
     secondShown.go();
     stabilize();
-    checkContent(List.of("second.exit"),"0\n");
     checkContent(info,"""
       {
         "projects": {
@@ -54,7 +56,6 @@ final class SecondLaunchOnFileTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,inWindow(100,200,200,400));
   }
 }

@@ -3,7 +3,6 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.file.Files;
-import java.util.List;
 
 import tools.Fs;
 
@@ -11,12 +10,15 @@ final class TileDoubleClickTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(989),val(113))),
     on("xubuntu_xfce",()->click(val(998),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openTapped= action("openTapped",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openTappedMarker= action("openTappedMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -45,14 +47,17 @@ final class TileDoubleClickTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var tapped= filesIOFolder.resolve("tapped");
-    Fs.rmTree(tapped);
+    var tapped= files.resolve("tapped");
     Fs.writeUtf8(tapped.resolve("tapped.fearless"),"\n");
     Fs.writeUtf8(tapped.resolve("_tapped").resolve("_rank_app.fear"),"use base.Main as Main;\n\nGo: Main{sys -> sys.out.println \"went\"}\n");
-    launchScript("first",tapped.resolve("tapped.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openTapped.go();
+    openTappedMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     var output= inWindow(410,168,1000,80);
@@ -73,7 +78,6 @@ final class TileDoubleClickTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,output);
   }
 }

@@ -1,7 +1,6 @@
 package agentTools;
 
 import java.awt.Rectangle;
-import java.util.List;
 
 final class EditMetadataConflictTest extends ManagerTest{
   static final String two= """
@@ -19,12 +18,15 @@ final class EditMetadataConflictTest extends ManagerTest{
       "systemExtensions": []
     }
     """;
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openHelloWorld= action("openHelloWorld",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openHelloWorldMarker= action("openHelloWorldMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -34,12 +36,12 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action kindIdle= action("kindIdle",
     on("ubuntu_gnome",()->doubleClick(val(730),val(376))),
     on("xubuntu_xfce",()->doubleClick(val(697),val(373))));
-  final Action appsShownSecond= action("appsShownSecond",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
-  final Action terminalShownSecond= action("terminalShownSecond",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+  final Action openHelloStackTraces= action("openHelloStackTraces",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openStartMarker= action("openStartMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action secondHanded= action("secondHanded",
     on("ubuntu_gnome",()->waitAfter(val(11000))),
     on("xubuntu_xfce",()->waitAfter(val(14000))));
@@ -49,6 +51,9 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome",()->waitAfter(val(4000))),
     on("xubuntu_xfce",()->waitAfter(val(5000))));
+  final Action okButton= action("okButton",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action close= action("close",
     on("ubuntu_gnome",()->click(val(1357),val(830))),
     on("xubuntu_xfce",()->click(val(1324),val(827))));
@@ -71,23 +76,28 @@ final class EditMetadataConflictTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
     var project= project("helloWorld");
     var other= project("helloStackTraces");
-    launchScript("first",project.resolve("hello_world.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openHelloWorld.go();
+    openHelloWorldMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
     kindIdle.go();
     type("code");
-    launchScript("second",other.resolve("start.fearless"));
-    runInTerminal(appsShownSecond,terminalShownSecond);
+    toFiles();
+    openHelloStackTraces.go();
+    openStartMarker.go();
+    closeFileManager.go();
     secondHanded.go();
     var both= two.formatted(slashed(project),"idle",slashed(other));
     stabilize();
-    checkContent(List.of("second.exit"),"0\n");
     checkContent(info,both);
     var center= new Rectangle(760,460,400,160);
     var editor= look();
@@ -96,7 +106,7 @@ final class EditMetadataConflictTest extends ManagerTest{
     changed(editor,center);
     stabilize();
     checkContent(info,both);
-    closeDialog.go();
+    okButton.go();
     same(editor,center);
     close.go();
     editorClosed.go();
@@ -113,7 +123,6 @@ final class EditMetadataConflictTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,center);
   }
 }

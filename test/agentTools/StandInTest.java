@@ -1,10 +1,6 @@
 package agentTools;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.awt.Rectangle;
-import java.nio.file.Files;
-import java.util.List;
 import java.util.stream.Stream;
 
 import tools.Fs;
@@ -19,12 +15,15 @@ final class StandInTest extends ManagerTest{
   final Action closeWindowBare= action("closeWindowBare",
     on("ubuntu_gnome",()->click(val(1902),val(50))),
     on("xubuntu_xfce",()->click(val(1909),val(10))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+  final Action openHelloWorld= action("openHelloWorld",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openHelloWorldMarker= action("openHelloWorldMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(22000))));
@@ -68,23 +67,25 @@ final class StandInTest extends ManagerTest{
     Pilot.pause(2000);
   }
   @Override void walk() throws Throwable{
-    noManagerData();
-    var project= project("helloWorld");
+    project("helloWorld");
     var tiles= inWindow(100,200,200,400);
     var corner= new Rectangle(1888,1048,32,32);
     trayOff.go();
     try{
-      launchScript("first",project.resolve("hello_world.fearless"));
-      runInTerminal(appsShown,terminalShown);
+      var bare= look();
+      start();
       managerShown.go();
+      toFiles();
+      openHelloWorld.go();
+      openHelloWorldMarker.go();
+      closeFileManager.go();
+      projectShown.go();
       var shown= look();
       closeWindowBare.go();
       managerHidden.go();
       changed(shown,tiles);
       changed(shown,corner);
       var hidden= look();
-      stabilize();
-      assertFalse(Files.exists(filesIOFolder.resolve("first.exit")));
       standIn.go();
       menuShown.go();
       changed(hidden,corner);
@@ -100,8 +101,7 @@ final class StandInTest extends ManagerTest{
       changed(hidden,corner);
       quitItem.go();
       managerQuit.go();
-      stabilize();
-      checkContent(List.of("first.exit"),"0\n");
+      same(bare,tiles);
     }
     finally{ trayOn.go(); }
   }

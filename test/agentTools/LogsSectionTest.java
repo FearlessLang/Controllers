@@ -2,7 +2,6 @@ package agentTools;
 
 import java.awt.Rectangle;
 import java.nio.file.Files;
-import java.util.List;
 
 import tools.Fs;
 import utils.Err;
@@ -12,12 +11,6 @@ final class LogsSectionTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(971),val(113))),
     on("xubuntu_xfce",()->click(val(978),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -57,10 +50,17 @@ final class LogsSectionTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
+  final Action openDiary= action("openDiary",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openDiaryMarker= action("openDiaryMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var diary= filesIOFolder.resolve("diary");
-    Fs.rmTree(diary);
+    var diary= files.resolve("diary");
     Fs.writeUtf8(diary.resolve("diary.fearless"),"\n");
     Fs.writeUtf8(diary.resolve("_diary").resolve("_rank_app.fear"),"""
       use base.Main as Main;
@@ -69,9 +69,13 @@ final class LogsSectionTest extends ManagerTest{
       Diary: FileLog{"diary"}
       Write: Main{sys -> Diary.log("dear diary")}
       """);
-    launchScript("first",diary.resolve("diary.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    start();
     managerShown.go();
+    toFiles();
+    openDiary.go();
+    openDiaryMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     compile.go();
@@ -85,9 +89,9 @@ final class LogsSectionTest extends ManagerTest{
     changed(empty,list);
     stabilize();
     var logs= "diary/.out/logs/diary";
-    var log= Fs.walk(filesIOFolder.resolve(logs),s->OneOr.of("one log",s.filter(Files::isRegularFile)));
+    var log= Fs.walk(files.resolve(logs),s->OneOr.of("one log",s.filter(Files::isRegularFile)));
     Err.strCmp("Diary$[###].log",log.getFileName().toString());
-    checkContent(List.of(logs,log.getFileName().toString()),"[###] dear diary\n");
+    checkContent(log,"[###] dear diary\n");
     var listed= look();
     logsButton.go();
     filesShown.go();
@@ -97,7 +101,5 @@ final class LogsSectionTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
   }
 }

@@ -1,7 +1,5 @@
 package agentTools;
 
-import java.util.List;
-
 import tools.Fs;
 
 final class StaleMainTest extends ManagerTest{
@@ -21,12 +19,15 @@ final class StaleMainTest extends ManagerTest{
       "systemExtensions": []
     }
     """;
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openMenu= action("openMenu",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openMenuMarker= action("openMenuMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -70,15 +71,18 @@ final class StaleMainTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var menu= filesIOFolder.resolve("menu");
+    var menu= files.resolve("menu");
     var source= menu.resolve("_menu").resolve("_rank_app.fear");
-    Fs.rmTree(menu);
     Fs.writeUtf8(menu.resolve("menu.fearless"),"\n");
     Fs.writeUtf8(source,mains+"Third: Main{sys -> sys.out.println \"Third\"}\n");
-    launchScript("first",menu.resolve("menu.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openMenu.go();
+    openMenuMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     compile.go();
@@ -105,7 +109,6 @@ final class StaleMainTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,button);
   }
 }

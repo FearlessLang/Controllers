@@ -1,19 +1,11 @@
 package agentTools;
 
-import java.util.List;
-
 import tools.Fs;
 
 final class OutputClearTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(962),val(113))),
     on("xubuntu_xfce",()->click(val(968),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -47,15 +39,26 @@ final class OutputClearTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
+  final Action openSaid= action("openSaid",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openSaidMarker= action("openSaidMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var said= filesIOFolder.resolve("said");
-    Fs.rmTree(said);
+    var said= files.resolve("said");
     Fs.writeUtf8(said.resolve("said.fearless"),"\n");
     Fs.writeUtf8(said.resolve("_said").resolve("_rank_app.fear"),"use base.Main as Main;\n\nSay: Main{sys -> sys.out.println \"said once\"}\n");
-    launchScript("first",said.resolve("said.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    start();
     managerShown.go();
+    toFiles();
+    openSaid.go();
+    openSaidMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     var output= inWindow(410,170,1000,90);
@@ -75,7 +78,5 @@ final class OutputClearTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
   }
 }

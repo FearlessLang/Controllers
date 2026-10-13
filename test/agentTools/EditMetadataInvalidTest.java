@@ -1,15 +1,17 @@
 package agentTools;
 
 import java.awt.Rectangle;
-import java.util.List;
 
 final class EditMetadataInvalidTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openHelloWorld= action("openHelloWorld",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openHelloWorldMarker= action("openHelloWorldMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -25,6 +27,9 @@ final class EditMetadataInvalidTest extends ManagerTest{
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome",()->waitAfter(val(8500))),
     on("xubuntu_xfce",()->waitAfter(val(10500))));
+  final Action okButton= action("okButton",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action close= action("close",
     on("ubuntu_gnome",()->click(val(1357),val(830))),
     on("xubuntu_xfce",()->click(val(1324),val(827))));
@@ -35,7 +40,6 @@ final class EditMetadataInvalidTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
-    noManagerData();
     var project= project("helloWorld");
     var idle= """
       {
@@ -48,9 +52,14 @@ final class EditMetadataInvalidTest extends ManagerTest{
         "systemExtensions": []
       }
       """.formatted(slashed(project));
-    launchScript("first",project.resolve("hello_world.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openHelloWorld.go();
+    openHelloWorldMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
@@ -63,7 +72,7 @@ final class EditMetadataInvalidTest extends ManagerTest{
     changed(editor,center);
     stabilize();
     checkContent(info,idle);
-    closeDialog.go();
+    okButton.go();
     same(editor,center);
     close.go();
     editorClosed.go();
@@ -73,7 +82,6 @@ final class EditMetadataInvalidTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,center);
   }
 }

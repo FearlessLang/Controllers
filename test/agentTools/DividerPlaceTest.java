@@ -1,18 +1,17 @@
 package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
-import java.nio.file.Files;
-import java.util.List;
 
 final class DividerPlaceTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openHelloWorld= action("openHelloWorld",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openHelloWorldMarker= action("openHelloWorldMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -28,12 +27,6 @@ final class DividerPlaceTest extends ManagerTest{
   final Action tilesGone= action("tilesGone",
     on("ubuntu_gnome",()->listEnd(val(200),val(700),val(200))),
     on("xubuntu_xfce",()->listEnd(val(133),val(680),val(133))));
-  final Action appsShownSecond= action("appsShownSecond",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
-  final Action terminalShownSecond= action("terminalShownSecond",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action secondEnded= action("secondEnded",
     on("ubuntu_gnome",()->waitAfter(val(15500))),
     on("xubuntu_xfce",()->waitAfter(val(19500))));
@@ -43,72 +36,58 @@ final class DividerPlaceTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(6500))),
     on("xubuntu_xfce",()->waitAfter(val(8000))));
-  final Action appsShownThird= action("appsShownThird",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
-  final Action terminalShownThird= action("terminalShownThird",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action thirdShown= action("thirdShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(22000))));
   final Action thirdQuit= action("thirdQuit",
     on("ubuntu_gnome",()->waitAfter(val(6500))),
     on("xubuntu_xfce",()->waitAfter(val(8000))));
-  final Action appsShownFourth= action("appsShownFourth",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
-  final Action terminalShownFourth= action("terminalShownFourth",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action fourthShown= action("fourthShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(22000))));
+  final Action projectShownFourth= action("projectShownFourth",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action fourthQuit= action("fourthQuit",
     on("ubuntu_gnome",()->waitAfter(val(6500))),
     on("xubuntu_xfce",()->waitAfter(val(8000))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var project= project("helloWorld");
-    launchScript("first",project.resolve("hello_world.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    project("helloWorld");
+    start();
     managerShown.go();
+    toFiles();
+    openHelloWorld.go();
+    openHelloWorldMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     tilesEnd.go();
     closeWindow.go();
     managerHidden.go();
     tilesGone.go();
-    stabilize();
-    assertFalse(Files.exists(filesIOFolder.resolve("first.exit")));
-    launchScript("second");
-    runInTerminal(appsShownSecond,terminalShownSecond);
+    start();
     secondEnded.go();
-    stabilize();
-    checkContent(List.of("second.exit"),"0\n");
     managerBack.go();
     tilesEnd.go();
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
-    launchScript("third");
-    runInTerminal(appsShownThird,terminalShownThird);
+    start();
     thirdShown.go();
     tilesWhole.go();
     managerMenu.go();
     quitManager.go();
     thirdQuit.go();
-    stabilize();
-    checkContent(List.of("third.exit"),"0\n");
-    launchScript("fourth",project.resolve("hello_world.fearless"));
-    runInTerminal(appsShownFourth,terminalShownFourth);
+    start();
     fourthShown.go();
+    toFiles();
+    openHelloWorld.go();
+    openHelloWorldMarker.go();
+    closeFileManager.go();
+    projectShownFourth.go();
     tilesEnd.go();
     managerMenu.go();
     quitManager.go();
     fourthQuit.go();
-    stabilize();
-    checkContent(List.of("fourth.exit"),"0\n");
   }
   void listEnd(int x, int y, int end){
     var shot= pilot.shot();

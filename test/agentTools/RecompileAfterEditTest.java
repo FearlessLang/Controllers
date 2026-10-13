@@ -1,7 +1,5 @@
 package agentTools;
 
-import java.util.List;
-
 import tools.Fs;
 
 final class RecompileAfterEditTest extends ManagerTest{
@@ -9,12 +7,15 @@ final class RecompileAfterEditTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(971),val(113))),
     on("xubuntu_xfce",()->click(val(976),val(93))));
   static final String first= "use base.Main as Main;\n\nFirst:Main{s->base.Debug#(\"first\")}\n";
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openDraft= action("openDraft",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openDraftMarker= action("openDraftMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -40,21 +41,24 @@ final class RecompileAfterEditTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var draft= filesIOFolder.resolve("draft");
+    var draft= files.resolve("draft");
     var source= draft.resolve("_draft").resolve("_rank_app.fear");
-    Fs.rmTree(draft);
     Fs.writeUtf8(draft.resolve("draft.fearless"),"\n");
     Fs.writeUtf8(source,first);
-    launchScript("first",draft.resolve("draft.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openDraft.go();
+    openDraftMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     compile.go();
     firstCompiled.go();
     stabilize();
-    checkContent(List.of("draft",".fearless_out","mains.info"),"{\n  \"draft.First\": [###]\n}\n");
+    checkContent(files.resolve("draft/.fearless_out/mains.info"),"{\n  \"draft.First\": [###]\n}\n");
     var button= inWindow(509,102,30,20);
     var runnable= look();
     Fs.writeUtf8(source,first+"Second:Main{s->base.Debug#(\"second\")}\n");
@@ -66,11 +70,10 @@ final class RecompileAfterEditTest extends ManagerTest{
     editedCompiled.go();
     changed(outdated,button);
     stabilize();
-    checkContent(List.of("draft",".fearless_out","mains.info"),"{\n  \"draft.First\": [###],\n  \"draft.Second\": [###]\n}\n");
+    checkContent(files.resolve("draft/.fearless_out/mains.info"),"{\n  \"draft.First\": [###],\n  \"draft.Second\": [###]\n}\n");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,button);
   }
 }

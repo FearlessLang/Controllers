@@ -3,7 +3,6 @@ package agentTools;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
-import java.util.List;
 
 import tools.Fs;
 
@@ -14,24 +13,12 @@ final class LinkWriteTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(974),val(113))),
     on("xubuntu_xfce",()->click(val(980),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action dataSaved= action("dataSaved",
     on("ubuntu_gnome",()->waitAfter(val(4500))),
     on("xubuntu_xfce",()->waitAfter(val(6000))));
-  final Action appsShownTeller= action("appsShownTeller",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(3500))));
-  final Action terminalShownTeller= action("terminalShownTeller",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action tellerShown= action("tellerShown",
     on("ubuntu_gnome",()->waitAfter(val(11000))),
     on("xubuntu_xfce",()->waitAfter(val(13500))));
@@ -71,26 +58,72 @@ final class LinkWriteTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
+  final Action openLedger= action("openLedger",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openVault= action("openVault",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openVaultMarker= action("openVaultMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action vaultListed= action("vaultListed",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
+  final Action openLedgerAgain= action("openLedgerAgain",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openTeller= action("openTeller",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openTellerMarker= action("openTellerMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action leaveWriteField= action("leaveWriteField",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  final Action leaveReadField= action("leaveReadField",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  final Action okButton= action("okButton",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  final Action selectRead= action("selectRead",
+    on("ubuntu_gnome",()->waitDrag(val(null),val(null),val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDrag(val(null),val(null),val(null),val(null),val(null))));
+  final Action leaveReadFieldAgain= action("leaveReadFieldAgain",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  final Action selectWrite= action("selectWrite",
+    on("ubuntu_gnome",()->waitDrag(val(null),val(null),val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDrag(val(null),val(null),val(null),val(null),val(null))));
+  final Action leaveWriteFieldAgain= action("leaveWriteFieldAgain",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var ledger= filesIOFolder.resolve("ledger");
+    var ledger= files.resolve("ledger");
     var vault= ledger.resolve("vault");
     var teller= ledger.resolve("teller");
-    Fs.rmTree(ledger);
     Fs.writeUtf8(vault.resolve("vault.fearless"),"\n");
     Fs.writeUtf8(vault.resolve("_vault").resolve("_rank_app.fear"),"Coin:{}\n");
     Fs.writeUtf8(teller.resolve("teller.fearless"),"\n");
     Fs.writeUtf8(teller.resolve("_teller").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"teller\")}\n");
-    launchScript("first",vault.resolve("vault.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    start();
     managerShown.go();
+    toFiles();
+    openLedger.go();
+    openVault.go();
+    openVaultMarker.go();
+    closeFileManager.go();
+    vaultListed.go();
     becomeEditableData.go();
     dataSaved.go();
-    launchScript("second",teller.resolve("teller.fearless"));
-    runInTerminal(appsShownTeller,terminalShownTeller);
+    toFiles();
+    openLedgerAgain.go();
+    openTeller.go();
+    openTellerMarker.go();
+    closeFileManager.go();
     tellerShown.go();
-    stabilize();
-    checkContent(List.of("second.exit"),"0\n");
     becomeCode.go();
     codeSaved.go();
     stabilize();
@@ -99,7 +132,8 @@ final class LinkWriteTest extends ManagerTest{
     openLinks.go();
     linksShown.go();
     writeField.go();
-    type("Coin\n");
+    type("Coin");
+    leaveWriteField.go();
     editsSaved.go();
     stabilize();
     var edits= registry(vault,teller,"""
@@ -110,32 +144,30 @@ final class LinkWriteTest extends ManagerTest{
     checkContent(info,edits);
     var before= look();
     readField.go();
-    type("Coin\n");
+    type("Coin");
+    leaveReadField.go();
     noteShown.go();
     changed(before,new Rectangle(760,460,400,160));
     stabilize();
     checkContent(info,edits);
-    closeDialog.go();
+    okButton.go();
     readFieldAgain.go();
-    empty();
+    selectRead.go();
+    keys(KeyEvent.VK_BACK_SPACE);
+    leaveReadFieldAgain.go();
     readEmptied.go();
     stabilize();
     checkContent(info,edits);
     writeFieldAgain.go();
-    empty();
+    selectWrite.go();
+    keys(KeyEvent.VK_BACK_SPACE);
+    leaveWriteFieldAgain.go();
     writeEmptied.go();
     stabilize();
     checkContent(info,unlinked);
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
-  }
-  void empty(){
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
-    keys(KeyEvent.VK_BACK_SPACE);
-    keys(KeyEvent.VK_ENTER);
   }
   static String registry(Path vault, Path teller, String links){
     return """
