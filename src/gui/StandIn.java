@@ -27,6 +27,7 @@ final class StandIn{
   private static JWindow make(){
     var res= new JWindow();
     res.setName("standIn");
+    res.setType(java.awt.Window.Type.POPUP);
     res.setAlwaysOnTop(true);
     res.setSize(side, side);
     var icon= new JLabel(new ImageIcon(Icons.app().getScaledInstance(side, side, Image.SCALE_SMOOTH)));
