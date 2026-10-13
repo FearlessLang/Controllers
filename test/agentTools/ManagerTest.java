@@ -167,6 +167,7 @@ abstract class ManagerTest{
     on("fedora_cosmic",()->waitClick(val(null),val(null),val(null))),
     on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(66),val(110))));
+  //the icon of the manager in the tray: a white F on an orange and blue square
   final Action trayIcon= action("trayIcon",
     on("ubuntu_gnome",()->waitClick(val(100),val(1736),val(15))),
     on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
