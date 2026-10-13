@@ -191,7 +191,6 @@ abstract class ManagerTest{
     var line= Stream.concat(Stream.of(app.resolve("bin").resolve(app.getFileName().toString())),Stream.of(args)).map(a->"\""+a+"\"").collect(Collectors.joining(" "));
     shell("nohup setsid -f sh -c '"+line+"; echo $? >"+filesIOFolder.resolve(exit+".exit")+"' >/dev/null 2>&1\n");
   }
-  void endScript(){ shell("pkill -KILL -f '^"+app+"/'\n"); }
   void runInTerminal(Action appsShown, Action terminalShown) throws Throwable{
     showApps.go();
     appsShown.go();
