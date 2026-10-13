@@ -47,7 +47,7 @@ final class WindowCloseTest extends ManagerTest{
     project("helloWorld");
     var tiles= inWindow(100,200,200,400);
     var bare= look();
-    start();
+    start();//filesIcon, pilotioBookmark, openApp or openAppNextToManagerFolder, openBin, openLauncher (double click fearlessManaged0_001w): see ManagerTest.start()
     managerShown.go();
     toFiles();
     openHelloWorld.go();
@@ -58,7 +58,7 @@ final class WindowCloseTest extends ManagerTest{
     closeWindow.go();
     managerHidden.go();
     changed(shown,tiles);
-    start();
+    start();//filesIcon, pilotioBookmark, openApp or openAppNextToManagerFolder, openBin, openLauncher (double click fearlessManaged0_001w): see ManagerTest.start()
     managerBack.go();
     same(shown,tiles);
     closeWindow.go();
@@ -76,6 +76,7 @@ final class WindowCloseTest extends ManagerTest{
     trayMenuShownAgain.go();
     trayQuit.go();
     managerQuit.go();
+    closeFileManager.go();
     same(bare,tiles);
   }
 }

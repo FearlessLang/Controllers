@@ -188,6 +188,7 @@ abstract class ManagerTest{
   final Action openBin= action("openBin",
     on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  //double clicks fearlessManaged0_001w, the launcher whose name ends with w
   final Action openLauncher= action("openLauncher",
     on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
@@ -201,12 +202,14 @@ abstract class ManagerTest{
     filesIcon.go();
     pilotioBookmark.go();
   }
+  //the actions of start(), in this order: filesIcon, pilotioBookmark, openApp (openAppNextToManagerFolder when the manager folder fearless0_001 is next to the app), openBin, openLauncher.
+  //Before filesIcon the manager is not started; the manager window shows only after openLauncher.
+  //start() leaves the file manager open, behind the manager window.
   void start() throws Throwable{
     toPilotio();
     (Files.exists(filesIOFolder.resolve(data)) ? openAppNextToManagerFolder : openApp).go();
     openBin.go();
     openLauncher.go();
-    closeFileManager.go();
   }
   void toFiles() throws Throwable{
     toPilotio();
