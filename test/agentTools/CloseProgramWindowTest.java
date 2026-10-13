@@ -6,43 +6,44 @@ import tools.Fs;
 
 final class CloseProgramWindowTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(967), val(113))),
-    on("xubuntu_xfce", () -> click(val(972), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(967), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(972), val(93))));
   final Action openShut= action("openShut",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
+  //double clicks the marker, the file ending with .fearless; not the folder starting with _
   final Action openShutMarker= action("openShutMarker",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome", () -> waitAfter(val(null))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome", () -> waitAfter(val(17500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome", () -> waitAfter(val(4500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(520), val(113))),
-    on("xubuntu_xfce", () -> click(val(477), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(535), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(477), val(93))));
   final Action compiled= action("compiled",
-    on("ubuntu_gnome", () -> waitAfter(val(21000))),
+    on("ubuntu_gnome", () -> waitAfter(val(2000))),//the compile of shut runs in its own JVM
     on("xubuntu_xfce", () -> waitAfter(val(26000))));
   final Action run= action("run",
-    on("ubuntu_gnome", () -> click(val(520), val(113))),
-    on("xubuntu_xfce", () -> click(val(462), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(522), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(462), val(93))));
   final Action programShown= action("programShown",
-    on("ubuntu_gnome", () -> waitAfter(val(8500))),
+    on("ubuntu_gnome", () -> waitAfter(val(1500))),//the main of shut starts in its own JVM and opens its window
     on("xubuntu_xfce", () -> waitAfter(val(10500))));
   final Action closeProgram= action("closeProgram",
-    on("ubuntu_gnome", () -> click(val(1037), val(527))),
-    on("xubuntu_xfce", () -> click(val(1012), val(524))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(1036), val(527))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(1012), val(524))));
   final Action programEnded= action("programEnded",
-    on("ubuntu_gnome", () -> waitAfter(val(4500))),
+    on("ubuntu_gnome", () -> waitAfter(val(500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome", () -> waitAfter(val(7000))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(8500))));
   @Override void walk() throws Throwable{
     var shut= files.resolve("shut");
@@ -61,7 +62,6 @@ final class CloseProgramWindowTest extends ManagerTest{
     toFiles();
     openShut.go();
     openShutMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -81,6 +81,7 @@ final class CloseProgramWindowTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, button);
   }
 }
