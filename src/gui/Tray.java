@@ -11,6 +11,7 @@ import java.util.Arrays;
 
 import javax.swing.JPopupMenu;
 import javax.swing.JWindow;
+import javax.swing.SwingUtilities;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 
@@ -24,8 +25,6 @@ import tools.Fs;
 /// The icon lives for the whole process life and is removed by process death.
 public final class Tray{
   public static boolean install(Window window){
-    if (Fs.isLinux()){ return Sni.install(() -> Main.command("Show"), () -> Main.command("Quit"), Icons.app()); }
-    if (!SystemTray.isSupported()){ return false; }
     var menu= menu();
     var anchor= new JWindow();
     anchor.setAlwaysOnTop(true);
@@ -34,6 +33,8 @@ public final class Tray{
       @Override public void popupMenuWillBecomeInvisible(PopupMenuEvent e){ anchor.setVisible(false); }
       @Override public void popupMenuCanceled(PopupMenuEvent e){}
     });
+    if (Fs.isLinux()){ return Sni.install(() -> Main.command("Show"), () -> Main.command("Quit"), at -> SwingUtilities.invokeLater(() -> open(anchor, menu, at)), Icons.app()); }
+    if (!SystemTray.isSupported()){ return false; }
     var icon= new TrayIcon(Icons.app(), "Fearless Manager");
     icon.setImageAutoSize(true);
     icon.addMouseListener(new MouseAdapter(){

@@ -3,6 +3,7 @@ package gui;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -26,7 +27,8 @@ import utils.Bug;
 
 /// The manager's icon on a Linux desktop: a StatusNotifierItem served on the session bus.
 /// The desktop's watcher (org.kde.StatusNotifierWatcher) reads the item's properties and
-/// opens the item's menu when the icon is clicked; ContextMenu, called by a desktop that draws no menu, shows the window.
+/// opens the item's menu when the icon is clicked; a click the desktop reports to the item instead
+/// (Activate, SecondaryActivate, ContextMenu) opens the manager's own menu at the point of the click.
 /// One thread reads the bus for the whole process life; the watcher leaving the bus, or
 /// the bus closing, stops the manager.
 final class Sni{
@@ -36,6 +38,7 @@ final class Sni{
   static final String itemPath= "/StatusNotifierItem";
   static final String menu= "/MenuBar";
   static final String introspection= "<node><interface name=\"org.kde.StatusNotifierItem\">"
+    +"<method name=\"Activate\"><arg type=\"i\" direction=\"in\"/><arg type=\"i\" direction=\"in\"/></method>"
     +"<method name=\"ContextMenu\"><arg type=\"i\" direction=\"in\"/><arg type=\"i\" direction=\"in\"/></method>"
     +"<method name=\"SecondaryActivate\"><arg type=\"i\" direction=\"in\"/><arg type=\"i\" direction=\"in\"/></method>"
     +"<method name=\"Scroll\"><arg type=\"i\" direction=\"in\"/><arg type=\"s\" direction=\"in\"/></method>"
@@ -48,6 +51,7 @@ final class Sni{
   private final SocketChannel channel;
   private final Runnable activate;
   private final Runnable quit;
+  private final Consumer<Point> menuAt;
   private final BufferedImage icon;
   final boolean tray;
   private int serial;
@@ -58,7 +62,7 @@ final class Sni{
     String sender(){ return fields[7]; }
     String signature(){ return fields[8] == null ? "" : fields[8]; }
   }
-  static boolean install(Runnable activate, Runnable quit, Image image){
+  static boolean install(Runnable activate, Runnable quit, Consumer<Point> menuAt, Image image){
     var address= System.getenv("DBUS_SESSION_BUS_ADDRESS");
     if (address == null){ return false; }
     var path= Pattern.compile("(^|;)unix:([^;]*,)?path=([^,;]+)").matcher(address);
@@ -68,14 +72,15 @@ final class Sni{
     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
     g.drawImage(image, 0, 0, 64, 64, null);
     g.dispose();
-    var sni= new Sni(Path.of(URLDecoder.decode(path.group(3), UTF_8)), activate, quit, icon);
+    var sni= new Sni(Path.of(URLDecoder.decode(path.group(3), UTF_8)), activate, quit, menuAt, icon);
     if (!sni.tray){ return false; }
     Thread.startVirtualThread(sni::serve);
     return true;
   }
-  Sni(Path socket, Runnable activate, Runnable quit, BufferedImage icon){
+  Sni(Path socket, Runnable activate, Runnable quit, Consumer<Point> menuAt, BufferedImage icon){
     this.activate= activate;
     this.quit= quit;
+    this.menuAt= menuAt;
     this.icon= icon;
     try{
       channel= SocketChannel.open(StandardProtocolFamily.UNIX);
@@ -124,14 +129,19 @@ final class Sni{
       case "Event(isvu)" -> event(m);
       case "EventGroup(a(isvu))" -> eventGroup(m);
       case "Introspect()" -> introspect(m);
-      case "ContextMenu(ii)" -> { activate.run(); reply(m, "", new Writer()); }
-      case "SecondaryActivate(ii)","Scroll(is)" -> reply(m, "", new Writer());
+      case "Activate(ii)","SecondaryActivate(ii)","ContextMenu(ii)" -> clickedAt(m);
+      case "Scroll(is)" -> reply(m, "", new Writer());
       default -> error(m, "org.freedesktop.DBus.Error.UnknownMethod", "Fearless offers no method "+m.member()+"("+m.signature()+")");
     }
   }
   private void introspect(Msg m) throws IOException{
     if (!m.path().equals(itemPath)){ error(m, "org.freedesktop.DBus.Error.UnknownMethod", "Fearless offers no method Introspect() on "+m.path()); return; }
     reply(m, "s", new Writer().str(introspection));
+  }
+  private void clickedAt(Msg m) throws IOException{
+    var at= new Point(m.body().u32(), m.body().u32());
+    reply(m, "", new Writer());
+    menuAt.accept(at);
   }
   private void event(Msg m) throws IOException{
     var id= m.body().u32();

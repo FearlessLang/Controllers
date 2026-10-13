@@ -164,10 +164,10 @@ final class SniTest{
       server.bind(UnixDomainSocketAddress.of(socket));
       var bus= new FutureTask<Void>(() -> { try (var c= server.accept()){ busScript(c, icon); } return null; });
       Thread.startVirtualThread(bus);
-      var e= assertThrows(UserError.class, () -> new Sni(socket, () -> log.add("activate"), () -> log.add("quit"), icon).serve());
+      var e= assertThrows(UserError.class, () -> new Sni(socket, () -> log.add("activate"), () -> log.add("quit"), at -> log.add("menu "+at.x+","+at.y), icon).serve());
       bus.get();
       assertEquals(Violation.trayIconRemoved().getMessage(), e.getMessage());
-      assertEquals(List.of("activate", "activate", "activate", "quit"), log);
+      assertEquals(List.of("activate", "activate", "activate", "menu 5,6", "menu 7,8", "quit"), log);
     }
     finally{ Files.deleteIfExists(socket); Files.delete(dir); }
   }
@@ -214,6 +214,10 @@ final class SniTest{
     assertEquals("org.freedesktop.DBus.Error.UnknownProperty", answer(c, 3, 14).error());
     Sni.write(c, msg(1, 0, 15, new Writer().u32(3), fromWatcher(Sni.menu, "Event", "i")));
     assertEquals("org.freedesktop.DBus.Error.UnknownMethod", answer(c, 3, 15).error());
+    Sni.write(c, msg(1, 0, 20, new Writer().u32(5).u32(6), fromWatcher(Sni.itemPath, "Activate", "ii")));
+    answer(c, 2, 20);
+    Sni.write(c, msg(1, 0, 21, new Writer().u32(7).u32(8), fromWatcher(Sni.itemPath, "ContextMenu", "ii")));
+    answer(c, 2, 21);
     Sni.write(c, msg(4, 0, 16, new Writer().str("org.kde.StatusNotifierWatcher").str(":1.9").str(""), fromWatcher("/x", "NameOwnerChanged", "sss")));
     Sni.write(c, msg(1, 0, 17, clicked(3), fromWatcher(Sni.menu, "Event", "isvu")));
     answer(c, 2, 17);
@@ -227,7 +231,7 @@ final class SniTest{
       server.bind(UnixDomainSocketAddress.of(socket));
       var bus= new FutureTask<Void>(() -> { try (var c= server.accept()){ noWatcherScript(c); } return null; });
       Thread.startVirtualThread(bus);
-      var sni= new Sni(socket, () -> { throw Bug.unreachable(); }, () -> { throw Bug.unreachable(); }, new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB));
+      var sni= new Sni(socket, () -> { throw Bug.unreachable(); }, () -> { throw Bug.unreachable(); }, _ -> { throw Bug.unreachable(); }, new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB));
       bus.get();
       assertFalse(sni.tray);
     }
