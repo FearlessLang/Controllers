@@ -1,5 +1,6 @@
 package gui;
 
+import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -8,7 +9,9 @@ import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
 import java.awt.Taskbar;
+import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -41,6 +44,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -100,6 +104,13 @@ public final class Window implements Manager.View{
     var avail= GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
     frame.setSize(new Dimension(Math.min(760,avail.width),Math.min(900,avail.height)));//the size a restore (un-maximize) falls back to
     frame.setExtendedState(Frame.MAXIMIZED_BOTH);
+    Toolkit.getDefaultToolkit().addAWTEventListener(this::leaveField,AWTEvent.MOUSE_EVENT_MASK);
+  }
+  private void leaveField(AWTEvent e){
+    var focus= KeyboardFocusManager.getCurrentKeyboardFocusManager();
+    var owner= focus.getFocusOwner();
+    var leaves= e.getID() == MouseEvent.MOUSE_PRESSED && owner instanceof JTextField && owner != e.getSource() && SwingUtilities.isDescendingFrom(owner,frame);
+    if (leaves){ focus.clearFocusOwner(); }
   }
   public static Window create(Main main, Path managerDir){ return onEdt(()->new Window(main,managerDir.resolve("projects.info"))); }
   public void tray(boolean present){ tray= present; }

@@ -18,6 +18,8 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -42,6 +44,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.Timer;
 
 import controller.Facts;
 import controller.Main;
@@ -56,7 +59,13 @@ import tools.OpenPath;
 /// buttons that act on it. One Panel per project, kept while the project stays registered:
 /// it holds the Output of the project.
 final class Panel{
-  private record Link(JTextField field, String was){ boolean typed(){ return !field.getText().strip().equals(was); } }
+  private static final class Link{
+    final JTextField field;
+    String was;
+    Link(JTextField field){ this.field= field; was= field.getText(); }
+    boolean typed(){ return !field.getText().strip().equals(was); }
+  }
+  private static final String linkChars= "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_' \b\177";
   private static final int iconSize= 32;
   private static final int claimSize= 20;
   private final Consumer<String> refuse;
@@ -263,11 +272,11 @@ final class Panel{
     old.values().forEach(l->carry(l,owner));
   }
   private void carry(Link from, Component owner){
-    var to= linkFields.get(from.field().getName());
+    var to= linkFields.get(from.field.getName());
     if (to == null){ return; }
-    if (from.typed()){ to.field().setText(from.field().getText()); }
-    to.field().setCaretPosition(Math.min(from.field().getCaretPosition(),to.field().getText().length()));
-    if (from.field() == owner){ to.field().requestFocusInWindow(); }
+    if (from.typed()){ to.field.setText(from.field.getText()); }
+    to.field.setCaretPosition(Math.min(from.field.getCaretPosition(),to.field.getText().length()));
+    if (from.field == owner){ to.field.requestFocusInWindow(); }
   }
   private JPanel linkRow(Project code, String data, boolean writable, String other){
     var row= new JPanel(new FlowLayout(FlowLayout.LEFT,6,0));
@@ -277,21 +286,34 @@ final class Panel{
     return row;
   }
   private JPanel linkField(Project code, String data, String other, String how, Map<String,List<String>> links){
-    var was= String.join(" ",links.getOrDefault(data,List.of()));
-    var field= named(new JTextField(was,14),other+" "+how);
-    var link= new Link(field,was);
+    var field= named(new JTextField(String.join(" ",links.getOrDefault(data,List.of())),14),other+" "+how);
+    var link= new Link(field);
     linkFields.put(field.getName(),link);
-    field.addActionListener(_->field.transferFocus());
-    field.addFocusListener(new FocusAdapter(){
-      @Override public void focusLost(FocusEvent e){ if (linkFields.get(field.getName()) == link && link.typed()){ sendLink(code,data,how,field.getText()); } }
-    });
+    sendsOn(field,()->send(link,code,data,how));
     var res= new JPanel(new FlowLayout(FlowLayout.LEFT,2,0));
     res.add(new JLabel(how));
     res.add(field);
     return res;
   }
-  private static void sendLink(Project code, String data, String how, String names){
-    var words= Stream.of(names.split(" +")).filter(w->!w.isEmpty());
+  static void sendsOn(JTextField field, Runnable send){
+    var pause= new Timer(1000,_->send.run());
+    pause.setRepeats(false);
+    field.addFocusListener(new FocusAdapter(){
+      @Override public void focusLost(FocusEvent e){ send.run(); }
+    });
+    field.addKeyListener(new KeyAdapter(){
+      @Override public void keyTyped(KeyEvent e){ typed(e,pause,send); }
+    });
+  }
+  private static void typed(KeyEvent e, Timer pause, Runnable send){
+    if (linkChars.indexOf(e.getKeyChar()) >= 0){ pause.restart(); return; }
+    e.consume();
+    send.run();
+  }
+  private void send(Link link, Project code, String data, String how){
+    if (linkFields.get(link.field.getName()) != link || !link.typed()){ return; }
+    link.was= link.field.getText().strip();
+    var words= Stream.of(link.was.split(" +")).filter(w->!w.isEmpty());
     Main.command("Link",Stream.concat(Stream.of(code.alias(),data,how),words).toArray(String[]::new));
   }
   private static final class Arrow implements Icon{
