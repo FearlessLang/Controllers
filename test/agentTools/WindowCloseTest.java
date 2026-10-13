@@ -22,7 +22,6 @@ final class WindowCloseTest extends ManagerTest{
   final Action hiddenAgain= action("hiddenAgain",
     on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
-  //the entries of the tray menu ignore presses for half a second after the menu shows
   final Action trayMenuShown= action("trayMenuShown",
     on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
@@ -35,7 +34,6 @@ final class WindowCloseTest extends ManagerTest{
   final Action trayIconRight= action("trayIconRight",
     on("ubuntu_gnome",()->waitRightClick(val(100),val(1736),val(15))),
     on("xubuntu_xfce",()->waitRightClick(val(null),val(1783),val(12))));
-  //the entries of the tray menu ignore presses for half a second after the menu shows
   final Action trayMenuShownAgain= action("trayMenuShownAgain",
     on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
