@@ -42,7 +42,7 @@ public final class Registry{
     public final String text;
     Kind(String text){ this.text= text; }
     public boolean isData(){ return this == dataReadOnly || this == dataReadWrite; }
-    public static Optional<Kind> of(String text){ return OneOr.opt("kind "+text, Stream.of(values()).filter(k->k.text.equals(text))); }
+    public static Optional<Kind> of(String text){ return OneOr.opt("kind "+text, Stream.of(values()).filter(k -> k.text.equals(text))); }
   }
   public record Entry(String alias, Path path, Kind kind, List<String> mains, Map<String,List<String>> reads, Map<String,List<String>> edits){
     public Entry{ mains = List.copyOf(mains); reads = Collections.unmodifiableMap(new LinkedHashMap<>(reads)); edits = Collections.unmodifiableMap(new LinkedHashMap<>(edits)); }
@@ -82,22 +82,22 @@ public final class Registry{
   public List<String> extensions(){ return content.extensions(); }
   public Content content(){ return content; }
   public static boolean isSystem(String ext){ return Fs.isExtSeg(ext) && Icon.system("."+ext); }
-  public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all().stream().filter(e->e.path().equals(folder))); }
-  public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all().stream().filter(e->e.alias().equals(alias))); }
+  public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all().stream().filter(e -> e.path().equals(folder))); }
+  public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all().stream().filter(e -> e.alias().equals(alias))); }
   public Optional<Path> overlapping(Path folder){
-    return all().stream().map(Entry::path).filter(o->!o.equals(folder) && overlap(folder,o)).findFirst();
+    return all().stream().map(Entry::path).filter(o -> !o.equals(folder) && overlap(folder,o)).findFirst();
   }
   public void add(String alias, Path folder){
     assert folder.isAbsolute() && folder.equals(real(folder));
-    assert all().stream().noneMatch(e->e.path().equals(folder) || e.alias().equals(alias));
+    assert all().stream().noneMatch(e -> e.path().equals(folder) || e.alias().equals(alias));
     assert overlapping(folder).isEmpty();
     save(new Content(Push.of(all(),new Entry(alias,folder,Kind.idle,List.of(),Map.of(),Map.of())),extensions()));
   }
-  public void remove(Path folder){ save(new Content(all().stream().filter(e->!e.path().equals(folder)).toList(),extensions())); }
+  public void remove(Path folder){ save(new Content(all().stream().filter(e -> !e.path().equals(folder)).toList(),extensions())); }
   public void update(Path folder, UnaryOperator<Entry> op){
     assert of(folder).isPresent();
-    var next= new Content(all().stream().map(e->e.path().equals(folder) ? op.apply(e) : e).toList(),extensions());
-    try{ parse(text(next),infoFile(),p->p,dir); }
+    var next= new Content(all().stream().map(e -> e.path().equals(folder) ? op.apply(e) : e).toList(),extensions());
+    try{ parse(text(next),infoFile(),p -> p,dir); }
     catch(UserError e){ throw new Refused(e.getMessage()); }
     save(next);
   }
@@ -107,7 +107,7 @@ public final class Registry{
   /// Why the links of a code project are broken, if they are; invalid says why a project is invalid.
   public Optional<String> linkProblem(Entry e, Function<Path,Optional<String>> invalid){
     if (e.kind() != Kind.code){ return Optional.empty(); }
-    return problemIn(e.reads(),"reads",false,invalid).or(()->problemIn(e.edits(),"edits",true,invalid));
+    return problemIn(e.reads(),"reads",false,invalid).or(() -> problemIn(e.edits(),"edits",true,invalid));
   }
   private Optional<String> problemIn(Map<String,List<String>> links, String field, boolean needsWrite, Function<Path,Optional<String>> invalid){
     for (var alias: links.keySet()){
@@ -123,7 +123,7 @@ public final class Registry{
   }
   private void save(Content c){
     var text= text(c);
-    assert parse(text,infoFile(),p->p,dir).equals(c);
+    assert parse(text,infoFile(),p -> p,dir).equals(c);
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,infoFile(),ATOMIC_MOVE); }
     catch(IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(),e); }
@@ -135,8 +135,8 @@ public final class Registry{
     for (var f: top.fields()){
       if (!List.of("projects","systemExtensions").contains(f.key())){ throw Info.err(source,f.keySpan(),Report.infoUnknownKey(f.key())); }
     }
-    var projects= top.field("projects").orElseThrow(()->Info.err(source,top.span(),Report.infoMissing("projects")));
-    var extensions= top.field("systemExtensions").orElseThrow(()->Info.err(source,top.span(),Report.infoMissing("systemExtensions")));
+    var projects= top.field("projects").orElseThrow(() -> Info.err(source,top.span(),Report.infoMissing("projects")));
+    var extensions= top.field("systemExtensions").orElseThrow(() -> Info.err(source,top.span(),Report.infoMissing("systemExtensions")));
     return new Content(entries(source,projects.value(),identity,managerDir),names(source,extensions.value(),"\"systemExtensions\"",Registry::isSystem,systemShape));
   }
   private static List<Entry> entries(String source, Info root, UnaryOperator<Path> identity, Path managerDir){
@@ -145,7 +145,7 @@ public final class Registry{
     for (var field: top.fields()){
       if (!Names.isName(field.key())){ throw Info.err(source,field.keySpan(),Report.infoBadName(field.key())); }
       entries.add(entryOf(source,field,identity));
-      placed(entries.getLast().path(),managerDir,m->Info.err(source,pathSpan(top,field.key()),m));
+      placed(entries.getLast().path(),managerDir,m -> Info.err(source,pathSpan(top,field.key()),m));
     }
     for (var a: entries){
       for (var b: entries.subList(entries.indexOf(a)+1,entries.size())){
@@ -160,21 +160,21 @@ public final class Registry{
     for (var f: obj.fields()){
       if (!keys.contains(f.key())){ throw Info.err(source,f.keySpan(),Report.infoUnknownAttribute(f.key(),keys)); }
     }
-    var mains= obj.field("mains").map(f->names(source,f.value(),"\"mains\"",Registry::isMainName,mainShape)).orElse(List.of());
+    var mains= obj.field("mains").map(f -> names(source,f.value(),"\"mains\"",Registry::isMainName,mainShape)).orElse(List.of());
     var reads= aliasMap(source,obj,"reads");
     var edits= aliasMap(source,obj,"edits");
     for (var link: edits.entrySet()){
       var both= link.getValue().stream().filter(reads.getOrDefault(link.getKey(),List.of())::contains).findFirst();
       if (both.isEmpty()){ continue; }
       var names= (Info.Lst)((Obj)obj.field("edits").orElseThrow().value()).field(link.getKey()).orElseThrow().value();
-      var span= OneOr.of("type name "+both.get(),names.items().stream().filter(i->((Info.Str)i).value().equals(both.get()))).span();
+      var span= OneOr.of("type name "+both.get(),names.items().stream().filter(i -> ((Info.Str)i).value().equals(both.get()))).span();
       throw Info.err(source,span,Report.infoReadAndEdit(both.get(),link.getKey()));
     }
     return new Entry(field.key(),identity.apply(pathOf(source,field.key(),obj)),kindOf(source,field.key(),obj),mains,reads,edits);
   }
   private static Path pathOf(String source, String alias, Obj obj){
-    var field= obj.field("path").orElseThrow(()->Info.err(source,obj.span(),Report.infoMissingPath(alias)));
-    var s= TaggedText.read(str(source,field.value(),"\"path\""),m->Info.err(source,field.value().span(),m));
+    var field= obj.field("path").orElseThrow(() -> Info.err(source,obj.span(),Report.infoMissingPath(alias)));
+    var s= TaggedText.read(str(source,field.value(),"\"path\""),m -> Info.err(source,field.value().span(),m));
     if (s.isEmpty()){ throw Info.err(source,field.value().span(),Report.infoEmptyPath()); }
     Path path;
     try{ path= Path.of(s); }
@@ -183,9 +183,9 @@ public final class Registry{
     return path.normalize();
   }
   private static Kind kindOf(String source, String alias, Obj obj){
-    var field= obj.field("kind").orElseThrow(()->Info.err(source,obj.span(),Report.infoMissingKind(alias,kinds)));
+    var field= obj.field("kind").orElseThrow(() -> Info.err(source,obj.span(),Report.infoMissingKind(alias,kinds)));
     var s= str(source,field.value(),"\"kind\"");
-    return Kind.of(s).orElseThrow(()->Info.err(source,field.value().span(),Report.infoBadKind(s,kinds)));
+    return Kind.of(s).orElseThrow(() -> Info.err(source,field.value().span(),Report.infoBadKind(s,kinds)));
   }
   private static String str(String source, Info value, String label){
     if (!(value instanceof Info.Str s)){ throw Info.err(source,value.span(),Report.infoNotString(label)); }
@@ -220,7 +220,7 @@ public final class Registry{
     return dot > 0 && TName.isPkgName(s.substring(0,dot)) && TName.isTypeName(s.substring(dot+1));
   }
   private static Info toInfo(Content c){
-    var projects= new Obj(c.projects().stream().map(e->new Field(e.alias(),Info.noSpan,entryToInfo(e))).toList(),Info.noSpan);
+    var projects= new Obj(c.projects().stream().map(e -> new Field(e.alias(),Info.noSpan,entryToInfo(e))).toList(),Info.noSpan);
     return new Obj(List.of(new Field("projects",Info.noSpan,projects),new Field("systemExtensions",Info.noSpan,strList(c.extensions()))),Info.noSpan);
   }
   private static Info entryToInfo(Entry e){
@@ -232,8 +232,8 @@ public final class Registry{
     if (!e.edits().isEmpty()){ fields.add(new Field("edits",Info.noSpan,aliasMap(e.edits()))); }
     return new Obj(fields,Info.noSpan);
   }
-  private static Info strList(List<String> xs){ return new Info.Lst(xs.stream().<Info>map(x->new Info.Str(x,Info.noSpan)).toList(),Info.noSpan); }
+  private static Info strList(List<String> xs){ return new Info.Lst(xs.stream().<Info>map(x -> new Info.Str(x,Info.noSpan)).toList(),Info.noSpan); }
   private static Info aliasMap(Map<String,List<String>> m){
-    return new Obj(m.entrySet().stream().map(e->new Field(e.getKey(),Info.noSpan,strList(e.getValue()))).toList(),Info.noSpan);
+    return new Obj(m.entrySet().stream().map(e -> new Field(e.getKey(),Info.noSpan,strList(e.getValue()))).toList(),Info.noSpan);
   }
 }

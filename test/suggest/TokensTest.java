@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 final class TokensTest{
-  static String tokens(String text){ return Tokens.tokens(text).stream().filter(t->t.kind() != Tokens.Kind.Ws).map(t->t.kind()+"|"+t.text()).collect(Collectors.joining(" ")); }
+  static String tokens(String text){ return Tokens.tokens(text).stream().filter(t -> t.kind() != Tokens.Kind.Ws).map(t -> t.kind()+"|"+t.text()).collect(Collectors.joining(" ")); }
   @Test void aSquareOpensGenericsRightAfterANameOrAnOperatorOnly(){
     same("UppercaseId|Foo OSquareArg|[ UppercaseId|X CSquare|]",tokens("Foo[X]"));
     same("UppercaseId|Foo BadOSquare|[ UppercaseId|X CSquare|]",tokens("Foo [X]"));

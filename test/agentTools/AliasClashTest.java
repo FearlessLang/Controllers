@@ -9,38 +9,38 @@ import tools.Fs;
 
 final class AliasClashTest extends ManagerTest{
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(21500))));
   final Action openTwins= action("openTwins",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openA= action("openA",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openB= action("openB",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openTwin= action("openTwin",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openTwinMarker= action("openTwinMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action firstShown= action("firstShown",
-    on("ubuntu_gnome",()->waitAfter(val(null))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("ubuntu_gnome",() -> waitAfter(val(null))),
+    on("xubuntu_xfce",() -> waitAfter(val(null))));
   final Action secondShown= action("secondShown",
-    on("ubuntu_gnome",()->waitAfter(val(11000))),
-    on("xubuntu_xfce",()->waitAfter(val(14000))));
+    on("ubuntu_gnome",() -> waitAfter(val(11000))),
+    on("xubuntu_xfce",() -> waitAfter(val(14000))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(529),val(113))),
-    on("xubuntu_xfce",()->click(val(468),val(93))));
+    on("ubuntu_gnome",() -> click(val(529),val(113))),
+    on("xubuntu_xfce",() -> click(val(468),val(93))));
   final Action checked= action("checked",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(5500))));
+    on("ubuntu_gnome",() -> waitAfter(val(4500))),
+    on("xubuntu_xfce",() -> waitAfter(val(5500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(9000))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     var twins= files.resolve("twins");
     var first= twins.resolve("a").resolve("twin");
@@ -83,7 +83,7 @@ final class AliasClashTest extends ManagerTest{
       }
       """.formatted(slashed(first),slashed(second)));
     assertEquals(List.of("a/twin/_twin/_rank_app.fear","a/twin/twin.fearless","b/twin/_twin/_rank_app.fear","b/twin/twin2.fearless"),
-      Fs.walk(twins,s->s.filter(Files::isRegularFile).map(p->slashed(twins.relativize(p))).sorted().toList()));
+      Fs.walk(twins,s -> s.filter(Files::isRegularFile).map(p -> slashed(twins.relativize(p))).sorted().toList()));
     checkContent(files.resolve("twins/b/twin/twin2.fearless"),"\n");
     var output= inWindow(410,168,1000,80);
     var before= look();

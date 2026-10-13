@@ -50,7 +50,7 @@ final class Tokens{
   }
   /// every token of the text, the dropped ones included
   static List<Tok> tokens(String text){
-    var matchers= Arrays.stream(Kind.values()).map(k->k.pattern.matcher(text).useTransparentBounds(true)).toList();
+    var matchers= Arrays.stream(Kind.values()).map(k -> k.pattern.matcher(text).useTransparentBounds(true)).toList();
     var res= new ArrayList<Tok>();
     for (int i= 0; i < text.length();){
       var best= Kind.Ws;

@@ -13,7 +13,7 @@ public final class NewFile extends BasicNewResourceWizard{
     page = new WizardNewFileCreationPage("file", getSelection()){
       @Override protected boolean validatePage(){
         if (!super.validatePage()){ return false; }
-        Names.problem(getContainerFullPath(), getFileName(), true).ifPresent(p->setMessage(p, IMessageProvider.WARNING));
+        Names.problem(getContainerFullPath(), getFileName(), true).ifPresent(p -> setMessage(p, IMessageProvider.WARNING));
         return true;
       }
     };

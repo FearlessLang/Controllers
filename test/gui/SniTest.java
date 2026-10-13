@@ -141,14 +141,14 @@ final class SniTest{
     assertEquals("after",m.body().str());
   }
   @Test void fieldCodesOfTenOrMoreAreSkipped(){
-    var m= Sni.parse(msg(2,0,3,new Writer().str("after"),u(5,7).andThen(s(10,"ten")).andThen(h->h.pad(8).b(255).sig("t").pad(8).u32(1).u32(2)).andThen(g("s"))));
+    var m= Sni.parse(msg(2,0,3,new Writer().str("after"),u(5,7).andThen(s(10,"ten")).andThen(h -> h.pad(8).b(255).sig("t").pad(8).u32(1).u32(2)).andThen(g("s"))));
     assertEquals(7,m.replySerial());
     assertEquals("s",m.signature());
     assertEquals("after",m.body().str());
   }
   @Test void aFieldOfAnUnknownTypeIsSkippedByItsSignature(){
-    Consumer<Writer> dict= h->h.pad(8).b(12).sig("a{sv}").array(8,e->e.str("k").sig("(yx)").pad(8).b(1).pad(8).u32(1).u32(0));
-    Consumer<Writer> bytes= h->h.pad(8).b(13).sig("ay").array(1,e->e.b(1).b(2).b(3));
+    Consumer<Writer> dict= h -> h.pad(8).b(12).sig("a{sv}").array(8,e -> e.str("k").sig("(yx)").pad(8).b(1).pad(8).u32(1).u32(0));
+    Consumer<Writer> bytes= h -> h.pad(8).b(13).sig("ay").array(1,e -> e.b(1).b(2).b(3));
     var m= Sni.parse(msg(2,0,3,new Writer().str("after"),dict.andThen(bytes).andThen(u(5,7)).andThen(s(6,":1.5")).andThen(g("s"))));
     assertEquals(7,m.replySerial());
     assertEquals(":1.5",m.fields()[6]);
@@ -162,9 +162,9 @@ final class SniTest{
     var log= new ArrayList<String>();
     try(var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
       server.bind(UnixDomainSocketAddress.of(socket));
-      var bus= new FutureTask<Void>(()->{ try(var c= server.accept()){ busScript(c,icon); } return null; });
+      var bus= new FutureTask<Void>(() -> { try(var c= server.accept()){ busScript(c,icon); } return null; });
       Thread.startVirtualThread(bus);
-      var e= assertThrows(UserError.class,()->new Sni(socket,()->log.add("activate"),()->log.add("quit"),icon).serve());
+      var e= assertThrows(UserError.class,() -> new Sni(socket,() -> log.add("activate"),() -> log.add("quit"),icon).serve());
       bus.get();
       assertEquals(Violation.trayIconRemoved().getMessage(),e.getMessage());
       assertEquals(List.of("activate","activate","activate","quit"),log);
@@ -196,12 +196,12 @@ final class SniTest{
     Sni.write(c,msg(1,1,11,clicked(1),fromWatcher(Sni.menu,"Event","isvu")));
     Sni.write(c,msg(1,0,12,clicked(1),fromWatcher(Sni.menu,"Event","isvu")));
     answer(c,2,12);
-    Sni.write(c,msg(1,0,18,new Writer().array(4,w->w.u32(0).u32(1)),fromWatcher(Sni.menu,"AboutToShowGroup","ai")));
+    Sni.write(c,msg(1,0,18,new Writer().array(4,w -> w.u32(0).u32(1)),fromWatcher(Sni.menu,"AboutToShowGroup","ai")));
     var shown= answer(c,2,18);
     assertEquals("aiai",shown.signature());
     assertEquals(0,shown.body().u32());
     assertEquals(0,shown.body().u32());
-    Sni.write(c,msg(1,0,19,new Writer().array(8,w->w.pad(8).u32(2).str("hovered").sig("s").str("").u32(0).pad(8).u32(1).str("clicked").sig("s").str("").u32(0)),fromWatcher(Sni.menu,"EventGroup","a(isvu)")));
+    Sni.write(c,msg(1,0,19,new Writer().array(8,w -> w.pad(8).u32(2).str("hovered").sig("s").str("").u32(0).pad(8).u32(1).str("clicked").sig("s").str("").u32(0)),fromWatcher(Sni.menu,"EventGroup","a(isvu)")));
     var group= answer(c,2,19);
     assertEquals("ai",group.signature());
     assertEquals(0,group.body().u32());
@@ -225,9 +225,9 @@ final class SniTest{
     var socket= dir.resolve("bus");
     try(var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
       server.bind(UnixDomainSocketAddress.of(socket));
-      var bus= new FutureTask<Void>(()->{ try(var c= server.accept()){ noWatcherScript(c); } return null; });
+      var bus= new FutureTask<Void>(() -> { try(var c= server.accept()){ noWatcherScript(c); } return null; });
       Thread.startVirtualThread(bus);
-      var sni= new Sni(socket,()->{ throw Bug.unreachable(); },()->{ throw Bug.unreachable(); },new BufferedImage(2,2,BufferedImage.TYPE_INT_ARGB));
+      var sni= new Sni(socket,() -> { throw Bug.unreachable(); },() -> { throw Bug.unreachable(); },new BufferedImage(2,2,BufferedImage.TYPE_INT_ARGB));
       bus.get();
       assertFalse(sni.tray);
     }
@@ -263,9 +263,9 @@ final class SniTest{
   private static byte[] msg(int type, int flags, int serial, Writer body, Consumer<Writer> fields){
     return new Writer().b('l').b(type).b(flags).b(1).u32(body.pos).u32(serial).array(8,fields).pad(8).append(body).bytes();
   }
-  private static Consumer<Writer> s(int code, String v){ return h->h.pad(8).b(code).sig(code == 1 ? "o" : "s").str(v); }
-  private static Consumer<Writer> u(int code, int v){ return h->h.pad(8).b(code).sig("u").u32(v); }
-  private static Consumer<Writer> g(String sig){ return h->h.pad(8).b(8).sig("g").sig(sig); }
+  private static Consumer<Writer> s(int code, String v){ return h -> h.pad(8).b(code).sig(code == 1 ? "o" : "s").str(v); }
+  private static Consumer<Writer> u(int code, int v){ return h -> h.pad(8).b(code).sig("u").u32(v); }
+  private static Consumer<Writer> g(String sig){ return h -> h.pad(8).b(8).sig("g").sig(sig); }
   private static String item(Reader r){
     var id= r.u32();
     int len= r.u32();

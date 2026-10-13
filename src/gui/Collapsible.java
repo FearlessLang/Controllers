@@ -26,7 +26,7 @@ final class Collapsible extends JPanel{
     head.setFocusPainted(false);
     head.setContentAreaFilled(false);
     head.setFont(head.getFont().deriveFont(Font.BOLD));
-    head.addActionListener(_->setOpen(!body.isVisible()));
+    head.addActionListener(_ -> setOpen(!body.isVisible()));
     setBorder(BorderFactory.createEtchedBorder());
     var bar= new JPanel(new BorderLayout());
     bar.add(head,BorderLayout.CENTER);

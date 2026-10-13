@@ -22,10 +22,10 @@ import suggest.Resolver.Suggestions;
 
 final class ResolverTest{
   static String x(String n){ return "[\"x\",\""+n+"\"]"; }
-  static String c(String n, String... args){ return "[\"c\",\"imm\",\""+n+"\""+Stream.of(args).map(a->","+a).collect(Collectors.joining())+"]"; }
-  static String sup(String n, String... args){ return "[\""+n+"\""+Stream.of(args).map(a->","+a).collect(Collectors.joining())+"]"; }
+  static String c(String n, String... args){ return "[\"c\",\"imm\",\""+n+"\""+Stream.of(args).map(a -> ","+a).collect(Collectors.joining())+"]"; }
+  static String sup(String n, String... args){ return "[\""+n+"\""+Stream.of(args).map(a -> ","+a).collect(Collectors.joining())+"]"; }
   static String list(String... xs){ return Stream.of(xs).collect(Collectors.joining(",","[","]")); }
-  static String bs(String... xs){ return list(Stream.of(xs).map(b->"[\""+b+"\",\"imm\"]").toArray(String[]::new)); }
+  static String bs(String... xs){ return list(Stream.of(xs).map(b -> "[\""+b+"\",\"imm\"]").toArray(String[]::new)); }
   static String method(String name, String bs, String ts, String ret, String kind){ return "[\""+name+"\",\"imm\","+bs+","+ts+","+ret+",\"o\",\"0\",\""+kind+"\"]"; }
   static String m(String name, String bs, String ts, String ret){ return method(name,bs,ts,ret,"concrete"); }
   static String abs(String name, String bs, String ts, String ret){ return method(name,bs,ts,ret,"abs"); }
@@ -63,7 +63,7 @@ final class ResolverTest{
     type("test.Persons",bs(),"[]",m("#",bs(),list(c("base.Nat"),c("base.Str"),c("base.List",c("test.Cat"))),c("test.Person"))),
     type("test.Cats",bs(),"[]",m("#",bs(),list(c("base.Str"),c("base.Nat")),c("test.Cat"))));
   static final Api compiled= new Api(Api.parse(api));
-  static final String head= Stream.of("Str","Nat","List","Flow","Opt","Opts","OptMatch","F","Block","OrderHash","Bool").map(n->"use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
+  static final String head= Stream.of("Str","Nat","List","Flow","Opt","Opts","OptMatch","F","Block","OrderHash","Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
     Cats: { #(name: Str, weight: Nat): Cat -> Cat: { .name: Str -> name; .weight: Nat -> weight; } }
     Persons: { #(age: Nat, name: Str, cats: List[Cat]): Person -> Person: OrderHash[Person] { 'self
@@ -262,7 +262,7 @@ final class ResolverTest{
   @Test void theMapOfThePackageIsReadFromTheCompiledMap(){
     assertEquals(Map.of("lib","base","x","y"),Api.packages("{\"app\":{\"lib\":\"base\",\n\"x\":\"y\"}\n,\n\"other\":{\"a\":\"b\"}\n}\n","app"));
     assertEquals(Map.of(),Api.packages("{}","app"));
-    assertThrows(IllegalArgumentException.class,()->Api.packages("{\"app\":{\"lib\":\"base\"}","app"));
+    assertThrows(IllegalArgumentException.class,() -> Api.packages("{\"app\":{\"lib\":\"base\"}","app"));
   }
   @Test void aPackageNameBeforeTheDotSuggestsItsPublicTypes(){
     same(baseTypes,types(file+"base.|"));
@@ -300,15 +300,15 @@ final class ResolverTest{
   @Test void noTextNorCursorMakesTheSuggestionsThrow() throws IOException{
     var heads= head+"\nuse Foo as B;\nuse base. as C;\nuse as D;\nuse lib.Str as;\nuse lib.Nat as N;";
     List<Path> fear;
-    try(var all= Files.walk(ResolveResource.stLibPath)){ fear= all.filter(p->p.toString().endsWith(".fear")).sorted().toList(); }
+    try(var all= Files.walk(ResolveResource.stLibPath)){ fear= all.filter(p -> p.toString().endsWith(".fear")).sorted().toList(); }
     for (var p : fear){
       var t= Files.readString(p);
       var r= Resolver.of(compiled,"base",Map.of("lib","base"),heads,t);
       IntStream.rangeClosed(0,t.length()).forEach(r::suggest);
     }
     for (var t : List.of(file,Files.readString(ResolveResource.stLibPath.resolve("pipes.fear")))){
-      IntStream.rangeClosed(0,t.length()).forEach(k->suggest(heads,t.substring(0,k),k));
-      IntStream.range(0,t.length()).forEach(k->suggest(heads,t.substring(0,k)+t.substring(k+1),k));
+      IntStream.rangeClosed(0,t.length()).forEach(k -> suggest(heads,t.substring(0,k),k));
+      IntStream.range(0,t.length()).forEach(k -> suggest(heads,t.substring(0,k)+t.substring(k+1),k));
     }
   }
   static void suggest(String head, String text, int pos){ Resolver.of(compiled,"base",Map.of("lib","base"),head,text).suggest(pos); }

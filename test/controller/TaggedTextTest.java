@@ -53,26 +53,26 @@ final class TaggedTextTest{
     assertEquals("C:/caf\u00e9",read(((Info.Str)Info.parse(Info.print(s),URI.create("test:projects.info"))).value()));
   }
   @Test void aTextWithoutATagIsRejected(){
-    err("\"C:/data\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",()->read("C:/data"));
+    err("\"C:/data\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",() -> read("C:/data"));
   }
   @Test void aMalformedUStrIsRejected(){
-    err("\"UStr:\"\".u\"e9\"\" is malformed: code points, each as 1 to 6 uppercase hex digits, separated by single spaces, was expected at offset 8 after \"UStr:\".",()->read("UStr:\"\".u\"e9\""));
-    err("[###]Unicode scalars (no D800 to DFFF, nothing above 10FFFF) was expected[###]",()->read("UStr:\"\".u\"D800\""));
-    err("[###]the end of the text was expected at offset 3[###]",()->read("UStr:\"a\".size"));
-    err("[###]the closing \" was expected[###]",()->read("UStr:\"a"));
+    err("\"UStr:\"\".u\"e9\"\" is malformed: code points, each as 1 to 6 uppercase hex digits, separated by single spaces, was expected at offset 8 after \"UStr:\".",() -> read("UStr:\"\".u\"e9\""));
+    err("[###]Unicode scalars (no D800 to DFFF, nothing above 10FFFF) was expected[###]",() -> read("UStr:\"\".u\"D800\""));
+    err("[###]the end of the text was expected at offset 3[###]",() -> read("UStr:\"a\".size"));
+    err("[###]the closing \" was expected[###]",() -> read("UStr:\"a"));
   }
   @Test void aCharacterOutsideTheSetAfterStrOrUStrIsRejected(){
-    err("\"Str:/tmp/caf\" [U+00E9] is malformed: after \"Str:\" every character is in the Fearless character set, but [U+00E9] is not.",()->read("Str:/tmp/caf\u00e9"));
-    err("[###] is malformed: after \"UStr:\" every character is in the Fearless character set, but [U+00E9] is not.",()->read("UStr:\"caf\u00e9\".u"));
+    err("\"Str:/tmp/caf\" [U+00E9] is malformed: after \"Str:\" every character is in the Fearless character set, but [U+00E9] is not.",() -> read("Str:/tmp/caf\u00e9"));
+    err("[###] is malformed: after \"UStr:\" every character is in the Fearless character set, but [U+00E9] is not.",() -> read("UStr:\"caf\u00e9\".u"));
   }
   @Test void parenthesesInUStrNestAtMost100Deep(){
     assertEquals("a",read("UStr:"+"(".repeat(100)+"\"a\""+")".repeat(100)));
-    err("A \"UStr:\" text is malformed: its parentheses nest at most 100 deep, and the one at offset 100 after \"UStr:\" is deeper.",()->read("UStr:"+"(".repeat(100_000)));
+    err("A \"UStr:\" text is malformed: its parentheses nest at most 100 deep, and the one at offset 100 after \"UStr:\" is deeper.",() -> read("UStr:"+"(".repeat(100_000)));
   }
   @Test void aMalformedBase16IsRejected(){
-    err("\"Base16:4\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.",()->read("Base16:4"));
-    err("[###]each as 2 uppercase hex digits.",()->read("Base16:4a00"));
+    err("\"Base16:4\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.",() -> read("Base16:4"));
+    err("[###]each as 2 uppercase hex digits.",() -> read("Base16:4a00"));
     Assumptions.assumeTrue(Fs.isWindows());
-    err("\"Base16:430000\" is malformed: a Windows name is 16 bit units, so its bytes are an even number.",()->read("Base16:430000"));
+    err("\"Base16:430000\" is malformed: a Windows name is 16 bit units, so its bytes are an even number.",() -> read("Base16:430000"));
   }
 }

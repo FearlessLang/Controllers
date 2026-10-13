@@ -81,20 +81,20 @@ final class ManagerTest{
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       if (infos.getOrDefault(folder.getFileName().toString(),"").equals("fail")){ return jvm(out,"broken source","1","0"); }
       FactsTest.cache(folder,folder.getFileName().toString(),FactsTest.after(folder),infos.getOrDefault(folder.getFileName().toString(),"{}\n"));
-      MainsInfo.read(folder).orElseThrow().mains().values().stream().flatMap(m->Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
-        .filter(c->!c.icon().startsWith("base.")).map(c->folder.resolve(c.diskPath())).filter(p->!Files.exists(p)).forEach(p->image(p,64,64,"png"));
+      MainsInfo.read(folder).orElseThrow().mains().values().stream().flatMap(m -> Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
+        .filter(c -> !c.icon().startsWith("base.")).map(c -> folder.resolve(c.diskPath())).filter(p -> !Files.exists(p)).forEach(p -> image(p,64,64,"png"));
       return jvm(out,"compiled","0","0");
     }
     @Override public ChildJvm run(Path folder, String main, Consumer<String> out){ return jvm(out,"ran "+main,"0",main.endsWith("Slow") ? "60000" : "0"); }
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     @Override public void associate(List<Icon> captured, Function<String,String> claimedBy){
-      captured.forEach(i->Fs.of(()->Files.readAllBytes(i.png())));
+      captured.forEach(i -> Fs.of(() -> Files.readAllBytes(i.png())));
       associated.add(captured);
       var all= Stream.concat(Stream.of(new Icon(".fearless",null,null)),captured.stream()).toList();
       var userLocked= all.stream().map(Icon::extension).filter(locked::contains).toList();
       if (!userLocked.isEmpty()){ throw Violation.associationUserLocked(userLocked,claimedBy); }
-      var blocked= all.stream().map(Icon::extension).filter(e->!Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e->e,held::get,(a,_)->a,LinkedHashMap::new));
+      var blocked= all.stream().map(Icon::extension).filter(e -> !Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e -> e,held::get,(a,_) -> a,LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw Violation.associationNotOurs(blocked,claimedBy); }
     }
     @Override public List<String> others(){ return others; }
@@ -117,7 +117,7 @@ final class ManagerTest{
     boolean visible= true;
     @Override public void show(){ shown += 1; }
     @Override public void state(State s){}
-    @Override public synchronized void output(Path folder, String text){ outputs.computeIfAbsent(folder,_->new StringBuilder()).append(text); }
+    @Override public synchronized void output(Path folder, String text){ outputs.computeIfAbsent(folder,_ -> new StringBuilder()).append(text); }
     @Override public synchronized void clear(Path folder){ cleared.add(folder); outputs.put(folder,new StringBuilder()); }
     @Override public void refuse(String text){ shown += 1; refused.add(text); }
     @Override public void tell(String text){ shown += 1; told.add(text); }
@@ -142,7 +142,7 @@ final class ManagerTest{
     var map= new LinkedHashMap<String,String>();
     for (var m: mains){ map.put(m,"_hello/_rank_app.fear"); }
     var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
-    return manager(dir,_->known);
+    return manager(dir,_ -> known);
   }
   private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){
     var exit= new Manager.Exit(){
@@ -191,13 +191,13 @@ final class ManagerTest{
       catch(InterruptedException e){ throw new AssertionError(e); }
     }
   }
-  private static void idle(Manager m){ until(m,s->s.projects().stream().noneMatch(Project::busy)); }
+  private static void idle(Manager m){ until(m,s -> s.projects().stream().noneMatch(Project::busy)); }
   private static void compiled(Manager m, String... names){
     for (var n: names){ send(m,"Compile",n); }
     idle(m);
   }
   private static Project project(Manager m, Path folder){ return m.state().of(folder).orElseThrow(); }
-  private static List<String> listed(Manager m){ return m.state().projects().stream().map(p->p.alias()+" "+p.folder()).toList(); }
+  private static List<String> listed(Manager m){ return m.state().projects().stream().map(p -> p.alias()+" "+p.folder()).toList(); }
   private static String info(Path dir){ return Fs.readUtf8(dir.resolve("manager").resolve("projects.info")); }
   private static Path edit(Manager m, Path dir, String text){
     var file= dir.resolve("edited.info");
@@ -206,7 +206,7 @@ final class ManagerTest{
     return file;
   }
   private static void allow(Manager m, Path dir, String... extensions){
-    var old= Registry.parse(info(dir),dir.resolve("projects.info"),p->p,dir.resolve("manager"));
+    var old= Registry.parse(info(dir),dir.resolve("projects.info"),p -> p,dir.resolve("manager"));
     edit(m,dir,Registry.text(new Registry.Content(old.projects(),Stream.concat(old.extensions().stream(),Stream.of(extensions)).toList())));
   }
   @Test void showShowsTheWindow(@TempDir Path dir){
@@ -244,7 +244,7 @@ final class ManagerTest{
     Fs.writeUtf8(hello.resolve(Facts.outDir).resolve("hello.built"),"");
     send(m,"Register",TaggedText.of(hello.toString()));
     assertEquals(List.of("hello "+hello),listed(m));
-    assertEquals(List.of("hello.fearless"),Names.list(hello).stream().map(p->p.getFileName().toString()).toList());
+    assertEquals(List.of("hello.fearless"),Names.list(hello).stream().map(p -> p.getFileName().toString()).toList());
     var p= project(m,hello);
     assertEquals(Kind.idle,p.kind());
     assertEquals(Project.State.idle,p.state());
@@ -333,7 +333,7 @@ final class ManagerTest{
     var hello= code(m,dir,"hello");
     compiled(m,"hello");
     send(m,"Run","hello","hello.Slow");
-    until(m,_->view.out(hello).contains("ran hello.Slow"));
+    until(m,_ -> view.out(hello).contains("ran hello.Slow"));
     assertEquals(List.of("hello - hello.Slow"),m.state().running());
     assertEquals(Project.Action.terminate,project(m,hello).action());
     send(m,"Run","hello","hello.Slow");
@@ -349,7 +349,7 @@ final class ManagerTest{
       --- terminating hello.Slow ---
       --- hello.Slow exited with [###] after [###]s ---
       """,view.out(hello));
-    assertEquals(Stream.of("Run","Compile","DeleteCache","Kind","Forget").map(v->"The manager was asked \""+v+"\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.").toList(),view.refused);
+    assertEquals(Stream.of("Run","Compile","DeleteCache","Kind","Forget").map(v -> "The manager was asked \""+v+"\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.").toList(),view.refused);
     assertEquals(Kind.code,project(m,hello).kind());
   }
   @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
@@ -357,7 +357,7 @@ final class ManagerTest{
     var hello= code(m,dir,"hello");
     compiled(m,"hello");
     send(m,"Run","hello","hello.Two hello.Slow");
-    until(m,_->view.out(hello).contains("ran hello.Slow"));
+    until(m,_ -> view.out(hello).contains("ran hello.Slow"));
     send(m,"Terminate","hello");
     idle(m);
     assertFalse(view.out(hello).contains("hello.Two"));
@@ -454,7 +454,7 @@ final class ManagerTest{
   @Test void aMessageFileThatIsNotUtf8IsRefusedAndRemovedAndTheNextStartDrainsNothing(@TempDir Path dir){
     var m= manager(dir);
     var messages= folder(dir.resolve("manager"),"messages");
-    Fs.ofV(()->Files.write(messages.resolve("1.msg"),new byte[]{'R','u','n','\n',(byte)0xFF}));
+    Fs.ofV(() -> Files.write(messages.resolve("1.msg"),new byte[]{'R','u','n','\n',(byte)0xFF}));
     Fs.writeUtf8(messages.resolve("2.msg"),"Show");
     m.drain();
     m.settle();
@@ -479,8 +479,8 @@ final class ManagerTest{
     var m= manager(dir);
     var hello= registered(m,dir,"hello");
     var other= registered(m,dir,"other");
-    var link= Fs.of(()->Files.createSymbolicLink(dir.resolve("link"),hello));
-    var inner= Fs.of(()->Files.createSymbolicLink(dir.resolve("inner"),folder(hello,"inner")));
+    var link= Fs.of(() -> Files.createSymbolicLink(dir.resolve("link"),hello));
+    var inner= Fs.of(() -> Files.createSymbolicLink(dir.resolve("inner"),folder(hello,"inner")));
     send(m,"Register",TaggedText.of(link.toString()));
     assertEquals(Optional.of(hello),m.state().selected());
     send(m,"Register",TaggedText.of(inner.toString()));
@@ -523,7 +523,7 @@ final class ManagerTest{
     same("[###]Bad Name.txt[###]",Fs.readUtf8(checkError));
     assertEquals(Project.State.dataInvalid,project(m,data).state());
     assertEquals(Project.Action.check,project(m,data).action());
-    Fs.ofV(()->Files.delete(data.resolve("Bad Name.txt")));
+    Fs.ofV(() -> Files.delete(data.resolve("Bad Name.txt")));
     send(m,"Check","data");
     assertEquals("The project \"data\" is valid, and up to date.\n",view.out(data));
     assertFalse(Files.exists(checkError));
@@ -601,7 +601,7 @@ final class ManagerTest{
       assertEquals(valid ? Project.State.dataInvalid : Project.State.idle,project(m,data).state());
     }
   }
-  private static void mode(Path p, String mode){ Fs.ofV(()->Files.setPosixFilePermissions(p,PosixFilePermissions.fromString(mode))); }
+  private static void mode(Path p, String mode){ Fs.ofV(() -> Files.setPosixFilePermissions(p,PosixFilePermissions.fromString(mode))); }
   @Test void foldersTheManagerCanNotReadOrChangeAreRefusedOrInvalidNeverFatal(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
@@ -646,7 +646,7 @@ final class ManagerTest{
     mode(cache,"r-xr-xr-x");
     send(again,"DeleteCache","data");
     same("--- the compiled cache is not deleted: access denied: [###]a.built ---\n",view.out(cached));
-    List.of(closed,readOnly,cache,hidden).forEach(p->mode(p,"rwxr-xr-x"));
+    List.of(closed,readOnly,cache,hidden).forEach(p -> mode(p,"rwxr-xr-x"));
   }
   @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
@@ -664,7 +664,7 @@ final class ManagerTest{
     edit(m,dir,"{\"projects\": {}, \"systemExtensions\": []}");
     mode(managerDir,"rwxr-xr-x");
     assertEquals(3,failures.size());
-    failures.forEach(f->same("Fearless could not save the file \"projects.info\" of its manager folder.[###]",f.getMessage()));
+    failures.forEach(f -> same("Fearless could not save the file \"projects.info\" of its manager folder.[###]",f.getMessage()));
     failures.clear();
     assertEquals(1,view.refused.size());
     assertEquals(before,info(dir));
@@ -704,11 +704,11 @@ final class ManagerTest{
     registered(m,dir,"hello");
     var file= dir.resolve("manager").resolve("projects.info");
     Fs.writeUtf8(file,info(dir).replace("\"kind\": \"idle\"","\"kind\": \"library\""));
-    Errs.err("In file: [###]projects.info[###]\"kind\" must be one of \"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\", not \"library\".[###]",()->manager(dir));
+    Errs.err("In file: [###]projects.info[###]\"kind\" must be one of \"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\", not \"library\".[###]",() -> manager(dir));
   }
   @Test void compilingForgetsSelectedMainsThatAreGone(@TempDir Path dir){
     var mains= new ArrayList<>(List.of("hello.One","hello.Two","hello.Old"));
-    var m= manager(dir,_->Optional.of(mains.stream().collect(Collectors.toMap(k->k,_->"_hello/_rank_app.fear"))));
+    var m= manager(dir,_ -> Optional.of(mains.stream().collect(Collectors.toMap(k -> k,_ -> "_hello/_rank_app.fear"))));
     var hello= code(m,dir,"hello");
     compiled(m,"hello");
     send(m,"Run","hello","hello.Old hello.Two");
@@ -721,7 +721,7 @@ final class ManagerTest{
   }
   @Test void mainsThatCanNotBeReadMakeTheProjectOutOfDateAndAreNotReadAgainWhileNothingChanges(@TempDir Path dir){
     var reads= new ArrayList<Path>();
-    var m= manager(dir,f->{ reads.add(f); throw Report.launchPathNotFound(dir.resolve("gone")); });
+    var m= manager(dir,f -> { reads.add(f); throw Report.launchPathNotFound(dir.resolve("gone")); });
     var hello= code(m,dir,"hello");
     compiled(m,"hello");
     send(m,"Show","hello");
@@ -742,7 +742,7 @@ final class ManagerTest{
     assertEquals(Project.State.codeNoCache,project(m,noJvm).state());
   }
   @Test void mainsTheCompilerWouldCompileMakeTheProjectOutOfDate(@TempDir Path dir){
-    var m= manager(dir,_->Optional.empty());
+    var m= manager(dir,_ -> Optional.empty());
     var hello= code(m,dir,"hello");
     compiled(m,"hello");
     var p= project(m,hello);
@@ -753,11 +753,11 @@ final class ManagerTest{
   }
   @Test void aProjectChangedWhileItsMainsAreReadSuccessfullyIsCheckedAgainWhileTheWindowIsHidden(@TempDir Path dir){
     var reads= new ArrayList<Path>();
-    var m= manager(dir,f->{
+    var m= manager(dir,f -> {
       reads.add(f);
       var src= f.resolve("_hello").resolve("_rank_app.fear");
       Fs.writeUtf8(src,Fs.readUtf8(src)+"//saved\n");
-      Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(FactsTest.after(f))));
+      Fs.ofV(() -> Files.setLastModifiedTime(src,FileTime.fromMillis(FactsTest.after(f))));
       return Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear"));
     });
     var hello= code(m,dir,"hello");
@@ -804,8 +804,8 @@ final class ManagerTest{
     try(var s= server.accept(); var in= s.getInputStream()){ return new String(in.readAllBytes(),StandardCharsets.UTF_8); }
     catch(IOException e){ throw new UncheckedIOException(e); }
   }
-  private static CompletableFuture<String> follower(ServerSocket server){ return CompletableFuture.supplyAsync(()->listen(server)); }
-  private static ServerSocket port(){ return Fs.of(()->new ServerSocket(0,1,InetAddress.getLoopbackAddress())); }
+  private static CompletableFuture<String> follower(ServerSocket server){ return CompletableFuture.supplyAsync(() -> listen(server)); }
+  private static ServerSocket port(){ return Fs.of(() -> new ServerSocket(0,1,InetAddress.getLoopbackAddress())); }
   @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEnd(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= code(m,dir,"hello");
@@ -859,7 +859,7 @@ final class ManagerTest{
     m.start();
     others.add("fearlessBin0_003");
     var calls= associated.size();
-    until(m,_->!view.taken.isEmpty());
+    until(m,_ -> !view.taken.isEmpty());
     assertEquals(List.of(List.of("fearlessBin0_003")),view.taken);
     assertEquals(calls,associated.size());
     m.stop();
@@ -869,17 +869,17 @@ final class ManagerTest{
   }
   private static String info(String main, String shortcuts, String openWiths){ return "{\""+main+"\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], ["+openWiths+"]]}\n"; }
   private static String claim(String icon, String diskPath, String zipSteps, String zipEntry, String ext){
-    return Stream.of(icon,diskPath,zipSteps,zipEntry,ext).map(t->"\""+t+"\"").collect(Collectors.joining(", ","[","]"));
+    return Stream.of(icon,diskPath,zipSteps,zipEntry,ext).map(t -> "\""+t+"\"").collect(Collectors.joining(", ","[","]"));
   }
   private static Map<String,List<String>> claimed(Manager m){
-    return Project.claimed(m.state().projects()).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e->e.getValue().stream().map(c->c.label()+(c.shortcut() ? " shortcut " : " openWith ")+c.claim().icon()).toList()));
+    return Project.claimed(m.state().projects()).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e -> e.getValue().stream().map(c -> c.label()+(c.shortcut() ? " shortcut " : " openWith ")+c.claim().icon()).toList()));
   }
   private static String fapp(String alias, String main, String icon){ return AutoselectTest.fapp(AutoselectTest.start(alias,main,icon)); }
   private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve("mains.info"); }
   private static String compileError(Path project){ return Fs.readUtf8(project.resolve(Facts.outDir).resolve("compile_error.txt")); }
   private static void touch(Path project){
     var src= project.resolve("_"+project.getFileName()).resolve("_rank_app.fear");
-    Fs.ofV(()->Files.setLastModifiedTime(src,FileTime.fromMillis(FactsTest.after(project))));
+    Fs.ofV(() -> Files.setLastModifiedTime(src,FileTime.fromMillis(FactsTest.after(project))));
   }
   @Test void aCompileClaimsTheExtensionsOfItsMainsInfoAndANewManagerClaimsThemAgain(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
@@ -930,7 +930,7 @@ final class ManagerTest{
     infos.put("other",claiming("other.Other","fapp002","bar"));
     compiled(m,"hello","other");
     assertEquals(List.of("bar","fapp001","fapp002","foo"),claimed(m).keySet().stream().sorted().toList());
-    Fs.ofV(()->Files.delete(mainsInfo(hello)));
+    Fs.ofV(() -> Files.delete(mainsInfo(hello)));
     Fs.writeUtf8(mainsInfo(other),"{\"other.Other\": []}\n");
     var again= manager(dir,"hello.Hello");
     again.settle();
@@ -1009,7 +1009,7 @@ final class ManagerTest{
     var hello= code(m,dir,"hello");
     code(m,dir,"other");
     allow(m,dir,"foo");
-    var all= IntStream.range(0,1000).mapToObj(i->"[\"other.IconsO\", \"art/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
+    var all= IntStream.range(0,1000).mapToObj(i -> "[\"other.IconsO\", \"art/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
     infos.put("other","{\"other.Other\": [\"_other/_rank_app.fear\", ["+all+"], []]}\n");
     compiled(m,"other");
     infos.put("hello",claiming("hello.Hello","","foo"));
@@ -1027,18 +1027,18 @@ final class ManagerTest{
   }
   private static byte[] image(Path file, int w, int h, String format){
     var out= new ByteArrayOutputStream();
-    var written= Fs.of(()->ImageIO.write(new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB),format,out));
+    var written= Fs.of(() -> ImageIO.write(new BufferedImage(w,h,BufferedImage.TYPE_INT_RGB),format,out));
     assert written;
     Fs.ensureDir(file.getParent());
-    Fs.ofV(()->Files.write(file,out.toByteArray()));
+    Fs.ofV(() -> Files.write(file,out.toByteArray()));
     return out.toByteArray();
   }
   private static byte[] zip(String entry, byte[] content){
     var out= new ByteArrayOutputStream();
-    Fs.ofV(()->{ try(var z= new ZipOutputStream(out)){ z.putNextEntry(new ZipEntry(entry)); z.write(content); } });
+    Fs.ofV(() -> { try(var z= new ZipOutputStream(out)){ z.putNextEntry(new ZipEntry(entry)); z.write(content); } });
     return out.toByteArray();
   }
-  private static byte[] bytes(Path file){ return Fs.of(()->Files.readAllBytes(file)); }
+  private static byte[] bytes(Path file){ return Fs.of(() -> Files.readAllBytes(file)); }
   private static Path icons(Path project){ return project.resolve(Facts.outDir).resolve("icons"); }
   private static String iconError(String claim, String problem, String from){
     return "The icon \"hello.IconsFoo\" in \""+claim+"\" of main \"hello.Hello\" "+problem+" (from \""+from+"\"): an icon must be a square PNG image with a side from 64 to 1024 pixels.\n";
@@ -1076,7 +1076,7 @@ final class ManagerTest{
     var huge= ByteBuffer.allocate(33).put(png,0,16).putInt(100000).putInt(100000).put(png,24,9).array();
     infos.put("hello",info("hello.Hello",claim("hello.IconsFoo","art/foo.png","","",""),""));
     for (var c: List.of(Map.entry(huge,"is 100000x100000 pixels"),Map.entry(Arrays.copyOf(png,png.length/2),"is not a PNG image"),Map.entry(Arrays.copyOf(png,20),"is not a PNG image"))){
-      Fs.ofV(()->Files.write(foo,c.getKey()));
+      Fs.ofV(() -> Files.write(foo,c.getKey()));
       touch(hello);
       compiled(m,"hello");
       same(iconError("base.Shortcut[hello.IconsFoo]",c.getValue(),"art/foo.png"),compileError(hello));
@@ -1097,7 +1097,7 @@ final class ManagerTest{
     allow(m,dir,"foo");
     var png= image(dir.resolve("foo.png"),128,128,"png");
     Fs.ensureDir(hello.resolve("art"));
-    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
+    Fs.ofV(() -> Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
     var foo= claim("hello.IconsFoo","art/pics.zip","inner.zip","foo.png","");
     infos.put("hello",info("hello.Hello",claim("base.IconsConflict","icons/conflict.png","","","")+", "+foo,foo.replace("\"\"]","\"foo\"]")));
     compiled(m,"hello");
@@ -1106,18 +1106,18 @@ final class ManagerTest{
     assertArrayEquals(png,bytes(icons(hello).resolve("hello.IconsFoo.png")));
     assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")),bytes(icons(hello).resolve("base.IconsConflict.png")));
     var old= FileTime.fromMillis(1_000_000);
-    Fs.ofV(()->Files.setLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"),old));
+    Fs.ofV(() -> Files.setLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"),old));
     touch(hello);
     compiled(m,"hello");
-    assertEquals(old,Fs.of(()->Files.getLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"))));
+    assertEquals(old,Fs.of(() -> Files.getLastModifiedTime(icons(hello).resolve("hello.IconsFoo.png"))));
     var other= image(dir.resolve("foo.png"),256,256,"png");
-    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",other))));
+    Fs.ofV(() -> Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",other))));
     touch(hello);
     compiled(m,"hello");
     assertArrayEquals(other,bytes(icons(hello).resolve("hello.IconsFoo.png")));
   }
-  private static List<String> iconFiles(Path project){ return Names.list(icons(project)).stream().map(p->p.getFileName().toString()).sorted().toList(); }
-  private static List<String> iconNames(String... types){ return Stream.of(types).flatMap(t->Stream.of(t+".png",t+(Fs.isWindows() ? ".ico" : ".png"))).distinct().sorted().toList(); }
+  private static List<String> iconFiles(Path project){ return Names.list(icons(project)).stream().map(p -> p.getFileName().toString()).sorted().toList(); }
+  private static List<String> iconNames(String... types){ return Stream.of(types).flatMap(t -> Stream.of(t+".png",t+(Fs.isWindows() ? ".ico" : ".png"))).distinct().sorted().toList(); }
   @Test void aRecompileRemovesTheIconFilesNoClaimUsesAnyMore(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= code(m,dir,"hello");
@@ -1141,10 +1141,10 @@ final class ManagerTest{
     allow(m,dir,"foo");
     var png= image(dir.resolve("foo.png"),128,128,"png");
     Fs.ensureDir(hello.resolve("art"));
-    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
+    Fs.ofV(() -> Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("foo.png",png))));
     infos.put("hello",info("hello.Hello","",claim("hello.IconsFoo","art/pics.zip","inner.zip","foo.png","foo")));
     compiled(m,"hello");
-    Fs.ofV(()->Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("bar.png",png))));
+    Fs.ofV(() -> Files.write(hello.resolve("art").resolve("pics.zip"),zip("inner.zip",zip("bar.png",png))));
     var again= manager(dir,"hello.Hello");
     again.settle();
     same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/pics.zip/inner.zip/foo.png\": Cannot find entry in zip (that was found before).[###]\"foo.png\"\nCompile the project again.",compileError(hello));
@@ -1167,7 +1167,7 @@ final class ManagerTest{
     same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/foo.png\": no such file: [###]foo.png\nCompile the project again.",compileError(hello));
     assertEquals(Project.noClaims,project(again,hello).claims());
   }
-  private List<String> wanted(Path dir){ return associated.getLast().stream().map(i->i.extension()+" "+shown(dir,i)).toList(); }
+  private List<String> wanted(Path dir){ return associated.getLast().stream().map(i -> i.extension()+" "+shown(dir,i)).toList(); }
   private static String shown(Path dir, Icon i){
     assertEquals(i.png().toString().replaceAll("png$",Fs.isWindows() ? "ico" : "png"),i.ico().toString());
     return dir.relativize(i.png()).toString().replace('\\','/');
@@ -1330,7 +1330,7 @@ final class ManagerTest{
     assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"),wanted(dir));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
   }
-  private static List<String> top(Path project){ return Names.list(project).stream().map(p->p.getFileName().toString()).toList(); }
+  private static List<String> top(Path project){ return Names.list(project).stream().map(p -> p.getFileName().toString()).toList(); }
   @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= code(m,dir,"hello");
@@ -1344,7 +1344,7 @@ final class ManagerTest{
     assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve(auto)));
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
     Fs.writeUtf8(hello.resolve("foo_bar.fapp010"),"kept\n");
-    Fs.ofV(()->Files.move(hello.resolve(auto),dir.resolve(auto)));
+    Fs.ofV(() -> Files.move(hello.resolve(auto),dir.resolve(auto)));
     send(m,"Show","hello");
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
     touch(hello);
@@ -1353,7 +1353,7 @@ final class ManagerTest{
     assertEquals("kept\n",Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
     assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve(auto)));
     assertTrue(Files.exists(dir.resolve(auto)));
-    Fs.ofV(()->Files.delete(hello.resolve("foo_bar.fapp010")));
+    Fs.ofV(() -> Files.delete(hello.resolve("foo_bar.fapp010")));
     touch(hello);
     compiled(m,"hello");
     assertEquals(MakeDemo.markerContent,Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
@@ -1404,7 +1404,7 @@ final class ManagerTest{
     touch(hello);
     compiled(m,"hello");
     assertTrue(Files.exists(hello.resolve("l"+"o".repeat(191)+".fapp010")));
-    Fs.ofV(()->Files.delete(hello.resolve("todo")));
+    Fs.ofV(() -> Files.delete(hello.resolve("todo")));
     infos.put("hello",info("hello.Todo",bar,""));
     touch(hello);
     compiled(m,"hello");
@@ -1412,7 +1412,7 @@ final class ManagerTest{
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
   }
   private Manager opening(Path dir){
-    return manager(dir,f->Optional.of(Map.of(f.getFileName()+"."+(f.getFileName().toString().equals("slow") ? "Slow" : "Hello"),"_hello/_rank_app.fear")));
+    return manager(dir,f -> Optional.of(Map.of(f.getFileName()+"."+(f.getFileName().toString().equals("slow") ? "Slow" : "Hello"),"_hello/_rank_app.fear")));
   }
   private static Path doc(Path dir, String name){
     var res= dir.resolve("desk").resolve(name);
@@ -1471,7 +1471,7 @@ final class ManagerTest{
     infos.put("slow",claiming("slow.Slow","fapp003","foo"));
     compiled(m,"slow");
     open(m,doc(dir,"a.foo"));
-    until(m,_->view.out(slow).contains("ran slow.Slow"));
+    until(m,_ -> view.out(slow).contains("ran slow.Slow"));
     open(m,doc(dir,"b.fapp003"));
     assertEquals(List.of("The manager was asked \"Run\" on \"slow\", but \"slow\" has a job: \"slow.Slow\". Terminate it first."),view.refused);
     send(m,"Terminate","slow");

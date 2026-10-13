@@ -24,7 +24,7 @@ import tools.Fs;
 /// The icon lives for the whole process life and is removed by process death.
 public final class Tray{
   public static boolean install(Window window){
-    if (Fs.isLinux()){ return Sni.install(()->Main.command("Show"),()->Main.command("Quit"),Icons.app()); }
+    if (Fs.isLinux()){ return Sni.install(() -> Main.command("Show"),() -> Main.command("Quit"),Icons.app()); }
     if (!SystemTray.isSupported()){ return false; }
     var menu= menu();
     var anchor= new JWindow();
@@ -42,16 +42,16 @@ public final class Tray{
     var tray= SystemTray.getSystemTray();
     try{ tray.add(icon); }
     catch(AWTException e){ throw Violation.couldNotAddTrayIcon(e); }
-    PropertyChangeListener gone= _->{ if (!SystemTray.isSupported() || !Arrays.asList(tray.getTrayIcons()).contains(icon)){ window.fail(Violation.trayIconRemoved()); } };
+    PropertyChangeListener gone= _ -> { if (!SystemTray.isSupported() || !Arrays.asList(tray.getTrayIcons()).contains(icon)){ window.fail(Violation.trayIconRemoved()); } };
     tray.addPropertyChangeListener("systemTray",gone);
     tray.addPropertyChangeListener("trayIcons",gone);
     return true;
   }
   private static JPopupMenu menu(){
     var res= new JPopupMenu();
-    res.add(Window.item("Show manager",()->Main.command("Show")));
+    res.add(Window.item("Show manager",() -> Main.command("Show")));
     res.addSeparator();
-    res.add(Window.item("Quit manager",()->Main.command("Quit")));
+    res.add(Window.item("Quit manager",() -> Main.command("Quit")));
     return res;
   }
   private static void open(JWindow anchor, JPopupMenu menu, Point at){

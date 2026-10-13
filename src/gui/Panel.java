@@ -81,8 +81,8 @@ final class Panel{
   private final Collapsible logs= new Collapsible("Logs",half(logList),false,small("Logs",this::openLogs));
   private final JButton openDocs= small("Open docs",this::openDocs);
   private final JButton action= named(small("Compile",this::act),"action");
-  private final JButton deleteCache= small("Delete cache",()->Main.command("DeleteCache",this.project.alias()));
-  private final JButton forget= small("Forget",()->Main.command("Forget",this.project.alias()));
+  private final JButton deleteCache= small("Delete cache",() -> Main.command("DeleteCache",this.project.alias()));
+  private final JButton forget= small("Forget",() -> Main.command("Forget",this.project.alias()));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
   private Object shown= List.of();
@@ -102,7 +102,7 @@ final class Panel{
     header.add(action);
     header.add(openDocs);
     header.add(kinds);
-    header.add(small("Browse",()->Window.open(refuse,project.folder())));
+    header.add(small("Browse",() -> Window.open(refuse,project.folder())));
     header.add(forget);
     header.add(deleteCache);
     var top= new JPanel();
@@ -110,7 +110,7 @@ final class Panel{
     Stream.of(header,shortcuts).forEach(top::add);
     var areas= new JPanel();
     areas.setLayout(new BoxLayout(areas,BoxLayout.Y_AXIS));
-    Stream.of(new Collapsible("Output",half(output),true,small("Clear",()->output.setText(""))),claims,links,logs).forEach(areas::add);
+    Stream.of(new Collapsible("Output",half(output),true,small("Clear",() -> output.setText(""))),claims,links,logs).forEach(areas::add);
     areas.add(new JPanel());
     root.add(top,BorderLayout.NORTH);
     root.add(areas,BorderLayout.CENTER);
@@ -130,7 +130,7 @@ final class Panel{
   private void openDocs(){ openDocs(refuse,project.folder()); }
   static void openDocs(Consumer<String> refuse, Path folder){
     var gen= folder.resolve(Facts.outDir).resolve("gen_java");
-    var docs= Files.isDirectory(gen) ? Fs.walk(gen,s->s.filter(p->p.toString().endsWith(".html")).toList()) : List.<Path>of();
+    var docs= Files.isDirectory(gen) ? Fs.walk(gen,s -> s.filter(p -> p.toString().endsWith(".html")).toList()) : List.<Path>of();
     if (docs.isEmpty()){ refuse.accept(Report.noDocs(gen)); return; }
     docs.forEach(OpenPath::open);
   }
@@ -155,10 +155,10 @@ final class Panel{
     var mains= project.knownMains();
     if (mains.size() == 1){ Main.command("Run",project.alias(),mains.getFirst()); return; }
     var popup= new JPopupMenu();
-    var boxes= mains.stream().map(m->named(new JCheckBox(m,project.selectedMains().contains(m)),m)).toList();
-    var run= named(small("Run",()->{ popup.setVisible(false); runTicked(boxes); }),"runTicked");
-    Runnable enable= ()->run.setEnabled(boxes.stream().anyMatch(JCheckBox::isSelected));
-    boxes.forEach(b->b.addActionListener(_->enable.run()));
+    var boxes= mains.stream().map(m -> named(new JCheckBox(m,project.selectedMains().contains(m)),m)).toList();
+    var run= named(small("Run",() -> { popup.setVisible(false); runTicked(boxes); }),"runTicked");
+    Runnable enable= () -> run.setEnabled(boxes.stream().anyMatch(JCheckBox::isSelected));
+    boxes.forEach(b -> b.addActionListener(_ -> enable.run()));
     enable.run();
     var list= new JPanel();
     list.setLayout(new BoxLayout(list,BoxLayout.Y_AXIS));
@@ -173,7 +173,7 @@ final class Panel{
   }
   void render(Project p, List<Project> all, int height){
     var claimed= Project.claimed(all);
-    var stamps= claimed.values().stream().flatMap(List::stream).map(c->c.icon(".png").toFile().lastModified()).toList();
+    var stamps= claimed.values().stream().flatMap(List::stream).map(c -> c.icon(".png").toFile().lastModified()).toList();
     var next= List.of(p,all.stream().map(Project::entry).toList(),claimed,stamps,height);
     if (next.equals(shown)){ return; }
     shown = next;
@@ -205,26 +205,26 @@ final class Panel{
     shortcuts.removeAll();
     var mine= mine(p,claimed).filter(Project.Claimant::shortcut).toList();
     shortcuts.setVisible(!mine.isEmpty());
-    mine.forEach(c->shortcuts.add(doubleClicked(named(shortcut(c),"shortcut "+c.main()+" "+c.claim().extension()),()->Main.command("OpenWithOrShortcut",Main.path(c.shortcutFile())))));
+    mine.forEach(c -> shortcuts.add(doubleClicked(named(shortcut(c),"shortcut "+c.main()+" "+c.claim().extension()),() -> Main.command("OpenWithOrShortcut",Main.path(c.shortcutFile())))));
   }
   private static JLabel shortcut(Project.Claimant c){
     return Tiles.desktop(new JLabel(),new ImageIcon(Icons.of(c,Tiles.iconSize)),c.shortcutFile().getFileName().toString());
   }
   private static Stream<Project.Claimant> mine(Project p, Map<String,List<Project.Claimant>> claimed){
-    return claimed.values().stream().flatMap(List::stream).filter(c->c.folder().equals(p.folder()));
+    return claimed.values().stream().flatMap(List::stream).filter(c -> c.folder().equals(p.folder()));
   }
   private void fillClaims(Project p, Map<String,List<Project.Claimant>> claimed){
     claimsBox.removeAll();
-    var opens= mine(p,claimed).filter(c->!c.shortcut()).collect(Collectors.groupingBy(Project.Claimant::main,TreeMap::new,Collectors.toList()));
+    var opens= mine(p,claimed).filter(c -> !c.shortcut()).collect(Collectors.groupingBy(Project.Claimant::main,TreeMap::new,Collectors.toList()));
     claims.setVisible(!opens.isEmpty());
-    opens.forEach((main,cs)->fillClaims(main,cs,claimed));
+    opens.forEach((main,cs) -> fillClaims(main,cs,claimed));
   }
   private void fillClaims(String main, List<Project.Claimant> cs, Map<String,List<Project.Claimant>> claimed){
     claimsBox.add(row(0,new JLabel(main)));
-    section("Extensions this main opens:",cs.stream().map(c->row(16,label("."+c.claim().extension(),c))).toList());
-    section("Conflicting extensions:",cs.stream().filter(c->!others(c,claimed).isEmpty()).map(c->conflict(c,others(c,claimed))).toList());
+    section("Extensions this main opens:",cs.stream().map(c -> row(16,label("."+c.claim().extension(),c))).toList());
+    section("Conflicting extensions:",cs.stream().filter(c -> !others(c,claimed).isEmpty()).map(c -> conflict(c,others(c,claimed))).toList());
   }
-  private static List<Project.Claimant> others(Project.Claimant c, Map<String,List<Project.Claimant>> claimed){ return claimed.get(c.claim().extension()).stream().filter(o->!o.equals(c)).toList(); }
+  private static List<Project.Claimant> others(Project.Claimant c, Map<String,List<Project.Claimant>> claimed){ return claimed.get(c.claim().extension()).stream().filter(o -> !o.equals(c)).toList(); }
   private void section(String heading, List<JPanel> rows){
     if (rows.isEmpty()){ return; }
     claimsBox.add(row(0,new JLabel(heading)));
@@ -239,7 +239,7 @@ final class Panel{
   private static JLabel label(String text, Project.Claimant c){ return new JLabel(text,new ImageIcon(Icons.of(c,claimSize)),JLabel.LEADING); }
   private static JPanel conflict(Project.Claimant c, List<Project.Claimant> others){
     var res= row(16,new JLabel("."+c.claim().extension()+" is also opened by"));
-    others.forEach(o->res.add(label(o.label(),o)));
+    others.forEach(o -> res.add(label(o.label(),o)));
     return res;
   }
   private void fillKinds(Project p){
@@ -250,7 +250,7 @@ final class Panel{
     kinds.add(kindButton(p,"Become code",Kind.code));
   }
   private JButton kindButton(Project p, String text, Kind target){
-    var res= named(small(text,()->Main.command("Kind",p.alias(),target.text)),target.text);
+    var res= named(small(text,() -> Main.command("Kind",p.alias(),target.text)),target.text);
     res.setEnabled(!p.busy());
     return res;
   }
@@ -263,13 +263,13 @@ final class Panel{
     links.setVisible(iAmCode || p.kind().isData());
     if (!links.isVisible()){ return; }
     linksBox.add(new JLabel(iAmCode ? "Data projects this code project reads or edits:" : "Code projects that may read or edit this:"));
-    if (!iAmCode){ all.stream().filter(o->o.kind() == Kind.code).sorted(Comparator.comparing(Project::alias)).forEach(o->linksBox.add(linkRow(o,p.alias(),p.kind() == Kind.dataReadWrite,o.alias()))); }
+    if (!iAmCode){ all.stream().filter(o -> o.kind() == Kind.code).sorted(Comparator.comparing(Project::alias)).forEach(o -> linksBox.add(linkRow(o,p.alias(),p.kind() == Kind.dataReadWrite,o.alias()))); }
     if (iAmCode){
       var linked= Stream.concat(p.entry().reads().keySet().stream(),p.entry().edits().keySet().stream());
-      Stream.concat(all.stream().filter(o->o.kind().isData()).map(Project::alias),linked).distinct().sorted()
-        .forEach(a->linksBox.add(linkRow(p,a,all.stream().anyMatch(o->o.alias().equals(a) && o.kind() == Kind.dataReadWrite),a)));
+      Stream.concat(all.stream().filter(o -> o.kind().isData()).map(Project::alias),linked).distinct().sorted()
+        .forEach(a -> linksBox.add(linkRow(p,a,all.stream().anyMatch(o -> o.alias().equals(a) && o.kind() == Kind.dataReadWrite),a)));
     }
-    old.values().forEach(l->carry(l,owner));
+    old.values().forEach(l -> carry(l,owner));
   }
   private void carry(Link from, Component owner){
     var to= linkFields.get(from.field.getName());
@@ -289,14 +289,14 @@ final class Panel{
     var field= named(new JTextField(String.join(" ",links.getOrDefault(data,List.of())),14),other+" "+how);
     var link= new Link(field);
     linkFields.put(field.getName(),link);
-    sendsOn(field,()->send(link,code,data,how));
+    sendsOn(field,() -> send(link,code,data,how));
     var res= new JPanel(new FlowLayout(FlowLayout.LEFT,2,0));
     res.add(new JLabel(how));
     res.add(field);
     return res;
   }
   static void sendsOn(JTextField field, Runnable send){
-    var pause= new Timer(1000,_->send.run());
+    var pause= new Timer(1000,_ -> send.run());
     pause.setRepeats(false);
     field.addFocusListener(new FocusAdapter(){
       @Override public void focusLost(FocusEvent e){ send.run(); }
@@ -313,7 +313,7 @@ final class Panel{
   private void send(Link link, Project code, String data, String how){
     if (linkFields.get(link.field.getName()) != link || !link.typed()){ return; }
     link.was = link.field.getText().strip();
-    var words= Stream.of(link.was.split(" +")).filter(w->!w.isEmpty());
+    var words= Stream.of(link.was.split(" +")).filter(w -> !w.isEmpty());
     Main.command("Link",Stream.concat(Stream.of(code.alias(),data,how),words).toArray(String[]::new));
   }
   private static final class Arrow implements Icon{

@@ -175,7 +175,7 @@ final class Sni{
   static List<String> props(String path){
     return path.equals(menu) ? List.of("Version") : List.of("Category","Id","Title","Status","IconPixmap","ToolTip","ItemIsMenu","Menu");
   }
-  static Writer all(String path, BufferedImage icon){ return new Writer().array(8,w->props(path).forEach(p->prop(w.pad(8).str(p),p,icon))); }
+  static Writer all(String path, BufferedImage icon){ return new Writer().array(8,w -> props(path).forEach(p -> prop(w.pad(8).str(p),p,icon))); }
   static Writer prop(Writer w, String name, BufferedImage icon){
     return switch(name){
       case "Category" -> w.sig("s").str("ApplicationStatus");
@@ -191,15 +191,15 @@ final class Sni{
     };
   }
   static Writer layout(){ return item(new Writer().u32(1).pad(8),items.getFirst()).array(1,Sni::children); }
-  private static void children(Writer w){ items.stream().skip(1).forEach(i->item(w.sig("(ia{sv}av)").pad(8),i).u32(0)); }
-  static Writer groupProperties(){ return new Writer().array(8,w->items.forEach(i->item(w.pad(8),i))); }
+  private static void children(Writer w){ items.stream().skip(1).forEach(i -> item(w.sig("(ia{sv}av)").pad(8),i).u32(0)); }
+  static Writer groupProperties(){ return new Writer().array(8,w -> items.forEach(i -> item(w.pad(8),i))); }
   private static Writer item(Writer w, List<String> item){
-    return w.u32(Integer.parseInt(item.get(0))).array(8,e->e.str(item.get(1)).sig("s").str(item.get(2)));
+    return w.u32(Integer.parseInt(item.get(0))).array(8,e -> e.str(item.get(1)).sig("s").str(item.get(2)));
   }
-  private static Writer pixmaps(Writer w, BufferedImage... images){ return w.array(8,e->List.of(images).forEach(i->pixmap(e,i))); }
+  private static Writer pixmaps(Writer w, BufferedImage... images){ return w.array(8,e -> List.of(images).forEach(i -> pixmap(e,i))); }
   private static void pixmap(Writer w, BufferedImage i){
     var argb= i.getRGB(0,0,i.getWidth(),i.getHeight(),null,0,i.getWidth());
-    w.pad(8).u32(i.getWidth()).u32(i.getHeight()).array(1,e->IntStream.of(argb).forEach(p->e.b(p>>24).b(p>>16).b(p>>8).b(p)));
+    w.pad(8).u32(i.getWidth()).u32(i.getHeight()).array(1,e -> IntStream.of(argb).forEach(p -> e.b(p>>24).b(p>>16).b(p>>8).b(p)));
   }
   private int call(String dest, String path, String iface, String member, String sig, Writer body) throws IOException{
     write(channel,frame(++serial,1,0,dest,path,iface,member,null,sig,body));
@@ -213,7 +213,7 @@ final class Sni{
   }
   static byte[] frame(int serial, int type, int reply, String dest, String path, String iface, String member, String error, String sig, Writer body){
     return new Writer().b('l').b(type).b(0).b(1).u32(body.pos).u32(serial)
-      .array(8,h->header(h,reply,dest,path,iface,member,error,sig)).pad(8).append(body).bytes();
+      .array(8,h -> header(h,reply,dest,path,iface,member,error,sig)).pad(8).append(body).bytes();
   }
   private static void header(Writer h, int reply, String dest, String path, String iface, String member, String error, String sig){
     field(h,1,"o",path);

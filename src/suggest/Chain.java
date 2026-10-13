@@ -103,11 +103,11 @@ final class Chain{
     return res;
   }
   private static Meth meth(List<Item> cur, int start, int end){
-    var arrow= cur.stream().filter(it->Tokens.is(it, Kind.Arrow)).findFirst().map(cur::indexOf);
+    var arrow= cur.stream().filter(it -> Tokens.is(it, Kind.Arrow)).findFirst().map(cur::indexOf);
     var rc= Tokens.is(cur.get(0), Kind.RCap) ? 1 : 0;
     var sig= arrow.isPresent() || rc < cur.size() && Tokens.is(cur.get(rc), Kind.DotName, Kind.Op);
     var head= !sig ? List.<Item>of() : cur.subList(0, arrow.orElse(cur.size()));
-    var body= !sig ? cur : cur.subList(arrow.map(a->a+1).orElse(cur.size()), cur.size());
+    var body= !sig ? cur : cur.subList(arrow.map(a -> a+1).orElse(cur.size()), cur.size());
     var k= head.isEmpty() ? 0 : rc;
     var name= k < head.size() && Tokens.is(head.get(k), Kind.DotName, Kind.Op) ? Optional.of(Tokens.text(head.get(k++))) : Optional.<String>empty();
     var xs= k < head.size() && Tokens.isGroup(head.get(k), Kind.OSquareArg) ? generics(head.get(k++)) : List.<String>of();
@@ -122,7 +122,7 @@ final class Chain{
   }
   /// the names of the generics declared in a [..] group
   private static List<String> generics(Item square){
-    return split(((Group)square).items, Kind.Comma).stream().filter(a->!a.isEmpty() && Tokens.is(a.get(0), Kind.UppercaseId)).map(a->Tokens.text(a.get(0))).toList();
+    return split(((Group)square).items, Kind.Comma).stream().filter(a -> !a.isEmpty() && Tokens.is(a.get(0), Kind.UppercaseId)).map(a -> Tokens.text(a.get(0))).toList();
   }
   private static Param param(List<Item> p){
     var named= !p.isEmpty() && (Tokens.is(p.get(0), Kind.LowercaseId, Kind.Underscore) || Tokens.isGroup(p.get(0), Kind.OCurly));
@@ -131,7 +131,7 @@ final class Chain{
     return new Param(Tokens.is(p.get(0), Kind.LowercaseId) ? Tokens.text(p.get(0)) : "_", type);
   }
   private static boolean hasImplicit(List<Item> items){
-    return items.stream().anyMatch(it->it instanceof Group g ? g.open != Kind.OCurly && hasImplicit(g.items) : Tokens.is(it, Kind.ColonColon));
+    return items.stream().anyMatch(it -> it instanceof Group g ? g.open != Kind.OCurly && hasImplicit(g.items) : Tokens.is(it, Kind.ColonColon));
   }
   static Optional<String> selfName(Group g){
     var self= g.items.size() >= 2 && Tokens.is(g.items.get(0), Kind.SQuote) && Tokens.is(g.items.get(1), Kind.LowercaseId);

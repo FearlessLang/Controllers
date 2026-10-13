@@ -22,11 +22,11 @@ public final class Api{
     public boolean isX(){ return !isC() && !name.equals("?"); }
     Ty subst(Map<String,Ty> sub){
       if (isX()){ return sub.getOrDefault(name, this); }
-      return new Ty(name, args.stream().map(a->a.subst(sub)).toList());
+      return new Ty(name, args.stream().map(a -> a.subst(sub)).toList());
     }
     Ty erase(List<String> bs){
       if (isX()){ return bs.contains(name) ? unknown : this; }
-      return new Ty(name, args.stream().map(a->a.erase(bs)).toList());
+      return new Ty(name, args.stream().map(a -> a.erase(bs)).toList());
     }
     /// the type with simple names
     public String show(){
@@ -36,23 +36,23 @@ public final class Api{
   }
   public record Method(String name, List<String> bs, List<Ty> ts, Ty ret, boolean abs){
     public int arity(){ return ts.size(); }
-    Method subst(Map<String,Ty> sub){ return new Method(name, bs, ts.stream().map(t->t.subst(sub)).toList(), ret.subst(sub), abs); }
+    Method subst(Map<String,Ty> sub){ return new Method(name, bs, ts.stream().map(t -> t.subst(sub)).toList(), ret.subst(sub), abs); }
   }
   public record Type(String name, List<String> bs, List<Ty> supers, List<Method> ms){
-    Optional<Method> method(String name, int arity){ return ms.stream().filter(m->m.name.equals(name) && m.arity() == arity).reduce((a,b)->{ throw new IllegalArgumentException("Type "+this.name+" has two methods "+a.name+" of "+arity+" parameters"); }); }
+    Optional<Method> method(String name, int arity){ return ms.stream().filter(m -> m.name.equals(name) && m.arity() == arity).reduce((a,b) -> { throw new IllegalArgumentException("Type "+this.name+" has two methods "+a.name+" of "+arity+" parameters"); }); }
     /// the abstract method of that arity a method without name implements: the only one but for the taken names
     Optional<Method> lambda(int arity, Set<String> taken){
-      var names= ms.stream().filter(m->m.abs && m.arity() == arity && !taken.contains(m.name)).map(Method::name).distinct().toList();
+      var names= ms.stream().filter(m -> m.abs && m.arity() == arity && !taken.contains(m.name)).map(Method::name).distinct().toList();
       return names.size() == 1 ? method(names.get(0), arity) : Optional.empty();
     }
     Map<String,Ty> bind(Ty t){ return IntStream.range(0, bs.size()).boxed().collect(Collectors.toMap(bs::get, t.args::get)); }
   }
   private final Map<String,Type> types;
-  public Api(List<Type> all){ types= all.stream().collect(Collectors.toMap(t->t.name+"/"+t.bs.size(), Function.identity())); }
+  public Api(List<Type> all){ types= all.stream().collect(Collectors.toMap(t -> t.name+"/"+t.bs.size(), Function.identity())); }
   public Optional<Type> entry(Ty t){ return Optional.ofNullable(types.get(t.name+"/"+t.args.size())); }
   /// the public types of the package, with their generics as type variables
   List<Ty> types(String pkg){
-    return types.values().stream().filter(t->t.name.startsWith(pkg+".") && !t.name.startsWith(pkg+"._")).map(t->new Ty(t.name, t.bs.stream().map(b->new Ty(b, List.of())).toList())).toList();
+    return types.values().stream().filter(t -> t.name.startsWith(pkg+".") && !t.name.startsWith(pkg+"._")).map(t -> new Ty(t.name, t.bs.stream().map(b -> new Ty(b, List.of())).toList())).toList();
   }
   /// [name, rc, [[X, rcs..]..], [[C, ts..]..], methods, self] with a method
   /// [name, rc, [[X, rcs..]..], [ts..], ret, origin, origin arity, abs|concrete] and a type
@@ -61,13 +61,13 @@ public final class Api{
     var j= new Json(json);
     var all= j.arr();
     j.check(j.i == json.length());
-    return all.stream().map(t->type(arr(t))).toList();
+    return all.stream().map(t -> type(arr(t))).toList();
   }
   private static Type type(List<Object> a){
-    var supers= arr(a.get(3)).stream().map(o->{ var c= arr(o); return new Ty(str(c.get(0)), c.subList(1, c.size()).stream().map(Api::ty).toList()); }).toList();
-    return new Type(str(a.get(0)), bs(a.get(2)), supers, arr(a.get(4)).stream().map(m->method(arr(m))).toList());
+    var supers= arr(a.get(3)).stream().map(o -> { var c= arr(o); return new Ty(str(c.get(0)), c.subList(1, c.size()).stream().map(Api::ty).toList()); }).toList();
+    return new Type(str(a.get(0)), bs(a.get(2)), supers, arr(a.get(4)).stream().map(m -> method(arr(m))).toList());
   }
-  private static List<String> bs(Object o){ return arr(o).stream().map(b->str(arr(b).get(0))).toList(); }
+  private static List<String> bs(Object o){ return arr(o).stream().map(b -> str(arr(b).get(0))).toList(); }
   private static Method method(List<Object> a){
     return new Method(str(a.get(0)), bs(a.get(2)), arr(a.get(3)).stream().map(Api::ty).toList(), ty(a.get(4)), str(a.get(7)).equals("abs"));
   }
@@ -80,7 +80,7 @@ public final class Api{
   /// the _map.json the compiler writes, {"target":{"in":"out",...},...}; a malformed text is an error
   public static Map<String,String> packages(String json, String pkg){
     var j= new Json(json);
-    var all= j.obj(()->j.obj(j::str));
+    var all= j.obj(() -> j.obj(j::str));
     j.check(j.i == json.length());
     return all.getOrDefault(pkg, Map.of());
   }

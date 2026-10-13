@@ -82,10 +82,10 @@ final class DocsTest{
     assertEquals(Optional.empty(),docs.method("_AANat",0,".str",0));
   }
   @Test void aMissingPublicTypeOrMethodIsAnError(){
-    same("No type Nope with 0 generics in the documentation",assertThrows(IllegalArgumentException.class,()->docs.type("Nope",0)).getMessage());
-    same("No type Nat with 1 generics in the documentation",assertThrows(IllegalArgumentException.class,()->docs.type("Nat",1)).getMessage());
-    same("No method .some/1 of Nat in the documentation",assertThrows(IllegalArgumentException.class,()->docs.method("Nat",0,".some",1)).getMessage());
-    same("No method .some/1 of Gui in the documentation",assertThrows(IllegalArgumentException.class,()->docs.method("Gui",0,".some",1)).getMessage());
+    same("No type Nope with 0 generics in the documentation",assertThrows(IllegalArgumentException.class,() -> docs.type("Nope",0)).getMessage());
+    same("No type Nat with 1 generics in the documentation",assertThrows(IllegalArgumentException.class,() -> docs.type("Nat",1)).getMessage());
+    same("No method .some/1 of Nat in the documentation",assertThrows(IllegalArgumentException.class,() -> docs.method("Nat",0,".some",1)).getMessage());
+    same("No method .some/1 of Gui in the documentation",assertThrows(IllegalArgumentException.class,() -> docs.method("Gui",0,".some",1)).getMessage());
   }
   @Test void theSignatureIsTheNameAndTheArityWhateverTheTypes(){
     same(".map/1",Docs.signature("\tmut .map[R:*](mut MF[T,R]):mut Action[R]"));

@@ -40,7 +40,7 @@ final class FactsTest{
   }
   static void backdated(Path folder){
     var old= FileTime.fromMillis(System.currentTimeMillis()-3_600_000);
-    Fs.walkV(folder,s->s.filter(Files::isRegularFile).forEach(f->Fs.ofV(()->Files.setLastModifiedTime(f,old))));
+    Fs.walkV(folder,s -> s.filter(Files::isRegularFile).forEach(f -> Fs.ofV(() -> Files.setLastModifiedTime(f,old))));
   }
   static void cache(Path project, String pkg, long stamp){ cache(project,pkg,stamp,"{}\n"); }
   static void cache(Path project, String pkg, long stamp, String mainsInfo){ cache(project,pkg,stamp,mainsInfo,"base"); }
@@ -52,9 +52,9 @@ final class FactsTest{
   }
   private static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file,content);
-    Fs.ofV(()->Files.setLastModifiedTime(file,FileTime.fromMillis(stamp)));
+    Fs.ofV(() -> Files.setLastModifiedTime(file,FileTime.fromMillis(stamp)));
   }
-  static long after(Path project){ return Fs.walk(project,s->s.filter(Files::isRegularFile).mapToLong(Fs::lastModified).max().orElse(0))+1; }
+  static long after(Path project){ return Fs.walk(project,s -> s.filter(Files::isRegularFile).mapToLong(Fs::lastModified).max().orElse(0))+1; }
   static boolean upToDate(Facts f){ return f.stale().isEmpty(); }
   //A log or an Eclipse report lands after the build stamp, inside the project folder
   @Test void whatFearlessWritesAboutAProjectIsNotCountedAsSource(@TempDir Path dir){
@@ -175,11 +175,11 @@ final class FactsTest{
       Restore it, or forget this project.""",Facts.of(dir.resolve("gone"),"gone",Kind.code).problem().orElseThrow());
   }
   @Test void aFolderDeletedWhileItIsCheckedIsMissing(@TempDir Path dir){
-    assertTimeoutPreemptively(Duration.ofSeconds(60),()->{
+    assertTimeoutPreemptively(Duration.ofSeconds(60),() -> {
       for (var i: Range.of(0,20)){
         var project= project(dir,"p"+i);
-        IntStream.range(0,300).forEach(j->Fs.writeUtf8(project.resolve("_hello").resolve("f"+j+".fear"),""));
-        var gone= Thread.startVirtualThread(()->Fs.rmTree(project));
+        IntStream.range(0,300).forEach(j -> Fs.writeUtf8(project.resolve("_hello").resolve("f"+j+".fear"),""));
+        var gone= Thread.startVirtualThread(() -> Fs.rmTree(project));
         Facts.of(project,"p"+i,Kind.code);
         gone.join();
         same("The folder of this project does not exist:[###]",Facts.of(project,"p"+i,Kind.code).problem().orElseThrow());
@@ -188,33 +188,33 @@ final class FactsTest{
   }
   @Test void aFileDatedAtTheStartOf1970IsAProblem(@TempDir Path dir){
     var project= project(dir,"someProject");
-    Fs.ofV(()->Files.setLastModifiedTime(project.resolve("_hello").resolve("_rank_app.fear"),FileTime.fromMillis(-5000)));
+    Fs.ofV(() -> Files.setLastModifiedTime(project.resolve("_hello").resolve("_rank_app.fear"),FileTime.fromMillis(-5000)));
     same("[###]Path: \"_hello/_rank_app.fear\"\n\nThis file is dated 19[###]",Facts.of(project,"someproject",Kind.code).problem().orElseThrow());
   }
   @Test void anUnreadableFolderIsAProblemNotACrash(@TempDir Path dir){
     Assumptions.assumeTrue(Fs.isLinux());
     var project= project(dir,"someProject");
     var hidden= project.resolve("_hello");
-    Fs.ofV(()->Files.setPosixFilePermissions(hidden,PosixFilePermissions.fromString("---------")));
+    Fs.ofV(() -> Files.setPosixFilePermissions(hidden,PosixFilePermissions.fromString("---------")));
     Assumptions.assumeFalse(Files.isReadable(hidden));
     same("""
       The folder of this project can not be read:
       [###]someProject
       access denied: [###]_hello
       Give Fearless access to it, or forget this project.""",Facts.of(project,"someproject",Kind.code).problem().orElseThrow());
-    Fs.ofV(()->Files.setPosixFilePermissions(hidden,PosixFilePermissions.fromString("rwxr-xr-x")));
+    Fs.ofV(() -> Files.setPosixFilePermissions(hidden,PosixFilePermissions.fromString("rwxr-xr-x")));
   }
   @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
     var project= project(dir,"someProject");
     var png= project.resolve(".config").resolve("icon").resolve("a.png");
     Fs.ensureDir(png.getParent());
-    Fs.ofV(()->ImageIO.write(new BufferedImage(4,4,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
+    Fs.ofV(() -> ImageIO.write(new BufferedImage(4,4,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
     var first= Facts.of(project,"someproject",Kind.code);
     assertEquals(first,Facts.of(project,"someproject",Kind.code));
     assertSame(first.icon().orElseThrow().image(),Facts.of(project,"someproject",Kind.code).icon().orElseThrow().image());
     assertEquals(4,first.icon().orElseThrow().image().getWidth());
-    Fs.ofV(()->ImageIO.write(new BufferedImage(6,6,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
-    Fs.ofV(()->Files.setLastModifiedTime(png,FileTime.fromMillis(Fs.lastModified(png)+1000)));
+    Fs.ofV(() -> ImageIO.write(new BufferedImage(6,6,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
+    Fs.ofV(() -> Files.setLastModifiedTime(png,FileTime.fromMillis(Fs.lastModified(png)+1000)));
     assertEquals(6,Facts.of(project,"someproject",Kind.code).icon().orElseThrow().image().getWidth());
   }
   @Test void twoIconsAreAProjectProblem(@TempDir Path dir){
@@ -232,7 +232,7 @@ final class FactsTest{
         b.png
 
       Keep exactly one .png file there.
-      """,()->Facts.icon(project));
+      """,() -> Facts.icon(project));
     assertFalse(Facts.of(project,"someproject",Kind.code).problem().isEmpty());
   }
   @Test void anIconThatIsNotAnImageIsAProjectProblem(@TempDir Path dir){
@@ -246,7 +246,7 @@ final class FactsTest{
 
       The icon of a project is the only .png file in its ".config/icon" folder:
       replace that file with a PNG image, or remove it.
-      """,()->Facts.icon(project));
+      """,() -> Facts.icon(project));
     assertTrue(Facts.of(project,"someproject",Kind.code).problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }
   @Test void aBrokenIconDoesNotHideAnUpToDateCache(@TempDir Path dir){
@@ -262,7 +262,7 @@ final class FactsTest{
     Fs.writeUtf8(project.resolve("_hello").resolve("Bad.fear"),"");
     var png= project.resolve(".config").resolve("icon").resolve("a.png");
     Fs.ensureDir(png.getParent());
-    Fs.ofV(()->ImageIO.write(new BufferedImage(4,4,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
+    Fs.ofV(() -> ImageIO.write(new BufferedImage(4,4,BufferedImage.TYPE_INT_RGB),"png",png.toFile()));
     var facts= Facts.of(project,"someproject",Kind.code);
     assertTrue(facts.problem().orElseThrow().contains("Bad.fear"));
     assertEquals(png,facts.icon().orElseThrow().file());

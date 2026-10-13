@@ -73,7 +73,7 @@ public final class Main implements Manager.Exit{
     if (!args[0].startsWith(prefix)){ return file(args); }
     var verb= args[0].substring(prefix.length());
     if (List.of("InvalidCall","FatalError").contains(verb)){ return "InvalidCall\n"+Report.reservedVerb(args[0]); }
-    if (Stream.of(args).anyMatch(a->a.indexOf('\n') >= 0)){ return "InvalidCall\n"+Report.argumentWithNewline(List.of(args)); }
+    if (Stream.of(args).anyMatch(a -> a.indexOf('\n') >= 0)){ return "InvalidCall\n"+Report.argumentWithNewline(List.of(args)); }
     var rest= List.of(args).subList(1,args.length);
     if (!List.of("Run","Link").contains(verb) || rest.size() < 2){ return String.join("\n",Stream.concat(Stream.of(verb),rest.stream()).toList()); }
     var words= rest.subList(1,rest.size());
@@ -96,7 +96,7 @@ public final class Main implements Manager.Exit{
     var pb= new ProcessBuilder(cmd).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD);
     //The launcher marks the process it starts with _JPACKAGE_ variables; a launcher started by
     //that process inherits them, takes itself for that process, and ends with 1.
-    pb.environment().keySet().removeIf(k->k.startsWith("_JPACKAGE_"));
+    pb.environment().keySet().removeIf(k -> k.startsWith("_JPACKAGE_"));
     Fs.of(pb::start);
   }
   public static String path(Path p){ return TaggedText.base16(p.toString()); }
@@ -110,7 +110,7 @@ public final class Main implements Manager.Exit{
     try{
       if (manager != null){ manager.stop(); }
       if (watcher != null){ Fs.ofV(watcher::close); }
-      if (lock != null){ Fs.ofV(()->lock.channel().close()); }
+      if (lock != null){ Fs.ofV(() -> lock.channel().close()); }
       Fs.rmTree(managerDir);
       if (!Fs.isMac()){ Association.eradicateAll(); }
       return Optional.empty();
@@ -157,15 +157,15 @@ public final class Main implements Manager.Exit{
   private void own() throws Throwable{
     try{ watcher = FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(),e); }
-    Thread.setDefaultUncaughtExceptionHandler((_,t)->fail(t));
+    Thread.setDefaultUncaughtExceptionHandler((_,t) -> fail(t));
     var window= Window.create(this,managerDir);
     manager = new Manager(managerDir,new Deployed(),window,this);
     UserError.owner(window.frame);
-    userMessages.Violation.running(()->manager.state().running());
+    userMessages.Violation.running(() -> manager.state().running());
     window.tray(Tray.install(window));
     window.show();
     manager.drain();
-    Thread.startVirtualThread(()->watch(watcher));
+    Thread.startVirtualThread(() -> watch(watcher));
     manager.start();
     try{ done.await(); }
     catch(InterruptedException e){ throw Bug.of(e); }

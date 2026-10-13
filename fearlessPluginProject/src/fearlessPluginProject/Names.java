@@ -22,7 +22,7 @@ final class Names{
       var p= segment(segments.get(i), file && i == segments.size()-1);
       if (p.isPresent()){ return p; }
     }
-    var pkgs= segments.stream().filter(s->s.startsWith("_") && !s.contains(".")).toList();
+    var pkgs= segments.stream().filter(s -> s.startsWith("_") && !s.contains(".")).toList();
     if (pkgs.size() > 1){ return Optional.of("\""+path+"\" is inside two package folders, \""+pkgs.get(0)+"\" and \""+pkgs.get(1)+"\": a package folder can not hold another package folder."); }
     var outside= file && pkgs.isEmpty() && path.endsWith(".fear");
     if (outside){ return Optional.of("\""+path+"\" is outside every package folder: a .fear file goes in a package folder, a folder whose name starts with \"_\"."); }
@@ -40,7 +40,7 @@ final class Names{
     var atom= dot < 0 ? s : s.substring(0, dot);
     var c0= atom.charAt(0);
     if (!(c0 == '_' || (c0 >= 'a' && c0 <= 'z'))){ return Optional.of("\""+s+"\" starts with \""+c0+"\": a Fearless name starts with a lowercase letter or \"_\"."); }
-    var bad= atom.chars().filter(c->!(c == '_' || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))).findFirst();
+    var bad= atom.chars().filter(c -> !(c == '_' || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))).findFirst();
     if (bad.isPresent()){ return Optional.of("\""+s+"\" holds \""+(char)bad.getAsInt()+"\": a Fearless name holds only lowercase letters, digits and \"_\" before its extension."); }
     if (windows.contains(atom)){ return Optional.of("\""+s+"\" is named like the Windows device \""+atom+"\": Windows can not hold it."); }
     if (dot < 0){
@@ -52,7 +52,7 @@ final class Names{
     return ext.matches("[a-z0-9]{1,16}") ? Optional.empty() : Optional.of("\""+s+"\" has the extension \""+ext+"\": an extension is 1 to 16 lowercase letters and digits.");
   }
   private static Optional<String> hidden(String s){
-    var bad= s.endsWith(".") || s.endsWith(" ") || s.chars().anyMatch(c->c < 32 || c == 127 || "<>:\"\\|?*".indexOf(c) >= 0);
+    var bad= s.endsWith(".") || s.endsWith(" ") || s.chars().anyMatch(c -> c < 32 || c == 127 || "<>:\"\\|?*".indexOf(c) >= 0);
     return bad ? Optional.of("\""+s+"\" is not a valid hidden name: it can not end with \".\" or a space, nor hold a control character or one of <>:\"\\|?*") : Optional.empty();
   }
 }

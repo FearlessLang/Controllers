@@ -2,35 +2,35 @@ package agentTools;
 
 final class RelaunchKeepsRegistryTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(1027),val(113))),
-    on("xubuntu_xfce",()->click(val(1040),val(93))));
+    on("ubuntu_gnome",() -> click(val(1027),val(113))),
+    on("xubuntu_xfce",() -> click(val(1040),val(93))));
   final Action openHelloWorld= action("openHelloWorld",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome",()->waitAfter(val(null))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("ubuntu_gnome",() -> waitAfter(val(null))),
+    on("xubuntu_xfce",() -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+    on("ubuntu_gnome",() -> waitAfter(val(4500))),
+    on("xubuntu_xfce",() -> waitAfter(val(6000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitAfter(val(5500))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+    on("ubuntu_gnome",() -> waitAfter(val(5500))),
+    on("xubuntu_xfce",() -> waitAfter(val(6500))));
   final Action managerShownAgain= action("managerShownAgain",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(21500))));
   final Action tileSelected= action("tileSelected",
-    on("ubuntu_gnome",()->waitAfter(val(4000))),
-    on("xubuntu_xfce",()->waitAfter(val(5000))));
+    on("ubuntu_gnome",() -> waitAfter(val(4000))),
+    on("xubuntu_xfce",() -> waitAfter(val(5000))));
   final Action managerQuitAgain= action("managerQuitAgain",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(9000))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     var project= project("helloWorld");
     var bare= look();

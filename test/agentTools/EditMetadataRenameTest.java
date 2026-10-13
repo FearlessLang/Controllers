@@ -6,35 +6,35 @@ import tools.Fs;
 
 final class EditMetadataRenameTest extends ManagerTest{
   final Action openOld= action("openOld",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openOldMarker= action("openOldMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome",()->waitAfter(val(null))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("ubuntu_gnome",() -> waitAfter(val(null))),
+    on("xubuntu_xfce",() -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(21500))));
   final Action editorShown= action("editorShown",
-    on("ubuntu_gnome",()->waitAfter(val(5500))),
-    on("xubuntu_xfce",()->waitAfter(val(7000))));
+    on("ubuntu_gnome",() -> waitAfter(val(5500))),
+    on("xubuntu_xfce",() -> waitAfter(val(7000))));
   final Action nameOld= action("nameOld",
-    on("ubuntu_gnome",()->doubleClick(val(646),val(342))),
-    on("xubuntu_xfce",()->doubleClick(val(613),val(339))));
+    on("ubuntu_gnome",() -> doubleClick(val(646),val(342))),
+    on("xubuntu_xfce",() -> doubleClick(val(613),val(339))));
   final Action commit= action("commit",
-    on("ubuntu_gnome",()->click(val(1278),val(830))),
-    on("xubuntu_xfce",()->click(val(1245),val(827))));
+    on("ubuntu_gnome",() -> click(val(1278),val(830))),
+    on("xubuntu_xfce",() -> click(val(1245),val(827))));
   final Action renamed= action("renamed",
-    on("ubuntu_gnome",()->waitAfter(val(10000))),
-    on("xubuntu_xfce",()->waitAfter(val(12500))));
+    on("ubuntu_gnome",() -> waitAfter(val(10000))),
+    on("xubuntu_xfce",() -> waitAfter(val(12500))));
   final Action markerSeen= action("markerSeen",
-    on("ubuntu_gnome",()->waitAfter(val(10000))),
-    on("xubuntu_xfce",()->waitAfter(val(12500))));
+    on("ubuntu_gnome",() -> waitAfter(val(10000))),
+    on("xubuntu_xfce",() -> waitAfter(val(12500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(9000))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     var old= files.resolve("old");
     Fs.writeUtf8(old.resolve("old.fearless"),"\n");

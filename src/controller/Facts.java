@@ -34,7 +34,7 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
   }
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
   public static Facts of(Path folder, String alias, Kind kind){
-    try{ return retried(()->read(folder,alias,kind)); }
+    try{ return retried(() -> read(folder,alias,kind)); }
     catch(UncheckedIOException e){ return invalid(Report.folderUnreadable(folder,e.getCause())); }
   }
   private static Facts invalid(String problem){ return new Facts(false,Optional.empty(),Optional.empty(),List.of(),Optional.of(problem)); }
@@ -58,8 +58,8 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     try{ icon = icon(folder); }
     catch(UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
     var out= folder.resolve(outDir);
-    var hasCache= Files.isDirectory(out) && Names.list(out).stream().anyMatch(p->p.getFileName().toString().endsWith(".built"));
-    var stalePkgs= built.entrySet().stream().filter(e->!e.getValue()).map(Map.Entry::getKey).toList();
+    var hasCache= Files.isDirectory(out) && Names.list(out).stream().anyMatch(p -> p.getFileName().toString().endsWith(".built"));
+    var stalePkgs= built.entrySet().stream().filter(e -> !e.getValue()).map(Map.Entry::getKey).toList();
     var stale= kind != Kind.code ? Optional.<String>empty()
       : !hasCache || built.isEmpty() ? Optional.of(Report.noCache())
       : stalePkgs.isEmpty() ? Optional.<String>empty() : Optional.of(Report.stalePackages(stalePkgs));
@@ -67,9 +67,9 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
   }
   Facts outOfDate(String why){ return new Facts(hasCache,Optional.of(why),icon,logs,problem); }
   static Optional<Icon> icon(Path folder){
-    var dir= Names.folder(folder,".config").flatMap(c->Names.folder(c,"icon"));
+    var dir= Names.folder(folder,".config").flatMap(c -> Names.folder(c,"icon"));
     if (dir.isEmpty()){ return Optional.empty(); }
-    var pngs= Names.list(dir.get()).stream().filter(p->p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png") && Files.isRegularFile(p)).toList();
+    var pngs= Names.list(dir.get()).stream().filter(p -> p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png") && Files.isRegularFile(p)).toList();
     if (pngs.size() > 1){ throw Report.projectIconsMany(dir.get(),pngs); }
     if (pngs.isEmpty()){ return Optional.empty(); }
     var png= pngs.getFirst();

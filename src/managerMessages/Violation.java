@@ -35,7 +35,7 @@ public final class Violation{
 
       Only one Fearless program at a time opens them, so this manager ends now.
       Starting this manager again makes it the program opening them, with every
-      kind of file its projects open.""".formatted(Join.of(programs.stream().map(p->"  "+p),"","\n","",""));
+      kind of file its projects open.""".formatted(Join.of(programs.stream().map(p -> "  "+p),"","\n","",""));
   }
   public static UserError programFolderNotFound(Path startedFrom, String expectedDirName){
     return new UserError("""

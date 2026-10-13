@@ -20,7 +20,7 @@ import utils.Join;
 /// content of projects.info, the claims of the mains of a project.
 /// The counterpart is Violation, for what the manager can no longer do.
 public final class Report{
-  public static String quoted(List<String> texts){ return Join.of(texts.stream().map(t->"\""+t+"\""),"",", ",""); }
+  public static String quoted(List<String> texts){ return Join.of(texts.stream().map(t -> "\""+t+"\""),"",", ",""); }
   public static String fileFailure(IOException e){
     return e.getClass().getSimpleName().replaceFirst("Exception$","").replaceAll("(?<=[a-z])(?=[A-Z])"," ").toLowerCase(Locale.ROOT)+": "+e.getMessage();
   }
@@ -36,7 +36,7 @@ public final class Report{
   }
   public static String reservedVerb(String arg){ return "Fearless was started with the argument "+disp(arg)+", but "+disp(arg)+" is not a request: only a running Fearless writes the messages \"InvalidCall\" and \"FatalError\"."; }
   public static String argumentWithNewline(List<String> args){
-    return "Fearless was started with an argument holding a newline, but every argument of a FearlessCommand is one line: a path is written as \"Base16:\" then its bytes.\nThe arguments are:\n"+Join.of(args.stream().map(a->"  "+disp(a)),"","\n","","");
+    return "Fearless was started with an argument holding a newline, but every argument of a FearlessCommand is one line: a path is written as \"Base16:\" then its bytes.\nThe arguments are:\n"+Join.of(args.stream().map(a -> "  "+disp(a)),"","\n","","");
   }
   public static String brokenPath(String given){ return "Fearless was started to open "+disp(given)+", but that is not a path of a file this system accepts."; }
 
@@ -46,13 +46,13 @@ public final class Report{
     return "The manager was asked "+disp(verb)+", but that is not a request it knows: the requests are "+quoted(verbs)+".";
   }
   public static String wrongLines(String verb, List<String> args, List<Integer> takes){
-    return "The manager was asked "+disp(verb)+" with "+args.size()+" argument"+(args.size() == 1 ? "" : "s")+", but "+disp(verb)+" takes "+Join.of(takes.stream().map(i->""+i),""," or ","")+".\nThe arguments are:\n"+Join.of(args.stream().map(a->"  "+disp(a)),"","\n","","  <none>");
+    return "The manager was asked "+disp(verb)+" with "+args.size()+" argument"+(args.size() == 1 ? "" : "s")+", but "+disp(verb)+" takes "+Join.of(takes.stream().map(i -> ""+i),""," or ","")+".\nThe arguments are:\n"+Join.of(args.stream().map(a -> "  "+disp(a)),"","\n","","  <none>");
   }
   public static String notTagged(String verb, String why){ return "The manager was asked "+disp(verb)+", but its path is not a tagged text: "+why; }
   public static String blankPath(String verb){ return "The manager was asked "+disp(verb)+", but its path is empty."; }
   public static String notAPath(String verb, String given, String why){ return "The manager was asked "+disp(verb)+" on "+disp(given)+", but that is not a path this system accepts: "+why+"."; }
   public static String unknownProject(String verb, String name, List<String> names){
-    return "The manager was asked "+disp(verb)+" on the project "+disp(name)+", but no project is named "+disp(name)+"."+Join.of(names.stream().map(n->"\n  "+n),"\nThe projects are:","","","\nNo project is registered.");
+    return "The manager was asked "+disp(verb)+" on the project "+disp(name)+", but no project is named "+disp(name)+"."+Join.of(names.stream().map(n -> "\n  "+n),"\nThe projects are:","","","\nNo project is registered.");
   }
   public static String badPort(String text){ return "The manager was given the port "+disp(text)+", but a port is \"Port:\" then a number from 1 to 65535."; }
   public static String portClosed(int port, IOException e){ return "The manager was given the port "+port+", but no program of this machine accepts a connection there: "+fileFailure(e); }
@@ -64,7 +64,7 @@ public final class Report{
   public static String notCompiled(String name, String state){ return "The manager was asked \"Run\" on "+disp(name)+", but "+disp(name)+" is "+disp(state)+": compile it first."; }
   public static String noMainNamed(String name, List<String> mains){ return "The manager was asked \"Run\" on "+disp(name)+", but the request names no main."+mains(mains); }
   public static String notAMain(String name, String main, List<String> mains){ return "The manager was asked \"Run\" on "+disp(name)+" for "+disp(main)+", but "+disp(main)+" is not a main of "+disp(name)+"."+mains(mains); }
-  private static String mains(List<String> mains){ return Join.of(mains.stream().map(m->"\n  "+m),"\nThe mains are:","","","\n"+"The project has no main."); }
+  private static String mains(List<String> mains){ return Join.of(mains.stream().map(m -> "\n  "+m),"\nThe mains are:","","","\n"+"The project has no main."); }
   public static String unknownKind(String name, String text){ return "The manager was asked to change the kind of "+disp(name)+" to "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."; }
   public static String kindChange(String name, String from, String to){ return "The manager was asked to change the kind of "+disp(name)+" from "+disp(from)+" to "+disp(to)+", but a kind changes only from \"idle\", or back to \"idle\"."; }
   public static String malformedLink(String name, String link){ return "The manager was asked to link "+disp(name)+" with "+disp(link)+", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link."; }
@@ -135,7 +135,7 @@ public final class Report{
       %s
 
       Keep exactly one .png file there.
-      """.formatted(path(dir.toString()),Join.of(found.stream().map(p->"  "+p.getFileName()),"","\n","","")));
+      """.formatted(path(dir.toString()),Join.of(found.stream().map(p -> "  "+p.getFileName()),"","\n","","")));
   }
   public static UserError projectIconUnreadable(Path icon){
     return new UserError("""
@@ -223,13 +223,13 @@ public final class Report{
   public static String iconGone(Path file){ return "--- the icon file of a claim of this project is gone: "+file+"; the project claims no extension until it is compiled again ---\n"; }
   public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project can not be saved in its compiled cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
   public static String extensionsNotAllowed(List<Project.Claimant> cs){
-    return Join.of(cs.stream().map(c->"The system extension "+disp(c.claim().extension())+" of "+claim(c)+" of main "+disp(c.main())+" is not in \"systemExtensions\" of projects.info."),"","\n","");
+    return Join.of(cs.stream().map(c -> "The system extension "+disp(c.claim().extension())+" of "+claim(c)+" of main "+disp(c.main())+" is not in \"systemExtensions\" of projects.info."),"","\n","");
   }
   public static String allowExtensions(List<Project.Claimant> cs){
-    return Join.of(cs.stream().map(c->"  "+disp(c.claim().extension())+" for "+claim(c)+" of main "+disp(c.main())+" of project "+disp(c.alias())),
+    return Join.of(cs.stream().map(c -> "  "+disp(c.claim().extension())+" for "+claim(c)+" of main "+disp(c.main())+" of project "+disp(c.alias())),
       "Add these system extensions to \"systemExtensions\" of projects.info?\n","\n","\n\nThe manager becomes the program opening every file with these extensions,\nin place of the program opening them now. The project then needs compiling again.");
   }
-  public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c->disp(c.main())+" of project "+disp(c.alias()))," claimed by "," and ","",""); }
+  public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c -> disp(c.main())+" of project "+disp(c.alias()))," claimed by "," and ","",""); }
   public static UserError iconRefused(Project.Claimant c, String problem){
     return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
   }
@@ -237,7 +237,7 @@ public final class Report{
     return new UserError(icon(c)+" can not be read from "+from(c.claim())+": "+why+"\nCompile the project again.");
   }
   private static String icon(Project.Claimant c){ return "The icon "+disp(c.claim().icon())+" in "+claim(c)+" of main "+disp(c.main()); }
-  private static String from(MainsInfo.Claim c){ return disp(Join.of(Stream.of(c.diskPath(),c.zipSteps().replace(';','/'),c.zipEntry()).filter(s->!s.isEmpty()),"","/","")); }
+  private static String from(MainsInfo.Claim c){ return disp(Join.of(Stream.of(c.diskPath(),c.zipSteps().replace(';','/'),c.zipEntry()).filter(s -> !s.isEmpty()),"","/","")); }
 
   //-- what the window opens
   public static String nothingToOpen(Path path){ return "Nothing is opened: nothing exists at\n"+path(path.toString()); }

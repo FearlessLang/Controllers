@@ -43,7 +43,7 @@ final class IconsTest{
     g.fillRect(0,0,16,16);
     g.dispose();
     Fs.ensureDir(file.getParent());
-    Fs.ofV(()->ImageIO.write(img,"png",file.toFile()));
+    Fs.ofV(() -> ImageIO.write(img,"png",file.toFile()));
   }
   private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.of(project(folder,Kind.dataReadOnly),64); }
   @Test void theIconIsThePngInDotConfigIcon(@TempDir Path dir){
@@ -80,7 +80,7 @@ final class IconsTest{
     var got= icon(folder(dir,"someProject"));
     var corners= new LinkedHashSet<>(List.of(got.getRGB(4,4),got.getRGB(59,4),got.getRGB(4,59),got.getRGB(59,59)));
     assertEquals(4,corners.size());
-    var ink= pixels(got).stream().filter(c->c == Color.white.getRGB() || c == Color.black.getRGB()).count();
+    var ink= pixels(got).stream().filter(c -> c == Color.white.getRGB() || c == Color.black.getRGB()).count();
     assertTrue(ink > 100,"letters drawn on "+ink+" pixels");
   }
   private static List<Integer> pixels(BufferedImage img){

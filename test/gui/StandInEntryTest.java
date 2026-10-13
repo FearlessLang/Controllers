@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 final class StandInEntryTest{
   final ArrayList<String> log= new ArrayList<>();
   StandIn.Entry entry(){
-    var res= new StandIn.Entry("Quit manager",()->log.add("chosen"));
+    var res= new StandIn.Entry("Quit manager",() -> log.add("chosen"));
     res.setSize(100,20);
     return res;
   }

@@ -112,13 +112,13 @@ public final class Window implements Manager.View{
     var leaves= e.getID() == MouseEvent.MOUSE_PRESSED && owner instanceof JTextField && owner != e.getSource() && SwingUtilities.isDescendingFrom(owner,frame);
     if (leaves){ focus.clearFocusOwner(); }
   }
-  public static Window create(Main main, Path managerDir){ return onEdt(()->new Window(main,managerDir.resolve("projects.info"))); }
+  public static Window create(Main main, Path managerDir){ return onEdt(() -> new Window(main,managerDir.resolve("projects.info"))); }
   public void tray(boolean present){ tray = present; }
   void fail(Throwable problem){ main.fail(problem); }
   static <T> T onEdt(Supplier<T> make){
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
     var result= new AtomicReference<T>();
-    try{ SwingUtilities.invokeAndWait(()->result.set(make.get())); }
+    try{ SwingUtilities.invokeAndWait(() -> result.set(make.get())); }
     catch(InterruptedException e){ throw Bug.of(e); }
     catch(InvocationTargetException e){
       if (e.getCause() instanceof UserError u){ throw u; }
@@ -141,30 +141,30 @@ public final class Window implements Manager.View{
     frame.toFront();
     tiles.list.requestFocus();
     onScreen = true;
-    var check= new Timer(2000,_->checkSurfaced());
+    var check= new Timer(2000,_ -> checkSurfaced());
     check.setRepeats(false);
     check.start();
   }
-  @Override public void state(State s){ SwingUtilities.invokeLater(()->render(s)); }
-  @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(()->panel(folder).append(text)); }
-  @Override public void clear(Path folder){ SwingUtilities.invokeLater(()->panel(folder).output.setText("")); }
-  @Override public void refuse(String text){ SwingUtilities.invokeLater(()->{ showNow(); say(text); }); }
+  @Override public void state(State s){ SwingUtilities.invokeLater(() -> render(s)); }
+  @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(() -> panel(folder).append(text)); }
+  @Override public void clear(Path folder){ SwingUtilities.invokeLater(() -> panel(folder).output.setText("")); }
+  @Override public void refuse(String text){ SwingUtilities.invokeLater(() -> { showNow(); say(text); }); }
   @Override public void tell(String text){ refuse(text); }
   private void say(String text){ JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE); }
-  @Override public void choose(List<Project.Claimant> choices){ SwingUtilities.invokeLater(()->chooser(choices)); }
+  @Override public void choose(List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(choices)); }
   @Override public void allow(String question, String content){
-    SwingUtilities.invokeLater(()->{ if (JOptionPane.showConfirmDialog(frame,question,"Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ commit(content); } });
+    SwingUtilities.invokeLater(() -> { if (JOptionPane.showConfirmDialog(frame,question,"Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ commit(content); } });
   }
   @Override public void edited(Path file){
-    SwingUtilities.invokeLater(()->{ var editor= editors.remove(file); if (editor != null){ editor.dispose(); } });
-    Fs.ofV(()->Files.deleteIfExists(file));
+    SwingUtilities.invokeLater(() -> { var editor= editors.remove(file); if (editor != null){ editor.dispose(); } });
+    Fs.ofV(() -> Files.deleteIfExists(file));
   }
   @Override public void taken(List<String> programs){
-    SwingUtilities.invokeLater(()->{ say(Violation.fearlessTaken(programs)); main.quit(); });
+    SwingUtilities.invokeLater(() -> { say(Violation.fearlessTaken(programs)); main.quit(); });
   }
   @Override public boolean visible(){ return onScreen; }
   private Path commit(String content){
-    var file= Fs.of(()->Files.createTempFile("projects",".info"));
+    var file= Fs.of(() -> Files.createTempFile("projects",".info"));
     file.toFile().deleteOnExit();
     Fs.writeUtf8(file,content);
     Main.command("EditMetadata",Main.path(file));
@@ -173,7 +173,7 @@ public final class Window implements Manager.View{
   private void chooser(List<Project.Claimant> choices){
     var list= choices(choices);
     var dialog= new JDialog(frame,"Open with",false);
-    Runnable pick= ()->pick(dialog,list);
+    Runnable pick= () -> pick(dialog,list);
     var run= small("Run",pick);
     doubleClicked(list,pick);
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -193,7 +193,7 @@ public final class Window implements Manager.View{
     Main.command("Run",list.getSelectedValue().alias(),list.getSelectedValue().main());
   }
   static JList<Project.Claimant> choices(List<Project.Claimant> choices){
-    var icons= choices.stream().map(c->new ImageIcon(Icons.of(c,32))).toList();
+    var icons= choices.stream().map(c -> new ImageIcon(Icons.of(c,32))).toList();
     var res= new JList<>(choices.toArray(Project.Claimant[]::new));
     res.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     res.setSelectedIndex(0);
@@ -211,14 +211,14 @@ public final class Window implements Manager.View{
     var hidden= frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) != 0;
     if (hidden && !surfaced){ main.fail(Violation.desktopHidesWindow()); }
   }
-  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::refuseHere)); }
+  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_ -> new Panel(this::refuseHere)); }
   private void refuseHere(String text){ say(text); }
   private void render(State s){
     state = s;
     tiles.render(s);
-    panels.keySet().removeIf(f->s.of(f).isEmpty());
-    s.shown().ifPresent(p->panel(p.folder()).render(p,s.projects(),split.getHeight()));
-    var next= s.shown().map(p->panel(p.folder()));
+    panels.keySet().removeIf(f -> s.of(f).isEmpty());
+    s.shown().ifPresent(p -> panel(p.folder()).render(p,s.projects(),split.getHeight()));
+    var next= s.shown().map(p -> panel(p.folder()));
     if (!next.equals(shown)){ place(next); }
   }
   private void place(Optional<Panel> next){
@@ -238,13 +238,13 @@ public final class Window implements Manager.View{
     var res= new JMenuBar();
     var manager= new JMenu("Manager");
     manager.setMnemonic('M');
-    manager.add(item("Add folder...",()->choose("Add a Fearless project folder",p->Main.command("Register",Main.path(p)))));
+    manager.add(item("Add folder...",() -> choose("Add a Fearless project folder",p -> Main.command("Register",Main.path(p)))));
     manager.add(item("Edit project metadata...",this::editMetadata));
-    manager.add(item("Connect Eclipse...",()->choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into",p->Main.command("ConnectEclipse",Main.path(p)))));
-    manager.add(item("Base documentation",()->open(this::refuseHere,Deployed.stdLib("baseCache").resolve("base.html"))));
+    manager.add(item("Connect Eclipse...",() -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into",p -> Main.command("ConnectEclipse",Main.path(p)))));
+    manager.add(item("Base documentation",() -> open(this::refuseHere,Deployed.stdLib("baseCache").resolve("base.html"))));
     manager.addSeparator();
     manager.add(item("Reset",this::reset));
-    manager.add(item("Quit",()->Main.command("Quit")));
+    manager.add(item("Quit",() -> Main.command("Quit")));
     res.add(manager);
     return res;
   }
@@ -254,7 +254,7 @@ public final class Window implements Manager.View{
   }
   static JMenuItem item(String text, Runnable action){
     var res= new JMenuItem(text);
-    res.addActionListener(_->action.run());
+    res.addActionListener(_ -> action.run());
     return res;
   }
   private void choose(String title, Consumer<Path> chosen){
@@ -273,7 +273,7 @@ public final class Window implements Manager.View{
       }
       @Override public boolean importData(TransferSupport support){
         var paths= Drop.paths(support.getTransferable(),Window.this::refuseHere);
-        paths.forEach(p->Main.command("Register",Main.path(p)));
+        paths.forEach(p -> Main.command("Register",Main.path(p)));
         return !paths.isEmpty();
       }
     };
@@ -284,8 +284,8 @@ public final class Window implements Manager.View{
     var dialog= new JDialog(frame,"Edit project metadata",true);
     var commit= new JButton("Commit");
     var close= new JButton("Close");
-    commit.addActionListener(_->commit(dialog,base,area.getText()));
-    close.addActionListener(_->dialog.dispose());
+    commit.addActionListener(_ -> commit(dialog,base,area.getText()));
+    close.addActionListener(_ -> dialog.dispose());
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(commit);
     buttons.add(close);
@@ -310,13 +310,13 @@ public final class Window implements Manager.View{
   static JButton small(String text, Runnable action){
     var res= new Small(text);
     res.setMargin(new Insets(0,6,0,6));
-    res.addActionListener(_->res.press(action));
+    res.addActionListener(_ -> res.press(action));
     return res;
   }
   @SuppressWarnings("serial")
   private static final class Small extends JButton{
     private boolean wanted= true;
-    private final Timer rest= new Timer(500,_->super.setEnabled(wanted));
+    private final Timer rest= new Timer(500,_ -> super.setEnabled(wanted));
     Small(String text){ super(text); rest.setRepeats(false); }
     @Override public void setEnabled(boolean b){
       wanted = b;

@@ -6,9 +6,9 @@ import static suggest.DocsTest.same;
 import org.junit.jupiter.api.Test;
 
 final class ApiTest{
-  static String err(String json){ return assertThrows(IllegalArgumentException.class,()->Api.parse(json)).getMessage(); }
+  static String err(String json){ return assertThrows(IllegalArgumentException.class,() -> Api.parse(json)).getMessage(); }
   @Test void aTypeHasItsGenericsSupertypesAndMethods(){
-    var t= Api.parse(ResolverTest.api).stream().filter(x->x.name().equals("test.Person")).toList();
+    var t= Api.parse(ResolverTest.api).stream().filter(x -> x.name().equals("test.Person")).toList();
     same("[Type[name=test.Person, bs=[], supers=[Ty[name=base.OrderHash, args=[Ty[name=test.Person, args=[]]]]], ms=[[###]]]]",t.toString());
     same("[]",Api.parse("[]").toString());
   }
@@ -27,11 +27,11 @@ final class ApiTest{
   }
   @Test void twoTypesOfTheSameNameAndArityAreAnError(){
     var t= "[\"a.B\",\"imm\",[],[],[],\"this\"]";
-    assertThrows(IllegalStateException.class,()->new Api(Api.parse("["+t+","+t+"]")));
+    assertThrows(IllegalStateException.class,() -> new Api(Api.parse("["+t+","+t+"]")));
   }
   @Test void aCompiledTypeWithTwoMethodsOfTheSameNameAndArityIsAnError(){
     var m= ResolverTest.m(".a",ResolverTest.bs(),ResolverTest.list(),ResolverTest.c("a.B"));
     var t= Api.parse(ResolverTest.list(ResolverTest.type("a.B",ResolverTest.bs(),"[]",m,m))).getFirst();
-    same("Type a.B has two methods .a of 0 parameters",assertThrows(IllegalArgumentException.class,()->t.method(".a",0)).getMessage());
+    same("Type a.B has two methods .a of 0 parameters",assertThrows(IllegalArgumentException.class,() -> t.method(".a",0)).getMessage());
   }
 }

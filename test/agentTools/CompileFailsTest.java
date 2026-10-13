@@ -8,38 +8,38 @@ import tools.Fs;
 
 final class CompileFailsTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(990),val(113))),
-    on("xubuntu_xfce",()->click(val(996),val(93))));
+    on("ubuntu_gnome",() -> click(val(990),val(113))),
+    on("xubuntu_xfce",() -> click(val(996),val(93))));
   final Action openBroken= action("openBroken",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openBrokenMarker= action("openBrokenMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome",()->waitAfter(val(null))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("ubuntu_gnome",() -> waitAfter(val(null))),
+    on("xubuntu_xfce",() -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+    on("ubuntu_gnome",() -> waitAfter(val(4500))),
+    on("xubuntu_xfce",() -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome",()->click(val(543),val(113))),
-    on("xubuntu_xfce",()->click(val(502),val(93))));
+    on("ubuntu_gnome",() -> click(val(543),val(113))),
+    on("xubuntu_xfce",() -> click(val(502),val(93))));
   final Action compileFailed= action("compileFailed",
-    on("ubuntu_gnome",()->waitAfter(val(21000))),
-    on("xubuntu_xfce",()->waitAfter(val(26000))));
+    on("ubuntu_gnome",() -> waitAfter(val(21000))),
+    on("xubuntu_xfce",() -> waitAfter(val(26000))));
   final Action compileFixed= action("compileFixed",
-    on("ubuntu_gnome",()->click(val(543),val(113))),
-    on("xubuntu_xfce",()->click(val(502),val(93))));
+    on("ubuntu_gnome",() -> click(val(543),val(113))),
+    on("xubuntu_xfce",() -> click(val(502),val(93))));
   final Action fixedCompiled= action("fixedCompiled",
-    on("ubuntu_gnome",()->waitAfter(val(22500))),
-    on("xubuntu_xfce",()->waitAfter(val(28000))));
+    on("ubuntu_gnome",() -> waitAfter(val(22500))),
+    on("xubuntu_xfce",() -> waitAfter(val(28000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(9000))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     var broken= files.resolve("broken");
     var source= broken.resolve("_broken").resolve("_rank_app.fear");

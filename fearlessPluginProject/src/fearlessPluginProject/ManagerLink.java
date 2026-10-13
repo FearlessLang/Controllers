@@ -35,12 +35,12 @@ public final class ManagerLink{
   static final Path baseCache= path(link.get("baseCache"));
   static Map<String,Project> projects(){
     var res= new LinkedHashMap<String,Project>();
-    Info.obj(Info.parse(manager.resolve("projects.info")).get("projects")).forEach((alias,p)->res.put(alias, project(Info.obj(p))));
+    Info.obj(Info.parse(manager.resolve("projects.info")).get("projects")).forEach((alias,p) -> res.put(alias, project(Info.obj(p))));
     return res;
   }
   static Project project(String alias){ return Objects.requireNonNull(projects().get(alias)); }
   private static Project project(Map<String,Object> o){
-    var mains= o.containsKey("mains") ? Info.lst(o.get("mains")).stream().map(m->(String)m).toList() : List.<String>of();
+    var mains= o.containsKey("mains") ? Info.lst(o.get("mains")).stream().map(m -> (String)m).toList() : List.<String>of();
     return new Project(path(o.get("path")), (String)o.get("kind"), mains, links(o, "reads"), links(o, "edits"));
   }
   private static List<String> links(Map<String,Object> o, String field){
@@ -50,7 +50,7 @@ public final class ManagerLink{
   static Map<String,String> mains(Path folder){
     var file= out(folder).resolve("mains.info");
     var res= new LinkedHashMap<String,String>();
-    if (Files.exists(file)){ Info.parse(file).forEach((main,m)->res.put(main, (String)Info.lst(m).getFirst())); }
+    if (Files.exists(file)){ Info.parse(file).forEach((main,m) -> res.put(main, (String)Info.lst(m).getFirst())); }
     return res;
   }
   static Optional<String> error(Path folder, String name){

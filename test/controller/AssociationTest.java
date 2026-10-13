@@ -49,7 +49,7 @@ final class AssociationTest{
   }
   private static String exec(String launcher){
     var entry= LinuxAssociations.desktopEntry(identity,launcher,"controller-Main",List.of("application/x-fearless"));
-    return OneOr.of("one Exec line",entry.lines().filter(l->l.startsWith("Exec=")));
+    return OneOr.of("one Exec line",entry.lines().filter(l -> l.startsWith("Exec=")));
   }
   @Test void theLauncherIsOneArgumentEvenWithSpaces(){
     assertEquals("Exec=\"/opt/my apps/fearless/bin/fearless\" %f",exec("/opt/my apps/fearless/bin/fearless"));
@@ -78,8 +78,8 @@ final class AssociationTest{
     var lines= regFile();
     assertTrue(lines.contains("[HKEY_CURRENT_USER\\Software\\Classes\\fearlessManaged0_001.fproof\\DefaultIcon]"),lines.toString());
     assertTrue(lines.contains("@=\"C:\\\\fearlessManaged0_001\\\\proof.ico,0\""),lines.toString());
-    assertEquals(2,lines.stream().filter(l->l.endsWith("\\shell\\open\\command]")).count(),lines.toString());
-    assertEquals(2,lines.stream().filter(l->l.equals("@=\"\\\"C:\\\\fearlessManaged0_001\\\\fearlessManaged0_001.exe\\\" \\\"%1\\\"\"")).count(),lines.toString());
+    assertEquals(2,lines.stream().filter(l -> l.endsWith("\\shell\\open\\command]")).count(),lines.toString());
+    assertEquals(2,lines.stream().filter(l -> l.equals("@=\"\\\"C:\\\\fearlessManaged0_001\\\\fearlessManaged0_001.exe\\\" \\\"%1\\\"\"")).count(),lines.toString());
   }
   @Test void theRegistryFileCarriesTheApplicationsOwnPictureToo(){
     var lines= regFile();

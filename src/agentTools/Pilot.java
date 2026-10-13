@@ -99,7 +99,7 @@ public final class Pilot{
   }
   private static boolean blank(BufferedImage img){
     var px= img.getRGB(0,0,img.getWidth(),img.getHeight(),null,0,img.getWidth());
-    return Arrays.stream(px).allMatch(p->(p&0xffffff)==0);
+    return Arrays.stream(px).allMatch(p -> (p&0xffffff)==0);
   }
   public static void pause(int millis){
     try{ Thread.sleep(millis); }

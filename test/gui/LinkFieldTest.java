@@ -17,13 +17,13 @@ final class LinkFieldTest{
   private static final class Field extends JTextField{ void key(KeyEvent e){ processKeyEvent(e); } }
   private final Field field= new Field();
   private final ArrayList<String> sent= new ArrayList<>();
-  LinkFieldTest(){ Panel.sendsOn(field,()->sent.add(field.getText())); }
+  LinkFieldTest(){ Panel.sendsOn(field,() -> sent.add(field.getText())); }
   private void type(String keys) throws Exception{
-    SwingUtilities.invokeAndWait(()->keys.chars().forEach(c->field.key(new KeyEvent(field,KeyEvent.KEY_TYPED,0,0,KeyEvent.VK_UNDEFINED,(char)c))));
+    SwingUtilities.invokeAndWait(() -> keys.chars().forEach(c -> field.key(new KeyEvent(field,KeyEvent.KEY_TYPED,0,0,KeyEvent.VK_UNDEFINED,(char)c))));
   }
   private List<String> sent() throws Exception{
     var res= new ArrayList<String>();
-    SwingUtilities.invokeAndWait(()->res.addAll(sent));
+    SwingUtilities.invokeAndWait(() -> res.addAll(sent));
     return res;
   }
   @Test void aCharacterNoTypeNameHoldsSendsAtOnceAndIsNotAdded() throws Exception{

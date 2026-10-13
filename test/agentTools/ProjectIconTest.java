@@ -13,35 +13,35 @@ import tools.Fs;
 
 final class ProjectIconTest extends ManagerTest{
   final Action openPic= action("openPic",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openPicMarker= action("openPicMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome",()->waitAfter(val(null))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("ubuntu_gnome",() -> waitAfter(val(null))),
+    on("xubuntu_xfce",() -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(21500))));
   final Action ownIconShown= action("ownIconShown",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(9000))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(9000))));
   final Action invalidShown= action("invalidShown",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(8500))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(8500))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(504),val(113))),
-    on("xubuntu_xfce",()->click(val(454),val(93))));
+    on("ubuntu_gnome",() -> click(val(504),val(113))),
+    on("xubuntu_xfce",() -> click(val(454),val(93))));
   final Action checked= action("checked",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+    on("ubuntu_gnome",() -> waitAfter(val(4500))),
+    on("xubuntu_xfce",() -> waitAfter(val(6000))));
   final Action ownIconBack= action("ownIconBack",
-    on("ubuntu_gnome",()->waitAfter(val(8500))),
-    on("xubuntu_xfce",()->waitAfter(val(10500))));
+    on("ubuntu_gnome",() -> waitAfter(val(8500))),
+    on("xubuntu_xfce",() -> waitAfter(val(10500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(8500))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(8500))));
   @Override void walk() throws Throwable{
     var pic= files.resolve("pic");
     var icons= pic.resolve(".config").resolve("icon");

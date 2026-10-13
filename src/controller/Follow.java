@@ -24,7 +24,7 @@ final class Follow{
     try{ socket= new Socket(InetAddress.getLoopbackAddress(),number); }
     catch(IOException e){ throw new Refused(Report.portClosed(number,e)); }
     var res= new Follow();
-    Thread.startVirtualThread(()->res.pump(socket));
+    Thread.startVirtualThread(() -> res.pump(socket));
     return res;
   }
   void send(String text){ queue.add(Optional.of(text)); }

@@ -20,16 +20,16 @@ import tools.Fs;
 public final class Eclipse{
   static Optional<Path> find(Path chosen){
     var parent= Optional.ofNullable(chosen.getParent());
-    var only= Files.isDirectory(chosen) ? Optional.of(Names.list(chosen)).filter(l->l.size() == 1).map(List::getFirst) : Optional.<Path>empty();
+    var only= Files.isDirectory(chosen) ? Optional.of(Names.list(chosen)).filter(l -> l.size() == 1).map(List::getFirst) : Optional.<Path>empty();
     return Stream.of(Optional.of(chosen),parent,parent.map(Path::getParent),only).flatMap(Optional::stream)
-      .filter(d->Files.isRegularFile(d.resolve(".eclipseproduct"))).findFirst();
+      .filter(d -> Files.isRegularFile(d.resolve(".eclipseproduct"))).findFirst();
   }
   public static void connect(Path eclipse, Path plugin, Path program, Path launcher, Path managerDir, Path baseCache){
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     var plugins= fearless.resolve("plugins");
     var names= Names.list(plugin).stream().map(Path::getFileName).toList();
-    names.forEach(n->replace(plugins.resolve(n),Fs.of(()->Files.readAllBytes(plugin.resolve(n)))));
-    Names.list(plugins).stream().filter(p->!names.contains(p.getFileName())).forEach(Fs::rmTree);
+    names.forEach(n -> replace(plugins.resolve(n),Fs.of(() -> Files.readAllBytes(plugin.resolve(n)))));
+    Names.list(plugins).stream().filter(p -> !names.contains(p.getFileName())).forEach(Fs::rmTree);
     var info= List.of(field("program",program),field("launcher",launcher),field("manager",managerDir),field("baseCache",baseCache));
     replace(fearless.resolve("manager.info"),Info.print(new Obj(info,Info.noSpan)).getBytes(UTF_8));
   }
@@ -37,6 +37,6 @@ public final class Eclipse{
   private static void replace(Path file, byte[] content){
     var tmp= file.resolveSibling(file.getFileName()+".tmp");
     Fs.ensureDir(file.getParent());
-    Fs.ofV(()->{ Files.write(tmp,content); Files.move(tmp,file,ATOMIC_MOVE); });
+    Fs.ofV(() -> { Files.write(tmp,content); Files.move(tmp,file,ATOMIC_MOVE); });
   }
 }

@@ -49,9 +49,9 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     return true;
   }
   private static void becomeCode(Path folder){
-    Job.create("Fearless project becomes code", (IProgressMonitor monitor)->{
+    Job.create("Fearless project becomes code", (IProgressMonitor monitor) -> {
       for (int i= 0; i < 120; i++){
-        var alias= ManagerLink.projects().entrySet().stream().filter(e->e.getValue().folder().equals(folder)).map(Map.Entry::getKey).findFirst();
+        var alias= ManagerLink.projects().entrySet().stream().filter(e -> e.getValue().folder().equals(folder)).map(Map.Entry::getKey).findFirst();
         if (alias.isPresent()){ ManagerLink.send("Kind", alias.get(), "code"); return Status.OK_STATUS; }
         try{ Thread.sleep(250); }
         catch(InterruptedException e){ Thread.currentThread().interrupt(); return Status.CANCEL_STATUS; }
@@ -151,14 +151,14 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       new Label(root, SWT.NONE).setText("Folder:");
       folder = new Text(root, SWT.BORDER);
       folder.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-      folder.addModifyListener(e->validate());
+      folder.addModifyListener(e -> validate());
       var browse= new Button(root, SWT.PUSH);
       browse.setText("Browse...");
-      browse.addListener(SWT.Selection, e->browse());
+      browse.addListener(SWT.Selection, e -> browse());
       var label= new Label(root, SWT.NONE);
       label.setText("Content:");
       label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, false, 1, demos.size()));
-      demos.forEach(d->radio(root, d));
+      demos.forEach(d -> radio(root, d));
       setPageComplete(false);
       setControl(root);
     }
@@ -167,7 +167,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       b.setText(d.isEmpty() ? "The folder as it is" : "Demo: "+d+" (the project becomes code)");
       b.setSelection(d.isEmpty());
       b.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
-      b.addListener(SWT.Selection, e->{ if (b.getSelection()){ demo = d; validate(); } });
+      b.addListener(SWT.Selection, e -> { if (b.getSelection()){ demo = d; validate(); } });
     }
     private void validate(){
       var problem= problem();
@@ -178,7 +178,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       if (folder.getText().isBlank()){ return Optional.of("Choose the folder of the project."); }
       var f= folder();
       if (demo.isEmpty() || !Files.exists(f)){ return Optional.empty(); }
-      try(var entries= Files.list(f)){ return entries.findAny().map(e->"The folder "+f+" is not empty: a demo goes in a new or empty folder."); }
+      try(var entries= Files.list(f)){ return entries.findAny().map(e -> "The folder "+f+" is not empty: a demo goes in a new or empty folder."); }
       catch(IOException e){ return Optional.of("The folder "+f+" can not be read: "+e.getMessage()); }
     }
     private void browse(){

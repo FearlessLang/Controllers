@@ -21,12 +21,12 @@ public final class Docs{
   public Optional<String> type(String simple, int arity){ return header(simple, arity).map(this::text); }
   /// the method's line and its documentation
   public Optional<String> method(String simple, int arity, String name, int n){
-    return header(simple, arity).map(i->text(IntStream.range(i+1, entryEnd(i))
-      .filter(j->lines.get(j).startsWith("\t") && signature(lines.get(j)).equals(name+"/"+n)).findFirst()
-      .orElseThrow(()->new IllegalArgumentException("No method "+name+"/"+n+" of "+simple+" in the documentation"))));
+    return header(simple, arity).map(i -> text(IntStream.range(i+1, entryEnd(i))
+      .filter(j -> lines.get(j).startsWith("\t") && signature(lines.get(j)).equals(name+"/"+n)).findFirst()
+      .orElseThrow(() -> new IllegalArgumentException("No method "+name+"/"+n+" of "+simple+" in the documentation"))));
   }
   private Optional<Integer> header(String simple, int arity){
-    var res= IntStream.range(0, lines.size()).filter(i->isHeader(lines.get(i), simple, arity)).boxed().findFirst();
+    var res= IntStream.range(0, lines.size()).filter(i -> isHeader(lines.get(i), simple, arity)).boxed().findFirst();
     if (res.isEmpty() && !simple.startsWith("_")){ throw new IllegalArgumentException("No type "+simple+" with "+arity+" generics in the documentation"); }
     return res;
   }
@@ -36,7 +36,7 @@ public final class Docs{
     return h.startsWith(simple+"[") && generic.matcher(h.substring(simple.length())).results().count() == arity;
   }
   private static boolean opens(String line){ return !line.isBlank() && !line.startsWith(" "); }
-  private int entryEnd(int i){ return IntStream.range(i+1, lines.size()).filter(j->opens(lines.get(j)) && !lines.get(j).startsWith("\t")).findFirst().orElse(lines.size()); }
+  private int entryEnd(int i){ return IntStream.range(i+1, lines.size()).filter(j -> opens(lines.get(j)) && !lines.get(j).startsWith("\t")).findFirst().orElse(lines.size()); }
   /// line i and the lines under it, up to the next line opening a type or a method
   private String text(int i){
     var res= new StringBuilder(lines.get(i).strip());

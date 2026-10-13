@@ -8,98 +8,98 @@ import tools.Fs;
 
 final class LinkWriteTest extends ManagerTest{
   final Action becomeEditableData= action("becomeEditableData",
-    on("ubuntu_gnome",()->click(val(842),val(113))),
-    on("xubuntu_xfce",()->click(val(828),val(93))));
+    on("ubuntu_gnome",() -> click(val(842),val(113))),
+    on("xubuntu_xfce",() -> click(val(828),val(93))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome",()->click(val(974),val(113))),
-    on("xubuntu_xfce",()->click(val(980),val(93))));
+    on("ubuntu_gnome",() -> click(val(974),val(113))),
+    on("xubuntu_xfce",() -> click(val(980),val(93))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(21500))));
   final Action dataSaved= action("dataSaved",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+    on("ubuntu_gnome",() -> waitAfter(val(4500))),
+    on("xubuntu_xfce",() -> waitAfter(val(6000))));
   final Action tellerShown= action("tellerShown",
-    on("ubuntu_gnome",()->waitAfter(val(11000))),
-    on("xubuntu_xfce",()->waitAfter(val(13500))));
+    on("ubuntu_gnome",() -> waitAfter(val(11000))),
+    on("xubuntu_xfce",() -> waitAfter(val(13500))));
   final Action codeSaved= action("codeSaved",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(5500))));
+    on("ubuntu_gnome",() -> waitAfter(val(4500))),
+    on("xubuntu_xfce",() -> waitAfter(val(5500))));
   final Action openLinks= action("openLinks",
-    on("ubuntu_gnome",()->click(val(450),val(356))),
-    on("xubuntu_xfce",()->click(val(383),val(336))));
+    on("ubuntu_gnome",() -> click(val(450),val(356))),
+    on("xubuntu_xfce",() -> click(val(383),val(336))));
   final Action linksShown= action("linksShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
+    on("ubuntu_gnome",() -> waitAfter(val(3500))),
+    on("xubuntu_xfce",() -> waitAfter(val(4500))));
   final Action writeField= action("writeField",
-    on("ubuntu_gnome",()->click(val(768),val(398))),
-    on("xubuntu_xfce",()->click(val(701),val(378))));
+    on("ubuntu_gnome",() -> click(val(768),val(398))),
+    on("xubuntu_xfce",() -> click(val(701),val(378))));
   final Action editsSaved= action("editsSaved",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(9000))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(9000))));
   final Action readField= action("readField",
-    on("ubuntu_gnome",()->click(val(560),val(398))),
-    on("xubuntu_xfce",()->click(val(493),val(378))));
+    on("ubuntu_gnome",() -> click(val(560),val(398))),
+    on("xubuntu_xfce",() -> click(val(493),val(378))));
   final Action noteShown= action("noteShown",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(8500))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(8500))));
   final Action readFieldAgain= action("readFieldAgain",
-    on("ubuntu_gnome",()->click(val(560),val(398))),
-    on("xubuntu_xfce",()->click(val(493),val(378))));
+    on("ubuntu_gnome",() -> click(val(560),val(398))),
+    on("xubuntu_xfce",() -> click(val(493),val(378))));
   final Action readEmptied= action("readEmptied",
-    on("ubuntu_gnome",()->waitAfter(val(5500))),
-    on("xubuntu_xfce",()->waitAfter(val(7000))));
+    on("ubuntu_gnome",() -> waitAfter(val(5500))),
+    on("xubuntu_xfce",() -> waitAfter(val(7000))));
   final Action writeFieldAgain= action("writeFieldAgain",
-    on("ubuntu_gnome",()->click(val(768),val(398))),
-    on("xubuntu_xfce",()->click(val(701),val(378))));
+    on("ubuntu_gnome",() -> click(val(768),val(398))),
+    on("xubuntu_xfce",() -> click(val(701),val(378))));
   final Action writeEmptied= action("writeEmptied",
-    on("ubuntu_gnome",()->waitAfter(val(5500))),
-    on("xubuntu_xfce",()->waitAfter(val(7000))));
+    on("ubuntu_gnome",() -> waitAfter(val(5500))),
+    on("xubuntu_xfce",() -> waitAfter(val(7000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(8500))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(8500))));
   final Action openLedger= action("openLedger",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openVault= action("openVault",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openVaultMarker= action("openVaultMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action vaultListed= action("vaultListed",
-    on("ubuntu_gnome",()->waitAfter(val(null))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("ubuntu_gnome",() -> waitAfter(val(null))),
+    on("xubuntu_xfce",() -> waitAfter(val(null))));
   final Action openLedgerAgain= action("openLedgerAgain",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openTeller= action("openTeller",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openTellerMarker= action("openTellerMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action leaveWriteField= action("leaveWriteField",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitClick(val(null),val(null),val(null))));
   final Action leaveReadField= action("leaveReadField",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitClick(val(null),val(null),val(null))));
   final Action okButton= action("okButton",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitClick(val(null),val(null),val(null))));
   final Action selectRead= action("selectRead",
-    on("ubuntu_gnome",()->waitDrag(val(null),val(null),val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDrag(val(null),val(null),val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDrag(val(null),val(null),val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDrag(val(null),val(null),val(null),val(null),val(null))));
   final Action leaveReadFieldAgain= action("leaveReadFieldAgain",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitClick(val(null),val(null),val(null))));
   final Action selectWrite= action("selectWrite",
-    on("ubuntu_gnome",()->waitDrag(val(null),val(null),val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDrag(val(null),val(null),val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDrag(val(null),val(null),val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDrag(val(null),val(null),val(null),val(null),val(null))));
   final Action leaveWriteFieldAgain= action("leaveWriteFieldAgain",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitClick(val(null),val(null),val(null))));
   @Override void walk() throws Throwable{
     var ledger= files.resolve("ledger");
     var vault= ledger.resolve("vault");

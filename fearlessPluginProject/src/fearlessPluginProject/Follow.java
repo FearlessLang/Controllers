@@ -20,7 +20,7 @@ final class Follow{
   private Follow(String alias, boolean compile){ this.alias= alias; this.compile= compile; }
   static Optional<Follow> followed(){ return followed; }
   static boolean compilingFor(String alias, Duration longer){
-    return followed.filter(j->j.compile && j.alias.equals(alias) && j.since.plus(longer).isBefore(Instant.now())).isPresent();
+    return followed.filter(j -> j.compile && j.alias.equals(alias) && j.since.plus(longer).isBefore(Instant.now())).isPresent();
   }
   static void compile(String alias){ follow(alias, true, "Compile", alias); }
   static void run(String alias, String... mains){ follow(alias, false, "Run", Stream.concat(Stream.of(alias), Stream.of(mains)).toArray(String[]::new)); }
@@ -31,7 +31,7 @@ final class Follow{
     ServerSocket server;
     try{ server= new ServerSocket(0, 1, InetAddress.getLoopbackAddress()); server.setSoTimeout(60_000); }
     catch(IOException e){ throw new UncheckedIOException(e); }
-    Thread.startVirtualThread(()->job.follow(server));
+    Thread.startVirtualThread(() -> job.follow(server));
     ManagerLink.send(verb, Stream.concat(Stream.of(args), Stream.of("Port:"+server.getLocalPort())).toArray(String[]::new));
   }
   private void follow(ServerSocket server){
@@ -41,6 +41,6 @@ final class Follow{
     }
     catch(SocketTimeoutException e){}
     catch(IOException e){ throw new UncheckedIOException(e); }
-    finally{ followed = followed.filter(j->j != this); MainButton.refresh(); }
+    finally{ followed = followed.filter(j -> j != this); MainButton.refresh(); }
   }
 }

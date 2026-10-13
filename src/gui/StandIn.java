@@ -31,9 +31,9 @@ final class StandIn{
     res.setSize(side,side);
     var icon= new JLabel(new ImageIcon(Icons.app().getScaledInstance(side,side,Image.SCALE_SMOOTH)));
     var menu= new JPopupMenu();
-    menu.add(new Entry("Show manager",()->Main.command("Show")));
+    menu.add(new Entry("Show manager",() -> Main.command("Show")));
     menu.addSeparator();
-    menu.add(new Entry("Quit manager",()->Main.command("Quit")));
+    menu.add(new Entry("Quit manager",() -> Main.command("Quit")));
     icon.addMouseListener(new MouseAdapter(){
       @Override public void mouseClicked(MouseEvent e){ menu.show(icon,e.getX(),e.getY()); }
     });
@@ -46,8 +46,8 @@ final class StandIn{
     private boolean pressed;
     Entry(String text, Runnable action){
       super(text);
-      addActionListener(_->action.run());
-      addHierarchyListener(_->shown = System.currentTimeMillis());
+      addActionListener(_ -> action.run());
+      addHierarchyListener(_ -> shown = System.currentTimeMillis());
     }
     @Override protected void processMouseEvent(MouseEvent e){
       if (e.getID() == MouseEvent.MOUSE_PRESSED){ pressed = System.currentTimeMillis()-shown >= 500; }

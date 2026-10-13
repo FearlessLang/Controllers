@@ -8,38 +8,38 @@ import tools.Fs;
 
 final class SecondMarkerTest extends ManagerTest{
   final Action openTwice= action("openTwice",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openTwiceMarker= action("openTwiceMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome",()->waitAfter(val(null))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("ubuntu_gnome",() -> waitAfter(val(null))),
+    on("xubuntu_xfce",() -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(21500))));
   final Action secondNoticed= action("secondNoticed",
-    on("ubuntu_gnome",()->waitAfter(val(10000))),
-    on("xubuntu_xfce",()->waitAfter(val(12500))));
+    on("ubuntu_gnome",() -> waitAfter(val(10000))),
+    on("xubuntu_xfce",() -> waitAfter(val(12500))));
   final Action check= action("check",
-    on("ubuntu_gnome",()->click(val(527),val(113))),
-    on("xubuntu_xfce",()->click(val(478),val(93))));
+    on("ubuntu_gnome",() -> click(val(527),val(113))),
+    on("xubuntu_xfce",() -> click(val(478),val(93))));
   final Action checked= action("checked",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+    on("ubuntu_gnome",() -> waitAfter(val(4500))),
+    on("xubuntu_xfce",() -> waitAfter(val(6000))));
   final Action secondGone= action("secondGone",
-    on("ubuntu_gnome",()->waitAfter(val(10000))),
-    on("xubuntu_xfce",()->waitAfter(val(12500))));
+    on("ubuntu_gnome",() -> waitAfter(val(10000))),
+    on("xubuntu_xfce",() -> waitAfter(val(12500))));
   final Action checkAgain= action("checkAgain",
-    on("ubuntu_gnome",()->click(val(527),val(113))),
-    on("xubuntu_xfce",()->click(val(478),val(93))));
+    on("ubuntu_gnome",() -> click(val(527),val(113))),
+    on("xubuntu_xfce",() -> click(val(478),val(93))));
   final Action checkedAgain= action("checkedAgain",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
+    on("ubuntu_gnome",() -> waitAfter(val(3500))),
+    on("xubuntu_xfce",() -> waitAfter(val(4000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitAfter(val(7000))),
-    on("xubuntu_xfce",()->waitAfter(val(9000))));
+    on("ubuntu_gnome",() -> waitAfter(val(7000))),
+    on("xubuntu_xfce",() -> waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     var twice= files.resolve("twice");
     var second= twice.resolve("other.fearless");

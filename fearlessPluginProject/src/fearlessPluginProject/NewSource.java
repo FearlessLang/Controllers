@@ -41,7 +41,7 @@ public final class NewSource extends AbstractHandler{
     var window= HandlerUtil.getActiveWorkbenchWindow(event);
     var part= window.getActivePage().getActivePart();
     Object on= part instanceof IEditorPart e ? e.getEditorInput() : window.getSelectionService().getSelection() instanceof IStructuredSelection s ? s.getFirstElement() : null;
-    var resource= Optional.ofNullable(Adapters.adapt(on, IResource.class)).filter(r->Nature.marks(r.getProject()));
+    var resource= Optional.ofNullable(Adapters.adapt(on, IResource.class)).filter(r -> Nature.marks(r.getProject()));
     var project= resource.map(IResource::getProject).orElseThrow();
     var type= "type".equals(event.getParameter("fearlessPluginProject.what"));
     new Dialog(window.getShell(), window.getActivePage(), project, type, resource.map(NewSource::start).orElse("")).open();
@@ -54,7 +54,7 @@ public final class NewSource extends AbstractHandler{
   }
   private static final List<String> ranks= List.of("base","core","driver","worker","framework","accumulator","tool","app");
   private static final String uses= Stream.of("Main","UnitTests","Test","Void","Bool","Nat","Int","Float","Str","List","Lists","Opt","Opts","Block","Error","Debug")
-    .map(t->"use base."+t+" as "+t+";\n").collect(Collectors.joining());
+    .map(t -> "use base."+t+" as "+t+";\n").collect(Collectors.joining());
   private static String tests(String name, String base){ return """
     %s: %sUnitTests{::
       .test Addition: %sTest{:: .check{(2 + 3).assertEq 5}}
@@ -91,13 +91,13 @@ public final class NewSource extends AbstractHandler{
       var wide= new GridData(SWT.FILL, SWT.CENTER, true, false);
       wide.widthHint = 480;
       path.setLayoutData(wide);
-      path.addModifyListener(e->validate());
+      path.addModifyListener(e -> validate());
       if (type){
         rank = check(root, "Rank file: the file of the package holding its use lines and its mains", 1);
         rankName = new Combo(root, SWT.READ_ONLY);
         ranks.forEach(rankName::add);
         rankName.select(ranks.indexOf("app"));
-        rankName.addListener(SWT.Selection, e->validate());
+        rankName.addListener(SWT.Selection, e -> validate());
         example = check(root, "Example tests: a test suite checking some arithmetic, to run instead of a bare main", 2);
       }
       creates = new Label(root, SWT.WRAP);
@@ -108,7 +108,7 @@ public final class NewSource extends AbstractHandler{
       var b= new Button(root, SWT.CHECK);
       b.setText(text);
       b.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, span, 1));
-      b.addListener(SWT.Selection, e->validate());
+      b.addListener(SWT.Selection, e -> validate());
       return b;
     }
     @Override protected void createButtonsForButtonBar(Composite parent){
@@ -137,7 +137,7 @@ public final class NewSource extends AbstractHandler{
     private Optional<String> otherRank(String t){
       var folder= src().findMember(t.substring(0, t.lastIndexOf('/')+1));
       if (!(folder instanceof IContainer c)){ return Optional.empty(); }
-      try{ return Stream.of(c.members()).map(IResource::getName).filter(n->n.startsWith("_rank_")).findFirst().map(n->"The package already has the rank file \""+n+"\": a package has exactly one."); }
+      try{ return Stream.of(c.members()).map(IResource::getName).filter(n -> n.startsWith("_rank_")).findFirst().map(n -> "The package already has the rank file \""+n+"\": a package has exactly one."); }
       catch(CoreException e){ throw new IllegalStateException(e); }
     }
     private IFolder src(){ return project.getFolder(FearlessWatcher.srcName); }
@@ -168,7 +168,7 @@ public final class NewSource extends AbstractHandler{
     private IFile create(IFile file) throws CoreException{
       var stem= file.getName().substring(0, file.getName().length()-".fear".length());
       var isRank= rank.getSelection();
-      var name= Stream.of(stem.split("_")).filter(s->!s.isEmpty()).map(s->Character.toUpperCase(s.charAt(0))+s.substring(1)).collect(Collectors.joining());
+      var name= Stream.of(stem.split("_")).filter(s -> !s.isEmpty()).map(s -> Character.toUpperCase(s.charAt(0))+s.substring(1)).collect(Collectors.joining());
       var body= isRank ? uses : name+": {}\n";
       var test= !example.getSelection() ? "" : "\n"+tests(isRank ? "ArithmeticTests" : name+"Tests", isRank ? "" : "base.");
       file.create(new ByteArrayInputStream((body+test).getBytes(StandardCharsets.UTF_8)), true, null);

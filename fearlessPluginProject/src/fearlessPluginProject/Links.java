@@ -43,7 +43,7 @@ final class Links implements IPatternMatchListener{
     var file= m.group(frame ? 2 : 3);
     var f= ResourcesPlugin.getWorkspace().getRoot().getProject(Output.alias).getFolder(FearlessWatcher.srcName).getFile(new Path(file));
     if (!f.exists()){ return; }
-    IntSupplier line= frame ? ()->Integer.parseInt(m.group(1)) : ()->markedLineAfter(console.getDocument(), offset);
+    IntSupplier line= frame ? () -> Integer.parseInt(m.group(1)) : () -> markedLineAfter(console.getDocument(), offset);
     console.addHyperlink(new Link(f, line), offset+m.start(frame ? 2 : 3), file.length());
   }
   private static int markedLineAfter(IDocument doc, int offset){

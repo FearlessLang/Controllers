@@ -40,7 +40,7 @@ public final class TaggedText{
   }
   private static String safeAfter(String tag, String text, Function<String,? extends RuntimeException> bad){
     var res= text.substring(tag.length());
-    var unsafe= res.codePoints().filter(c->!safe(c)).findFirst();
+    var unsafe= res.codePoints().filter(c -> !safe(c)).findFirst();
     if (unsafe.isEmpty()){ return res; }
     throw bad.apply(Message.displayString(text)+" is malformed: after \""+tag+"\" every character is in the Fearless character set, but "+Message.displayChar(unsafe.getAsInt())+" is not.");
   }
@@ -170,8 +170,8 @@ public final class TaggedText{
     private String codePoints(String body){
       if (body.isEmpty()){ return ""; }
       if (!uCodeText.matcher(body).matches()){ throw fail("code points, each as 1 to 6 uppercase hex digits, separated by single spaces,"); }
-      var cps= Stream.of(body.split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
-      if (Arrays.stream(cps).anyMatch(cp->cp > 0x10FFFF || surrogate(cp))){ throw fail("Unicode scalars (no D800 to DFFF, nothing above 10FFFF)"); }
+      var cps= Stream.of(body.split(" ")).mapToInt(h -> Integer.parseInt(h,16)).toArray();
+      if (Arrays.stream(cps).anyMatch(cp -> cp > 0x10FFFF || surrogate(cp))){ throw fail("Unicode scalars (no D800 to DFFF, nothing above 10FFFF)"); }
       return new String(cps,0,cps.length);
     }
     private void ws(){ while(i < s.length() && s.charAt(i) == ' '){ i += 1; } }

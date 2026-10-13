@@ -69,7 +69,7 @@ public final class Runtimes{
         return BackendTools.of(pkgName, oracle, other, core, scratch, baseCachePath(), Optional.empty(), rtPath, capabilities);
       }
     };
-    OutputOracle o= ()->scratch;
+    OutputOracle o= () -> scratch;
     var other= OtherPackages.empty();
     var oracle= c.sourceOracle(basePath);
     var rich= SourceOracleWithAutoload.ofBase(oracle);
@@ -85,7 +85,7 @@ public final class Runtimes{
   public static Loaded load(String name){
     var dir= out.resolve(name);
     var jars= List.of(dir.resolve("project", Coordinator.outDir, "gen_java", "bench.jar"), dir.resolve("baseCache","base.jar"));
-    var urls= jars.stream().map(p->Fs.of(()->p.toUri().toURL())).toArray(URL[]::new);
+    var urls= jars.stream().map(p -> Fs.of(() -> p.toUri().toURL())).toArray(URL[]::new);
     return new Loaded(new URLClassLoader(urls, ClassLoader.getPlatformClassLoader()));
   }
   interface Reflect<T>{ T get() throws ReflectiveOperationException; }
@@ -100,10 +100,10 @@ public final class Runtimes{
     final Object system;
     Loaded(ClassLoader cl){
       this.cl= cl;
-      this.system= reflect(()->cl.loadClass("_base._System$2o$0").getConstructor().newInstance());
+      this.system= reflect(() -> cl.loadClass("_base._System$2o$0").getConstructor().newInstance());
     }
     public void run(String main){
-      reflect(()->{
+      reflect(() -> {
         var c= cl.loadClass("_bench."+main+"$"+tag(main)+"$0");
         var instance= c.getField("instance").get(null);
         return c.getMethod("imm$main$1", Object.class).invoke(instance, system);

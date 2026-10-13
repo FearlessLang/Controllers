@@ -7,58 +7,58 @@ import tools.Fs;
 
 final class StandInTest extends ManagerTest{
   final Action trayOff= action("trayOff",
-    on("ubuntu_gnome",()->extensions("disable")),
-    on("xubuntu_xfce",()->session("xfce4-panel --quit")));
+    on("ubuntu_gnome",() -> extensions("disable")),
+    on("xubuntu_xfce",() -> session("xfce4-panel --quit")));
   final Action trayOn= action("trayOn",
-    on("ubuntu_gnome",()->extensions("enable")),
-    on("xubuntu_xfce",()->session("setsid -f xfce4-panel >/dev/null 2>&1")));
+    on("ubuntu_gnome",() -> extensions("enable")),
+    on("xubuntu_xfce",() -> session("setsid -f xfce4-panel >/dev/null 2>&1")));
   final Action closeWindowBare= action("closeWindowBare",
-    on("ubuntu_gnome",()->click(val(1902),val(50))),
-    on("xubuntu_xfce",()->click(val(1909),val(10))));
+    on("ubuntu_gnome",() -> click(val(1902),val(50))),
+    on("xubuntu_xfce",() -> click(val(1909),val(10))));
   final Action openHelloWorld= action("openHelloWorld",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",() -> waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",() -> waitDoubleClick(val(null),val(null),val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome",()->waitAfter(val(null))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("ubuntu_gnome",() -> waitAfter(val(null))),
+    on("xubuntu_xfce",() -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitAfter(val(17500))),
-    on("xubuntu_xfce",()->waitAfter(val(22000))));
+    on("ubuntu_gnome",() -> waitAfter(val(17500))),
+    on("xubuntu_xfce",() -> waitAfter(val(22000))));
   final Action managerHidden= action("managerHidden",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
+    on("ubuntu_gnome",() -> waitAfter(val(3500))),
+    on("xubuntu_xfce",() -> waitAfter(val(4500))));
   final Action standIn= action("standIn",
-    on("ubuntu_gnome",()->click(val(1904),val(1064))),
-    on("xubuntu_xfce",()->click(val(1904),val(1064))));
+    on("ubuntu_gnome",() -> click(val(1904),val(1064))),
+    on("xubuntu_xfce",() -> click(val(1904),val(1064))));
   final Action menuShown= action("menuShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
+    on("ubuntu_gnome",() -> waitAfter(val(3500))),
+    on("xubuntu_xfce",() -> waitAfter(val(4000))));
   final Action showItem= action("showItem",
-    on("ubuntu_gnome",()->click(val(1860),val(1041))),
-    on("xubuntu_xfce",()->click(val(1850),val(1045))));
+    on("ubuntu_gnome",() -> click(val(1860),val(1041))),
+    on("xubuntu_xfce",() -> click(val(1850),val(1045))));
   final Action managerBack= action("managerBack",
-    on("ubuntu_gnome",()->waitAfter(val(4500))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+    on("ubuntu_gnome",() -> waitAfter(val(4500))),
+    on("xubuntu_xfce",() -> waitAfter(val(6000))));
   final Action hiddenAgain= action("hiddenAgain",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
+    on("ubuntu_gnome",() -> waitAfter(val(3500))),
+    on("xubuntu_xfce",() -> waitAfter(val(4000))));
   final Action standInRight= action("standInRight",
-    on("ubuntu_gnome",()->rightClick(val(1904),val(1064))),
-    on("xubuntu_xfce",()->rightClick(val(1904),val(1064))));
+    on("ubuntu_gnome",() -> rightClick(val(1904),val(1064))),
+    on("xubuntu_xfce",() -> rightClick(val(1904),val(1064))));
   final Action menuShownAgain= action("menuShownAgain",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
+    on("ubuntu_gnome",() -> waitAfter(val(3500))),
+    on("xubuntu_xfce",() -> waitAfter(val(4500))));
   final Action quitItem= action("quitItem",
-    on("ubuntu_gnome",()->click(val(1860),val(1066))),
-    on("xubuntu_xfce",()->click(val(1850),val(1068))));
+    on("ubuntu_gnome",() -> click(val(1860),val(1066))),
+    on("xubuntu_xfce",() -> click(val(1850),val(1068))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitAfter(val(5500))),
-    on("xubuntu_xfce",()->waitAfter(val(7000))));
+    on("ubuntu_gnome",() -> waitAfter(val(5500))),
+    on("xubuntu_xfce",() -> waitAfter(val(7000))));
   void extensions(String what){
-    var p= Fs.of(()->new ProcessBuilder(Stream.of("gnome-extensions",what,"ubuntu-appindicators@ubuntu.com").toList()).inheritIO().start());
+    var p= Fs.of(() -> new ProcessBuilder(Stream.of("gnome-extensions",what,"ubuntu-appindicators@ubuntu.com").toList()).inheritIO().start());
     assert p.onExit().join().exitValue() == 0;
     Pilot.pause(2000);
   }

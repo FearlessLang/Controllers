@@ -47,7 +47,7 @@ public final class NewFolder extends BasicNewResourceWizard{
       var wide= new GridData(SWT.FILL, SWT.CENTER, true, false);
       wide.widthHint = 480;
       name.setLayoutData(wide);
-      name.addModifyListener(e->validate());
+      name.addModifyListener(e -> validate());
       setPageComplete(false);
       setControl(root);
     }

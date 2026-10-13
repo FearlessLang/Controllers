@@ -38,13 +38,13 @@ final class IcoTest{
     g.fillRect(0,0,w/2,h);
     g.dispose();
     var res= dir.resolve("source.png");
-    Fs.ofV(()->ImageIO.write(img,"png",res.toFile()));
+    Fs.ofV(() -> ImageIO.write(img,"png",res.toFile()));
     return res;
   }
   private static ByteBuffer ico(Path dir){
     var res= dir.resolve("out.ico");
     Ico.fromPng(redLeftHalf(dir),res);
-    return ByteBuffer.wrap(Fs.of(()->Files.readAllBytes(res))).order(ByteOrder.LITTLE_ENDIAN);
+    return ByteBuffer.wrap(Fs.of(() -> Files.readAllBytes(res))).order(ByteOrder.LITTLE_ENDIAN);
   }
   @Test void headerAndDirectoryDescribeEightContiguous32BitFrames(@TempDir Path dir){
     var b= ico(dir);
@@ -63,7 +63,7 @@ final class IcoTest{
     var b= ico(dir);
     var bytes= Arrays.copyOfRange(b.array(),b.getInt(6+16*7+12),b.capacity());
     assertArrayEquals(new byte[]{(byte)0x89,'P','N','G','\r','\n',0x1a,'\n'},Arrays.copyOf(bytes,8));
-    var img= Fs.of(()->ImageIO.read(new ByteArrayInputStream(bytes)));
+    var img= Fs.of(() -> ImageIO.read(new ByteArrayInputStream(bytes)));
     assertEquals(List.of(256,256),List.of(img.getWidth(),img.getHeight()));
     assertEquals(Color.red.getRGB(),img.getRGB(64,128));
     assertEquals(0,img.getRGB(192,128)>>>24);
@@ -93,13 +93,13 @@ final class IcoTest{
   }
   @Test void aNonSquarePngIsRejected(@TempDir Path dir){
     var png= redLeftHalf(dir,512,384);
-    var e= assertThrows(IllegalArgumentException.class,()->Ico.fromPng(png,dir.resolve("out.ico")));
+    var e= assertThrows(IllegalArgumentException.class,() -> Ico.fromPng(png,dir.resolve("out.ico")));
     Err.strCmp("""
 The icon "[###]source.png" is 512x384 pixels, but an icon must be square: its width and its height must be equal, for example 256x256.
 """,e.getMessage()+"\n");
   }
   private static long greenPixels(BufferedImage img){
     return Arrays.stream(img.getRGB(0,0,img.getWidth(),img.getHeight(),null,0,img.getWidth()))
-      .filter(c->c>>>24 != 0 && (c>>8&0xff) != 0).count();
+      .filter(c -> c>>>24 != 0 && (c>>8&0xff) != 0).count();
   }
 }

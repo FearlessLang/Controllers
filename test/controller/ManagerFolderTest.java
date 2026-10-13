@@ -66,7 +66,7 @@ final class ManagerFolderTest{
     refused("""
       The manager was asked to register
       [###]myProject
-      but nothing exists there: register an existing folder, or a file inside one.""",()->Manager.projectFolder(dir.resolve("myProject"),folder(dir,"manager")));
+      but nothing exists there: register an existing folder, or a file inside one.""",() -> Manager.projectFolder(dir.resolve("myProject"),folder(dir,"manager")));
   }
   @Test void theManagerFolderIsNotAProject(@TempDir Path dir){
     var managerDir= folder(dir,"manager");
@@ -79,13 +79,13 @@ final class ManagerFolderTest{
       [###]manager
       The manager folder holds what Fearless remembers about your projects: it is
       never part of a project, and no project is inside it.
-      """,()->Manager.projectFolder(managerDir,managerDir));
+      """,() -> Manager.projectFolder(managerDir,managerDir));
   }
   @Test void aFileInTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     var managerDir= folder(dir,"manager");
     var file= managerDir.resolve("example.fearless");
     Fs.writeUtf8(file,"anything");
-    refused("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(file,managerDir));
+    refused("Fearless cannot keep track of this folder as a project.[###]",() -> Manager.projectFolder(file,managerDir));
   }
   @Test void aFolderUnderAnyPathIsAProject(@TempDir Path dir){
     var project= folder(folder(dir,"caf\u00e9 \ud83d\ude00"),"myProject");
@@ -93,16 +93,16 @@ final class ManagerFolderTest{
   }
   @Test void aFolderInsideTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     var managerDir= folder(dir,"manager");
-    refused("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(folder(managerDir,"messages"),managerDir));
+    refused("Fearless cannot keep track of this folder as a project.[###]",() -> Manager.projectFolder(folder(managerDir,"messages"),managerDir));
   }
   @Test void aFolderHoldingTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
-    refused("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(dir,folder(dir,"manager")));
+    refused("Fearless cannot keep track of this folder as a project.[###]",() -> Manager.projectFolder(dir,folder(dir,"manager")));
   }
   @Test void aLinkToTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     Assumptions.assumeFalse(Fs.isWindows());
     var managerDir= folder(dir,"manager");
-    var link= Fs.of(()->Files.createSymbolicLink(dir.resolve("link"),managerDir));
-    refused("Fearless cannot keep track of this folder as a project.[###]",()->Manager.projectFolder(link,managerDir));
+    var link= Fs.of(() -> Files.createSymbolicLink(dir.resolve("link"),managerDir));
+    refused("Fearless cannot keep track of this folder as a project.[###]",() -> Manager.projectFolder(link,managerDir));
   }
   @Test void theRootOfADriveIsNotAProject(@TempDir Path dir){
     refused("""
@@ -113,6 +113,6 @@ final class ManagerFolderTest{
       [###]
       Put the project in a folder inside it, and make that folder the project
       folder.
-      """,()->Manager.projectFolder(dir.getRoot(),folder(dir,"manager")));
+      """,() -> Manager.projectFolder(dir.getRoot(),folder(dir,"manager")));
   }
 }

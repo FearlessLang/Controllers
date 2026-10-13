@@ -32,7 +32,7 @@ import controller.Project;
 public final class Tiles extends JPanel{
   static final int iconSize= 48;
   final JList<Project> list= new JList<>();
-  private final Timer spinner= new Timer(80,_->list.repaint());
+  private final Timer spinner= new Timer(80,_ -> list.repaint());
   private State state= new State(List.of(),Optional.empty(),List.of());
   private Map<Project,Image> images= Map.of();
   public Tiles(){
@@ -69,10 +69,10 @@ public final class Tiles extends JPanel{
     var moved= !s.selected().equals(state.selected());
     state = s;
     var old= images;
-    images = s.projects().stream().collect(Collectors.toMap(Function.identity(),p->old.containsKey(p) ? old.get(p) : Icons.of(p,iconSize)));
+    images = s.projects().stream().collect(Collectors.toMap(Function.identity(),p -> old.containsKey(p) ? old.get(p) : Icons.of(p,iconSize)));
     var rows= s.projects().stream().sorted(Comparator.comparing(Project::alias)).toList();
     list.setListData(rows.toArray(Project[]::new));
-    var at= s.selected().map(f->rows.stream().map(Project::folder).toList().indexOf(f)).orElse(-1);
+    var at= s.selected().map(f -> rows.stream().map(Project::folder).toList().indexOf(f)).orElse(-1);
     if (at >= 0){ list.setSelectedIndex(at); }
     if (at >= 0 && moved){ list.ensureIndexIsVisible(at); }
     var anyBusy= rows.stream().anyMatch(Project::busy);

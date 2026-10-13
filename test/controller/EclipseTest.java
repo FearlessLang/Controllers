@@ -41,7 +41,7 @@ final class EclipseTest{
     var fearless= eclipse.resolve("dropins").resolve("fearless");
     Fs.writeUtf8(fearless.resolve("plugins").resolve("old.jar"),"old");
     Eclipse.connect(eclipse,plugin,dir.resolve("program"),dir.resolve("program").resolve("launcher"),dir.resolve("manager"),dir.resolve("baseCache"));
-    assertEquals(List.of(fearless.resolve("plugins").resolve("new.jar")),Fs.of(()->{ try(var s= Files.list(fearless.resolve("plugins"))){ return s.toList(); } }));
+    assertEquals(List.of(fearless.resolve("plugins").resolve("new.jar")),Fs.of(() -> { try(var s= Files.list(fearless.resolve("plugins"))){ return s.toList(); } }));
     assertEquals("new",Fs.readUtf8(fearless.resolve("plugins").resolve("new.jar")));
     var at= dir.toString().replace("\\","\\\\");
     var sep= dir.getFileSystem().getSeparator().replace("\\","\\\\");
@@ -53,6 +53,6 @@ final class EclipseTest{
         "baseCache": "Str:%1$s%2$sbaseCache"
       }
       """.stripIndent().formatted(at,sep),Fs.readUtf8(fearless.resolve("manager.info")));
-    assertEquals(List.of("manager.info","plugins"),Fs.of(()->{ try(var s= Files.list(fearless)){ return s.map(p->p.getFileName().toString()).sorted().toList(); } }));
+    assertEquals(List.of("manager.info","plugins"),Fs.of(() -> { try(var s= Files.list(fearless)){ return s.map(p -> p.getFileName().toString()).sorted().toList(); } }));
   }
 }

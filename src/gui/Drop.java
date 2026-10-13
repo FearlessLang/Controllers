@@ -33,7 +33,7 @@ public final class Drop{
     catch(UnsupportedFlavorException|IOException e){ refused.accept(Report.dropUnreadable(e)); return List.of(); }
   }
   private static Optional<DataFlavor> uriList(Transferable t){
-    return Stream.of(t.getTransferDataFlavors()).filter(f->f.getPrimaryType().equalsIgnoreCase("text") && f.getSubType().equalsIgnoreCase("uri-list")).findFirst();
+    return Stream.of(t.getTransferDataFlavors()).filter(f -> f.getPrimaryType().equalsIgnoreCase("text") && f.getSubType().equalsIgnoreCase("uri-list")).findFirst();
   }
   private static String text(Object data) throws IOException{
     if (data instanceof String s){ return s; }
@@ -43,7 +43,7 @@ public final class Drop{
     return out.toString();
   }
   public static List<Path> fromUriList(String data, Consumer<String> refused){
-    return data.lines().map(String::strip).filter(l->!l.isEmpty() && !l.startsWith("#")).flatMap(l->path(l,refused)).toList();
+    return data.lines().map(String::strip).filter(l -> !l.isEmpty() && !l.startsWith("#")).flatMap(l -> path(l,refused)).toList();
   }
   private static Stream<Path> path(String line, Consumer<String> refused){
     try{
