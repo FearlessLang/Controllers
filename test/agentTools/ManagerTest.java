@@ -256,7 +256,7 @@ abstract class ManagerTest{
   //double clicks fearlessManaged0_001w, the launcher whose name ends with w
   final Action openLauncher= action("openLauncher",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(380))),
-    on("lubuntu_lxqt",()->{ waitDoubleClick(val(null),val(null),val(null)); waitClick(val(null),val(null),val(null)); }),//the launcher, then Execute in the dialog asking to execute it
+    on("lubuntu_lxqt",()->waitDoubleClick(val(null),val(null),val(null))),
     on("fedora_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
     on("fedora_cosmic",()->waitDoubleClick(val(100),val(888),val(343))),
     on("debian_mate",()->waitDoubleClick(val(null),val(null),val(null))),
@@ -272,7 +272,7 @@ abstract class ManagerTest{
   final Action fileManagerToFront= action("fileManagerToFront",
     on("ubuntu_gnome",()->waitClick(val(100),val(33),val(128))),
     on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
-    on("fedora_gnome",()->{ waitClick(val(null),val(null),val(null)); waitClick(val(null),val(null),val(null)); }),//Activities, then the Files icon of the dash
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
     on("fedora_cosmic",()->waitClick(val(100),val(918),val(1040))),
     on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(100),val(390),val(12))));
@@ -283,8 +283,25 @@ abstract class ManagerTest{
     on("fedora_cosmic",()->waitClick(val(100),val(1447),val(177))),
     on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(100),val(1269),val(311))));
+  //makes the files icon visible, on a desk where it is not always on screen
+  final Action showFilesIcon= action("showFilesIcon",
+    on("ubuntu_gnome",()->waitAfter(val(100))),
+    on("lubuntu_lxqt",()->waitAfter(val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),//Activities
+    on("fedora_cosmic",()->waitAfter(val(100))),
+    on("debian_mate",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(100))));
+  //answers what the desk asks after the double click on the launcher
+  final Action confirmLauncher= action("confirmLauncher",
+    on("ubuntu_gnome",()->waitAfter(val(100))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),//Execute, in the dialog asking to execute the launcher
+    on("fedora_gnome",()->waitAfter(val(null))),
+    on("fedora_cosmic",()->waitAfter(val(100))),
+    on("debian_mate",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   boolean filesOpen;
   void toPilotio() throws Throwable{
+    showFilesIcon.go();
     (filesOpen ? fileManagerToFront : filesIcon).go();
     filesOpen= true;
     pilotioBookmark.go();
@@ -293,14 +310,15 @@ abstract class ManagerTest{
     closeFileManager.go();
     filesOpen= false;
   }
-  //the actions of start(), in this order: filesIcon (fileManagerToFront when a file manager window is already open), pilotioBookmark, openApp (openAppNextToManagerFolder when the manager folder fearless0_001 is next to the app), openBin, openLauncher.
-  //Before filesIcon the manager is not started; the manager window shows only after openLauncher.
+  //the actions of start(), in this order: showFilesIcon, filesIcon (fileManagerToFront when a file manager window is already open), pilotioBookmark, openApp (openAppNextToManagerFolder when the manager folder fearless0_001 is next to the app), openBin, openLauncher, confirmLauncher.
+  //Before filesIcon the manager is not started; the manager window shows only after openLauncher and confirmLauncher.
   //start() leaves the file manager open, behind the manager window.
   void start() throws Throwable{
     toPilotio();
     (Files.exists(filesIOFolder.resolve(data)) ? openAppNextToManagerFolder : openApp).go();
     openBin.go();
     openLauncher.go();
+    confirmLauncher.go();
   }
   void toFiles() throws Throwable{
     toPilotio();

@@ -102,10 +102,10 @@ final class WindowCloseTest extends ManagerTest{
   @Override void walk() throws Throwable{
     project("helloWorld");
     var tile= inWindow(69,95,128,85);
-    start();//filesIcon or fileManagerToFront, pilotioBookmark, openApp or openAppNextToManagerFolder, openBin, openLauncher (double click fearlessManaged0_001w): see ManagerTest.start()
+    start();//showFilesIcon, filesIcon or fileManagerToFront, pilotioBookmark, openApp or openAppNextToManagerFolder, openBin, openLauncher (double click fearlessManaged0_001w), confirmLauncher: see ManagerTest.start()
     managerShown.go();
     var empty= look();
-    toFiles();//fileManagerToFront (the file manager window of start() is open behind the manager), pilotioBookmark, openFiles: see ManagerTest.toFiles()
+    toFiles();//showFilesIcon, fileManagerToFront (the file manager window of start() is open behind the manager), pilotioBookmark, openFiles: see ManagerTest.toFiles()
     openHelloWorld.go();
     openHelloWorldMarker.go();
     projectShown.go();
@@ -115,7 +115,7 @@ final class WindowCloseTest extends ManagerTest{
     managerHidden.go();
     changed(shown,tile);
     closeFiles();//the manager window is hidden, so the file manager is visible on every desk
-    start();//filesIcon or fileManagerToFront, pilotioBookmark, openApp or openAppNextToManagerFolder, openBin, openLauncher (double click fearlessManaged0_001w): see ManagerTest.start()
+    start();//showFilesIcon, filesIcon or fileManagerToFront, pilotioBookmark, openApp or openAppNextToManagerFolder, openBin, openLauncher (double click fearlessManaged0_001w), confirmLauncher: see ManagerTest.start()
     managerBack.go();
     same(shown,tile);
     closeWindow.go();
