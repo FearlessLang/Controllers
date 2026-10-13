@@ -22,7 +22,7 @@ final class WindowCloseTest extends ManagerTest{
   final Action hiddenAgain= action("hiddenAgain",
     on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
-  //600: the entries of the tray menu ignore presses for half a second after the menu shows
+  //the entries of the tray menu ignore presses for half a second after the menu shows
   final Action trayMenuShown= action("trayMenuShown",
     on("ubuntu_gnome",()->waitAfter(val(600))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
@@ -32,18 +32,16 @@ final class WindowCloseTest extends ManagerTest{
   final Action hiddenThird= action("hiddenThird",
     on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(4500))));
-  //two values: x, y; no wait
   final Action trayIconRight= action("trayIconRight",
-    on("ubuntu_gnome",()->rightClick(val(1736),val(15))),
-    on("xubuntu_xfce",()->rightClick(val(1783),val(12))));
-  //600: the entries of the tray menu ignore presses for half a second after the menu shows
+    on("ubuntu_gnome",()->waitRightClick(val(null),val(1736),val(15))),
+    on("xubuntu_xfce",()->waitRightClick(val(null),val(1783),val(12))));
+  //the entries of the tray menu ignore presses for half a second after the menu shows
   final Action trayMenuShownAgain= action("trayMenuShownAgain",
     on("ubuntu_gnome",()->waitAfter(val(600))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
-  //two values: x, y; no wait
   final Action trayQuit= action("trayQuit",
-    on("ubuntu_gnome",()->click(val(1706),val(117))),
-    on("xubuntu_xfce",()->click(val(1715),val(66))));
+    on("ubuntu_gnome",()->waitClick(val(null),val(1706),val(117))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(1715),val(66))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(8000))));
