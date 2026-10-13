@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -76,13 +75,9 @@ abstract class ManagerTest{
     var left= last+millis-System.currentTimeMillis();
     if (left>0){ Pilot.pause((int)left); }
   }
-  void click(int x, int y){ pilot.click(x,y); }
+  void click(int x, int y){ pilot.click(Pilot.Button.left,x,y); }
   void doubleClick(int x, int y){ pilot.doubleClick(x,y); }
-  void rightClick(int x, int y){
-    var right= Set.of(Pilot.Button.right);
-    pilot.glide(x,y,Pilot.none,x,y,right);
-    pilot.glide(x,y,right,x,y,Pilot.none);
-  }
+  void rightClick(int x, int y){ pilot.click(Pilot.Button.right,x,y); }
   void drag(int x0, int y0, int x1, int y1){ pilot.drag(x0,y0,x1,y1); }
   void type(String text){ text.chars().forEach(this::type); }
   void type(int c){

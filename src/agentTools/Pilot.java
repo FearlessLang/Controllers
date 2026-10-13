@@ -51,7 +51,14 @@ public final class Pilot{
     pause(200);
   }
   private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else { robot.mouseRelease(b.mask); } }
-  public void click(int x, int y){ glide(x,y,none,x,y,left); glide(x,y,left,x,y,none); }
+  /// A press and release as short as a person's: a desk reads a button held longer, from about 400 milliseconds, as a long press, which is not a click.
+  public void click(Button b, int x, int y){
+    glide(x,y,none,x,y,none);
+    button(b,true);
+    pause(100);
+    button(b,false);
+    pause(200);
+  }
   /// Two clicks close enough together to be read as one gesture, which is what opens an icon on every desk. Calling click twice does not make one: a desk counts the time from the first press to the second, about 400 milliseconds, and a click leaves the pointer settled for longer than that.
   public void doubleClick(int x, int y){
     glide(x,y,none,x,y,none);
