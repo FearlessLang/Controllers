@@ -7,37 +7,37 @@ import java.nio.file.Files;
 
 final class ClearCacheTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(1027), val(113))),
+    on("ubuntu_gnome", () -> click(val(1027), val(112))),
     on("xubuntu_xfce", () -> click(val(1040), val(93))));
   final Action clean= action("clean",
-    on("ubuntu_gnome", () -> click(val(1010), val(113))),
+    on("ubuntu_gnome", () -> click(val(1006), val(112))),
     on("xubuntu_xfce", () -> click(val(1007), val(93))));
   final Action openHelloWorld= action("openHelloWorld",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome", () -> waitAfter(val(null))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome", () -> waitAfter(val(17500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome", () -> waitAfter(val(4500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(580), val(113))),
+    on("ubuntu_gnome", () -> click(val(595), val(112))),
     on("xubuntu_xfce", () -> click(val(545), val(93))));
   final Action compiled= action("compiled",
-    on("ubuntu_gnome", () -> waitAfter(val(21000))),
+    on("ubuntu_gnome", () -> waitAfter(val(2000))),//the compile of hello_world runs in its own JVM
     on("xubuntu_xfce", () -> waitAfter(val(26000))));
   final Action cacheCleared= action("cacheCleared",
-    on("ubuntu_gnome", () -> waitAfter(val(4500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome", () -> waitAfter(val(7000))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     var project= project("helloWorld");
@@ -47,7 +47,6 @@ final class ClearCacheTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -66,6 +65,7 @@ final class ClearCacheTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, button);
   }
 }
