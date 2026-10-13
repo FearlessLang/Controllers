@@ -18,24 +18,12 @@ final class LinkReadTest extends ManagerTest{
   final Action backToIdle= action("backToIdle",
     on("ubuntu_gnome",()->click(val(726),val(113))),
     on("xubuntu_xfce",()->click(val(687),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action dataSaved= action("dataSaved",
     on("ubuntu_gnome",()->waitAfter(val(4500))),
     on("xubuntu_xfce",()->waitAfter(val(6000))));
-  final Action appsShownReader= action("appsShownReader",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(3500))));
-  final Action terminalShownReader= action("terminalShownReader",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action readerShown= action("readerShown",
     on("ubuntu_gnome",()->waitAfter(val(11000))),
     on("xubuntu_xfce",()->waitAfter(val(13500))));
@@ -78,26 +66,54 @@ final class LinkReadTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(8500))),
     on("xubuntu_xfce",()->waitAfter(val(10500))));
+  final Action openLinksFolder= action("openLinksFolder",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openStore= action("openStore",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openStoreMarker= action("openStoreMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action storeListed= action("storeListed",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
+  final Action openLinksFolderAgain= action("openLinksFolderAgain",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openReader= action("openReader",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openReaderMarker= action("openReaderMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action leaveReadField= action("leaveReadField",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var links= filesIOFolder.resolve("links");
+    var links= files.resolve("links");
     var store= links.resolve("store");
     var reader= links.resolve("reader");
-    Fs.rmTree(links);
     Fs.writeUtf8(store.resolve("store.fearless"),"\n");
     Fs.writeUtf8(store.resolve("_store").resolve("_rank_app.fear"),"Stock:{}\n");
     Fs.writeUtf8(reader.resolve("reader.fearless"),"\n");
     Fs.writeUtf8(reader.resolve("_reader").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"reader\")}\n");
-    launchScript("first",store.resolve("store.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    start();
     managerShown.go();
+    toFiles();
+    openLinksFolder.go();
+    openStore.go();
+    openStoreMarker.go();
+    closeFileManager.go();
+    storeListed.go();
     becomeData.go();
     dataSaved.go();
-    launchScript("second",reader.resolve("reader.fearless"));
-    runInTerminal(appsShownReader,terminalShownReader);
+    toFiles();
+    openLinksFolderAgain.go();
+    openReader.go();
+    openReaderMarker.go();
+    closeFileManager.go();
     readerShown.go();
-    stabilize();
-    checkContent(List.of("second.exit"),"0\n");
     becomeCode.go();
     codeSaved.go();
     stabilize();
@@ -105,7 +121,8 @@ final class LinkReadTest extends ManagerTest{
     openLinks.go();
     linksShown.go();
     readField.go();
-    type("Stock\n");
+    type("Stock");
+    leaveReadField.go();
     readsSaved.go();
     stabilize();
     var reads= """
@@ -128,12 +145,10 @@ final class LinkReadTest extends ManagerTest{
     changed(before,inWindow(410,168,1000,80));
     stabilize();
     assertEquals(List.of(".fearless_out/check_error.txt"),Fs.walk(reader.resolve(".fearless_out"),st->st.filter(Files::isRegularFile).map(p->slashed(reader.relativize(p))).toList()));
-    checkContent(List.of("links","reader",".fearless_out","check_error.txt"),"\"reads\" refers to \"store\", but the kind of \"store\" is \"idle\"; \"reads\" accepts only \"data:readOnly\" or \"data:readWrite\".");
+    checkContent(files.resolve("links/reader/.fearless_out/check_error.txt"),"\"reads\" refers to \"store\", but the kind of \"store\" is \"idle\"; \"reads\" accepts only \"data:readOnly\" or \"data:readWrite\".");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
   }
   static String registry(Path store, Path reader, String storeKind, String links){
     return """

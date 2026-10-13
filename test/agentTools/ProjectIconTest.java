@@ -6,19 +6,21 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import javax.imageio.ImageIO;
 
 import tools.Fs;
 
 final class ProjectIconTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openPic= action("openPic",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openPicMarker= action("openPicMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -41,15 +43,18 @@ final class ProjectIconTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var pic= filesIOFolder.resolve("pic");
+    var pic= files.resolve("pic");
     var icons= pic.resolve(".config").resolve("icon");
-    Fs.rmTree(pic);
     Fs.writeUtf8(pic.resolve("pic.fearless"),"\n");
     Fs.writeUtf8(pic.resolve("_pic").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"pic\")}\n");
-    launchScript("first",pic.resolve("pic.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openPic.go();
+    openPicMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     var tile= inWindow(69,95,128,85);
     var output= inWindow(410,168,1000,80);
     var madeUp= look();
@@ -72,8 +77,7 @@ final class ProjectIconTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,tile);
   }
   static void png(Path file, int rgb) throws Exception{
     var img= new BufferedImage(48,48,BufferedImage.TYPE_INT_RGB);

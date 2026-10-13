@@ -13,12 +13,15 @@ final class ShortcutFileTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(1012),val(113))),
     on("xubuntu_xfce",()->click(val(1024),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openShortcuts= action("openShortcuts",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openShortcutsMarker= action("openShortcutsMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -37,41 +40,35 @@ final class ShortcutFileTest extends ManagerTest{
   final Action ranFromManager= action("ranFromManager",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
-  final Action appsShownFiles= action("appsShownFiles",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(3500))));
-  final Action terminalShownFiles= action("terminalShownFiles",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
-  final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitAfter(val(15500))),
-    on("xubuntu_xfce",()->waitAfter(val(19000))));
-  final Action openShortcut= action("openShortcut",
-    on("ubuntu_gnome",()->doubleClick(val(912),val(375))),
-    on("xubuntu_xfce",()->doubleClick(val(1015),val(425))));
+  final Action clearOutput= action("clearOutput",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  final Action outputCleared= action("outputCleared",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
+  final Action openHelloFapp= action("openHelloFapp",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action ranFromFiles= action("ranFromFiles",
     on("ubuntu_gnome",()->waitAfter(val(10000))),
     on("xubuntu_xfce",()->waitAfter(val(12500))));
-  final Action closeFiles= action("closeFiles",
-    on("ubuntu_gnome",()->click(val(1414),val(303))),
-    on("xubuntu_xfce",()->click(val(1275),val(309))));
-  final Action filesClosed= action("filesClosed",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var shortcuts= filesIOFolder.resolve("shortcuts");
-    Fs.rmTree(shortcuts);
+    var shortcuts= files.resolve("shortcuts");
     Fs.writeUtf8(shortcuts.resolve("shortcuts.fearless"),"\n");
     Fs.writeUtf8(shortcuts.resolve("_hello").resolve("_rank_app.fear"),"use base.Main as Main;\nuse base.Shortcut as Shortcut;\n\nHello:Main, Shortcut[IconsHello]{s->base.Debug#(`hello`)}\n");
     Fs.ensureDir(shortcuts.resolve("_hello").resolve("icons"));
     ImageIO.write(new BufferedImage(64,64,BufferedImage.TYPE_INT_RGB),"png",shortcuts.resolve("_hello").resolve("icons").resolve("hello.png").toFile());
-    launchScript("first",shortcuts.resolve("shortcuts.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openShortcuts.go();
+    openShortcutsMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     compile.go();
@@ -83,20 +80,18 @@ final class ShortcutFileTest extends ManagerTest{
     shortcutIcon.go();
     ranFromManager.go();
     changed(compiledLook,output);
-    var ran= look();
-    shell("nohup setsid -f xdg-open \""+shortcuts+"\" >/dev/null 2>&1\n");
-    runInTerminal(appsShownFiles,terminalShownFiles);
-    filesShown.go();
-    openShortcut.go();
+    clearOutput.go();
+    outputCleared.go();
+    var cleared= look();
+    toFiles();
+    openShortcuts.go();
+    openHelloFapp.go();
+    closeFileManager.go();
     ranFromFiles.go();
-    closeFiles.go();
-    filesClosed.go();
-    stabilize();
-    assert differing(ran,look(),output) == 0;
+    changed(cleared,output);
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,output);
   }
 }

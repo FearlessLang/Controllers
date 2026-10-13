@@ -1,17 +1,19 @@
 package agentTools;
 
 import java.nio.file.Files;
-import java.util.List;
 
 import tools.Fs;
 
 final class EditMetadataRenameTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openOld= action("openOld",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openOldMarker= action("openOldMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -34,14 +36,16 @@ final class EditMetadataRenameTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var old= filesIOFolder.resolve("old");
-    Fs.rmTree(old);
+    var old= files.resolve("old");
     Fs.writeUtf8(old.resolve("old.fearless"),"\n");
     Fs.writeUtf8(old.resolve("_old").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"old\")}\n");
-    launchScript("first",old.resolve("old.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    start();
     managerShown.go();
+    toFiles();
+    openOld.go();
+    openOldMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     var tile= inWindow(69,95,128,85);
     var valid= look();
     managerMenu.go();
@@ -72,7 +76,5 @@ final class EditMetadataRenameTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
   }
 }

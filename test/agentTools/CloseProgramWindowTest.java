@@ -1,7 +1,6 @@
 package agentTools;
 
 import java.awt.Rectangle;
-import java.util.List;
 
 import tools.Fs;
 
@@ -9,12 +8,15 @@ final class CloseProgramWindowTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(967),val(113))),
     on("xubuntu_xfce",()->click(val(972),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openShut= action("openShut",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openShutMarker= action("openShutMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -43,9 +45,7 @@ final class CloseProgramWindowTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var shut= filesIOFolder.resolve("shut");
-    Fs.rmTree(shut);
+    var shut= files.resolve("shut");
     Fs.writeUtf8(shut.resolve("shut.fearless"),"\n");
     Fs.writeUtf8(shut.resolve("_shut").resolve("_rank_app.fear"),"""
       use base.Main as Main;
@@ -55,9 +55,14 @@ final class CloseProgramWindowTest extends ManagerTest{
       Show: Main{sys -> sys.gui.run Note}
       Note: Consumer[mut Frame]{:: .title "shut" .content{:: .label{:: .text "close this window" } } }
       """);
-    launchScript("first",shut.resolve("shut.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openShut.go();
+    openShutMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     compile.go();
@@ -76,7 +81,6 @@ final class CloseProgramWindowTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,button);
   }
 }

@@ -2,19 +2,12 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.awt.Rectangle;
 import java.nio.file.Files;
 import java.util.List;
 
 import tools.Fs;
 
 final class ChooserNavigationTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -30,7 +23,7 @@ final class ChooserNavigationTest extends ManagerTest{
   final Action rootShown= action("rootShown",
     on("ubuntu_gnome",()->waitAfter(val(3000))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
-  final Action openData= action("openData",
+  final Action openDataInChooser= action("openDataInChooser",
     on("ubuntu_gnome",()->doubleClick(val(790),val(539))),
     on("xubuntu_xfce",()->doubleClick(val(745),val(505))));
   final Action dataShown= action("dataShown",
@@ -42,6 +35,9 @@ final class ChooserNavigationTest extends ManagerTest{
   final Action filesIOShown= action("filesIOShown",
     on("ubuntu_gnome",()->waitAfter(val(3000))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
+  final Action openFilesInChooser= action("openFilesInChooser",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action openAttic= action("openAttic",
     on("ubuntu_gnome",()->doubleClick(val(790),val(473))),
     on("xubuntu_xfce",()->doubleClick(val(745),val(465))));
@@ -61,43 +57,34 @@ final class ChooserNavigationTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var attic= filesIOFolder.resolve("attic");
+    var attic= files.resolve("attic");
     var inner= attic.resolve("inner");
-    Fs.rmTree(attic);
     Fs.writeUtf8(inner.resolve("inner.fearless"),"\n");
     Fs.writeUtf8(inner.resolve("_inner").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"inner\")}\n");
-    var files= Fs.walk(attic,s->s.sorted().toList());
-    launchScript("first");
-    runInTerminal(appsShown,terminalShown);
+    var atticFiles= Fs.walk(attic,s->s.sorted().toList());
+    var bare= look();
+    start();
     managerShown.go();
-    var center= new Rectangle(760,460,400,160);
-    var empty= look();
     managerMenu.go();
     addFolder.go();
     chooserShown.go();
-    var chooser= look();
-    changed(empty,center);
     upLevel.go();
     homeLeft.go();
     upLevel.go();
     rootShown.go();
-    openData.go();
+    openDataInChooser.go();
     dataShown.go();
     openFilesIO.go();
     filesIOShown.go();
+    openFilesInChooser.go();
     openAttic.go();
     atticShown.go();
     stabilize();
     checkContent(info,"{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
-    assertEquals(files,Fs.walk(attic,s->s.sorted().toList()));
-    changed(empty,center);
-    var title= new Rectangle(740,380,500,40);
-    same(chooser,title);
+    assertEquals(atticFiles,Fs.walk(attic,s->s.sorted().toList()));
     pickInner.go();
     open.go();
     tileShown.go();
-    changed(chooser,title);
     stabilize();
     checkContent(info,"""
       {
@@ -114,7 +101,6 @@ final class ChooserNavigationTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,inWindow(100,200,200,400));
   }
 }

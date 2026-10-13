@@ -1,15 +1,15 @@
 package agentTools;
 
-import java.awt.event.KeyEvent;
-import java.util.List;
-
 final class EditMetadataAddProjectTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openHelloWorld= action("openHelloWorld",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openHelloWorldMarker= action("openHelloWorldMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -19,6 +19,9 @@ final class EditMetadataAddProjectTest extends ManagerTest{
   final Action focusText= action("focusText",
     on("ubuntu_gnome",()->click(val(940),val(660))),
     on("xubuntu_xfce",()->click(val(907),val(657))));
+  final Action selectText= action("selectText",
+    on("ubuntu_gnome",()->waitDrag(val(null),val(null),val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDrag(val(null),val(null),val(null),val(null),val(null))));
   final Action commit= action("commit",
     on("ubuntu_gnome",()->click(val(1278),val(830))),
     on("xubuntu_xfce",()->click(val(1245),val(827))));
@@ -41,20 +44,24 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
-    noManagerData();
     var project= project("helloWorld");
     var other= project("helloStackTraces");
     var both= """
       {"projects": {"hello_world": {"path": "Str:%s", "kind": "idle"}, "start": {"path": "Str:%s", "kind": "idle"}}, "systemExtensions": []}
       """.formatted(slashed(project),slashed(other));
-    launchScript("first",project.resolve("hello_world.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openHelloWorld.go();
+    openHelloWorldMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     managerMenu.go();
     editMetadata.go();
     editorShown.go();
     focusText.go();
-    keys(KeyEvent.VK_CONTROL,KeyEvent.VK_A);
+    selectText.go();
     type(both.strip());
     commit.go();
     bothSaved.go();
@@ -84,7 +91,6 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,output);
   }
 }

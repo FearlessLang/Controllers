@@ -9,47 +9,63 @@ import java.util.List;
 import tools.Fs;
 
 final class NestedFolderTest extends ManagerTest{
-  final Path nest= filesIOFolder.resolve("nest");
+  final Path nest= files.resolve("nest");
   final Path inner= nest.resolve("inner");
   final Path source= inner.resolve("_inner");
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
-  final Action appsShownNest= action("appsShownNest",
-    on("ubuntu_gnome",()->waitAfter(val(3000))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
-  final Action terminalShownNest= action("terminalShownNest",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome",()->waitAfter(val(10000))),
     on("xubuntu_xfce",()->waitAfter(val(12500))));
-  final Action appsShownSource= action("appsShownSource",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShownSource= action("terminalShownSource",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action noteShownAgain= action("noteShownAgain",
     on("ubuntu_gnome",()->waitAfter(val(10500))),
     on("xubuntu_xfce",()->waitAfter(val(13000))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(8500))),
     on("xubuntu_xfce",()->waitAfter(val(10500))));
+  final Action openNest= action("openNest",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openInner= action("openInner",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openInnerMarker= action("openInnerMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
+  final Action openNestAgain= action("openNestAgain",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openNestMarker= action("openNestMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action okButton= action("okButton",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  final Action openNestThird= action("openNestThird",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openInnerAgain= action("openInnerAgain",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openUnderscoreInner= action("openUnderscoreInner",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openSourceMarker= action("openSourceMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action okButtonAgain= action("okButtonAgain",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    Fs.rmTree(nest);
     Fs.writeUtf8(inner.resolve("inner.fearless"),"\n");
     Fs.writeUtf8(nest.resolve("nest.fearless"),"\n");
     Fs.writeUtf8(source.resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"inner\")}\n");
     Fs.writeUtf8(source.resolve("source.fearless"),"\n");
-    var files= tree();
+    var tree= tree();
     var remembered= """
       {
         "projects": {
@@ -61,36 +77,43 @@ final class NestedFolderTest extends ManagerTest{
         "systemExtensions": []
       }
       """.formatted(slashed(inner));
-    launchScript("first",inner.resolve("inner.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    start();
     managerShown.go();
+    toFiles();
+    openNest.go();
+    openInner.go();
+    openInnerMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     stabilize();
     checkContent(info,remembered);
     var center= new Rectangle(760,460,400,160);
     var before= look();
-    launchScript("second",nest.resolve("nest.fearless"));
-    runInTerminal(appsShownNest,terminalShownNest);
+    toFiles();
+    openNestAgain.go();
+    openNestMarker.go();
+    closeFileManager.go();
     noteShown.go();
     changed(before,center);
     stabilize();
-    checkContent(List.of("second.exit"),"0\n");
     checkContent(info,remembered);
-    assertEquals(files,tree());
-    closeDialog.go();
-    launchScript("third",source.resolve("source.fearless"));
-    runInTerminal(appsShownSource,terminalShownSource);
+    assertEquals(tree,tree());
+    okButton.go();
+    toFiles();
+    openNestThird.go();
+    openInnerAgain.go();
+    openUnderscoreInner.go();
+    openSourceMarker.go();
+    closeFileManager.go();
     noteShownAgain.go();
     changed(before,center);
     stabilize();
-    checkContent(List.of("third.exit"),"0\n");
     checkContent(info,remembered);
-    assertEquals(files,tree());
-    closeDialog.go();
+    assertEquals(tree,tree());
+    okButtonAgain.go();
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
   }
   List<Path> tree(){ return Fs.walk(nest,s->s.sorted().toList()); }
 }

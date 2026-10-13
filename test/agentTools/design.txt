@@ -18,9 +18,12 @@ class ManagerTest{
   String inputName;
   List<Object> inputs;
   @Test void test() throws Throwable{
+    cleanDir(filesIOFolder);//a test starts from an empty share holding a fresh copy of the app
+    copy(deployedApp, filesIOFolder);
     last = now();
     walk();
   }
+  void start(){ the person opens the file manager, goes to the app's bin folder and double clicks the launcher, then closes the file manager; every step is an action }
   Action action(String name, On...ons){ return new Action(this,name,ons.find(desk).orCrash); }
   On on(String desk, Run steps){ new On(desk,steps); }
 

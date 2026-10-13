@@ -5,49 +5,41 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Rectangle;
 import java.nio.file.Files;
-import java.util.List;
 
 import tools.Fs;
 
 final class MalformedRegistryTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
-  final Action appsShownMalformed= action("appsShownMalformed",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShownMalformed= action("terminalShownMalformed",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action errorShown= action("errorShown",
     on("ubuntu_gnome",()->waitAfter(val(19000))),
     on("xubuntu_xfce",()->waitAfter(val(24000))));
   final Action errorDismissed= action("errorDismissed",
     on("ubuntu_gnome",()->waitAfter(val(4500))),
     on("xubuntu_xfce",()->waitAfter(val(5500))));
-  final Action appsShownFresh= action("appsShownFresh",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShownFresh= action("terminalShownFresh",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action freshShown= action("freshShown",
     on("ubuntu_gnome",()->waitAfter(val(18000))),
     on("xubuntu_xfce",()->waitAfter(val(22500))));
   final Action freshQuit= action("freshQuit",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
+  final Action openHelloWorld= action("openHelloWorld",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openHelloWorldMarker= action("openHelloWorldMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
+  final Action okButton= action("okButton",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   @Override void walk() throws Throwable{
-    noManagerData();
     var project= project("helloWorld");
     var remembered= """
       {
@@ -60,39 +52,39 @@ final class MalformedRegistryTest extends ManagerTest{
         "systemExtensions": []
       }
       """.formatted(slashed(project));
-    launchScript("first",project.resolve("hello_world.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    start();
     managerShown.go();
+    toFiles();
+    openHelloWorld.go();
+    openHelloWorldMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     stabilize();
     checkContent(info,remembered);
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
     stabilize();
-    checkContent(List.of("first.exit"),"0\n");
-    Fs.writeUtf8(filesIOFolder.resolve(data).resolve("projects.info"),remembered.substring(0,remembered.length()-2));
+    Fs.writeUtf8(info,remembered.substring(0,remembered.length()-2));
+    stabilize();
     var before= look();
-    launchScript("second");
-    runInTerminal(appsShownMalformed,terminalShownMalformed);
+    var center= new Rectangle(760,460,400,160);
+    start();
     errorShown.go();
-    changed(before,new Rectangle(760,460,400,160));
+    changed(before,center);
     stabilize();
-    assertFalse(Files.exists(filesIOFolder.resolve("second.exit")));
     assertTrue(Files.exists(filesIOFolder.resolve(data)));
-    closeDialog.go();
+    okButton.go();
     errorDismissed.go();
+    same(before,center);
     stabilize();
-    checkContent(List.of("second.exit"),"1\n");
     assertFalse(Files.exists(filesIOFolder.resolve(data)));
-    launchScript("third");
-    runInTerminal(appsShownFresh,terminalShownFresh);
+    start();
     freshShown.go();
     stabilize();
     checkContent(info,"{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
     managerMenu.go();
     quitManager.go();
     freshQuit.go();
-    stabilize();
-    checkContent(List.of("third.exit"),"0\n");
   }
 }

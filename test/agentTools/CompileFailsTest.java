@@ -3,7 +3,6 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.file.Files;
-import java.util.List;
 
 import tools.Fs;
 
@@ -11,12 +10,15 @@ final class CompileFailsTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome",()->click(val(990),val(113))),
     on("xubuntu_xfce",()->click(val(996),val(93))));
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
+  final Action openBroken= action("openBroken",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openBrokenMarker= action("openBrokenMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -39,21 +41,24 @@ final class CompileFailsTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var broken= filesIOFolder.resolve("broken");
+    var broken= files.resolve("broken");
     var source= broken.resolve("_broken").resolve("_rank_app.fear");
-    Fs.rmTree(broken);
     Fs.writeUtf8(broken.resolve("broken.fearless"),"\n");
     Fs.writeUtf8(source,"use base.Main as Main;\n\nHello:Main{s->Nope.nope}\n");
-    launchScript("first",broken.resolve("broken.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    var bare= look();
+    start();
     managerShown.go();
+    toFiles();
+    openBroken.go();
+    openBrokenMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     becomeCode.go();
     codeShown.go();
     compile.go();
     compileFailed.go();
     stabilize();
-    checkContent(List.of("broken",".fearless_out","compile_error.txt"),"""
+    checkContent(files.resolve("broken/.fearless_out/compile_error.txt"),"""
       In file: fear:/_broken/_rank_app.fear
 
       003| Hello:Main{s->Nope.nope}
@@ -70,11 +75,10 @@ final class CompileFailsTest extends ManagerTest{
     fixedCompiled.go();
     stabilize();
     assertFalse(Files.exists(broken.resolve(".fearless_out").resolve("compile_error.txt")));
-    checkContent(List.of("broken",".fearless_out","mains.info"),"[###]\"broken.Hello\"[###]");
+    checkContent(files.resolve("broken/.fearless_out/mains.info"),"[###]\"broken.Hello\"[###]");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
+    same(bare,inWindow(100,200,200,400));
   }
 }

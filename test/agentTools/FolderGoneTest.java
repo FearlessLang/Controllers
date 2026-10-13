@@ -3,17 +3,10 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.file.Files;
-import java.util.List;
 
 import tools.Fs;
 
 final class FolderGoneTest extends ManagerTest{
-  final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitAfter(val(3500))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
-  final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitAfter(val(5000))),
-    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(17500))),
     on("xubuntu_xfce",()->waitAfter(val(21500))));
@@ -32,17 +25,27 @@ final class FolderGoneTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(7000))),
     on("xubuntu_xfce",()->waitAfter(val(9000))));
+  final Action openGone= action("openGone",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openGoneMarker= action("openGoneMarker",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action projectShown= action("projectShown",
+    on("ubuntu_gnome",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(null))));
   @Override void walk() throws Throwable{
-    noManagerData();
-    var gone= filesIOFolder.resolve("gone");
-    var moved= filesIOFolder.resolve("gone2");
-    Fs.rmTree(gone);
-    Fs.rmTree(moved);
+    var gone= files.resolve("gone");
+    var moved= files.resolve("gone2");
     Fs.writeUtf8(gone.resolve("gone.fearless"),"\n");
     Fs.writeUtf8(gone.resolve("_gone").resolve("_rank_app.fear"),"use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"gone\")}\n");
-    launchScript("first",gone.resolve("gone.fearless"));
-    runInTerminal(appsShown,terminalShown);
+    start();
     managerShown.go();
+    toFiles();
+    openGone.go();
+    openGoneMarker.go();
+    closeFileManager.go();
+    projectShown.go();
     var tile= inWindow(69,95,128,85);
     var output= inWindow(410,168,1000,80);
     var valid= look();
@@ -73,7 +76,5 @@ final class FolderGoneTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    stabilize();
-    checkContent(List.of("first.exit"),"0\n");
   }
 }

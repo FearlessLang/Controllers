@@ -9,11 +9,11 @@ import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -40,6 +40,8 @@ abstract class ManagerTest{
   List<Object> inputs;
   abstract void walk() throws Throwable;
   @Test void test() throws Throwable{
+    Fs.cleanDir(filesIOFolder);
+    Fs.copyFresh(ResolveResource.managedFolderOut.resolve(app.getFileName()),app);
     last= System.currentTimeMillis();
     try{ walk(); }
     finally{
@@ -110,10 +112,11 @@ abstract class ManagerTest{
     assertEquals(0,p.onExit().join().exitValue(),out);
     return out;
   }
-  void checkContent(List<String> path, String expected){ Err.strCmp(expected,Fs.readUtf8(filesIOFolder.resolve(String.join("/",path)))); }
+  void checkContent(Path file, String expected){ Err.strCmp(expected,Fs.readUtf8(file)); }
   static final String data= JavacTool.dataDirNameFor(ResolveResource.versionId);
-  static final List<String> info= List.of(data,"projects.info");
+  final Path info= filesIOFolder.resolve(data).resolve("projects.info");
   final Path app= filesIOFolder.resolve("fearlessManaged"+ResolveResource.versionId);
+  final Path files= filesIOFolder.resolve("files");
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->click(val(99),val(79))),
     on("xubuntu_xfce",()->click(val(38),val(62))));
@@ -144,9 +147,6 @@ abstract class ManagerTest{
   final Action trayShow= action("trayShow",
     on("ubuntu_gnome",()->click(val(1709),val(62))),
     on("xubuntu_xfce",()->click(val(1717),val(41))));
-  final Action closeDialog= action("closeDialog",
-    on("ubuntu_gnome",()->keys(KeyEvent.VK_ENTER)),
-    on("xubuntu_xfce",()->keys(KeyEvent.VK_ENTER)));
   void park(){
     var s= Toolkit.getDefaultToolkit().getScreenSize();
     pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
@@ -170,33 +170,68 @@ abstract class ManagerTest{
   }
   void same(BufferedImage before, Rectangle r){ assertEquals(0L,differing(before,look(),r)); }
   void changed(BufferedImage before, Rectangle r){ assertNotEquals(0L,differing(before,look(),r)); }
-  final Action showApps= action("showApps",on("ubuntu_gnome",()->click(val(34),val(16))),on("debian_gnome_x11",()->click(val(1920),val(1080))),on("xubuntu_xfce",()->click(val(1919),val(1079))),on("debian_cinnamon",()->click(val(1920),val(1000))),on("debian_mate",()->click(val(1920),val(1080))),on("lubuntu_lxqt",()->click(val(1920),val(1080))),on("kubuntu_plasma",()->click(val(1920),val(1200))),on("void_i3",()->click(val(1920),val(1080))),on("arch_sway",()->click(val(1920),val(1080))),on("omarchy_hyprland",()->click(val(1920),val(1080))),on("fedora_gnome",()->doubleClick(val(1920),val(1080))),on("opensuse_plasma",()->click(val(1920),val(1080))),on("fedora_cosmic",()->click(val(1920),val(1000))),on("windows",ManagerTest::unrecorded));
-  final Action openTerminal= action("openTerminal",on("ubuntu_gnome",()->click(val(33),val(320))),on("debian_gnome_x11",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("xubuntu_xfce",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("debian_cinnamon",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("debian_mate",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("lubuntu_lxqt",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("kubuntu_plasma",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("void_i3",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("arch_sway",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("omarchy_hyprland",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("fedora_gnome",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("opensuse_plasma",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("fedora_cosmic",()->keys(KeyEvent.VK_CONTROL,KeyEvent.VK_ALT,KeyEvent.VK_T)),on("windows",ManagerTest::unrecorded));
-  final Action runShell= action("runShell",on("ubuntu_gnome",this::typeRunSh),on("debian_gnome_x11",this::typeRunSh),on("xubuntu_xfce",this::typeRunSh),on("debian_cinnamon",this::typeRunSh),on("debian_mate",this::typeRunSh),on("lubuntu_lxqt",this::typeRunSh),on("kubuntu_plasma",this::typeRunSh),on("void_i3",this::typeRunSh),on("arch_sway",this::typeRunSh),on("omarchy_hyprland",this::typeRunSh),on("fedora_gnome",this::typeRunSh),on("opensuse_plasma",this::typeRunSh),on("fedora_cosmic",this::typeRunSh),on("windows",ManagerTest::unrecorded));
-  void typeRunSh(){ type("sh "+filesIOFolder.resolve("run.sh")+"; exit\n"); }
-  static void unrecorded(){ throw Bug.todo(); }
   Path project(String name){
-    var res= filesIOFolder.resolve(name);
+    var res= files.resolve(name);
     Fs.copyFresh(ResolveResource.integrationTests.resolve(name),res);
     Fs.rmTree(res.resolve(".fearless_out"));
     return res;
   }
-  void noManagerData(){ Fs.rmTree(filesIOFolder.resolve(data)); }
-  void shell(String script){
-    Fs.writeUtf8(filesIOFolder.resolve("run.sh"),script);
-    stabilize();
+  void waitClick(int millis, int x, int y){ waitAfter(millis); click(x,y); }
+  void waitDoubleClick(int millis, int x, int y){ waitAfter(millis); doubleClick(x,y); }
+  void waitDrag(int millis, int x0, int y0, int x1, int y1){ waitAfter(millis); drag(x0,y0,x1,y1); }
+  final Action filesIcon= action("filesIcon",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  List<Action> toTop(){
+    return switch(desk){
+      case "ubuntu_gnome" -> List.of(
+        action("otherLocations",on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null)))),
+        action("computer",on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null)))));
+      case "xubuntu_xfce" -> List.of(
+        action("fileSystem",on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null)))));
+      default -> throw Bug.of("No way from the file manager to the top folder is recorded for the desk "+desk);
+    };
   }
-  void launchScript(String exit, Object... args){
-    Fs.rmTree(filesIOFolder.resolve(exit+".exit"));
-    var line= Stream.concat(Stream.of(app.resolve("bin").resolve(app.getFileName().toString())),Stream.of(args)).map(a->"\""+a+"\"").collect(Collectors.joining(" "));
-    shell("nohup setsid -f sh -c '"+line+"; echo $? >"+filesIOFolder.resolve(exit+".exit")+"' >/dev/null 2>&1\n");
+  final Action openData= action("openData",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openPilotio= action("openPilotio",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openApp= action("openApp",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openBin= action("openBin",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openLauncher= action("openLauncher",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action openFiles= action("openFiles",
+    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action closeFileManager= action("closeFileManager",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  void toPilotio() throws Throwable{
+    filesIcon.go();
+    for (var a: toTop()){ a.go(); }
+    openData.go();
+    openPilotio.go();
   }
-  void runInTerminal(Action appsShown, Action terminalShown) throws Throwable{
-    showApps.go();
-    appsShown.go();
-    openTerminal.go();
-    terminalShown.go();
-    runShell.go();
+  void start() throws Throwable{
+    toPilotio();
+    (Files.exists(filesIOFolder.resolve(data)) ? openAppNextToManagerFolder : openApp).go();
+    openBin.go();
+    openLauncher.go();
+    closeFileManager.go();
+  }
+  void toFiles() throws Throwable{
+    toPilotio();
+    openFiles.go();
   }
   static String slashed(Path p){ return p.toString().replace('\\','/'); }
   static String escaped(Path p){ return p.toString().replace("\\","\\\\"); }
