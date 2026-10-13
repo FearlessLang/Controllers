@@ -7,35 +7,35 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1027),val(113))),
     on("xubuntu_xfce",()->click(val(1040),val(93))));
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(36000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(45000))));
+    on("ubuntu_gnome",()->waitAfter(val(5500))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action appsShownAgain= action("appsShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(39500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(49500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShownAgain= action("terminalShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(44500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(56000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShownAgain= action("managerShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(62000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(77500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action tileSelected= action("tileSelected",
-    on("ubuntu_gnome",()->waitUntilTime(val(66000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(82500))));
+    on("ubuntu_gnome",()->waitAfter(val(4000))),
+    on("xubuntu_xfce",()->waitAfter(val(5000))));
   final Action managerQuitAgain= action("managerQuitAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(73000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(91500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");

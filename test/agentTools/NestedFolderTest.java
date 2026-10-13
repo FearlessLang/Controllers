@@ -13,35 +13,35 @@ final class NestedFolderTest extends ManagerTest{
   final Path inner= nest.resolve("inner");
   final Path source= inner.resolve("_inner");
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action appsShownNest= action("appsShownNest",
-    on("ubuntu_gnome",()->waitUntilTime(val(29000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(36500))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action terminalShownNest= action("terminalShownNest",
-    on("ubuntu_gnome",()->waitUntilTime(val(34000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(42500))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action noteShown= action("noteShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(44000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(55000))));
+    on("ubuntu_gnome",()->waitAfter(val(10000))),
+    on("xubuntu_xfce",()->waitAfter(val(12500))));
   final Action appsShownSource= action("appsShownSource",
-    on("ubuntu_gnome",()->waitUntilTime(val(47500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(59500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShownSource= action("terminalShownSource",
-    on("ubuntu_gnome",()->waitUntilTime(val(52500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(66000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action noteShownAgain= action("noteShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(63000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(79000))));
+    on("ubuntu_gnome",()->waitAfter(val(10500))),
+    on("xubuntu_xfce",()->waitAfter(val(13000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(71500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(89500))));
+    on("ubuntu_gnome",()->waitAfter(val(8500))),
+    on("xubuntu_xfce",()->waitAfter(val(10500))));
   @Override void walk() throws Throwable{
     noManagerData();
     Fs.rmTree(nest);

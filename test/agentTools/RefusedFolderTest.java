@@ -10,26 +10,26 @@ import tools.Fs;
 
 final class RefusedFolderTest extends ManagerTest{
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action noteShown= action("noteShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(27500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(34500))));
+    on("ubuntu_gnome",()->waitAfter(val(19000))),
+    on("xubuntu_xfce",()->waitAfter(val(23500))));
   final Action appsShownAgain= action("appsShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(31000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(39000))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShownAgain= action("terminalShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(36000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(45000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action noteShownAgain= action("noteShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(46500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(58500))));
+    on("ubuntu_gnome",()->waitAfter(val(10500))),
+    on("xubuntu_xfce",()->waitAfter(val(13500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(55000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(69000))));
+    on("ubuntu_gnome",()->waitAfter(val(8500))),
+    on("xubuntu_xfce",()->waitAfter(val(10500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var gone= filesIOFolder.resolve("gone");

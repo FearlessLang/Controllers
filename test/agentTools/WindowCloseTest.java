@@ -7,50 +7,50 @@ import java.util.List;
 
 final class WindowCloseTest extends ManagerTest{
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action managerHidden= action("managerHidden",
-    on("ubuntu_gnome",()->waitUntilTime(val(29500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(37000))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action appsShownSecond= action("appsShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(32500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(41000))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action terminalShownSecond= action("terminalShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(37500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(47000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action managerBack= action("managerBack",
-    on("ubuntu_gnome",()->waitUntilTime(val(48500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(61000))));
+    on("ubuntu_gnome",()->waitAfter(val(11000))),
+    on("xubuntu_xfce",()->waitAfter(val(14000))));
   final Action hiddenAgain= action("hiddenAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(52000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(65000))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action trayMenuShown= action("trayMenuShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(55000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(69000))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action backFromTray= action("backFromTray",
-    on("ubuntu_gnome",()->waitUntilTime(val(60000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(75000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action hiddenThird= action("hiddenThird",
-    on("ubuntu_gnome",()->waitUntilTime(val(63500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(79500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action trayIconRight= action("trayIconRight",
     on("ubuntu_gnome",()->rightClick(val(1736),val(15))),
     on("xubuntu_xfce",()->rightClick(val(1783),val(12))));
   final Action trayMenuShownAgain= action("trayMenuShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(66500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(83500))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action trayQuit= action("trayQuit",
     on("ubuntu_gnome",()->click(val(1706),val(117))),
     on("xubuntu_xfce",()->click(val(1715),val(66))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(73000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(91500))));
+    on("ubuntu_gnome",()->waitAfter(val(6500))),
+    on("xubuntu_xfce",()->waitAfter(val(8000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");

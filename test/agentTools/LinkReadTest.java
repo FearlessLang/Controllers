@@ -19,65 +19,65 @@ final class LinkReadTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(726),val(113))),
     on("xubuntu_xfce",()->click(val(687),val(93))));
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action dataSaved= action("dataSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action appsShownReader= action("appsShownReader",
-    on("ubuntu_gnome",()->waitUntilTime(val(33500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(42000))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(3500))));
   final Action terminalShownReader= action("terminalShownReader",
-    on("ubuntu_gnome",()->waitUntilTime(val(38500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(48500))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action readerShown= action("readerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(49500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(62000))));
+    on("ubuntu_gnome",()->waitAfter(val(11000))),
+    on("xubuntu_xfce",()->waitAfter(val(13500))));
   final Action codeSaved= action("codeSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(54000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(67500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(5500))));
   final Action openLinks= action("openLinks",
     on("ubuntu_gnome",()->click(val(450),val(356))),
     on("xubuntu_xfce",()->click(val(383),val(336))));
   final Action linksShown= action("linksShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(57500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(72000))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action readField= action("readField",
     on("ubuntu_gnome",()->click(val(560),val(398))),
     on("xubuntu_xfce",()->click(val(493),val(378))));
   final Action readsSaved= action("readsSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(64500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(81000))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   final Action storeTile= action("storeTile",
     on("ubuntu_gnome",()->click(val(261),val(130))),
     on("xubuntu_xfce",()->click(val(194),val(110))));
   final Action storeShown= action("storeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(68500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(86000))));
+    on("ubuntu_gnome",()->waitAfter(val(4000))),
+    on("xubuntu_xfce",()->waitAfter(val(5000))));
   final Action idleSaved= action("idleSaved",
-    on("ubuntu_gnome",()->waitUntilTime(val(73000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(91500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(5500))));
   final Action readerTile= action("readerTile",
     on("ubuntu_gnome",()->click(val(133),val(130))),
     on("xubuntu_xfce",()->click(val(66),val(110))));
   final Action readerShownAgain= action("readerShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(77000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(96500))));
+    on("ubuntu_gnome",()->waitAfter(val(4000))),
+    on("xubuntu_xfce",()->waitAfter(val(5000))));
   final Action check= action("check",
     on("ubuntu_gnome",()->click(val(539),val(113))),
     on("xubuntu_xfce",()->click(val(477),val(93))));
   final Action checked= action("checked",
-    on("ubuntu_gnome",()->waitUntilTime(val(81500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(102000))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(5500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(90000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(112500))));
+    on("ubuntu_gnome",()->waitAfter(val(8500))),
+    on("xubuntu_xfce",()->waitAfter(val(10500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var links= filesIOFolder.resolve("links");

@@ -10,38 +10,38 @@ final class CloseProgramWindowTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(967),val(113))),
     on("xubuntu_xfce",()->click(val(972),val(93))));
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action compile= action("compile",
     on("ubuntu_gnome",()->click(val(520),val(113))),
     on("xubuntu_xfce",()->click(val(477),val(93))));
   final Action compiled= action("compiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(51500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(64500))));
+    on("ubuntu_gnome",()->waitAfter(val(21000))),
+    on("xubuntu_xfce",()->waitAfter(val(26000))));
   final Action run= action("run",
     on("ubuntu_gnome",()->click(val(520),val(113))),
     on("xubuntu_xfce",()->click(val(462),val(93))));
   final Action programShown= action("programShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(60000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(75000))));
+    on("ubuntu_gnome",()->waitAfter(val(8500))),
+    on("xubuntu_xfce",()->waitAfter(val(10500))));
   final Action closeProgram= action("closeProgram",
     on("ubuntu_gnome",()->click(val(1037),val(527))),
     on("xubuntu_xfce",()->click(val(1012),val(524))));
   final Action programEnded= action("programEnded",
-    on("ubuntu_gnome",()->waitUntilTime(val(64500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(81000))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(71500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(89500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var shut= filesIOFolder.resolve("shut");

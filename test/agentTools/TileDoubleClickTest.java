@@ -12,38 +12,38 @@ final class TileDoubleClickTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(989),val(113))),
     on("xubuntu_xfce",()->click(val(998),val(93))));
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action tileTwice= action("tileTwice",
     on("ubuntu_gnome",()->doubleClick(val(133),val(130))),
     on("xubuntu_xfce",()->doubleClick(val(66),val(110))));
   final Action notRun= action("notRun",
-    on("ubuntu_gnome",()->waitUntilTime(val(36000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(45000))));
+    on("ubuntu_gnome",()->waitAfter(val(5500))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action compile= action("compile",
     on("ubuntu_gnome",()->click(val(542),val(113))),
     on("xubuntu_xfce",()->click(val(503),val(93))));
   final Action compiled= action("compiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(57000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(71500))));
+    on("ubuntu_gnome",()->waitAfter(val(21000))),
+    on("xubuntu_xfce",()->waitAfter(val(26500))));
   final Action tileTwiceCompiled= action("tileTwiceCompiled",
     on("ubuntu_gnome",()->doubleClick(val(133),val(130))),
     on("xubuntu_xfce",()->doubleClick(val(66),val(110))));
   final Action ran= action("ran",
-    on("ubuntu_gnome",()->waitUntilTime(val(65500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(82000))));
+    on("ubuntu_gnome",()->waitAfter(val(8500))),
+    on("xubuntu_xfce",()->waitAfter(val(10500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(72500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(91000))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var tapped= filesIOFolder.resolve("tapped");

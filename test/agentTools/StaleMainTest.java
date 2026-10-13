@@ -22,29 +22,29 @@ final class StaleMainTest extends ManagerTest{
     }
     """;
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action compile= action("compile",
     on("ubuntu_gnome",()->click(val(532),val(113))),
     on("xubuntu_xfce",()->click(val(487),val(93))));
   final Action compiled= action("compiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(51500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(64500))));
+    on("ubuntu_gnome",()->waitAfter(val(21000))),
+    on("xubuntu_xfce",()->waitAfter(val(26000))));
   final Action runV= action("runV",
     on("ubuntu_gnome",()->click(val(532),val(113))),
     on("xubuntu_xfce",()->click(val(480),val(93))));
   final Action mainsShown= action("mainsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(54500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(68500))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action tickSecond= action("tickSecond",
     on("ubuntu_gnome",()->click(val(526),val(164))),
     on("xubuntu_xfce",()->click(val(454),val(141))));
@@ -55,20 +55,20 @@ final class StaleMainTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(535),val(213))),
     on("xubuntu_xfce",()->click(val(466),val(186))));
   final Action runsDone= action("runsDone",
-    on("ubuntu_gnome",()->waitUntilTime(val(63500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(79500))));
+    on("ubuntu_gnome",()->waitAfter(val(9000))),
+    on("xubuntu_xfce",()->waitAfter(val(11000))));
   final Action editNoticed= action("editNoticed",
-    on("ubuntu_gnome",()->waitUntilTime(val(74500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(93500))));
+    on("ubuntu_gnome",()->waitAfter(val(11000))),
+    on("xubuntu_xfce",()->waitAfter(val(14000))));
   final Action compileEdited= action("compileEdited",
     on("ubuntu_gnome",()->click(val(532),val(113))),
     on("xubuntu_xfce",()->click(val(487),val(93))));
   final Action editedCompiled= action("editedCompiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(95500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(119500))));
+    on("ubuntu_gnome",()->waitAfter(val(21000))),
+    on("xubuntu_xfce",()->waitAfter(val(26000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(102500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(128500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var menu= filesIOFolder.resolve("menu");

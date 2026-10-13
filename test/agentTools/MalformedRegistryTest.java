@@ -11,41 +11,41 @@ import tools.Fs;
 
 final class MalformedRegistryTest extends ManagerTest{
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(33000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(41500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   final Action appsShownMalformed= action("appsShownMalformed",
-    on("ubuntu_gnome",()->waitUntilTime(val(36500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(46000))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShownMalformed= action("terminalShownMalformed",
-    on("ubuntu_gnome",()->waitUntilTime(val(41500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(52000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action errorShown= action("errorShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(60500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(76000))));
+    on("ubuntu_gnome",()->waitAfter(val(19000))),
+    on("xubuntu_xfce",()->waitAfter(val(24000))));
   final Action errorDismissed= action("errorDismissed",
-    on("ubuntu_gnome",()->waitUntilTime(val(65000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(81500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(5500))));
   final Action appsShownFresh= action("appsShownFresh",
-    on("ubuntu_gnome",()->waitUntilTime(val(68500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(86000))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShownFresh= action("terminalShownFresh",
-    on("ubuntu_gnome",()->waitUntilTime(val(73500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(92000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action freshShown= action("freshShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(91500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(114500))));
+    on("ubuntu_gnome",()->waitAfter(val(18000))),
+    on("xubuntu_xfce",()->waitAfter(val(22500))));
   final Action freshQuit= action("freshQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(98500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(123500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");
