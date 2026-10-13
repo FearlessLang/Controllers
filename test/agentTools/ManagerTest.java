@@ -344,7 +344,7 @@ abstract class ManagerTest{
     on("arch_sway", () -> waitClickKeys(val(null), val(null), val(null), KeyEvent.VK_ALT, KeyEvent.VK_SHIFT, KeyEvent.VK_Q)),//a click on an empty part of the file manager window, then Alt+Shift+Q, the key closing a window on this desk
     on("void_i3", () -> waitClickKeys(val(null), val(null), val(null), KeyEvent.VK_ALT, KeyEvent.VK_SHIFT, KeyEvent.VK_Q)),//a click on an empty part of the file manager window, then Alt+Shift+Q, the key closing a window on this desk
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
-  //makes the files icon visible, on a desk where it is not always on screen
+  //makes the files icon reachable, on a desk where filesIcon can not reach it directly; on every other desk a wait, which is not a finding
   final Action showFilesIcon= action("showFilesIcon",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -355,7 +355,7 @@ abstract class ManagerTest{
     on("arch_sway", () -> waitKeys(val(null), KeyEvent.VK_ALT, KeyEvent.VK_D)),//Alt+D opens the launcher of this desk
     on("void_i3", () -> waitKeys(val(null), KeyEvent.VK_ALT, KeyEvent.VK_D)),//Alt+D opens the launcher of this desk
     on("omarchy_hyprland", () -> waitKeys(val(null), KeyEvent.VK_ALT, KeyEvent.VK_SPACE)));//Alt+Space opens the apps menu of this desk
-  //makes the file manager window reachable, on a desk where the manager window covers it
+  //makes the open file manager window reachable, on a desk where fileManagerToFront can not reach it directly; on every other desk a wait, which is not a finding
   final Action showFileManager= action("showFileManager",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -366,7 +366,7 @@ abstract class ManagerTest{
     on("arch_sway", () -> waitAfter(val(null))),
     on("void_i3", () -> waitAfter(val(null))),
     on("omarchy_hyprland", () -> waitAfter(val(null))));
-  //answers what the desk asks after the double click on the launcher
+  //answers what the desk asks after the double click on the launcher; on a desk that asks nothing a wait, which is not a finding
   final Action confirmLauncher= action("confirmLauncher",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),//Execute, in the dialog asking to execute the launcher
