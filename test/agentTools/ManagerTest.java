@@ -129,15 +129,18 @@ abstract class ManagerTest{
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome",()->click(val(88),val(212))),
     on("xubuntu_xfce",()->click(val(21),val(182))));
+  //two values: x, y; no wait
   final Action closeWindow= action("closeWindow",
-    on("ubuntu_gnome",()->click(val(1902),val(50))),
+    on("ubuntu_gnome",()->click(val(1901),val(49))),
     on("xubuntu_xfce",()->click(val(1909),val(37))));
   final Action firstTile= action("firstTile",
     on("ubuntu_gnome",()->click(val(133),val(130))),
     on("xubuntu_xfce",()->click(val(66),val(110))));
+  //two values: x, y; no wait
   final Action trayIcon= action("trayIcon",
     on("ubuntu_gnome",()->click(val(1736),val(15))),
     on("xubuntu_xfce",()->click(val(1783),val(12))));
+  //two values: x, y; no wait
   final Action trayShow= action("trayShow",
     on("ubuntu_gnome",()->click(val(1709),val(62))),
     on("xubuntu_xfce",()->click(val(1717),val(41))));
@@ -174,29 +177,29 @@ abstract class ManagerTest{
   void waitDoubleClick(int millis, int x, int y){ waitAfter(millis); doubleClick(x,y); }
   void waitDrag(int millis, int x0, int y0, int x1, int y1){ waitAfter(millis); drag(x0,y0,x1,y1); }
   final Action filesIcon= action("filesIcon",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(33),val(128))),
     on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action pilotioBookmark= action("pilotioBookmark",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(613),val(743))),
     on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action openApp= action("openApp",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(375))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(375))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action openBin= action("openBin",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   //double clicks fearlessManaged0_001w, the launcher whose name ends with w
   final Action openLauncher= action("openLauncher",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action openFiles= action("openFiles",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(1024),val(378))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action closeFileManager= action("closeFileManager",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(304))),
     on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   void toPilotio() throws Throwable{
     filesIcon.go();
