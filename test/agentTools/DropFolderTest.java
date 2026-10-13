@@ -9,25 +9,25 @@ import tools.Fs;
 
 final class DropFolderTest extends ManagerTest{
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome", () -> waitAfter(val(17500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
   final Action openDrops= action("openDrops",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action filesShown= action("filesShown",
-    on("ubuntu_gnome", () -> waitAfter(val(15500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(19500))));
   final Action carryDropped= action("carryDropped",
-    on("ubuntu_gnome", () -> drag(val(799), val(375), val(200), val(700))),
+    on("ubuntu_gnome", () -> drag(val(798), val(380), val(300), val(600))),
     on("xubuntu_xfce", () -> drag(val(879), val(425), val(200), val(700))));
   final Action droppedSaved= action("droppedSaved",
-    on("ubuntu_gnome", () -> waitAfter(val(10000))),
+    on("ubuntu_gnome", () -> waitAfter(val(300))),
     on("xubuntu_xfce", () -> waitAfter(val(12500))));
   final Action filesClosed= action("filesClosed",
-    on("ubuntu_gnome", () -> waitAfter(val(4500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome", () -> waitAfter(val(7000))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     var drops= files.resolve("drops");
