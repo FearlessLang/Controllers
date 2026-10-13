@@ -113,34 +113,75 @@ abstract class ManagerTest{
   final Path files= filesIOFolder.resolve("files");
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome",()->waitClick(val(null),val(99),val(79))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(null),val(null),val(null))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(38),val(62))));
   final Action addFolder= action("addFolder",
     on("ubuntu_gnome",()->waitClick(val(null),val(110),val(103))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(null),val(null),val(null))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(43),val(84))));
   final Action editMetadata= action("editMetadata",
     on("ubuntu_gnome",()->waitClick(val(null),val(143),val(124))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(null),val(null),val(null))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(76),val(102))));
   final Action connectEclipse= action("connectEclipse",
     on("ubuntu_gnome",()->waitClick(val(null),val(126),val(145))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(null),val(null),val(null))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(59),val(122))));
   final Action resetManager= action("resetManager",
     on("ubuntu_gnome",()->waitClick(val(null),val(90),val(191))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(null),val(null),val(null))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(23),val(164))));
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome",()->waitClick(val(null),val(88),val(212))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(null),val(null),val(null))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(21),val(182))));
   final Action closeWindow= action("closeWindow",
     on("ubuntu_gnome",()->waitClick(val(100),val(1901),val(49))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(1909),val(37))));
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(100),val(1895),val(49))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(100),val(1908),val(37))));
   final Action firstTile= action("firstTile",
     on("ubuntu_gnome",()->waitClick(val(null),val(133),val(130))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(null),val(null),val(null))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(66),val(110))));
+  //the icon of the manager in the tray: a white F on an orange and blue square
   final Action trayIcon= action("trayIcon",
     on("ubuntu_gnome",()->waitClick(val(100),val(1736),val(15))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(1783),val(12))));
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(100),val(1660),val(15))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(100),val(1783),val(12))));
   final Action trayShow= action("trayShow",
     on("ubuntu_gnome",()->waitClick(val(100),val(1709),val(62))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(1717),val(41))));
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(100),val(1556),val(69))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(100),val(1718),val(41))));
   void park(){
     var s= Toolkit.getDefaultToolkit().getScreenSize();
     pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
@@ -148,7 +189,11 @@ abstract class ManagerTest{
   BufferedImage look(){ park(); return pilot.shot(); }
   static final Map<String,Point> content= Map.ofEntries(
     Map.entry("ubuntu_gnome",new Point(67,92)),
-    Map.entry("xubuntu_xfce",new Point(0,72)));
+    Map.entry("xubuntu_xfce",new Point(0,72)),
+    Map.entry("lubuntu_lxqt",new Point(0,55)),
+    Map.entry("fedora_gnome",new Point(0,92)),
+    Map.entry("fedora_cosmic",new Point(1,91)),
+    Map.entry("debian_mate",new Point(1,82)));
   Rectangle inWindow(int x, int y, int w, int h){
     var at= content.get(desk);
     return new Rectangle(x-67+at.x,y-92+at.y,w,h);
@@ -176,41 +221,105 @@ abstract class ManagerTest{
   void waitDrag(int millis, int x0, int y0, int x1, int y1){ waitAfter(millis); drag(x0,y0,x1,y1); }
   final Action filesIcon= action("filesIcon",
     on("ubuntu_gnome",()->waitClick(val(100),val(33),val(128))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("lubuntu_lxqt",()->waitDoubleClick(val(null),val(null),val(null))),//the home icon tester on the desktop
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(100),val(958),val(1038))),
+    on("debian_mate",()->waitDoubleClick(val(null),val(null),val(null))),//the home icon of the desktop
+    on("xubuntu_xfce",()->waitClick(val(100),val(935),val(1057))));
   final Action pilotioBookmark= action("pilotioBookmark",
     on("ubuntu_gnome",()->waitClick(val(100),val(613),val(743))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(100),val(524),val(504))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(100),val(704),val(610))));
   final Action openApp= action("openApp",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(806),val(380))),
+    on("lubuntu_lxqt",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitDoubleClick(val(100),val(882),val(294))),
+    on("debian_mate",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(880),val(430))));
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(380))),
+    on("lubuntu_lxqt",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitDoubleClick(val(100),val(882),val(343))),
+    on("debian_mate",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1015),val(430))));
   final Action openBin= action("openBin",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(380))),
+    on("lubuntu_lxqt",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitDoubleClick(val(100),val(818),val(294))),
+    on("debian_mate",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(878),val(430))));
   //double clicks fearlessManaged0_001w, the launcher whose name ends with w
   final Action openLauncher= action("openLauncher",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(380))),
+    on("lubuntu_lxqt",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitDoubleClick(val(100),val(888),val(343))),
+    on("debian_mate",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1015),val(430))));
   final Action openFiles= action("openFiles",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(1024),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(1024),val(380))),
+    on("lubuntu_lxqt",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitDoubleClick(val(100),val(821),val(392))),
+    on("debian_mate",()->waitDoubleClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1150),val(430))));
+  //brings to the front the file manager window that an earlier start() or toFiles() left open
+  final Action fileManagerToFront= action("fileManagerToFront",
+    on("ubuntu_gnome",()->waitClick(val(100),val(33),val(128))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(100),val(918),val(1040))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(100),val(390),val(12))));
   final Action closeFileManager= action("closeFileManager",
-    on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(303))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(304))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("fedora_cosmic",()->waitClick(val(100),val(1447),val(177))),
+    on("debian_mate",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(100),val(1269),val(311))));
+  //makes the files icon visible, on a desk where it is not always on screen
+  final Action showFilesIcon= action("showFilesIcon",
+    on("ubuntu_gnome",()->waitAfter(val(100))),
+    on("lubuntu_lxqt",()->waitAfter(val(null))),
+    on("fedora_gnome",()->waitClick(val(null),val(null),val(null))),//Activities
+    on("fedora_cosmic",()->waitAfter(val(100))),
+    on("debian_mate",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(100))));
+  //answers what the desk asks after the double click on the launcher
+  final Action confirmLauncher= action("confirmLauncher",
+    on("ubuntu_gnome",()->waitAfter(val(100))),
+    on("lubuntu_lxqt",()->waitClick(val(null),val(null),val(null))),//Execute, in the dialog asking to execute the launcher
+    on("fedora_gnome",()->waitAfter(val(null))),
+    on("fedora_cosmic",()->waitAfter(val(100))),
+    on("debian_mate",()->waitAfter(val(null))),
+    on("xubuntu_xfce",()->waitAfter(val(100))));
+  boolean filesOpen;
   void toPilotio() throws Throwable{
-    filesIcon.go();
+    showFilesIcon.go();
+    (filesOpen ? fileManagerToFront : filesIcon).go();
+    filesOpen= true;
     pilotioBookmark.go();
   }
-  //the actions of start(), in this order: filesIcon, pilotioBookmark, openApp (openAppNextToManagerFolder when the manager folder fearless0_001 is next to the app), openBin, openLauncher.
-  //Before filesIcon the manager is not started; the manager window shows only after openLauncher.
+  void closeFiles() throws Throwable{
+    closeFileManager.go();
+    filesOpen= false;
+  }
+  //the actions of start(), in this order: showFilesIcon, filesIcon (fileManagerToFront when a file manager window is already open), pilotioBookmark, openApp (openAppNextToManagerFolder when the manager folder fearless0_001 is next to the app), openBin, openLauncher, confirmLauncher.
+  //Before filesIcon the manager is not started; the manager window shows only after openLauncher and confirmLauncher.
   //start() leaves the file manager open, behind the manager window.
   void start() throws Throwable{
     toPilotio();
     (Files.exists(filesIOFolder.resolve(data)) ? openAppNextToManagerFolder : openApp).go();
     openBin.go();
     openLauncher.go();
+    confirmLauncher.go();
   }
   void toFiles() throws Throwable{
     toPilotio();

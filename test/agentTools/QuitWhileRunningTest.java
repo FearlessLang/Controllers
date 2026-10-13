@@ -44,7 +44,7 @@ final class QuitWhileRunningTest extends ManagerTest{
     toFiles();
     openTestGui1.go();
     openStartMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

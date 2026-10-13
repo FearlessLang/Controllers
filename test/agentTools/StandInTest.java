@@ -78,7 +78,7 @@ final class StandInTest extends ManagerTest{
       toFiles();
       openHelloWorld.go();
       openHelloWorldMarker.go();
-      closeFileManager.go();
+      closeFiles();
       projectShown.go();
       var shown= look();
       closeWindowBare.go();

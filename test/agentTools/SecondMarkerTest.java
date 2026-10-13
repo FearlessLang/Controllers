@@ -51,7 +51,7 @@ final class SecondMarkerTest extends ManagerTest{
     toFiles();
     openTwice.go();
     openTwiceMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     var tile= inWindow(69,95,128,85);
     var output= inWindow(410,168,1000,80);

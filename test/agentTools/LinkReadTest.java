@@ -104,7 +104,7 @@ final class LinkReadTest extends ManagerTest{
     openLinksFolder.go();
     openStore.go();
     openStoreMarker.go();
-    closeFileManager.go();
+    closeFiles();
     storeListed.go();
     becomeData.go();
     dataSaved.go();
@@ -112,7 +112,7 @@ final class LinkReadTest extends ManagerTest{
     openLinksFolderAgain.go();
     openReader.go();
     openReaderMarker.go();
-    closeFileManager.go();
+    closeFiles();
     readerShown.go();
     becomeCode.go();
     codeSaved.go();

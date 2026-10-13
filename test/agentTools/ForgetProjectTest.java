@@ -43,11 +43,11 @@ final class ForgetProjectTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     toFiles();
     openHelloStackTraces.go();
     openStartMarker.go();
-    closeFileManager.go();
+    closeFiles();
     otherShown.go();
     stabilize();
     var files= files(other);

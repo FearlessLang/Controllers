@@ -37,7 +37,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     filesShown.go();
     var fileManager= Pilot.changed(bare,pilot.shot(),6);
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     managerOpened.go();
     stabilize();
     checkContent(info,"""

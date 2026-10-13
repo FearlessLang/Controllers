@@ -57,7 +57,7 @@ final class OutputClearTest extends ManagerTest{
     toFiles();
     openSaid.go();
     openSaidMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

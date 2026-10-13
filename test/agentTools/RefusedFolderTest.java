@@ -35,7 +35,7 @@ final class RefusedFolderTest extends ManagerTest{
     toPilotio();
     openManagerFolder.go();
     openInside.go();
-    closeFileManager.go();
+    closeFiles();
     noteShownAgain.go();
     changed(before,center);
     stabilize();

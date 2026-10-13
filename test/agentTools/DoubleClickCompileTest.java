@@ -42,7 +42,7 @@ final class DoubleClickCompileTest extends ManagerTest{
     toFiles();
     openHasty.go();
     openHastyMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

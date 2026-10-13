@@ -45,7 +45,7 @@ final class LaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     stabilize();
     checkContent(info,remembered);
@@ -53,7 +53,7 @@ final class LaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorldAgain.go();
     openHelloWorldMarkerAgain.go();
-    closeFileManager.go();
+    closeFiles();
     selected.go();
     same(before,new Rectangle(760,460,400,160));
     same(before,inWindow(69,95,1100,85));

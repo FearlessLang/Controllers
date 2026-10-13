@@ -67,7 +67,7 @@ final class ShortcutFileTest extends ManagerTest{
     toFiles();
     openShortcuts.go();
     openShortcutsMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -86,7 +86,7 @@ final class ShortcutFileTest extends ManagerTest{
     toFiles();
     openShortcuts.go();
     openHelloFapp.go();
-    closeFileManager.go();
+    closeFiles();
     ranFromFiles.go();
     changed(cleared,output);
     managerMenu.go();

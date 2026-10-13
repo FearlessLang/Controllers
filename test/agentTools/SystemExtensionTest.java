@@ -67,7 +67,7 @@ final class SystemExtensionTest extends ManagerTest{
     toFiles();
     openOpens.go();
     openOpensMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -99,7 +99,7 @@ final class SystemExtensionTest extends ManagerTest{
     toFiles();
     openOpens.go();
     openLetter.go();
-    closeFileManager.go();
+    closeFiles();
     letterRun.go();
     changed(compiledLook,output);
     managerMenu.go();

@@ -51,7 +51,7 @@ final class RecompileAfterEditTest extends ManagerTest{
     toFiles();
     openDraft.go();
     openDraftMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

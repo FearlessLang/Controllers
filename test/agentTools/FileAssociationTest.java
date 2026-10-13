@@ -114,7 +114,7 @@ final class FileAssociationTest extends ManagerTest{
     openHelloWorldThird.go();
     genericShown.go();
     changed(associated,icon);
-    closeFileManager.go();
+    closeFiles();
     start();
     managerShownAgain.go();
     var empty= look();
@@ -123,7 +123,7 @@ final class FileAssociationTest extends ManagerTest{
     associatedAgain.go();
     same(associated,icon);
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     changed(empty,tile);
     managerMenu.go();

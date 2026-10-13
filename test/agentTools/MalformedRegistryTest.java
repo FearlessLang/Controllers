@@ -57,7 +57,7 @@ final class MalformedRegistryTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     stabilize();
     checkContent(info,remembered);
