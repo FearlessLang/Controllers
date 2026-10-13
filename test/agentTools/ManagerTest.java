@@ -24,7 +24,6 @@ import org.opentest4j.AssertionFailedError;
 import resources.ResolveResource;
 import tools.Fs;
 import tools.JavacTool;
-import utils.Bug;
 import utils.Err;
 import utils.OneOr;
 
@@ -182,22 +181,9 @@ abstract class ManagerTest{
   final Action filesIcon= action("filesIcon",
     on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
-  List<Action> toTop(){
-    return switch(desk){
-      case "ubuntu_gnome" -> List.of(
-        action("otherLocations",on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null)))),
-        action("computer",on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null)))));
-      case "xubuntu_xfce" -> List.of(
-        action("fileSystem",on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null)))));
-      default -> throw Bug.of("No way from the file manager to the top folder is recorded for the desk "+desk);
-    };
-  }
-  final Action openData= action("openData",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
-  final Action openPilotio= action("openPilotio",
-    on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  final Action pilotioBookmark= action("pilotioBookmark",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action openApp= action("openApp",
     on("ubuntu_gnome",()->waitDoubleClick(val(null),val(null),val(null))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
@@ -218,9 +204,7 @@ abstract class ManagerTest{
     on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   void toPilotio() throws Throwable{
     filesIcon.go();
-    for (var a: toTop()){ a.go(); }
-    openData.go();
-    openPilotio.go();
+    pilotioBookmark.go();
   }
   void start() throws Throwable{
     toPilotio();
