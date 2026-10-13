@@ -225,7 +225,7 @@ public final class Registry{
   }
   private static Info entryToInfo(Entry e){
     var fields= new ArrayList<Field>();
-    fields.add(new Field("path", Info.noSpan, new Info.Str(TaggedText.of(e.path().toString()), Info.noSpan)));
+    fields.add(new Field("path", Info.noSpan, new Info.Str(TaggedText.of(e.path().toString().replace(e.path().getFileSystem().getSeparator(), "/")), Info.noSpan)));
     fields.add(new Field("kind", Info.noSpan, new Info.Str(e.kind().text, Info.noSpan)));
     if (!e.mains().isEmpty()){ fields.add(new Field("mains", Info.noSpan, strList(e.mains()))); }
     if (!e.reads().isEmpty()){ fields.add(new Field("reads", Info.noSpan, aliasMap(e.reads()))); }
