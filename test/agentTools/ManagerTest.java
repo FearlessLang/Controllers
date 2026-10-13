@@ -131,16 +131,16 @@ abstract class ManagerTest{
     on("xubuntu_xfce",()->waitClick(val(null),val(21),val(182))));
   final Action closeWindow= action("closeWindow",
     on("ubuntu_gnome",()->waitClick(val(100),val(1901),val(49))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(1909),val(37))));
+    on("xubuntu_xfce",()->waitClick(val(100),val(1908),val(37))));
   final Action firstTile= action("firstTile",
     on("ubuntu_gnome",()->waitClick(val(null),val(133),val(130))),
     on("xubuntu_xfce",()->waitClick(val(null),val(66),val(110))));
   final Action trayIcon= action("trayIcon",
     on("ubuntu_gnome",()->waitClick(val(100),val(1736),val(15))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(1783),val(12))));
+    on("xubuntu_xfce",()->waitClick(val(100),val(1783),val(12))));
   final Action trayShow= action("trayShow",
     on("ubuntu_gnome",()->waitClick(val(100),val(1709),val(62))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(1717),val(41))));
+    on("xubuntu_xfce",()->waitClick(val(100),val(1718),val(41))));
   void park(){
     var s= Toolkit.getDefaultToolkit().getScreenSize();
     pilot.glide(s.width/2-40,s.height/2-40,Pilot.none,s.width/2,s.height/2,Pilot.none);
@@ -176,33 +176,33 @@ abstract class ManagerTest{
   void waitDrag(int millis, int x0, int y0, int x1, int y1){ waitAfter(millis); drag(x0,y0,x1,y1); }
   final Action filesIcon= action("filesIcon",
     on("ubuntu_gnome",()->waitClick(val(100),val(33),val(128))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitClick(val(100),val(935),val(1057))));
   final Action pilotioBookmark= action("pilotioBookmark",
     on("ubuntu_gnome",()->waitClick(val(100),val(613),val(743))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitClick(val(100),val(704),val(610))));
   final Action openApp= action("openApp",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(880),val(430))));
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1015),val(430))));
   final Action openBin= action("openBin",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(878),val(430))));
   //double clicks fearlessManaged0_001w, the launcher whose name ends with w
   final Action openLauncher= action("openLauncher",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1015),val(430))));
   final Action openFiles= action("openFiles",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(1024),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1150),val(430))));
   //brings to the front the file manager window that an earlier start() or toFiles() left open
   final Action fileManagerToFront= action("fileManagerToFront",
     on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitClick(val(100),val(390),val(12))));
   final Action closeFileManager= action("closeFileManager",
     on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(303))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitClick(val(100),val(1269),val(311))));
   boolean filesOpen;
   void toPilotio() throws Throwable{
     (filesOpen ? fileManagerToFront : filesIcon).go();

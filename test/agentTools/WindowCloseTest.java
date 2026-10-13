@@ -3,46 +3,46 @@ package agentTools;
 final class WindowCloseTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(878),val(430))));
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
-    on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+    on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1015),val(430))));
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(null))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(21500))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action managerHidden= action("managerHidden",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action managerBack= action("managerBack",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(14000))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action hiddenAgain= action("hiddenAgain",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action trayMenuShown= action("trayMenuShown",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action backFromTray= action("backFromTray",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(6000))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action hiddenThird= action("hiddenThird",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(4500))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action trayIconRight= action("trayIconRight",
     on("ubuntu_gnome",()->waitRightClick(val(100),val(1736),val(15))),
-    on("xubuntu_xfce",()->waitRightClick(val(null),val(1783),val(12))));
+    on("xubuntu_xfce",()->waitRightClick(val(100),val(1783),val(12))));
   final Action trayMenuShownAgain= action("trayMenuShownAgain",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(4000))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action trayQuit= action("trayQuit",
     on("ubuntu_gnome",()->waitClick(val(100),val(1706),val(117))),
-    on("xubuntu_xfce",()->waitClick(val(null),val(1715),val(66))));
+    on("xubuntu_xfce",()->waitClick(val(100),val(1714),val(67))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("xubuntu_xfce",()->waitAfter(val(8000))));
+    on("xubuntu_xfce",()->waitAfter(val(100))));
   @Override void walk() throws Throwable{
     project("helloWorld");
     var tiles= inWindow(100,200,200,400);
