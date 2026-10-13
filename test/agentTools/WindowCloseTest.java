@@ -18,7 +18,7 @@ final class WindowCloseTest extends ManagerTest{
     on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome",()->waitAfter(val(100))),
-    on("fedora_cosmic",()->waitAfter(val(100))),
+    on("fedora_cosmic",()->waitAfter(val(200))),
     on("debian_mate",()->waitAfter(val(null))),
     on("xubuntu_xfce",()->waitAfter(val(100))));
   final Action managerHidden= action("managerHidden",
