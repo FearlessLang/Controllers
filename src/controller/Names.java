@@ -22,7 +22,6 @@ import utils.OneOr;
 
 /// A project is named by the stem of the one `.fearless` marker file in its folder.
 public final class Names{
-  private Names(){}
   public static final String ext= ".fearless";
   private static final Path anyRoot= Path.of("").toAbsolutePath();
   public static boolean isName(String name){

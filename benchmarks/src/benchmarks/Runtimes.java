@@ -30,7 +30,6 @@ public final class Runtimes{
   public static final String stlibsKey= "fearless.benchmarks.stlibs";
   static final Path out= ResolveResource.controllerSrc.getParent().resolve(".out","benchmarks");
   static final Path project= ResolveResource.controllerSrc.getParent().resolve("benchmarks","fearless");
-  private Runtimes(){}
   public static List<String> buildAll(){
     var spec= System.getProperty(stlibsKey, "wc="+ResolveResource.stLibPath.getParent());
     var names= new ArrayList<String>();

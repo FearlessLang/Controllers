@@ -29,7 +29,6 @@ import org.osgi.framework.FrameworkUtil;
 /// by running the manager program with the arguments FearlessCommand<Verb> and the arguments of the verb.
 public final class ManagerLink{
   public record Project(Path folder, String kind, List<String> mains, List<String> reads, List<String> edits){}
-  private ManagerLink(){}
   private static final Map<String,Object> link= Info.parse(FileLocator.getBundleFileLocation(FrameworkUtil.getBundle(ManagerLink.class)).orElseThrow().toPath().getParent().resolveSibling("manager.info"));
   private static final Path launcher= path(link.get("launcher"));
   private static final Path manager= path(link.get("manager"));

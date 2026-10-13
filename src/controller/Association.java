@@ -13,7 +13,6 @@ import userMessages.Violation;
 
 /// Makes this Fearless the program the desktop opens `.fearless` files with.
 public final class Association{
-  private Association(){}
   static final Predicate<String> belongsToFamily= s->s.contains("earless");
   static Path launcher(){
     var app= System.getProperty("jpackage.app-path");

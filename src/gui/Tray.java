@@ -23,7 +23,6 @@ import tools.Fs;
 /// On Linux the icon is a StatusNotifierItem on the session bus (Sni); elsewhere it is the AWT tray icon.
 /// The icon lives for the whole process life and is removed by process death.
 public final class Tray{
-  private Tray(){}
   public static boolean install(Window window){
     if (Fs.isLinux()){ return Sni.install(()->Main.command("Show"),()->Main.command("Quit"),Icons.app()); }
     if (!SystemTray.isSupported()){ return false; }

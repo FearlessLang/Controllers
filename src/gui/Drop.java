@@ -22,7 +22,6 @@ import managerMessages.Report;
 
 /// The folders a desktop drags into the window: a file list, or the text/uri-list some desktops offer instead.
 public final class Drop{
-  private Drop(){}
   public static boolean hasFiles(Transferable t){ return t.isDataFlavorSupported(DataFlavor.javaFileListFlavor) || uriList(t).isPresent(); }
   @SuppressWarnings("unchecked")
   public static List<Path> paths(Transferable t, Consumer<String> refused){

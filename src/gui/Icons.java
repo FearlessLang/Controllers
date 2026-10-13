@@ -24,7 +24,6 @@ import userMessages.UserError;
 import utils.Range;
 
 public final class Icons{
-  private Icons(){}
   private static Image app;
   static Image app(){
     if (app == null){ app= read(Association.iconFile()); }

@@ -18,7 +18,6 @@ import tools.Fs;
 /// The Eclipse folder a chosen file or folder leads to, and connecting it: the plugin
 /// (fearlessPluginProject) in its dropins folder, with manager.info next to the plugins folder.
 public final class Eclipse{
-  private Eclipse(){}
   static Optional<Path> find(Path chosen){
     var parent= Optional.ofNullable(chosen.getParent());
     var only= Files.isDirectory(chosen) ? Optional.of(Names.list(chosen)).filter(l->l.size() == 1).map(List::getFirst) : Optional.<Path>empty();

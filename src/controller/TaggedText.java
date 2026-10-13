@@ -22,7 +22,6 @@ import utils.Range;
 /// (a path only) "Base16:" then the bytes naming it on this system, two uppercase hex digits each.
 /// Any of the three reads back as the same text.
 public final class TaggedText{
-  private TaggedText(){}
   private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
   public static String of(String text){ return text.codePoints().allMatch(TaggedText::safe) ? "Str:"+text : notStr(text); }
   public static String line(String text){ return text.indexOf('\n') < 0 ? of(text) : notStr(text); }

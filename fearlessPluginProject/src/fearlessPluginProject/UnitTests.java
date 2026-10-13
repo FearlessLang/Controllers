@@ -14,7 +14,6 @@ import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
 final class UnitTests{
-  private UnitTests(){}
   private static final Pattern disabled= Pattern.compile("(?m)^PLAN\\|DISABLED\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)$");
   static Optional<String> report(String name, Path folder){
     var logs= folder.resolve(".out").resolve("logs");

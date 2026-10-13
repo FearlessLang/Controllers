@@ -11,7 +11,6 @@ import tools.Fs;
 /// the JMH benchmarks whose name matches the first argument (all of them with no argument) on each,
 /// writing the results as Controllers/.out/benchmarks/results.json.
 public final class Main{
-  private Main(){}
   public static void main(String[] args) throws RunnerException{
     var names= Runtimes.buildAll();
     Fs.ensureDir(Runtimes.out);

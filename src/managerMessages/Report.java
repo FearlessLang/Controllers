@@ -20,7 +20,6 @@ import utils.Join;
 /// content of projects.info, the claims of the mains of a project.
 /// The counterpart is Violation, for what the manager can no longer do.
 public final class Report{
-  private Report(){}
   public static String quoted(List<String> texts){ return Join.of(texts.stream().map(t->"\""+t+"\""),"",", ",""); }
   public static String fileFailure(IOException e){
     return e.getClass().getSimpleName().replaceFirst("Exception$","").replaceAll("(?<=[a-z])(?=[A-Z])"," ").toLowerCase(Locale.ROOT)+": "+e.getMessage();

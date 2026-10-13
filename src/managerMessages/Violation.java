@@ -14,7 +14,6 @@ import utils.Join;
 /// or its own manager folder changed under it.
 /// The counterpart is Report, for what the user gave the manager.
 public final class Violation{
-  private Violation(){}
   private static String managerFolderIntro(){ return """
     Fearless uses one process (called the manager process)
     to keep track of other Fearless processes (the user processes).
