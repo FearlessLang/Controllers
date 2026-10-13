@@ -81,7 +81,7 @@ final class StaleMainTest extends ManagerTest{
     toFiles();
     openMenu.go();
     openMenuMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

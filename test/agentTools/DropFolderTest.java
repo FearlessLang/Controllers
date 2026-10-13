@@ -58,7 +58,7 @@ final class DropFolderTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    closeFileManager.go();
+    closeFiles();
     filesClosed.go();
     same(bare,inWindow(100,200,200,400));
   }

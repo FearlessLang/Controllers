@@ -58,7 +58,7 @@ final class DividerPlaceTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     tilesEnd.go();
     closeWindow.go();
@@ -82,7 +82,7 @@ final class DividerPlaceTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShownFourth.go();
     tilesEnd.go();
     managerMenu.go();

@@ -55,7 +55,7 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     managerMenu.go();
     editMetadata.go();

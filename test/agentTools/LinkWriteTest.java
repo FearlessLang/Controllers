@@ -114,7 +114,7 @@ final class LinkWriteTest extends ManagerTest{
     openLedger.go();
     openVault.go();
     openVaultMarker.go();
-    closeFileManager.go();
+    closeFiles();
     vaultListed.go();
     becomeEditableData.go();
     dataSaved.go();
@@ -122,7 +122,7 @@ final class LinkWriteTest extends ManagerTest{
     openLedgerAgain.go();
     openTeller.go();
     openTellerMarker.go();
-    closeFileManager.go();
+    closeFiles();
     tellerShown.go();
     becomeCode.go();
     codeSaved.go();

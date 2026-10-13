@@ -56,7 +56,7 @@ final class TileDoubleClickTest extends ManagerTest{
     toFiles();
     openTapped.go();
     openTappedMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

@@ -49,11 +49,11 @@ final class EditMetadataForgetTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     toFiles();
     openHelloStackTraces.go();
     openStartMarker.go();
-    closeFileManager.go();
+    closeFiles();
     secondShown.go();
     managerMenu.go();
     editMetadata.go();

@@ -57,14 +57,14 @@ final class AliasClashTest extends ManagerTest{
     openA.go();
     openTwin.go();
     openTwinMarker.go();
-    closeFileManager.go();
+    closeFiles();
     firstShown.go();
     toFiles();
     openTwins.go();
     openB.go();
     openTwin.go();
     openTwinMarker.go();
-    closeFileManager.go();
+    closeFiles();
     secondShown.go();
     stabilize();
     checkContent(info,"""

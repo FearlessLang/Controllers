@@ -31,11 +31,11 @@ final class SecondLaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     toFiles();
     openHelloStackTraces.go();
     openStartMarker.go();
-    closeFileManager.go();
+    closeFiles();
     secondShown.go();
     stabilize();
     checkContent(info,"""

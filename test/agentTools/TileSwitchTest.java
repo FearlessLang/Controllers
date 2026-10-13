@@ -52,7 +52,7 @@ final class TileSwitchTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     var panel= inWindow(410,95,1000,155);
     var name= inWindow(450,95,110,32);
@@ -65,7 +65,7 @@ final class TileSwitchTest extends ManagerTest{
     toFiles();
     openHelloStackTraces.go();
     openStartMarker.go();
-    closeFileManager.go();
+    closeFiles();
     secondShown.go();
     changed(hello,panel);
     var start= look();

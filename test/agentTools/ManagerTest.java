@@ -196,14 +196,24 @@ abstract class ManagerTest{
   final Action openFiles= action("openFiles",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(1024),val(378))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
+  //brings to the front the file manager window that an earlier start() or toFiles() left open
+  final Action fileManagerToFront= action("fileManagerToFront",
+    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action closeFileManager= action("closeFileManager",
     on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(303))),
     on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
+  boolean filesOpen;
   void toPilotio() throws Throwable{
-    filesIcon.go();
+    (filesOpen ? fileManagerToFront : filesIcon).go();
+    filesOpen= true;
     pilotioBookmark.go();
   }
-  //the actions of start(), in this order: filesIcon, pilotioBookmark, openApp (openAppNextToManagerFolder when the manager folder fearless0_001 is next to the app), openBin, openLauncher.
+  void closeFiles() throws Throwable{
+    closeFileManager.go();
+    filesOpen= false;
+  }
+  //the actions of start(), in this order: filesIcon (fileManagerToFront when a file manager window is already open), pilotioBookmark, openApp (openAppNextToManagerFolder when the manager folder fearless0_001 is next to the app), openBin, openLauncher.
   //Before filesIcon the manager is not started; the manager window shows only after openLauncher.
   //start() leaves the file manager open, behind the manager window.
   void start() throws Throwable{

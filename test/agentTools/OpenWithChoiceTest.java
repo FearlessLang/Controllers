@@ -71,7 +71,7 @@ final class OpenWithChoiceTest extends ManagerTest{
     toFiles();
     openChoice.go();
     openChoiceMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -103,7 +103,7 @@ final class OpenWithChoiceTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    closeFileManager.go();
+    closeFiles();
     filesClosed.go();
   }
 }

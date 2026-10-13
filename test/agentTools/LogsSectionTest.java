@@ -74,7 +74,7 @@ final class LogsSectionTest extends ManagerTest{
     toFiles();
     openDiary.go();
     openDiaryMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

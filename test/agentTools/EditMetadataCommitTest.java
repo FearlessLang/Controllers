@@ -53,7 +53,7 @@ final class EditMetadataCommitTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     stabilize();
     checkContent(info,registry.formatted(slashed(project),"idle"));

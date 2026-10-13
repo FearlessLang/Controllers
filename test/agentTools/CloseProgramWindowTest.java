@@ -61,7 +61,7 @@ final class CloseProgramWindowTest extends ManagerTest{
     toFiles();
     openShut.go();
     openShutMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

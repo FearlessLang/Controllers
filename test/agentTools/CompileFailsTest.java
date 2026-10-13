@@ -51,7 +51,7 @@ final class CompileFailsTest extends ManagerTest{
     toFiles();
     openBroken.go();
     openBrokenMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();

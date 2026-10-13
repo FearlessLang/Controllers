@@ -44,7 +44,7 @@ final class EditMetadataRenameTest extends ManagerTest{
     toFiles();
     openOld.go();
     openOldMarker.go();
-    closeFileManager.go();
+    closeFiles();
     projectShown.go();
     var tile= inWindow(69,95,128,85);
     var valid= look();
