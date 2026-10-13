@@ -3,6 +3,8 @@ package agentTools;
 final class WindowCloseTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
+    on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(788), val(305))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(100), val(797), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(910), val(395))),
     on("fedora_gnome", () -> waitDoubleClick(val(100), val(794), val(400))),
@@ -15,6 +17,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(304), val(155))));
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
+    on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(925), val(305))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(100), val(934), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(1036), val(395))),
     on("fedora_gnome", () -> waitDoubleClick(val(100), val(964), val(400))),
@@ -27,6 +31,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(484), val(155))));
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -39,6 +45,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -51,6 +59,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action managerHidden= action("managerHidden",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -63,6 +73,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action managerBack= action("managerBack",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -75,6 +87,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action hiddenAgain= action("hiddenAgain",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -87,6 +101,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action trayMenuShown= action("trayMenuShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -99,6 +115,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action backFromTray= action("backFromTray",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -111,6 +129,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action hiddenThird= action("hiddenThird",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -123,6 +143,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action trayIconRight= action("trayIconRight",
     on("ubuntu_gnome", () -> waitRightClick(val(100), val(1736), val(15))),
+    on("kubuntu_plasma", () -> waitRightClick(val(100), val(1640), val(1052))),
+    on("opensuse_plasma", () -> waitRightClick(val(100), val(1689), val(1057))),
     on("debian_cinnamon", () -> waitRightClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitRightClick(val(100), val(1860), val(1064))),
     on("fedora_gnome", () -> waitRightClick(val(100), val(1900), val(1062))),
@@ -135,6 +157,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitRightClick(val(100), val(1829), val(12))));
   final Action trayMenuShownAgain= action("trayMenuShownAgain",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),
@@ -147,6 +171,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action trayQuit= action("trayQuit",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1706), val(117))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(1657), val(1007))),
+    on("opensuse_plasma", () -> waitClick(val(100), val(1737), val(1015))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1853), val(1030))),
     on("fedora_gnome", () -> waitClick(val(100), val(1850), val(1067))),
@@ -159,6 +185,8 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(100), val(1760), val(85))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitAfter(val(100))),

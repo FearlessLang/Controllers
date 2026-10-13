@@ -113,6 +113,8 @@ abstract class ManagerTest{
   final Path files= filesIOFolder.resolve("files");
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome", () -> waitClick(val(null), val(99), val(79))),
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
     on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
@@ -125,6 +127,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action addFolder= action("addFolder",
     on("ubuntu_gnome", () -> waitClick(val(null), val(110), val(103))),
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
     on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
@@ -137,6 +141,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action editMetadata= action("editMetadata",
     on("ubuntu_gnome", () -> waitClick(val(null), val(143), val(124))),
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
     on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
@@ -149,6 +155,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action connectEclipse= action("connectEclipse",
     on("ubuntu_gnome", () -> waitClick(val(null), val(126), val(145))),
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
     on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
@@ -161,6 +169,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action resetManager= action("resetManager",
     on("ubuntu_gnome", () -> waitClick(val(null), val(90), val(191))),
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
     on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
@@ -173,6 +183,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome", () -> waitClick(val(null), val(88), val(212))),
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
     on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
@@ -185,6 +197,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action closeWindow= action("closeWindow",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1901), val(49))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(1905), val(14))),
+    on("opensuse_plasma", () -> waitClick(val(100), val(1905), val(14))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1905), val(15))),
     on("fedora_gnome", () -> waitClick(val(100), val(1901), val(50))),
@@ -197,6 +211,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClickKeys(val(100), val(1500), val(46), KeyEvent.VK_ALT, KeyEvent.VK_SHIFT, KeyEvent.VK_Q)));//a click on an empty part of the menu bar of the manager window, then Alt+Shift+Q, the key closing a window on this desk
   final Action firstTile= action("firstTile",
     on("ubuntu_gnome", () -> waitClick(val(null), val(133), val(130))),
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
     on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
@@ -210,6 +226,8 @@ abstract class ManagerTest{
   //the icon of the manager in the tray: a white F on an orange and blue square
   final Action trayIcon= action("trayIcon",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1736), val(15))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(1640), val(1052))),
+    on("opensuse_plasma", () -> waitClick(val(100), val(1689), val(1057))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1860), val(1064))),
     on("fedora_gnome", () -> waitClick(val(100), val(1900), val(1062))),
@@ -222,6 +240,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(100), val(1829), val(12))));
   final Action trayShow= action("trayShow",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1709), val(62))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(1660), val(973))),
+    on("opensuse_plasma", () -> waitClick(val(100), val(1740), val(981))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1858), val(1042))),
     on("fedora_gnome", () -> waitClick(val(100), val(1858), val(1042))),
@@ -248,7 +268,9 @@ abstract class ManagerTest{
     Map.entry("debian_gnome_x11", new Point(1, 92)),
     Map.entry("arch_sway", new Point(963, 76)),
     Map.entry("void_i3", new Point(963, 39)),
-    Map.entry("omarchy_hyprland", new Point(968, 59)));
+    Map.entry("omarchy_hyprland", new Point(968, 59)),
+    Map.entry("opensuse_plasma", new Point(1, 51)),
+    Map.entry("kubuntu_plasma", new Point(1, 51)));
   Rectangle inWindow(int x, int y, int w, int h){
     var at= content.get(desk);
     return new Rectangle(x-67+at.x, y-92+at.y, w, h);
@@ -279,6 +301,8 @@ abstract class ManagerTest{
   void waitClickKeys(int millis, int x, int y, int... codes){ waitClick(millis, x, y); keys(codes); }
   final Action filesIcon= action("filesIcon",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(128))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(212), val(1052))),//Dolphin, the file manager icon of the taskbar
+    on("opensuse_plasma", () -> waitClick(val(100), val(221), val(1057))),//Dolphin, the file manager icon of the taskbar
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(75), val(380))),//the home icon tester on the desktop
     on("fedora_gnome", () -> waitClick(val(100), val(880), val(1017))),
@@ -291,6 +315,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(100), val(903), val(758))));//Files, in the apps menu
   final Action pilotioBookmark= action("pilotioBookmark",
     on("ubuntu_gnome", () -> waitClick(val(100), val(613), val(743))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(629), val(544))),
+    on("opensuse_plasma", () -> waitClick(val(100), val(629), val(547))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(706), val(684))),
     on("fedora_gnome", () -> waitClick(val(100), val(580), val(743))),
@@ -303,6 +329,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(500), val(76), val(462))));
   final Action openApp= action("openApp",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(806), val(380))),
+    on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(788), val(305))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(100), val(797), val(305))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(910), val(395))),
     on("fedora_gnome", () -> waitDoubleClick(val(100), val(794), val(400))),
@@ -315,6 +343,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(349), val(155))));
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
+    on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(925), val(305))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(100), val(934), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(1036), val(395))),
     on("fedora_gnome", () -> waitDoubleClick(val(100), val(965), val(400))),
@@ -327,6 +357,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(510), val(155))));
   final Action openBin= action("openBin",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
+    on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(787), val(305))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(100), val(797), val(305))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(910), val(395))),
     on("fedora_gnome", () -> waitDoubleClick(val(100), val(794), val(400))),
@@ -340,6 +372,8 @@ abstract class ManagerTest{
   //double clicks fearlessManaged0_001w, the launcher whose name ends with w
   final Action openLauncher= action("openLauncher",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
+    on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(925), val(305))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(100), val(934), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(1036), val(395))),
     on("fedora_gnome", () -> waitDoubleClick(val(100), val(964), val(400))),
@@ -352,6 +386,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(510), val(155))));
   final Action openFiles= action("openFiles",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(1024), val(380))),
+    on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(1063), val(305))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(100), val(1072), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(1163), val(395))),
     on("fedora_gnome", () -> waitDoubleClick(val(100), val(1134), val(400))),
@@ -365,6 +401,8 @@ abstract class ManagerTest{
   //brings to the front the file manager window that an earlier start() or toFiles() left open; on a desk that tiles the windows side by side that window is already visible, and this is a wait
   final Action fileManagerToFront= action("fileManagerToFront",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(128))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(212), val(1052))),
+    on("opensuse_plasma", () -> waitClick(val(100), val(221), val(1057))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(215), val(1064))),
     on("fedora_gnome", () -> waitClick(val(100), val(460), val(600))),
@@ -377,6 +415,8 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action closeFileManager= action("closeFileManager",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1414), val(304))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(1326), val(197))),
+    on("opensuse_plasma", () -> waitClick(val(100), val(1325), val(202))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1265), val(282))),
     on("fedora_gnome", () -> waitClick(val(100), val(1381), val(304))),
@@ -390,6 +430,8 @@ abstract class ManagerTest{
   //makes the files icon reachable, on a desk where filesIcon can not reach it directly; on every other desk a wait, which is not a finding
   final Action showFilesIcon= action("showFilesIcon",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitClick(val(100), val(30), val(15))),//Activities
@@ -403,6 +445,8 @@ abstract class ManagerTest{
   //makes the open file manager window reachable, on a desk where fileManagerToFront can not reach it directly; on every other desk, also where the file manager window is already visible, a wait, which is not a finding
   final Action showFileManager= action("showFileManager",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
     on("fedora_gnome", () -> waitClick(val(100), val(30), val(15))),//Activities
@@ -416,6 +460,8 @@ abstract class ManagerTest{
   //answers what the desk asks after the double click on the launcher; on a desk that asks nothing a wait, which is not a finding
   final Action confirmLauncher= action("confirmLauncher",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
+    on("kubuntu_plasma", () -> waitClick(val(100), val(975), val(591))),//Launch, in the dialog asking to launch the file
+    on("opensuse_plasma", () -> waitClick(val(100), val(955), val(580))),//Launch, in the dialog asking to launch the file
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(797), val(524))),//Execute, in the dialog asking to execute the launcher
     on("fedora_gnome", () -> waitAfter(val(100))),
