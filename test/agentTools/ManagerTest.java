@@ -355,7 +355,7 @@ abstract class ManagerTest{
     on("arch_sway", () -> waitKeys(val(null), KeyEvent.VK_ALT, KeyEvent.VK_D)),//Alt+D opens the launcher of this desk
     on("void_i3", () -> waitKeys(val(null), KeyEvent.VK_ALT, KeyEvent.VK_D)),//Alt+D opens the launcher of this desk
     on("omarchy_hyprland", () -> waitKeys(val(null), KeyEvent.VK_ALT, KeyEvent.VK_SPACE)));//Alt+Space opens the apps menu of this desk
-  //makes the open file manager window reachable, on a desk where fileManagerToFront can not reach it directly; on every other desk a wait, which is not a finding
+  //makes the open file manager window reachable, on a desk where fileManagerToFront can not reach it directly; on every other desk, also where the file manager window is already visible, a wait, which is not a finding
   final Action showFileManager= action("showFileManager",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
