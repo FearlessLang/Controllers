@@ -112,7 +112,7 @@ abstract class ManagerTest{
   final Path app= filesIOFolder.resolve("fearlessManaged"+ResolveResource.versionId);
   final Path files= filesIOFolder.resolve("files");
   final Action managerMenu= action("managerMenu",
-    on("ubuntu_gnome", () -> waitClick(val(null), val(99), val(79))),
+    on("ubuntu_gnome", () -> waitClick(val(100), val(99), val(79))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
@@ -182,7 +182,7 @@ abstract class ManagerTest{
     on("void_i3", () -> waitClick(val(null), val(null), val(null))),
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action quitManager= action("quitManager",
-    on("ubuntu_gnome", () -> waitClick(val(null), val(88), val(212))),
+    on("ubuntu_gnome", () -> waitClick(val(100), val(88), val(212))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
