@@ -24,7 +24,7 @@ final class WindowCloseTest extends ManagerTest{
     on("xubuntu_xfce",()->waitAfter(val(4000))));
   //the entries of the tray menu ignore presses for half a second after the menu shows
   final Action trayMenuShown= action("trayMenuShown",
-    on("ubuntu_gnome",()->waitAfter(val(600))),
+    on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action backFromTray= action("backFromTray",
     on("ubuntu_gnome",()->waitAfter(val(100))),
@@ -33,14 +33,14 @@ final class WindowCloseTest extends ManagerTest{
     on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action trayIconRight= action("trayIconRight",
-    on("ubuntu_gnome",()->waitRightClick(val(null),val(1736),val(15))),
+    on("ubuntu_gnome",()->waitRightClick(val(100),val(1736),val(15))),
     on("xubuntu_xfce",()->waitRightClick(val(null),val(1783),val(12))));
   //the entries of the tray menu ignore presses for half a second after the menu shows
   final Action trayMenuShownAgain= action("trayMenuShownAgain",
-    on("ubuntu_gnome",()->waitAfter(val(600))),
+    on("ubuntu_gnome",()->waitAfter(val(100))),
     on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action trayQuit= action("trayQuit",
-    on("ubuntu_gnome",()->waitClick(val(null),val(1706),val(117))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(1706),val(117))),
     on("xubuntu_xfce",()->waitClick(val(null),val(1715),val(66))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome",()->waitAfter(val(100))),

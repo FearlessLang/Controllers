@@ -130,16 +130,16 @@ abstract class ManagerTest{
     on("ubuntu_gnome",()->waitClick(val(null),val(88),val(212))),
     on("xubuntu_xfce",()->waitClick(val(null),val(21),val(182))));
   final Action closeWindow= action("closeWindow",
-    on("ubuntu_gnome",()->waitClick(val(null),val(1901),val(49))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(1901),val(49))),
     on("xubuntu_xfce",()->waitClick(val(null),val(1909),val(37))));
   final Action firstTile= action("firstTile",
     on("ubuntu_gnome",()->waitClick(val(null),val(133),val(130))),
     on("xubuntu_xfce",()->waitClick(val(null),val(66),val(110))));
   final Action trayIcon= action("trayIcon",
-    on("ubuntu_gnome",()->waitClick(val(null),val(1736),val(15))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(1736),val(15))),
     on("xubuntu_xfce",()->waitClick(val(null),val(1783),val(12))));
   final Action trayShow= action("trayShow",
-    on("ubuntu_gnome",()->waitClick(val(null),val(1709),val(62))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(1709),val(62))),
     on("xubuntu_xfce",()->waitClick(val(null),val(1717),val(41))));
   void park(){
     var s= Toolkit.getDefaultToolkit().getScreenSize();
@@ -181,10 +181,10 @@ abstract class ManagerTest{
     on("ubuntu_gnome",()->waitClick(val(100),val(613),val(743))),
     on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   final Action openApp= action("openApp",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(375))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(375))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action openBin= action("openBin",
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
@@ -197,7 +197,7 @@ abstract class ManagerTest{
     on("ubuntu_gnome",()->waitDoubleClick(val(100),val(1024),val(378))),
     on("xubuntu_xfce",()->waitDoubleClick(val(null),val(null),val(null))));
   final Action closeFileManager= action("closeFileManager",
-    on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(304))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(303))),
     on("xubuntu_xfce",()->waitClick(val(null),val(null),val(null))));
   void toPilotio() throws Throwable{
     filesIcon.go();
