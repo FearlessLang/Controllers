@@ -115,12 +115,12 @@ final class ManagerTest{
     final List<List<String>> taken= new ArrayList<>();
     int shown;
     boolean visible= true;
-    @Override public void show(){ shown+= 1; }
+    @Override public void show(){ shown += 1; }
     @Override public void state(State s){}
     @Override public synchronized void output(Path folder, String text){ outputs.computeIfAbsent(folder,_->new StringBuilder()).append(text); }
     @Override public synchronized void clear(Path folder){ cleared.add(folder); outputs.put(folder,new StringBuilder()); }
-    @Override public void refuse(String text){ shown+= 1; refused.add(text); }
-    @Override public void tell(String text){ shown+= 1; told.add(text); }
+    @Override public void refuse(String text){ shown += 1; refused.add(text); }
+    @Override public void tell(String text){ shown += 1; told.add(text); }
     @Override public boolean visible(){ return visible; }
     @Override public void choose(List<Project.Claimant> cs){ choices.add(cs.stream().map(Project.Claimant::label).toList()); }
     @Override public void allow(String question, String content){ asked.add(question); offered.add(content); }
@@ -593,7 +593,7 @@ final class ManagerTest{
     var m= manager(dir);
     var data= data(dir);
     send(m,"Register",TaggedText.of(data.toString()));
-    view.visible= false;
+    view.visible = false;
     for (var request: List.of(List.of("Link","data","other read Other"),List.of("Show","data"),List.of("Terminate","data"),List.of("Kind","data","library"))){
       var valid= Files.exists(data);
       if (valid){ Fs.rmTree(data); } else { data(dir); Fs.writeUtf8(data.resolve("data.fearless"),""); }
@@ -761,7 +761,7 @@ final class ManagerTest{
       return Optional.of(Map.of("hello.Hello","_hello/_rank_app.fear"));
     });
     var hello= code(m,dir,"hello");
-    view.visible= false;
+    view.visible = false;
     compiled(m,"hello");
     var p= project(m,hello);
     assertEquals(List.of(hello),reads);

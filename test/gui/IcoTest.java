@@ -55,7 +55,7 @@ final class IcoTest{
       var side= Ico.sizes.get(i) % 256;
       assertEquals(List.of(side,side,0,0,1,32,offset),List.of(
         b.get(e)&0xff,b.get(e+1)&0xff,(int)b.get(e+2),(int)b.get(e+3),(int)b.getShort(e+4),(int)b.getShort(e+6),b.getInt(e+12)));
-      offset+= b.getInt(e+8);
+      offset += b.getInt(e+8);
     }
     assertEquals(b.capacity(),offset);
   }

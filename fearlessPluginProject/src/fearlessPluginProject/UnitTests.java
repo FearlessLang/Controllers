@@ -40,7 +40,7 @@ final class UnitTests{
     try{
       var bytes= Files.readAllBytes(log);
       var end= bytes.length;
-      while(end > 0 && bytes[end-1] != '\n'){ end-= 1; }
+      while(end > 0 && bytes[end-1] != '\n'){ end -= 1; }
       text= StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes, 0, end)).toString();
     }
     catch(CharacterCodingException e){ throw new IllegalStateException("The unit test log "+log+" is not UTF-8 text.", e); }
@@ -49,7 +49,7 @@ final class UnitTests{
     while(done < text.length()){
       var close= text.startsWith("<testcase ", done) ? text.indexOf("</testcase>\n", done) : done;
       if (close < 0){ return text.substring(0, done); }
-      done= text.indexOf('\n', close)+1;
+      done = text.indexOf('\n', close)+1;
     }
     return text;
   }

@@ -47,7 +47,7 @@ public final class Pilot{
   }
   private void hold(Set<Button> want){
     for (var b: Button.values()){ if (down.contains(b)!=want.contains(b)){ button(b,want.contains(b)); } }
-    down= want;
+    down = want;
     pause(200);
   }
   private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else { robot.mouseRelease(b.mask); } }
@@ -112,24 +112,24 @@ public final class Pilot{
     var pa= a.getRGB(0,0,w,h,null,0,w);
     var pb= b.getRGB(0,0,w,h,null,0,w);
     var sum= new int[(w+1)*(h+1)];
-    for (int y= 0; y<h; y++){ for (int x= 0; x<w; x++){ sum[(y+1)*(w+1)+x+1]= (differs(pa[y*w+x],pb[y*w+x])?1:0)+sum[y*(w+1)+x+1]+sum[(y+1)*(w+1)+x]-sum[y*(w+1)+x]; } }
+    for (int y= 0; y<h; y++){ for (int x= 0; x<w; x++){ sum[(y+1)*(w+1)+x+1] = (differs(pa[y*w+x],pb[y*w+x])?1:0)+sum[y*(w+1)+x+1]+sum[(y+1)*(w+1)+x]-sum[y*(w+1)+x]; } }
     var solid= new boolean[w*h];
-    for (int y= r; y<h-r; y++){ for (int x= r; x<w-r; x++){ solid[y*w+x]= box(sum,w,x-r,y-r,x+r+1,y+r+1)==side*side; } }
+    for (int y= r; y<h-r; y++){ for (int x= r; x<w-r; x++){ solid[y*w+x] = box(sum,w,x-r,y-r,x+r+1,y+r+1)==side*side; } }
     var stack= new int[w*h];
     var best= new Rectangle();
     int bestN= 0;
     for (int i= 0; i<w*h; i++){
       if (!solid[i]){ continue; }
       int n= 0, top= 0, minx= w, maxx= 0, miny= h, maxy= 0;
-      stack[top++]= i;
-      solid[i]= false;
+      stack[top++] = i;
+      solid[i] = false;
       while (top>0){
         int p= stack[--top], x= p%w, y= p/w;
         n++;
-        minx= Math.min(minx,x); maxx= Math.max(maxx,x); miny= Math.min(miny,y); maxy= Math.max(maxy,y);
-        for (int q: new int[]{p-1,p+1,p-w,p+w}){ if (q>=0 && q<w*h && solid[q] && Math.abs(q%w-x)<=1){ solid[q]= false; stack[top++]= q; } }
+        minx = Math.min(minx,x); maxx = Math.max(maxx,x); miny = Math.min(miny,y); maxy = Math.max(maxy,y);
+        for (int q: new int[]{p-1,p+1,p-w,p+w}){ if (q>=0 && q<w*h && solid[q] && Math.abs(q%w-x)<=1){ solid[q] = false; stack[top++] = q; } }
       }
-      if (n>bestN){ bestN= n; best= new Rectangle(minx-r,miny-r,maxx-minx+1+2*r,maxy-miny+1+2*r); }
+      if (n>bestN){ bestN = n; best = new Rectangle(minx-r,miny-r,maxx-minx+1+2*r,maxy-miny+1+2*r); }
     }
     assert bestN>0;
     return best;

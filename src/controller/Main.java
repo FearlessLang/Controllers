@@ -60,9 +60,9 @@ public final class Main implements Manager.Exit{
     NativeLocaleForcer.forceEnglish();
     var exitCode= 0;
     try{ run(message(args)); }
-    catch(UserError e){ exitCode= 1; fatal(e); }
-    catch(VirtualMachineError|LinkageError e){ exitCode= 2; fatal(Violation.vmOrLinkageFailure(e)); }
-    catch(Throwable t){ exitCode= 3; fatal(UserError.crashed(t)); }
+    catch(UserError e){ exitCode = 1; fatal(e); }
+    catch(VirtualMachineError|LinkageError e){ exitCode = 2; fatal(Violation.vmOrLinkageFailure(e)); }
+    catch(Throwable t){ exitCode = 3; fatal(UserError.crashed(t)); }
     System.exit(exitCode);
   }
   //TO TEST: on Windows the launcher hands Java a '?' in place of an unpaired surrogate of the
@@ -124,12 +124,12 @@ public final class Main implements Manager.Exit{
   }
   private static void run(String message) throws Throwable{
     var main= new Main(programDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
-    started= Optional.of(main);
+    started = Optional.of(main);
     try{ Files.createDirectories(main.msgDir()); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir,e); }
     leave(main.msgDir(),message);
     var lockFile= main.managerDir.resolve("instance.lock");
-    try{ lock= FileChannel.open(lockFile,CREATE,WRITE).tryLock(); }
+    try{ lock = FileChannel.open(lockFile,CREATE,WRITE).tryLock(); }
     catch(OverlappingFileLockException e){ throw Bug.unreachable(); }
     catch(IOException e){ throw Violation.couldNotUseInstanceLock(lockFile,e); }
     if (lock == null){ return; }
@@ -140,7 +140,7 @@ public final class Main implements Manager.Exit{
   static Path programDir(){
     var expected= "fearlessManaged"+versionId()+(Fs.isMac() ? ".app" : "");
     var startedFrom= JavacTool.reqAppDir(userMessages.Violation::mustUseLauncher).toAbsolutePath().normalize();
-    for(var dir= startedFrom; dir != null && dir.getFileName() != null; dir= dir.getParent()){
+    for(var dir= startedFrom; dir != null && dir.getFileName() != null; dir = dir.getParent()){
       if (dir.getFileName().toString().equals(expected)){ return dir; }
     }
     throw Violation.programFolderNotFound(startedFrom,expected);
@@ -155,11 +155,11 @@ public final class Main implements Manager.Exit{
     catch(IOException e){ throw Violation.couldNotLeaveStartMessage(msgDir,e); }
   }
   private void own() throws Throwable{
-    try{ watcher= FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
+    try{ watcher = FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
     catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(),e); }
     Thread.setDefaultUncaughtExceptionHandler((_,t)->fail(t));
     var window= Window.create(this,managerDir);
-    manager= new Manager(managerDir,new Deployed(),window,this);
+    manager = new Manager(managerDir,new Deployed(),window,this);
     UserError.owner(window.frame);
     userMessages.Violation.running(()->manager.state().running());
     window.tray(Tray.install(window));
@@ -175,7 +175,7 @@ public final class Main implements Manager.Exit{
     wipe().ifPresent(Main::display);
   }
   @Override public void quit(){ done.countDown(); }
-  @Override public void reset(){ reset= true; done.countDown(); }
+  @Override public void reset(){ reset = true; done.countDown(); }
   @Override public void fail(Throwable problem){ failure.compareAndSet(null,problem); done.countDown(); }
   private void watch(WatchService watcher){
     while(true){

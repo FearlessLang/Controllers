@@ -45,13 +45,13 @@ public final class Registry{
     public static Optional<Kind> of(String text){ return OneOr.opt("kind "+text, Stream.of(values()).filter(k->k.text.equals(text))); }
   }
   public record Entry(String alias, Path path, Kind kind, List<String> mains, Map<String,List<String>> reads, Map<String,List<String>> edits){
-    public Entry{ mains= List.copyOf(mains); reads= Collections.unmodifiableMap(new LinkedHashMap<>(reads)); edits= Collections.unmodifiableMap(new LinkedHashMap<>(edits)); }
+    public Entry{ mains = List.copyOf(mains); reads = Collections.unmodifiableMap(new LinkedHashMap<>(reads)); edits = Collections.unmodifiableMap(new LinkedHashMap<>(edits)); }
     public Entry withKind(Kind k){ return new Entry(alias,path,k,mains,reads,edits); }
     public Entry withMains(List<String> m){ return new Entry(alias,path,kind,m,reads,edits); }
     public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias,path,kind,mains,r,e); }
   }
   public record Content(List<Entry> projects, List<String> extensions){
-    public Content{ projects= List.copyOf(projects); extensions= List.copyOf(extensions); }
+    public Content{ projects = List.copyOf(projects); extensions = List.copyOf(extensions); }
   }
   private static final List<String> keys= List.of("path","kind","mains","reads","edits");
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
@@ -64,7 +64,7 @@ public final class Registry{
     this.dir= dir;
     if (!Files.exists(infoFile())){ save(content); return; }
     var text= StringFiles.read(infoFile(),UserError.onFileError());
-    content= parse(text,infoFile(),Registry::real,dir);
+    content = parse(text,infoFile(),Registry::real,dir);
   }
   public static Path real(Path folder){
     try{ return folder.toRealPath(); }
@@ -127,7 +127,7 @@ public final class Registry{
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,infoFile(),ATOMIC_MOVE); }
     catch(IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(),e); }
-    content= c;
+    content = c;
   }
   public static Content parse(String source, Path file, UnaryOperator<Path> identity, Path managerDir){
     var root= Info.parse(source,file.toUri());

@@ -40,7 +40,7 @@ abstract class ManagerTest{
   @Test void test() throws Throwable{
     Fs.cleanDir(filesIOFolder);
     Fs.copyFresh(ResolveResource.managedFolderOut.resolve(app.getFileName()),app);
-    last= System.currentTimeMillis();
+    last = System.currentTimeMillis();
     try{ walk(); }
     finally{
       ProcessHandle.allProcesses().filter(this::ofApp).forEach(ProcessHandle::destroyForcibly);
@@ -54,16 +54,16 @@ abstract class ManagerTest{
     void go() throws Throwable{
       if (m.agent){ ask(); }
       run.run();
-      m.last= System.currentTimeMillis();
+      m.last = System.currentTimeMillis();
     }
     private void ask(){
-      m.inputIndex= 0;
+      m.inputIndex = 0;
       Fs.cleanDir(m.channel);
       var file= m.channel.resolve(name);
       Fs.writeUtf8(file,"");
       var text= Fs.readUtf8(file).strip();
-      for (; !text.endsWith(";"); text= Fs.readUtf8(file).strip()){ Pilot.pause(100); }
-      m.inputs= text.substring(0,text.length()-1).lines().map(String::strip).map(Action::input).toList();
+      for (; !text.endsWith(";"); text = Fs.readUtf8(file).strip()){ Pilot.pause(100); }
+      m.inputs = text.substring(0,text.length()-1).lines().map(String::strip).map(Action::input).toList();
     }
     static Object input(String s){ return s.startsWith("\"") ? s.substring(1,s.length()-1) : Integer.valueOf(s); }
   }
@@ -97,7 +97,7 @@ abstract class ManagerTest{
     var pid= virsh("qemu-agent-command",guest,"{\"execute\":\"guest-exec\",\"arguments\":{\"path\":\"/bin/sh\",\"arg\":[\"-c\",\""+script+"\"]}}").replaceAll("\\D","");
     var status= "{\"execute\":\"guest-exec-status\",\"arguments\":{\"pid\":"+pid+"}}";
     var done= virsh("qemu-agent-command",guest,status);
-    for (; !done.contains("\"exited\":true"); done= virsh("qemu-agent-command",guest,status)){ Pilot.pause(100); }
+    for (; !done.contains("\"exited\":true"); done = virsh("qemu-agent-command",guest,status)){ Pilot.pause(100); }
     assert done.contains("\"exitcode\":0");
   }
   static String virsh(String... args){
@@ -199,7 +199,7 @@ abstract class ManagerTest{
     return new Rectangle(x-67+at.x,y-92+at.y,w,h);
   }
   Rectangle region;
-  void region(int x, int y, int w, int h){ region= new Rectangle(x,y,w,h); }
+  void region(int x, int y, int w, int h){ region = new Rectangle(x,y,w,h); }
   static int[] pixels(BufferedImage img, Rectangle r){ return img.getRGB(r.x,r.y,r.width,r.height,null,0,r.width); }
   static boolean near(int p, int q){ return IntStream.of(0,8,16).allMatch(s->Math.abs((p>>s&255)-(q>>s&255))<=16); }
   static long differing(BufferedImage a, BufferedImage b, Rectangle r){
@@ -304,12 +304,12 @@ abstract class ManagerTest{
   void toPilotio() throws Throwable{
     showFilesIcon.go();
     (filesOpen ? fileManagerToFront : filesIcon).go();
-    filesOpen= true;
+    filesOpen = true;
     pilotioBookmark.go();
   }
   void closeFiles() throws Throwable{
     closeFileManager.go();
-    filesOpen= false;
+    filesOpen = false;
   }
   //the actions of start(), in this order: showFilesIcon, filesIcon (fileManagerToFront when a file manager window is already open), pilotioBookmark, openApp (openAppNextToManagerFolder when the manager folder fearless0_001 is next to the app), openBin, openLauncher, confirmLauncher.
   //Before filesIcon the manager is not started; the manager window shows only after openLauncher and confirmLauncher.

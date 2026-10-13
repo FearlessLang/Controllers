@@ -86,21 +86,21 @@ public final class NewSource extends AbstractHandler{
       root.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
       root.setLayout(new GridLayout(2, false));
       new Label(root, SWT.NONE).setText("Path in "+project.getName()+":");
-      path= new Text(root, SWT.BORDER);
+      path = new Text(root, SWT.BORDER);
       path.setText(start);
       var wide= new GridData(SWT.FILL, SWT.CENTER, true, false);
-      wide.widthHint= 480;
+      wide.widthHint = 480;
       path.setLayoutData(wide);
       path.addModifyListener(e->validate());
       if (type){
-        rank= check(root, "Rank file: the file of the package holding its use lines and its mains", 1);
-        rankName= new Combo(root, SWT.READ_ONLY);
+        rank = check(root, "Rank file: the file of the package holding its use lines and its mains", 1);
+        rankName = new Combo(root, SWT.READ_ONLY);
         ranks.forEach(rankName::add);
         rankName.select(ranks.indexOf("app"));
         rankName.addListener(SWT.Selection, e->validate());
-        example= check(root, "Example tests: a test suite checking some arithmetic, to run instead of a bare main", 2);
+        example = check(root, "Example tests: a test suite checking some arithmetic, to run instead of a bare main", 2);
       }
-      creates= new Label(root, SWT.WRAP);
+      creates = new Label(root, SWT.WRAP);
       creates.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
       return area;
     }
@@ -158,7 +158,7 @@ public final class NewSource extends AbstractHandler{
         for (int i= 0; i < (type ? segments.length-1 : segments.length); i++){
           var f= at.getFolder(new Path(segments[i]));
           if (!f.exists()){ f.create(true, true, null); }
-          at= f;
+          at = f;
         }
         if (type){ open(create(at.getFile(new Path(segments[segments.length-1])))); }
       }

@@ -10,7 +10,7 @@ public final class NewFile extends BasicNewResourceWizard{
   private WizardNewFileCreationPage page;
   @Override public void addPages(){
     setWindowTitle("New File");
-    page= new WizardNewFileCreationPage("file", getSelection()){
+    page = new WizardNewFileCreationPage("file", getSelection()){
       @Override protected boolean validatePage(){
         if (!super.validatePage()){ return false; }
         Names.problem(getContainerFullPath(), getFileName(), true).ifPresent(p->setMessage(p, IMessageProvider.WARNING));

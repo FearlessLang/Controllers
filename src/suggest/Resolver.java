@@ -69,7 +69,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   static Map<String,String> aliases(String head, Map<String,String> packages){
     var items= Tokens.group(Tokens.tokens(head)).items;
     var res= new HashMap<String,String>();
-    for (int j= 0; j+4 < items.size(); j+= 1){
+    for (int j= 0; j+4 < items.size(); j += 1){
       var qualified= Tokens.is(items.get(j+1), Kind.UppercaseId) && Tokens.text(items.get(j+1)).indexOf('.') >= 0;
       var use= word(items.get(j), "use") && qualified && word(items.get(j+2), "as") && Tokens.is(items.get(j+3), Kind.UppercaseId) && Tokens.is(items.get(j+4), Kind.SemiColon);
       if (use){ res.put(Tokens.text(items.get(j+3)), mapped(Tokens.text(items.get(j+1)), packages)); }
@@ -95,9 +95,9 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     var typing= touching && Tokens.is(items.getLast(), Kind.DotName, Kind.Op);
     var dot= text.lastIndexOf('.', pos-1);
     var qualifying= touching && Tokens.is(items.getLast(), Kind.UppercaseId) && dot >= items.getLast().start();
-    if (typing){ from= items.removeLast().start(); prefix= text.substring(from, pos); }
-    else if (qualifying){ from= dot; prefix= text.substring(from, pos); }
-    else if (pos > 0 && text.charAt(pos-1) == '.'){ from= pos-1; prefix= "."; }
+    if (typing){ from = items.removeLast().start(); prefix = text.substring(from, pos); }
+    else if (qualifying){ from = dot; prefix = text.substring(from, pos); }
+    else if (pos > 0 && text.charAt(pos-1) == '.'){ from = pos-1; prefix = "."; }
     var types= types(items, from, prefix);
     var seg= touching && !typing ? List.<Item>of() : segment(items);
     if (seg.isEmpty()){ return new Suggestions(from, Ty.unknown, List.of(), types); }
@@ -230,7 +230,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     if (targs.size() == m.get().bs().size()){ IntStream.range(0, targs.size()).forEach(j->sub.put(m.get().bs().get(j), parseType(targs.get(j), scope))); }
     var open= new ArrayList<>(m.get().bs());
     e.get().bs().stream().filter(b->sub.get(b).equals(Ty.unknown)).forEach(open::add);
-    for (int j= 0; j < c.arity(); j+= 1){
+    for (int j= 0; j < c.arity(); j += 1){
       if (j != skip){ unify(m.get().ts().get(j), typeOfArg(c.args().get(j), m.get().ts().get(j).subst(sub), scope), sub, open); }
     }
     result.ifPresent(r->unify(m.get().ret(), r, sub, open));

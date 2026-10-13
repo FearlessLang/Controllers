@@ -30,8 +30,8 @@ final class Links implements IPatternMatchListener{
   @Override public String getLineQualifier(){ return null; }
   private static final Pattern marked= Pattern.compile("(?m)^(\\d+)\\| .*\\n *\\| [ ^~-]*\\^");
   private TextConsole console;
-  @Override public void connect(TextConsole console){ this.console= console; }
-  @Override public void disconnect(){ console= null; }
+  @Override public void connect(TextConsole console){ this.console = console; }
+  @Override public void disconnect(){ console = null; }
   @Override public void matchFound(PatternMatchEvent event){
     try{ link(event.getOffset(), console.getDocument().get(event.getOffset(), event.getLength())); }
     catch(BadLocationException e){ throw new IllegalStateException(e); }

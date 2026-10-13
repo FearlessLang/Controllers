@@ -124,6 +124,6 @@ final class AssociationTest{
     return res;
   }
   private static void write(byte[] res, int at, int v){
-    res[at]= (byte)(v>>>24); res[at+1]= (byte)(v>>>16); res[at+2]= (byte)(v>>>8); res[at+3]= (byte)v;
+    res[at] = (byte)(v>>>24); res[at+1] = (byte)(v>>>16); res[at+2] = (byte)(v>>>8); res[at+3] = (byte)v;
   }
 }

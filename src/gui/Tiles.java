@@ -67,9 +67,9 @@ public final class Tiles extends JPanel{
   }
   public void render(State s){
     var moved= !s.selected().equals(state.selected());
-    state= s;
+    state = s;
     var old= images;
-    images= s.projects().stream().collect(Collectors.toMap(Function.identity(),p->old.containsKey(p) ? old.get(p) : Icons.of(p,iconSize)));
+    images = s.projects().stream().collect(Collectors.toMap(Function.identity(),p->old.containsKey(p) ? old.get(p) : Icons.of(p,iconSize)));
     var rows= s.projects().stream().sorted(Comparator.comparing(Project::alias)).toList();
     list.setListData(rows.toArray(Project[]::new));
     var at= s.selected().map(f->rows.stream().map(Project::folder).toList().indexOf(f)).orElse(-1);

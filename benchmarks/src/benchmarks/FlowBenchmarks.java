@@ -24,7 +24,7 @@ import org.openjdk.jmh.annotations.Warmup;
 public class FlowBenchmarks{
   @Param({"wc"}) public String runtime;
   Runtimes.Loaded loaded;
-  @Setup(Level.Trial) public void setup(){ loaded= Runtimes.load(runtime); }
+  @Setup(Level.Trial) public void setup(){ loaded = Runtimes.load(runtime); }
 
   @Benchmark public void cheapDP(){ loaded.run("FlowOfCheapOpsDP"); }
   @Benchmark public void cheapPP(){ loaded.run("FlowOfCheapOpsPP"); }

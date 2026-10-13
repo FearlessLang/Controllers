@@ -76,7 +76,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     var data= new ImageData(64, 64, 24, new PaletteData(0xFF0000, 0xFF00, 0xFF));
     for (int y= 0; y < 64; y++){ for (int x= 0; x < 64; x++){ data.setPixel(x, y, app ? appPixel(x, y) : filePixel(x, y)); } }
     var loader= new ImageLoader();
-    loader.data= new ImageData[]{data};
+    loader.data = new ImageData[]{data};
     loader.save(file.toString(), SWT.IMAGE_PNG);
   }
   private static int appPixel(int x, int y){ return x >= 22 && x <= 46 && Math.abs(y-32) <= (46-x)/2 ? 0xFFFFFF : 0x2F6FD0; }
@@ -149,7 +149,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       var root= new Composite(parent, SWT.NONE);
       root.setLayout(new GridLayout(3, false));
       new Label(root, SWT.NONE).setText("Folder:");
-      folder= new Text(root, SWT.BORDER);
+      folder = new Text(root, SWT.BORDER);
       folder.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
       folder.addModifyListener(e->validate());
       var browse= new Button(root, SWT.PUSH);
@@ -167,7 +167,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       b.setText(d.isEmpty() ? "The folder as it is" : "Demo: "+d+" (the project becomes code)");
       b.setSelection(d.isEmpty());
       b.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
-      b.addListener(SWT.Selection, e->{ if (b.getSelection()){ demo= d; validate(); } });
+      b.addListener(SWT.Selection, e->{ if (b.getSelection()){ demo = d; validate(); } });
     }
     private void validate(){
       var problem= problem();

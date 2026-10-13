@@ -63,11 +63,11 @@ public final class ManagerLink{
     var visitor= new SimpleFileVisitor<Path>(){
       @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes a){
         if (dir.equals(out(folder))){ return FileVisitResult.SKIP_SUBTREE; }
-        res[0]= Math.max(res[0], a.lastModifiedTime().toMillis());
+        res[0] = Math.max(res[0], a.lastModifiedTime().toMillis());
         return FileVisitResult.CONTINUE;
       }
       @Override public FileVisitResult visitFile(Path file, BasicFileAttributes a){
-        res[0]= Math.max(res[0], a.lastModifiedTime().toMillis());
+        res[0] = Math.max(res[0], a.lastModifiedTime().toMillis());
         return FileVisitResult.CONTINUE;
       }
       @Override public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException{
@@ -87,7 +87,7 @@ public final class ManagerLink{
     var text= path.toString();
     if (!System.getProperty("os.name").startsWith("Windows")){ return "Base16:"+HexFormat.of().withUpperCase().formatHex(text.getBytes(Charset.forName(System.getProperty("sun.jnu.encoding")))); }
     var bytes= new byte[text.length()*2];
-    for (int i= 0; i < text.length(); i++){ bytes[2*i]= (byte)text.charAt(i); bytes[2*i+1]= (byte)(text.charAt(i) >> 8); }
+    for (int i= 0; i < text.length(); i++){ bytes[2*i] = (byte)text.charAt(i); bytes[2*i+1] = (byte)(text.charAt(i) >> 8); }
     return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes);
   }
   private static Path path(Object text){ return Path.of(Info.tagged(text)); }
@@ -105,7 +105,7 @@ public final class ManagerLink{
     try{
       var bytes= Files.readAllBytes(file);
       var end= bytes.length;
-      while(end > 0 && bytes[end-1] != '\n'){ end-= 1; }
+      while(end > 0 && bytes[end-1] != '\n'){ end -= 1; }
       return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes, 0, end)).toString();
     }
     catch(IOException e){ throw new UncheckedIOException(e); }

@@ -18,7 +18,7 @@ final class StandIn{
   private static final int side= 32;
   private JWindow window;
   void show(){
-    if (window == null){ window= make(); }
+    if (window == null){ window = make(); }
     var screen= GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
     window.setLocation(screen.x+screen.width-side,screen.y+screen.height-side);
     window.setVisible(true);
@@ -47,12 +47,12 @@ final class StandIn{
     Entry(String text, Runnable action){
       super(text);
       addActionListener(_->action.run());
-      addHierarchyListener(_->shown= System.currentTimeMillis());
+      addHierarchyListener(_->shown = System.currentTimeMillis());
     }
     @Override protected void processMouseEvent(MouseEvent e){
-      if (e.getID() == MouseEvent.MOUSE_PRESSED){ pressed= System.currentTimeMillis()-shown >= 500; }
+      if (e.getID() == MouseEvent.MOUSE_PRESSED){ pressed = System.currentTimeMillis()-shown >= 500; }
       super.processMouseEvent(e);
-      if (e.getID() == MouseEvent.MOUSE_RELEASED){ pressed= false; }
+      if (e.getID() == MouseEvent.MOUSE_RELEASED){ pressed = false; }
     }
     @Override protected void fireActionPerformed(ActionEvent e){ if (pressed){ super.fireActionPerformed(e); } }
   }

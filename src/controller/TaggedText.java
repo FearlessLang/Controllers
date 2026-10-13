@@ -54,14 +54,14 @@ public final class TaggedText{
   private static byte[] bytes(String path){
     if (!Fs.isWindows()){ return path.getBytes(Charset.forName(System.getProperty("sun.jnu.encoding"))); }
     var res= new byte[path.length()*2];
-    for (int i : Range.of(0,path.length())){ res[2*i]= (byte)path.charAt(i); res[2*i+1]= (byte)(path.charAt(i) >> 8); }
+    for (int i : Range.of(0,path.length())){ res[2*i] = (byte)path.charAt(i); res[2*i+1] = (byte)(path.charAt(i) >> 8); }
     return res;
   }
   private static String path(byte[] bytes, String text, Function<String,? extends RuntimeException> bad){
     if (Fs.isWindows()){
       if (bytes.length % 2 != 0){ throw bad.apply("\""+text+"\" is malformed: a Windows name is 16 bit units, so its bytes are an even number."); }
       var res= new StringBuilder();
-      for (int i= 0; i < bytes.length; i+= 2){ res.append((char)((bytes[i] & 0xFF) | (bytes[i+1] & 0xFF) << 8)); }
+      for (int i= 0; i < bytes.length; i += 2){ res.append((char)((bytes[i] & 0xFF) | (bytes[i+1] & 0xFF) << 8)); }
       return res.toString();
     }
     try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
@@ -89,11 +89,11 @@ public final class TaggedText{
     for (int i : Range.of(0,s.length())){
       var c= s.charAt(i);
       if (c != '"' && c != '`'){ continue; }
-      if (seen == 0){ seen= c; continue; }
+      if (seen == 0){ seen = c; continue; }
       if (seen == c){ continue; }
       res.add(s.substring(start,i));
-      start= i;
-      seen= c;
+      start = i;
+      seen = c;
     }
     if (start < s.length()){ res.add(s.substring(start)); }
     return res;
@@ -107,7 +107,7 @@ public final class TaggedText{
       var hex= k == j ? "" : "\""+Arrays.stream(Arrays.copyOfRange(cps,j,k)).mapToObj("%04X"::formatted).collect(Collectors.joining(" "))+"\"";
       var term= receiver(strExpr(new String(cps,i,j-i)))+".u"+hex;
       res.append(i == 0 ? term : "+("+term+")");
-      i= k;
+      i = k;
     } while (i < cps.length);
     return res.toString();
   }
@@ -139,10 +139,10 @@ public final class TaggedText{
         ws();
         if (i == s.length()){ return sb.toString(); }
         var c= s.charAt(i);
-        if (c == '+'){ i+= 1; sb.append(atom()); continue; }
-        if (c == '|' || c == '^'){ i+= 1; sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
+        if (c == '+'){ i += 1; sb.append(atom()); continue; }
+        if (c == '|' || c == '^'){ i += 1; sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
         if (!s.startsWith(".u",i) || (i+2 < s.length() && Character.isLetterOrDigit(s.charAt(i+2)))){ return sb.toString(); }
-        i+= 2;
+        i += 2;
         if (atomNext()){ sb.append(codePoints(atom())); }
       }
     }
@@ -156,15 +156,15 @@ public final class TaggedText{
       if (open == '('){
         if (++depth > 100){ throw bad.apply("A \"UStr:\" text is malformed: its parentheses nest at most 100 deep, and the one at offset "+(i-1)+" after \"UStr:\" is deeper."); }
         var res= expr();
-        depth-= 1;
+        depth -= 1;
         if (i == s.length() || s.charAt(i) != ')'){ throw fail("')'"); }
-        i+= 1;
+        i += 1;
         return res;
       }
       var end= s.indexOf(open,i);
       if (end < 0){ throw fail("the closing "+open); }
       var res= s.substring(i,end);
-      i= end+1;
+      i = end+1;
       return res;
     }
     private String codePoints(String body){
@@ -174,6 +174,6 @@ public final class TaggedText{
       if (Arrays.stream(cps).anyMatch(cp->cp > 0x10FFFF || surrogate(cp))){ throw fail("Unicode scalars (no D800 to DFFF, nothing above 10FFFF)"); }
       return new String(cps,0,cps.length);
     }
-    private void ws(){ while(i < s.length() && s.charAt(i) == ' '){ i+= 1; } }
+    private void ws(){ while(i < s.length() && s.charAt(i) == ' '){ i += 1; } }
   }
 }

@@ -15,15 +15,15 @@ public final class ChildMain{
     var project= Path.of(args[0]);
     var exitCode= 0;
     try{ compile(project); }
-    catch(UserError e){ exitCode= 1; System.err.print(e.getMessage().stripTrailing()+"\n"); }
-    catch(VirtualMachineError|LinkageError e){ exitCode= 2; System.err.print(Violation.vmOrLinkageFailure(e).getMessage().stripTrailing()+"\n"); }
-    catch(Throwable t){ exitCode= 3; System.err.print(UserError.crash(t)); }
+    catch(UserError e){ exitCode = 1; System.err.print(e.getMessage().stripTrailing()+"\n"); }
+    catch(VirtualMachineError|LinkageError e){ exitCode = 2; System.err.print(Violation.vmOrLinkageFailure(e).getMessage().stripTrailing()+"\n"); }
+    catch(Throwable t){ exitCode = 3; System.err.print(UserError.crash(t)); }
     System.out.flush();
     System.err.flush();
     System.exit(exitCode);
   }
   private static void compile(Path project){
-    UserError.root= project;
+    UserError.root = project;
     var c= Deployed.coordinator(project);
     c.compile(project,c.sourceOracle(Deployed.stdLib("base")));
   }

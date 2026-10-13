@@ -50,7 +50,7 @@ public final class FearlessWatcher extends Job implements IStartup{
     if (stopped){ return Status.CANCEL_STATUS; }
     try{ tick(monitor); }
     catch(CoreException|RuntimeException|ExceptionInInitializerError e){
-      stopped= true;
+      stopped = true;
       StatusManager.getManager().handle(Status.error("Fearless stopped following the manager.", e), StatusManager.SHOW|StatusManager.LOG);
       return Status.CANCEL_STATUS;
     }

@@ -57,7 +57,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   static void look(Map<String,ManagerLink.Project> projects){
     var next= projects.keySet().stream().collect(Collectors.toMap(a->a, a->of(a, projects)));
     if (next.equals(found)){ return; }
-    found= Map.copyOf(next);
+    found = Map.copyOf(next);
     refresh();
   }
   static void refresh(){
@@ -217,7 +217,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   }
   private static void zip(List<String> at, InputStream in, long stamp, ArrayList<Ref> res) throws IOException{
     var zip= new ZipInputStream(in, StandardCharsets.UTF_8);
-    for (var e= zip.getNextEntry(); e != null; e= zip.getNextEntry()){
+    for (var e= zip.getNextEntry(); e != null; e = zip.getNextEntry()){
       if (e.isDirectory()){ continue; }
       var segments= Stream.concat(at.stream(), Stream.of(e.getName().split("/"))).toList();
       if (!invisible(segments)){ dated(e.getTime()); }

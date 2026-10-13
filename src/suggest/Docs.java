@@ -40,7 +40,7 @@ public final class Docs{
   /// line i and the lines under it, up to the next line opening a type or a method
   private String text(int i){
     var res= new StringBuilder(lines.get(i).strip());
-    for (int j= i+1; j < lines.size() && !opens(lines.get(j)); j+= 1){ res.append("\n").append(lines.get(j).strip()); }
+    for (int j= i+1; j < lines.size() && !opens(lines.get(j)); j += 1){ res.append("\n").append(lines.get(j).strip()); }
     return res.toString().strip();
   }
   /// name/arity of a method line, [RC] name[Bs](T1,..,Tn):T
@@ -48,7 +48,7 @@ public final class Docs{
     var m= methodLine.matcher(line);
     if (!m.matches()){ throw new IllegalArgumentException("Malformed method line in the documentation: "+line.strip()); }
     var ps= m.group(2);
-    for (; ps != null && ps.contains("["); ps= ps.replaceAll("\\[[^\\[\\]]*\\]", "")){}
+    for (; ps != null && ps.contains("["); ps = ps.replaceAll("\\[[^\\[\\]]*\\]", "")){}
     return m.group(1)+"/"+(ps == null ? 0 : ps.split(",").length);
   }
 }

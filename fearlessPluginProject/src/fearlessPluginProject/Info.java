@@ -58,7 +58,7 @@ final class Info{
     if (System.getProperty("os.name").startsWith("Windows")){
       if (bytes.length % 2 != 0){ throw new IllegalStateException("The manager wrote the malformed path \""+s+"\"."); }
       var res= new StringBuilder();
-      for (int j= 0; j < bytes.length; j+= 2){ res.append((char)((bytes[j] & 0xFF) | (bytes[j+1] & 0xFF) << 8)); }
+      for (int j= 0; j < bytes.length; j += 2){ res.append((char)((bytes[j] & 0xFF) | (bytes[j+1] & 0xFF) << 8)); }
       return res.toString();
     }
     try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
@@ -95,7 +95,7 @@ final class Info{
   private String str(){
     expect('"');
     var sb= new StringBuilder();
-    for (var c= text.charAt(i++); c != '"'; c= text.charAt(i++)){
+    for (var c= text.charAt(i++); c != '"'; c = text.charAt(i++)){
       sb.append(c == '\\' ? escape(text.charAt(i++)) : c);
     }
     return sb.toString();
@@ -111,10 +111,10 @@ final class Info{
       ws();
       if (i == text.length()){ return sb.toString(); }
       var c= text.charAt(i);
-      if (c == '+'){ i+= 1; sb.append(atom()); continue; }
-      if (c == '|' || c == '^'){ i+= 1; sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
+      if (c == '+'){ i += 1; sb.append(atom()); continue; }
+      if (c == '|' || c == '^'){ i += 1; sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
       if (!text.startsWith(".u", i) || (i+2 < text.length() && Character.isLetterOrDigit(text.charAt(i+2)))){ return sb.toString(); }
-      i+= 2;
+      i += 2;
       if (atomNext()){ sb.append(codePoints(atom())); }
     }
   }
@@ -133,7 +133,7 @@ final class Info{
     var end= text.indexOf(open, i);
     if (end < 0){ throw bad("the closing "+open); }
     var res= text.substring(i, end);
-    i= end+1;
+    i = end+1;
     return res;
   }
   private String codePoints(String body){
@@ -146,10 +146,10 @@ final class Info{
   private boolean next(char c){
     ws();
     if (text.charAt(i) != c){ return false; }
-    i+= 1;
+    i += 1;
     return true;
   }
   private void expect(char c){ if (!next(c)){ throw bad("'"+c+"'"); } }
-  private void ws(){ while(i < text.length() && (text.charAt(i) == ' ' || text.charAt(i) == '\n')){ i+= 1; } }
+  private void ws(){ while(i < text.length() && (text.charAt(i) == ' ' || text.charAt(i) == '\n')){ i += 1; } }
   private IllegalStateException bad(String expected){ return new IllegalStateException(file+" is not what the manager writes: "+expected+" was expected at offset "+i+"."); }
 }

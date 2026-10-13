@@ -26,7 +26,7 @@ import utils.Range;
 public final class Icons{
   private static Image app;
   static Image app(){
-    if (app == null){ app= read(Association.iconFile()); }
+    if (app == null){ app = read(Association.iconFile()); }
     return app;
   }
   /// The icon of a project: its own PNG, or one made up from its name.
@@ -53,7 +53,7 @@ public final class Icons{
     var lum= 0.0;
     for (int i : Range.of(0,4)){
       var c= Color.getHSBColor(base+i*0.25f+rnd.nextFloat()*0.1f-0.05f,0.5f+rnd.nextFloat()*0.45f,0.45f+rnd.nextFloat()*0.45f);
-      lum+= (0.299*c.getRed()+0.587*c.getGreen()+0.114*c.getBlue())/(4*255);
+      lum += (0.299*c.getRed()+0.587*c.getGreen()+0.114*c.getBlue())/(4*255);
       g.setColor(c);
       g.fillRect(i%2*half,i/2*half,size-half,size-half);
     }

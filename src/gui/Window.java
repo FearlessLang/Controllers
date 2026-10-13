@@ -94,9 +94,9 @@ public final class Window implements Manager.View{
     frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
     frame.addWindowListener(new WindowAdapter(){
       @Override public void windowClosing(WindowEvent e){ close(); }
-      @Override public void windowIconified(WindowEvent e){ onScreen= false; }
-      @Override public void windowDeiconified(WindowEvent e){ onScreen= true; surfaced= true; }
-      @Override public void windowActivated(WindowEvent e){ surfaced= true; }
+      @Override public void windowIconified(WindowEvent e){ onScreen = false; }
+      @Override public void windowDeiconified(WindowEvent e){ onScreen = true; surfaced = true; }
+      @Override public void windowActivated(WindowEvent e){ surfaced = true; }
     });
     frame.setIconImage(Icons.app());
     if (Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE)){ Taskbar.getTaskbar().setIconImage(Icons.app()); }
@@ -113,7 +113,7 @@ public final class Window implements Manager.View{
     if (leaves){ focus.clearFocusOwner(); }
   }
   public static Window create(Main main, Path managerDir){ return onEdt(()->new Window(main,managerDir.resolve("projects.info"))); }
-  public void tray(boolean present){ tray= present; }
+  public void tray(boolean present){ tray = present; }
   void fail(Throwable problem){ main.fail(problem); }
   static <T> T onEdt(Supplier<T> make){
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
@@ -129,18 +129,18 @@ public final class Window implements Manager.View{
   }
   private void close(){
     frame.setVisible(false);
-    onScreen= false;
+    onScreen = false;
     if (!tray){ standIn.show(); }
   }
   @Override public void show(){ SwingUtilities.invokeLater(this::showNow); }
   private void showNow(){
     standIn.hide();
-    surfaced= surfaced && onScreen;
+    surfaced = surfaced && onScreen;
     frame.setVisible(true);
     frame.setExtendedState(frame.getExtendedState() & ~Frame.ICONIFIED);
     frame.toFront();
     tiles.list.requestFocus();
-    onScreen= true;
+    onScreen = true;
     var check= new Timer(2000,_->checkSurfaced());
     check.setRepeats(false);
     check.start();
@@ -214,7 +214,7 @@ public final class Window implements Manager.View{
   private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_->new Panel(this::refuseHere)); }
   private void refuseHere(String text){ say(text); }
   private void render(State s){
-    state= s;
+    state = s;
     tiles.render(s);
     panels.keySet().removeIf(f->s.of(f).isEmpty());
     s.shown().ifPresent(p->panel(p.folder()).render(p,s.projects(),split.getHeight()));
@@ -222,7 +222,7 @@ public final class Window implements Manager.View{
     if (!next.equals(shown)){ place(next); }
   }
   private void place(Optional<Panel> next){
-    shown= next;
+    shown = next;
     var content= frame.getContentPane();
     content.removeAll();
     content.add(next.isEmpty() ? tiles : split,BorderLayout.CENTER);
@@ -319,7 +319,7 @@ public final class Window implements Manager.View{
     private final Timer rest= new Timer(500,_->super.setEnabled(wanted));
     Small(String text){ super(text); rest.setRepeats(false); }
     @Override public void setEnabled(boolean b){
-      wanted= b;
+      wanted = b;
       if (!rest.isRunning()){ super.setEnabled(b); }
     }
     void press(Runnable action){

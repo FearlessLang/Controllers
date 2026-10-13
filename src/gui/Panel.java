@@ -176,8 +176,8 @@ final class Panel{
     var stamps= claimed.values().stream().flatMap(List::stream).map(c->c.icon(".png").toFile().lastModified()).toList();
     var next= List.of(p,all.stream().map(Project::entry).toList(),claimed,stamps,height);
     if (next.equals(shown)){ return; }
-    shown= next;
-    project= p;
+    shown = next;
+    project = p;
     icon.setIcon(new ImageIcon(Icons.of(p,iconSize).getScaledInstance(iconSize,iconSize,Image.SCALE_SMOOTH)));
     name.setText(p.alias());
     var a= p.action();
@@ -258,7 +258,7 @@ final class Panel{
     var iAmCode= p.kind() == Kind.code;
     var old= linkFields;
     var owner= KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-    linkFields= new HashMap<>();
+    linkFields = new HashMap<>();
     linksBox.removeAll();
     links.setVisible(iAmCode || p.kind().isData());
     if (!links.isVisible()){ return; }
@@ -312,7 +312,7 @@ final class Panel{
   }
   private void send(Link link, Project code, String data, String how){
     if (linkFields.get(link.field.getName()) != link || !link.typed()){ return; }
-    link.was= link.field.getText().strip();
+    link.was = link.field.getText().strip();
     var words= Stream.of(link.was.split(" +")).filter(w->!w.isEmpty());
     Main.command("Link",Stream.concat(Stream.of(code.alias(),data,how),words).toArray(String[]::new));
   }

@@ -95,36 +95,36 @@ public final class Api{
     void check(boolean ok){ if (!ok){ throw new IllegalArgumentException("Malformed compiled json at offset "+i); } }
     <T> Map<String,T> obj(Supplier<T> value){
       check(s.startsWith("{", i));
-      i+= 1;
+      i += 1;
       var res= new LinkedHashMap<String,T>();
       while (!s.startsWith("}", i)){
-        if (!res.isEmpty()){ check(s.startsWith(",\n", i)); i+= 2; }
+        if (!res.isEmpty()){ check(s.startsWith(",\n", i)); i += 2; }
         var k= str();
         check(s.startsWith(":", i));
-        i+= 1;
+        i += 1;
         check(res.put(k, value.get()) == null);
       }
-      i+= s.startsWith("}\n", i) ? 2 : 1;
+      i += s.startsWith("}\n", i) ? 2 : 1;
       return res;
     }
     List<Object> arr(){
       check(s.startsWith("[", i));
       var res= new ArrayList<Object>();
-      i+= 1;
-      if (s.startsWith("]", i)){ i+= 1; return res; }
+      i += 1;
+      if (s.startsWith("]", i)){ i += 1; return res; }
       while (true){
         res.add(s.startsWith("\"", i) ? str() : arr());
-        if (s.startsWith("]", i)){ i+= 1; return res; }
+        if (s.startsWith("]", i)){ i += 1; return res; }
         check(s.startsWith(",", i));
-        i+= 1;
+        i += 1;
       }
     }
     String str(){
       var j= i+1;
-      while (j < s.length() && s.charAt(j) != '"'){ j+= s.charAt(j) == '\\' ? 2 : 1; }
+      while (j < s.length() && s.charAt(j) != '"'){ j += s.charAt(j) == '\\' ? 2 : 1; }
       check(j < s.length());
       var res= s.substring(i+1, j).replaceAll("\\\\(.)", "$1");
-      i= j+1;
+      i = j+1;
       return res;
     }
   }

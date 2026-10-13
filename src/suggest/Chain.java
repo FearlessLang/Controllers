@@ -34,14 +34,14 @@ final class Chain{
   }
   static E parse(E recv, List<Item> posts){ return new Chain(posts).posts(recv); }
   private E posts(E e){
-    while (i < items.size()){ e= post(e); }
+    while (i < items.size()){ e = post(e); }
     return e;
   }
   private boolean peek(Kind... kinds){ return i < items.size() && Tokens.is(items.get(i), kinds); }
   private boolean peekGroup(Kind open){ return i < items.size() && Tokens.isGroup(items.get(i), open); }
   private E atom(){
     var rc= peek(Kind.RCap);
-    if (rc){ i+= 1; }
+    if (rc){ i += 1; }
     if (i >= items.size() || rc && !peek(Tokens.typeName)){ return unknown; }
     var res= new ArrayList<Item>(List.of(items.get(i++)));
     if (!Tokens.is(res.get(0), Tokens.typeName)){ return new Atom(res); }
@@ -63,10 +63,10 @@ final class Chain{
     var sugar= (peek(Kind.LowercaseId) || peekGroup(Kind.OCurly)) && i+1 < items.size() && Tokens.is(items.get(i+1), Kind.Eq);
     if (sugar){
       var x= peek(Kind.LowercaseId) ? Tokens.text(items.get(i)) : "_";
-      i+= 2;
+      i += 2;
       var thunk= atom();
       var rest= List.copyOf(items.subList(i, items.size()));
-      i= items.size();
+      i = items.size();
       return new Sugar(new Call(recv, name, List.of(thunk, unknown), targs), x, rest);
     }
     if (i >= items.size() || peek(Kind.DotName, Kind.Op, Kind.Colon)){ return new Call(recv, name, List.of(), targs); }
@@ -78,7 +78,7 @@ final class Chain{
     for (var it : items){
       if (!Tokens.is(it, sep)){ cur.add(it); continue; }
       res.add(cur);
-      cur= new ArrayList<>();
+      cur = new ArrayList<>();
     }
     res.add(cur);
     return items.isEmpty() ? List.of() : res;
@@ -93,12 +93,12 @@ final class Chain{
     var res= new ArrayList<Meth>();
     var cur= new ArrayList<Item>();
     var start= g.start;
-    for (int j= selfName(g).isPresent() ? 2 : 0; j <= g.items.size(); j+= 1){
+    for (int j= selfName(g).isPresent() ? 2 : 0; j <= g.items.size(); j += 1){
       var last= j == g.items.size();
       if (!last && !Tokens.is(g.items.get(j), Kind.SemiColon)){ cur.add(g.items.get(j)); continue; }
       if (!cur.isEmpty()){ res.add(meth(cur, start, last ? g.end : g.items.get(j).start())); }
-      cur= new ArrayList<>();
-      if (!last){ start= g.items.get(j).start(); }
+      cur = new ArrayList<>();
+      if (!last){ start = g.items.get(j).start(); }
     }
     return res;
   }
@@ -142,7 +142,7 @@ final class Chain{
   static Optional<Header> header(Group g){
     var items= g.parent.items;
     int j= items.indexOf(g)-1;
-    for (; j >= 0 && !Tokens.is(items.get(j), Kind.Colon); j-= 1){
+    for (; j >= 0 && !Tokens.is(items.get(j), Kind.Colon); j -= 1){
       if (!Tokens.is(items.get(j), Kind.UppercaseId, Kind.Comma) && !Tokens.isGroup(items.get(j), Kind.OSquareArg)){ return Optional.empty(); }
     }
     var supers= split(items.subList(j+1, items.indexOf(g)), Kind.Comma);
