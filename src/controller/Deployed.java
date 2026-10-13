@@ -29,7 +29,7 @@ public final class Deployed implements Manager.Tools{
     return new Coordinator(){
       @Override public Optional<Path> baseCachePath(){ return Optional.of(stdLib("baseCache")); }
       @Override public BackendTools backendTools(String pkgName, SourceOracle oracle, OtherPackages other, List<Literal> core, CapabilityEnvironment capabilities){
-        return BackendTools.of(pkgName,oracle,other,core,project.resolve(Coordinator.outDir),baseCachePath(),stdLib("rt"),capabilities);
+        return BackendTools.of(pkgName, oracle, other, core, project.resolve(Coordinator.outDir), baseCachePath(), stdLib("rt"), capabilities);
       }
     };
   }
@@ -42,23 +42,23 @@ public final class Deployed implements Manager.Tools{
       "--enable-native-access=Commons,Coordinator",
       "-p", appDir().resolve(JavacTool.deployedModsDirName).toString(),
       "-m", "Controller/controller.ChildMain",
-      folder.toString()),out);
+      folder.toString()), out);
   }
   @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
-    return Coordinator.startMain(folder,stdLib("base"),main,coordinator(folder).sharedClasspath(),out);
+    return Coordinator.startMain(folder, stdLib("base"), main, coordinator(folder).sharedClasspath(), out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public void associate(List<Icon> captured, Function<String,String> claimedBy){
     if (Fs.isMac()){ return; }
     var launcher= Association.launcher();
-    Association.reconcile(launcher,Stream.concat(Stream.of(new Icon(".fearless",launcher,Association.iconFile())),captured.stream()).toList(),claimedBy);
+    Association.reconcile(launcher, Stream.concat(Stream.of(new Icon(".fearless", launcher, Association.iconFile())), captured.stream()).toList(), claimedBy);
   }
   @Override public List<String> others(){ return Fs.isMac() ? List.of() : Association.others(); }
   @Override public void connect(Path eclipse, Path managerDir){
-    Eclipse.connect(eclipse,appDir().resolve("eclipsePlugin"),Main.programDir(),Association.launcher(),managerDir,stdLib("baseCache"));
+    Eclipse.connect(eclipse, appDir().resolve("eclipsePlugin"), Main.programDir(), Association.launcher(), managerDir, stdLib("baseCache"));
   }
   @Override public Optional<Map<String,String>> mains(Path folder){
     var c= coordinator(folder);
-    return c.mains(folder,c.sourceOracle(stdLib("base")));
+    return c.mains(folder, c.sourceOracle(stdLib("base")));
   }
 }

@@ -25,6 +25,6 @@ public final class ChildMain{
   private static void compile(Path project){
     UserError.root = project;
     var c= Deployed.coordinator(project);
-    c.compile(project,c.sourceOracle(Deployed.stdLib("base")));
+    c.compile(project, c.sourceOracle(Deployed.stdLib("base")));
   }
 }

@@ -139,9 +139,9 @@ final class Info{
   private String codePoints(String body){
     if (body.isEmpty()){ return ""; }
     if (!uCodeText.matcher(body).matches()){ throw bad("code points in .u\"...\", each 1 to 6 uppercase hex digits, separated by single spaces,"); }
-    var cps= Stream.of(body.split(" ")).mapToInt(h -> Integer.parseInt(h,16)).toArray();
+    var cps= Stream.of(body.split(" ")).mapToInt(h -> Integer.parseInt(h, 16)).toArray();
     if (Arrays.stream(cps).anyMatch(cp -> cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))){ throw bad("code points in .u\"...\" of Unicode scalars only (no D800 to DFFF, nothing above 10FFFF)"); }
-    return new String(cps,0,cps.length);
+    return new String(cps, 0, cps.length);
   }
   private boolean next(char c){
     ws();

@@ -34,10 +34,10 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
   }
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
   public static Facts of(Path folder, String alias, Kind kind){
-    try{ return retried(() -> read(folder,alias,kind)); }
-    catch (UncheckedIOException e){ return invalid(Report.folderUnreadable(folder,e.getCause())); }
+    try{ return retried(() -> read(folder, alias, kind)); }
+    catch (UncheckedIOException e){ return invalid(Report.folderUnreadable(folder, e.getCause())); }
   }
-  private static Facts invalid(String problem){ return new Facts(false,Optional.empty(),Optional.empty(),List.of(),Optional.of(problem)); }
+  private static Facts invalid(String problem){ return new Facts(false, Optional.empty(), Optional.empty(), List.of(), Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
     for (var left= 10;; left -= 1){
       try{ return read.get(); }
@@ -51,7 +51,7 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     Optional<String> problem;
     try{
       if (kind == Kind.code){ built = Coordinator.pkgsBuilt(folder); } else { new RealSourceOracleWithZip(folder); }
-      problem= Names.markerProblem(folder,alias);
+      problem= Names.markerProblem(folder, alias);
     }
     catch (UserError e){ problem = Optional.of(e.getMessage()); }
     Optional<Icon> icon= Optional.empty();
@@ -63,14 +63,14 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     var stale= kind != Kind.code ? Optional.<String>empty()
       : !hasCache || built.isEmpty() ? Optional.of(Report.noCache())
       : stalePkgs.isEmpty() ? Optional.<String>empty() : Optional.of(Report.stalePackages(stalePkgs));
-    return new Facts(hasCache,stale,icon,LogFiles.list(folder),problem);
+    return new Facts(hasCache, stale, icon, LogFiles.list(folder), problem);
   }
-  Facts outOfDate(String why){ return new Facts(hasCache,Optional.of(why),icon,logs,problem); }
+  Facts outOfDate(String why){ return new Facts(hasCache, Optional.of(why), icon, logs, problem); }
   static Optional<Icon> icon(Path folder){
-    var dir= Names.folder(folder,".config").flatMap(c -> Names.folder(c,"icon"));
+    var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));
     if (dir.isEmpty()){ return Optional.empty(); }
     var pngs= Names.list(dir.get()).stream().filter(p -> p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png") && Files.isRegularFile(p)).toList();
-    if (pngs.size() > 1){ throw Report.projectIconsMany(dir.get(),pngs); }
+    if (pngs.size() > 1){ throw Report.projectIconsMany(dir.get(), pngs); }
     if (pngs.isEmpty()){ return Optional.empty(); }
     var png= pngs.getFirst();
     var stamp= Fs.lastModified(png);
@@ -80,8 +80,8 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     try{ image= ImageIO.read(png.toFile()); }
     catch (IOException e){ throw Report.projectIconUnreadable(png); }
     if (image == null){ throw Report.projectIconUnreadable(png); }
-    var res= new Icon(png,stamp,image);
-    decoded.put(png,res);
+    var res= new Icon(png, stamp, image);
+    decoded.put(png, res);
     return Optional.of(res);
   }
 }

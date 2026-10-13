@@ -27,9 +27,9 @@ import tools.Fs;
 final class IconsTest{
   static Project project(Path folder, Kind kind){
     var alias= folder.getFileName().toString().toLowerCase();
-    Fs.writeUtf8(folder.resolve(alias+".fearless"),"");
-    var entry= new Entry(alias,folder.toAbsolutePath().normalize(),kind,List.of(),Map.of(),Map.of());
-    return new Project(entry,Facts.of(entry.path(),alias,kind),Optional.empty(),Project.noClaims,Optional.empty(),"");
+    Fs.writeUtf8(folder.resolve(alias+".fearless"), "");
+    var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), Map.of(), Map.of());
+    return new Project(entry, Facts.of(entry.path(), alias, kind), Optional.empty(), Project.noClaims, Optional.empty(), "");
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -37,53 +37,53 @@ final class IconsTest{
     return res;
   }
   private static void png(Path file, Color color){
-    var img= new BufferedImage(16,16,BufferedImage.TYPE_INT_RGB);
+    var img= new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
     var g= img.createGraphics();
     g.setColor(color);
-    g.fillRect(0,0,16,16);
+    g.fillRect(0, 0, 16, 16);
     g.dispose();
     Fs.ensureDir(file.getParent());
-    Fs.ofV(() -> ImageIO.write(img,"png",file.toFile()));
+    Fs.ofV(() -> ImageIO.write(img, "png", file.toFile()));
   }
-  private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.of(project(folder,Kind.dataReadOnly),64); }
+  private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.of(project(folder, Kind.dataReadOnly), 64); }
   @Test void theIconIsThePngInDotConfigIcon(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    png(project.resolve(".config").resolve("icon").resolve("whatever.png"),Color.red);
+    var project= folder(dir, "someProject");
+    png(project.resolve(".config").resolve("icon").resolve("whatever.png"), Color.red);
     var got= icon(project);
-    assertEquals(16,got.getWidth());
-    assertEquals(Color.red.getRGB(),got.getRGB(3,3));
+    assertEquals(16, got.getWidth());
+    assertEquals(Color.red.getRGB(), got.getRGB(3, 3));
   }
   @Test void aNonPngFileInDotConfigIconIsIgnored(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("icon.ico"),"not really an ico");
-    assertEquals(64,icon(project).getWidth());
+    var project= folder(dir, "someProject");
+    Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("icon.ico"), "not really an ico");
+    assertEquals(64, icon(project).getWidth());
   }
   @Test void multiplePngsInDotConfigIconMakeTheProjectInvalidAndTheIconMadeUp(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    png(project.resolve(".config").resolve("icon").resolve("a.png"),Color.red);
-    png(project.resolve(".config").resolve("icon").resolve("b.png"),Color.blue);
-    assertEquals(Project.State.dataInvalid,project(project,Kind.dataReadOnly).state());
-    assertEquals(64,icon(project).getWidth());
+    var project= folder(dir, "someProject");
+    png(project.resolve(".config").resolve("icon").resolve("a.png"), Color.red);
+    png(project.resolve(".config").resolve("icon").resolve("b.png"), Color.blue);
+    assertEquals(Project.State.dataInvalid, project(project, Kind.dataReadOnly).state());
+    assertEquals(64, icon(project).getWidth());
   }
   @Test void withNoIconOneIsMadeUpOfTheRightSize(@TempDir Path dir){
-    var got= icon(folder(dir,"someProject"));
-    assertEquals(64,got.getWidth());
-    assertEquals(64,got.getHeight());
+    var got= icon(folder(dir, "someProject"));
+    assertEquals(64, got.getWidth());
+    assertEquals(64, got.getHeight());
   }
   @Test void theMadeUpIconOnlyDependsOnTheName(@TempDir Path dir){
-    assertEquals(pixels(icon(folder(dir,"someProject"))),pixels(icon(folder(folder(dir,"twin"),"someProject"))));
+    assertEquals(pixels(icon(folder(dir, "someProject"))), pixels(icon(folder(folder(dir, "twin"), "someProject"))));
   }
   @Test void differentNamesAreToldApart(@TempDir Path dir){
-    assertNotEquals(pixels(icon(folder(dir,"someProject"))),pixels(icon(folder(dir,"otherProject"))));
+    assertNotEquals(pixels(icon(folder(dir, "someProject"))), pixels(icon(folder(dir, "otherProject"))));
   }
   @Test void theMadeUpIconIsFourDifferentColoursUnderReadableLetters(@TempDir Path dir){
-    var got= icon(folder(dir,"someProject"));
-    var corners= new LinkedHashSet<>(List.of(got.getRGB(4,4),got.getRGB(59,4),got.getRGB(4,59),got.getRGB(59,59)));
-    assertEquals(4,corners.size());
+    var got= icon(folder(dir, "someProject"));
+    var corners= new LinkedHashSet<>(List.of(got.getRGB(4, 4), got.getRGB(59, 4), got.getRGB(4, 59), got.getRGB(59, 59)));
+    assertEquals(4, corners.size());
     var ink= pixels(got).stream().filter(c -> c == Color.white.getRGB() || c == Color.black.getRGB()).count();
-    assertTrue(ink > 100,"letters drawn on "+ink+" pixels");
+    assertTrue(ink > 100, "letters drawn on "+ink+" pixels");
   }
   private static List<Integer> pixels(BufferedImage img){
-    return Arrays.stream(img.getRGB(0,0,img.getWidth(),img.getHeight(),null,0,img.getWidth())).boxed().toList();
+    return Arrays.stream(img.getRGB(0, 0, img.getWidth(), img.getHeight(), null, 0, img.getWidth())).boxed().toList();
   }
 }

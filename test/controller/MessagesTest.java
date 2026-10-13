@@ -157,7 +157,7 @@ The process cannot access the file because it is being used by another process
 Delete the manager folder.
 Replace this Fearless folder with a fresh copy.
 If this keeps happening, report the problem.
-""", Violation.notWiped(Path.of("C:\\Users\\ada\\Downloads\\fearless0_007"),new IOException("The process cannot access the file because it is being used by another process")).getMessage());
+""", Violation.notWiped(Path.of("C:\\Users\\ada\\Downloads\\fearless0_007"), new IOException("The process cannot access the file because it is being used by another process")).getMessage());
   }
   @Test void couldNotWatchMessageFolder(){
     var msgDir= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager\\messages");

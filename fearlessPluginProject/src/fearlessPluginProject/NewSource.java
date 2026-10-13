@@ -52,8 +52,8 @@ public final class NewSource extends AbstractHandler{
     var rel= folder.getProjectRelativePath();
     return rel.segmentCount() == 0 || !rel.segment(0).equals(FearlessWatcher.srcName) || rel.segmentCount() == 1 ? "" : rel.removeFirstSegments(1)+"/";
   }
-  private static final List<String> ranks= List.of("base","core","driver","worker","framework","accumulator","tool","app");
-  private static final String uses= Stream.of("Main","UnitTests","Test","Void","Bool","Nat","Int","Float","Str","List","Lists","Opt","Opts","Block","Error","Debug")
+  private static final List<String> ranks= List.of("base", "core", "driver", "worker", "framework", "accumulator", "tool", "app");
+  private static final String uses= Stream.of("Main", "UnitTests", "Test", "Void", "Bool", "Nat", "Int", "Float", "Str", "List", "Lists", "Opt", "Opts", "Block", "Error", "Debug")
     .map(t -> "use base."+t+" as "+t+";\n").collect(Collectors.joining());
   private static String tests(String name, String base){ return """
     %s: %sUnitTests{::

@@ -26,14 +26,14 @@ final class UnitTests{
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static String document(String name, String log){
-    var body= disabled.matcher(log).replaceAll(UnitTests::skipped).replaceAll("(?m)^PLAN\\|RUN\\|.*$\\r?\\n?","");
+    var body= disabled.matcher(log).replaceAll(UnitTests::skipped).replaceAll("(?m)^PLAN\\|RUN\\|.*$\\r?\\n?", "");
     return """
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
 <testsuite name="%s" tests="%d" failures="%d" errors="0">
 %s</testsuite>
 </testsuites>
-""".formatted(name, count(body,"<testcase "), count(body,"<failure>"), body);
+""".formatted(name, count(body, "<testcase "), count(body, "<failure>"), body);
   }
   private static String complete(Path log){
     String text;
@@ -53,10 +53,10 @@ final class UnitTests{
     }
     return text;
   }
-  private static int count(String body, String what){ return body.split(what,-1).length-1; }
+  private static int count(String body, String what){ return body.split(what, -1).length-1; }
   private static String skipped(MatchResult mr){
     return "<testcase classname=\""+xmlAttr(mr.group(2))+"\" name=\""+xmlAttr(mr.group(3))
       +"\" file=\""+xmlAttr(mr.group(1))+"\" line=\""+mr.group(4)+"\"><skipped/></testcase>";
   }
-  private static String xmlAttr(String s){ return s.replace("&","&amp;").replace("<","&lt;").replace("\"","&quot;"); }
+  private static String xmlAttr(String s){ return s.replace("&", "&amp;").replace("<", "&lt;").replace("\"", "&quot;"); }
 }

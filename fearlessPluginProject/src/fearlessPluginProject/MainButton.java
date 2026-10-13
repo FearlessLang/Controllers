@@ -144,7 +144,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     String name(){ return segments.getLast(); }
   }
   private static final List<String> ranks= List.of(
-    "_rank_base","_rank_core","_rank_driver","_rank_worker","_rank_framework","_rank_accumulator","_rank_tool","_rank_app");
+    "_rank_base", "_rank_core", "_rank_driver", "_rank_worker", "_rank_framework", "_rank_accumulator", "_rank_tool", "_rank_app");
   private static boolean outOfDate(Path folder){
     var refs= refs(folder);
     if (refs.stream().noneMatch(r -> r.name().endsWith(".fear"))){ throw new Invalid(); }
@@ -170,7 +170,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var maxIn= LongStream.concat(LongStream.concat(own, below), LongStream.of(map)).max().getAsLong();
     var built= out.resolve(pkg+".built");
     var list= files.stream().map(Ref::fearPath).sorted().collect(Collectors.joining("\n"))
-      +Stream.concat(lower.stream(), Stream.of("base")).sorted().map(n -> "\n"+n).collect(Collectors.joining("","\n---",""));
+      +Stream.concat(lower.stream(), Stream.of("base")).sorted().map(n -> "\n"+n).collect(Collectors.joining("", "\n---", ""));
     return stamp(built) >= maxIn && ManagerLink.read(built).equals(list) && Files.exists(out.resolve(pkg+".mains.info")) && listed;
   }
   private static Optional<String> pkg(Ref r){

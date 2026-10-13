@@ -32,7 +32,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   public record Claimant(Path folder, String alias, String main, boolean shortcut, MainsInfo.Claim claim){
     public String label(){ return alias+"::"+main; }
     public Path icon(String suffix){ return folder.resolve(Facts.outDir).resolve("icons").resolve(claim.icon()+suffix); }
-    public Path shortcutFile(){ return folder.resolve(Project.shortcutFile(folder,main,claim.extension())); }
+    public Path shortcutFile(){ return folder.resolve(Project.shortcutFile(folder, main, claim.extension())); }
   }
   public enum State{
     codeInvalid("code: invalid content"), dataInvalid("data: invalid content"), idle("idle"), dataReadOnly("data: read only"), dataReadWrite("data: read write"),
@@ -53,56 +53,56 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   }
   static Stream<Claimant> claimants(Path folder, String alias, MainsInfo info){
     return info.mains().entrySet().stream()
-      .flatMap(e -> Stream.concat(claimants(folder,alias,e.getKey(),e.getValue().shortcuts(),true),claimants(folder,alias,e.getKey(),e.getValue().openWiths(),false)));
+      .flatMap(e -> Stream.concat(claimants(folder, alias, e.getKey(), e.getValue().shortcuts(), true), claimants(folder, alias, e.getKey(), e.getValue().openWiths(), false)));
   }
-  private static Stream<Claimant> claimants(Path folder, String alias, String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c -> new Claimant(folder,alias,main,shortcut,c)); }
+  private static Stream<Claimant> claimants(Path folder, String alias, String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c -> new Claimant(folder, alias, main, shortcut, c)); }
   public static Map<String,List<Claimant>> claimed(List<Project> projects){
-    return projects.stream().flatMap(p -> claimants(p.folder(),p.alias(),p.claims))
+    return projects.stream().flatMap(p -> claimants(p.folder(), p.alias(), p.claims))
       .sorted(Comparator.comparing(Claimant::label))
-      .collect(Collectors.groupingBy(c -> c.claim().extension(),TreeMap::new,Collectors.toUnmodifiableList()));
+      .collect(Collectors.groupingBy(c -> c.claim().extension(), TreeMap::new, Collectors.toUnmodifiableList()));
   }
   static MainsInfo filled(MainsInfo info, MainsInfo previous, String alias, Stream<MainsInfo> all){
-    var fill= new Fill(previous,alias,extensions(Stream.concat(Stream.of(info),all)),extensions(Stream.of(info)));
-    return new MainsInfo(info.mains().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,e -> fill.main(e.getKey(),e.getValue()))));
+    var fill= new Fill(previous, alias, extensions(Stream.concat(Stream.of(info), all)), extensions(Stream.of(info)));
+    return new MainsInfo(info.mains().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> fill.main(e.getKey(), e.getValue()))));
   }
   private static HashSet<String> extensions(Stream<MainsInfo> infos){
     return infos.flatMap(i -> i.mains().values().stream())
-      .flatMap(m -> Stream.concat(m.shortcuts().stream(),m.openWiths().stream()))
+      .flatMap(m -> Stream.concat(m.shortcuts().stream(), m.openWiths().stream()))
       .map(MainsInfo.Claim::extension).collect(Collectors.toCollection(HashSet::new));
   }
   private record Fill(MainsInfo previous, String alias, HashSet<String> used, Set<String> explicit){
-    MainsInfo.Main main(String main, MainsInfo.Main m){ return new MainsInfo.Main(m.file(),claims(main,m.shortcuts(),true),claims(main,m.openWiths(),false)); }
-    List<MainsInfo.Claim> claims(String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c -> claim(main,c,shortcut)).toList(); }
+    MainsInfo.Main main(String main, MainsInfo.Main m){ return new MainsInfo.Main(m.file(), claims(main, m.shortcuts(), true), claims(main, m.openWiths(), false)); }
+    List<MainsInfo.Claim> claims(String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c -> claim(main, c, shortcut)).toList(); }
     MainsInfo.Claim claim(String main, MainsInfo.Claim c, boolean shortcut){
       if (!c.extension().isEmpty()){ return c; }
       var prefix= shortcut ? "fapp" : "ffile";
-      var start= Math.floorMod((alias+"::"+main+"::"+c.icon()).hashCode(),1000);
+      var start= Math.floorMod((alias+"::"+main+"::"+c.icon()).hashCode(), 1000);
       var ext= Stream.ofNullable(previous.mains().get(main))
         .flatMap(m -> (shortcut ? m.shortcuts() : m.openWiths()).stream())
         .filter(p -> p.icon().equals(c.icon())).map(MainsInfo.Claim::extension)
         .filter(e -> e.matches(prefix+"[0-9]{3}") && !explicit.contains(e)).findFirst()
-        .or(() -> IntStream.range(0,1000).mapToObj(i -> prefix+"%03d".formatted((start+i)%1000)).filter(e -> !used.contains(e)).findFirst())
-        .orElseThrow(() -> Report.noFreeExtension(main,shortcut,c.icon()));
+        .or(() -> IntStream.range(0, 1000).mapToObj(i -> prefix+"%03d".formatted((start+i)%1000)).filter(e -> !used.contains(e)).findFirst())
+        .orElseThrow(() -> Report.noFreeExtension(main, shortcut, c.icon()));
       used.add(ext);
-      return new MainsInfo.Claim(c.icon(),c.diskPath(),c.zipSteps(),c.zipEntry(),ext);
+      return new MainsInfo.Claim(c.icon(), c.diskPath(), c.zipSteps(), c.zipEntry(), ext);
     }
   }
   static List<String> shortcuts(Stream<Claimant> cs){
     var files= new LinkedHashMap<String,String>();
     for (var c: cs.filter(Claimant::shortcut).toList()){
-      var file= shortcutFile(c.folder(),c.main(),c.claim().extension());
-      var other= files.putIfAbsent(file,c.main());
-      if (other != null){ throw Report.shortcutsCollide(other,c.main(),file); }
+      var file= shortcutFile(c.folder(), c.main(), c.claim().extension());
+      var other= files.putIfAbsent(file, c.main());
+      if (other != null){ throw Report.shortcutsCollide(other, c.main(), file); }
     }
     return List.copyOf(files.keySet());
   }
   private static String shortcutFile(Path project, String main, String ext){
     var name= AutoloadHandler.fileName(main.substring(main.lastIndexOf('.')+1)).orElseThrow(() -> Report.shortcutNoFileName(main));
     var file= name+"."+ext;
-    try{ BuildWithZip.checkIndividualVisibleSegment(new PathEntry(project,Path.of(file))); }
-    catch (UserError e){ throw Report.shortcutBadFileName(main,file); }
-    var masks= userMessages.Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name),LinkOption.NOFOLLOW_LINKS);
-    if (masks){ throw Report.shortcutMasksFile(main,file,name); }
+    try{ BuildWithZip.checkIndividualVisibleSegment(new PathEntry(project, Path.of(file))); }
+    catch (UserError e){ throw Report.shortcutBadFileName(main, file); }
+    var masks= userMessages.Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name), LinkOption.NOFOLLOW_LINKS);
+    if (masks){ throw Report.shortcutMasksFile(main, file, name); }
     return file;
   }
   public State state(){

@@ -21,8 +21,8 @@ final class Follow{
     var number= m.matches() ? Integer.parseInt(m.group(1)) : 0;
     if (number == 0 || number > 65535){ throw new Refused(Report.badPort(text)); }
     Socket socket;
-    try{ socket= new Socket(InetAddress.getLoopbackAddress(),number); }
-    catch (IOException e){ throw new Refused(Report.portClosed(number,e)); }
+    try{ socket= new Socket(InetAddress.getLoopbackAddress(), number); }
+    catch (IOException e){ throw new Refused(Report.portClosed(number, e)); }
     var res= new Follow();
     Thread.startVirtualThread(() -> res.pump(socket));
     return res;

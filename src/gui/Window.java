@@ -79,7 +79,7 @@ public final class Window implements Manager.View{
   private final Map<Path,Panel> panels= new HashMap<>();
   private final Map<Path,JDialog> editors= new HashMap<>();
   private final StandIn standIn= new StandIn();
-  private State state= new State(List.of(),Optional.empty(),List.of());
+  private State state= new State(List.of(), Optional.empty(), List.of());
   private Optional<Panel> shown= Optional.empty();
   private volatile boolean onScreen;
   private boolean surfaced;
@@ -89,7 +89,7 @@ public final class Window implements Manager.View{
     this.info= info;
     split.setDividerLocation(320);
     frame.setJMenuBar(menuBar());
-    frame.add(tiles,BorderLayout.CENTER);
+    frame.add(tiles, BorderLayout.CENTER);
     frame.getRootPane().setTransferHandler(dropHandler());
     frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
     frame.addWindowListener(new WindowAdapter(){
@@ -102,17 +102,17 @@ public final class Window implements Manager.View{
     if (Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE)){ Taskbar.getTaskbar().setIconImage(Icons.app()); }
     frame.setLocationByPlatform(true);
     var avail= GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-    frame.setSize(new Dimension(Math.min(760,avail.width),Math.min(900,avail.height)));//the size a restore (un-maximize) falls back to
+    frame.setSize(new Dimension(Math.min(760, avail.width), Math.min(900, avail.height)));//the size a restore (un-maximize) falls back to
     frame.setExtendedState(Frame.MAXIMIZED_BOTH);
-    Toolkit.getDefaultToolkit().addAWTEventListener(this::leaveField,AWTEvent.MOUSE_EVENT_MASK);
+    Toolkit.getDefaultToolkit().addAWTEventListener(this::leaveField, AWTEvent.MOUSE_EVENT_MASK);
   }
   private void leaveField(AWTEvent e){
     var focus= KeyboardFocusManager.getCurrentKeyboardFocusManager();
     var owner= focus.getFocusOwner();
-    var leaves= e.getID() == MouseEvent.MOUSE_PRESSED && owner instanceof JTextField && owner != e.getSource() && SwingUtilities.isDescendingFrom(owner,frame);
+    var leaves= e.getID() == MouseEvent.MOUSE_PRESSED && owner instanceof JTextField && owner != e.getSource() && SwingUtilities.isDescendingFrom(owner, frame);
     if (leaves){ focus.clearFocusOwner(); }
   }
-  public static Window create(Main main, Path managerDir){ return onEdt(() -> new Window(main,managerDir.resolve("projects.info"))); }
+  public static Window create(Main main, Path managerDir){ return onEdt(() -> new Window(main, managerDir.resolve("projects.info"))); }
   public void tray(boolean present){ tray = present; }
   void fail(Throwable problem){ main.fail(problem); }
   static <T> T onEdt(Supplier<T> make){
@@ -141,7 +141,7 @@ public final class Window implements Manager.View{
     frame.toFront();
     tiles.list.requestFocus();
     onScreen = true;
-    var check= new Timer(2000,_ -> checkSurfaced());
+    var check= new Timer(2000, _ -> checkSurfaced());
     check.setRepeats(false);
     check.start();
   }
@@ -150,10 +150,10 @@ public final class Window implements Manager.View{
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(() -> panel(folder).output.setText("")); }
   @Override public void refuse(String text){ SwingUtilities.invokeLater(() -> { showNow(); say(text); }); }
   @Override public void tell(String text){ refuse(text); }
-  private void say(String text){ JOptionPane.showMessageDialog(frame,text,"Fearless",JOptionPane.PLAIN_MESSAGE); }
+  private void say(String text){ JOptionPane.showMessageDialog(frame, text, "Fearless", JOptionPane.PLAIN_MESSAGE); }
   @Override public void choose(List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(choices)); }
   @Override public void allow(String question, String content){
-    SwingUtilities.invokeLater(() -> { if (JOptionPane.showConfirmDialog(frame,question,"Fearless",JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ commit(content); } });
+    SwingUtilities.invokeLater(() -> { if (JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ commit(content); } });
   }
   @Override public void edited(Path file){
     SwingUtilities.invokeLater(() -> { var editor= editors.remove(file); if (editor != null){ editor.dispose(); } });
@@ -164,22 +164,22 @@ public final class Window implements Manager.View{
   }
   @Override public boolean visible(){ return onScreen; }
   private Path commit(String content){
-    var file= Fs.of(() -> Files.createTempFile("projects",".info"));
+    var file= Fs.of(() -> Files.createTempFile("projects", ".info"));
     file.toFile().deleteOnExit();
-    Fs.writeUtf8(file,content);
-    Main.command("EditMetadata",Main.path(file));
+    Fs.writeUtf8(file, content);
+    Main.command("EditMetadata", Main.path(file));
     return file;
   }
   private void chooser(List<Project.Claimant> choices){
     var list= choices(choices);
-    var dialog= new JDialog(frame,"Open with",false);
-    Runnable pick= () -> pick(dialog,list);
-    var run= small("Run",pick);
-    doubleClicked(list,pick);
+    var dialog= new JDialog(frame, "Open with", false);
+    Runnable pick= () -> pick(dialog, list);
+    var run= small("Run", pick);
+    doubleClicked(list, pick);
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(run);
-    dialog.add(new JScrollPane(list),BorderLayout.CENTER);
-    dialog.add(buttons,BorderLayout.SOUTH);
+    dialog.add(new JScrollPane(list), BorderLayout.CENTER);
+    dialog.add(buttons, BorderLayout.SOUTH);
     dialog.getRootPane().setDefaultButton(run);
     dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
     dialog.pack();
@@ -190,16 +190,16 @@ public final class Window implements Manager.View{
   private static void pick(JDialog dialog, JList<Project.Claimant> list){
     if (list.isSelectionEmpty()){ return; }
     dialog.dispose();
-    Main.command("Run",list.getSelectedValue().alias(),list.getSelectedValue().main());
+    Main.command("Run", list.getSelectedValue().alias(), list.getSelectedValue().main());
   }
   static JList<Project.Claimant> choices(List<Project.Claimant> choices){
-    var icons= choices.stream().map(c -> new ImageIcon(Icons.of(c,32))).toList();
+    var icons= choices.stream().map(c -> new ImageIcon(Icons.of(c, 32))).toList();
     var res= new JList<>(choices.toArray(Project.Claimant[]::new));
     res.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     res.setSelectedIndex(0);
     res.setCellRenderer(new DefaultListCellRenderer(){
       @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focused){
-        super.getListCellRendererComponent(l,choices.get(i).label(),i,selected,focused);
+        super.getListCellRendererComponent(l, choices.get(i).label(), i, selected, focused);
         setIcon(icons.get(i));
         return this;
       }
@@ -211,13 +211,13 @@ public final class Window implements Manager.View{
     var hidden= frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) != 0;
     if (hidden && !surfaced){ main.fail(Violation.desktopHidesWindow()); }
   }
-  private Panel panel(Path folder){ return panels.computeIfAbsent(folder,_ -> new Panel(this::refuseHere)); }
+  private Panel panel(Path folder){ return panels.computeIfAbsent(folder, _ -> new Panel(this::refuseHere)); }
   private void refuseHere(String text){ say(text); }
   private void render(State s){
     state = s;
     tiles.render(s);
     panels.keySet().removeIf(f -> s.of(f).isEmpty());
-    s.shown().ifPresent(p -> panel(p.folder()).render(p,s.projects(),split.getHeight()));
+    s.shown().ifPresent(p -> panel(p.folder()).render(p, s.projects(), split.getHeight()));
     var next= s.shown().map(p -> panel(p.folder()));
     if (!next.equals(shown)){ place(next); }
   }
@@ -225,11 +225,11 @@ public final class Window implements Manager.View{
     shown = next;
     var content= frame.getContentPane();
     content.removeAll();
-    content.add(next.isEmpty() ? tiles : split,BorderLayout.CENTER);
+    content.add(next.isEmpty() ? tiles : split, BorderLayout.CENTER);
     content.revalidate();
     content.repaint();
     if (next.isEmpty()){ return; }
-    var where= split.getWidth() > 0 ? Math.min(split.getDividerLocation(),split.getWidth()-minPanelWidth) : split.getDividerLocation();
+    var where= split.getWidth() > 0 ? Math.min(split.getDividerLocation(), split.getWidth()-minPanelWidth) : split.getDividerLocation();
     split.setLeftComponent(tiles);
     split.setRightComponent(next.get().root);
     split.setDividerLocation(where);
@@ -238,18 +238,18 @@ public final class Window implements Manager.View{
     var res= new JMenuBar();
     var manager= new JMenu("Manager");
     manager.setMnemonic('M');
-    manager.add(item("Add folder...",() -> choose("Add a Fearless project folder",p -> Main.command("Register",Main.path(p)))));
-    manager.add(item("Edit project metadata...",this::editMetadata));
-    manager.add(item("Connect Eclipse...",() -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into",p -> Main.command("ConnectEclipse",Main.path(p)))));
-    manager.add(item("Base documentation",() -> open(this::refuseHere,Deployed.stdLib("baseCache").resolve("base.html"))));
+    manager.add(item("Add folder...", () -> choose("Add a Fearless project folder", p -> Main.command("Register", Main.path(p)))));
+    manager.add(item("Edit project metadata...", this::editMetadata));
+    manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse", Main.path(p)))));
+    manager.add(item("Base documentation", () -> open(this::refuseHere, Deployed.stdLib("baseCache").resolve("base.html"))));
     manager.addSeparator();
-    manager.add(item("Reset",this::reset));
-    manager.add(item("Quit",() -> Main.command("Quit")));
+    manager.add(item("Reset", this::reset));
+    manager.add(item("Quit", () -> Main.command("Quit")));
     res.add(manager);
     return res;
   }
   private void reset(){
-    var reset= JOptionPane.showOptionDialog(frame,Report.resetQuestion(),"Fearless",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE,null,new Object[]{"Reset","Cancel"},"Cancel");
+    var reset= JOptionPane.showOptionDialog(frame, Report.resetQuestion(), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Reset", "Cancel"}, "Cancel");
     if (reset == 0){ Main.command("Reset"); }
   }
   static JMenuItem item(String text, Runnable action){
@@ -272,34 +272,34 @@ public final class Window implements Manager.View{
         return true;
       }
       @Override public boolean importData(TransferSupport support){
-        var paths= Drop.paths(support.getTransferable(),Window.this::refuseHere);
-        paths.forEach(p -> Main.command("Register",Main.path(p)));
+        var paths= Drop.paths(support.getTransferable(), Window.this::refuseHere);
+        paths.forEach(p -> Main.command("Register", Main.path(p)));
         return !paths.isEmpty();
       }
     };
   }
   private void editMetadata(){
     var base= Fs.readUtf8(info);
-    var area= mono(new JTextArea(base,30,100));
-    var dialog= new JDialog(frame,"Edit project metadata",true);
+    var area= mono(new JTextArea(base, 30, 100));
+    var dialog= new JDialog(frame, "Edit project metadata", true);
     var commit= new JButton("Commit");
     var close= new JButton("Close");
-    commit.addActionListener(_ -> commit(dialog,base,area.getText()));
+    commit.addActionListener(_ -> commit(dialog, base, area.getText()));
     close.addActionListener(_ -> dialog.dispose());
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(commit);
     buttons.add(close);
-    dialog.add(new JScrollPane(area),BorderLayout.CENTER);
-    dialog.add(buttons,BorderLayout.SOUTH);
+    dialog.add(new JScrollPane(area), BorderLayout.CENTER);
+    dialog.add(buttons, BorderLayout.SOUTH);
     dialog.pack();
     dialog.setLocationRelativeTo(frame);
     dialog.setVisible(true);
   }
   private void commit(JDialog dialog, String base, String text){
-    if (!Fs.readUtf8(info).equals(base)){ JOptionPane.showMessageDialog(dialog,Report.metadataChanged(),"Fearless",JOptionPane.PLAIN_MESSAGE); return; }
-    editors.put(commit(text),dialog);
+    if (!Fs.readUtf8(info).equals(base)){ JOptionPane.showMessageDialog(dialog, Report.metadataChanged(), "Fearless", JOptionPane.PLAIN_MESSAGE); return; }
+    editors.put(commit(text), dialog);
   }
-  static JTextArea mono(JTextArea area){ area.setFont(new Font(Font.MONOSPACED,Font.PLAIN,13)); return area; }
+  static JTextArea mono(JTextArea area){ area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13)); return area; }
   static <T extends JComponent> T named(T c, String name){ c.setName(name); return c; }
   static <T extends JComponent> T doubleClicked(T c, Runnable r){
     c.addMouseListener(new MouseAdapter(){
@@ -309,14 +309,14 @@ public final class Window implements Manager.View{
   }
   static JButton small(String text, Runnable action){
     var res= new Small(text);
-    res.setMargin(new Insets(0,6,0,6));
+    res.setMargin(new Insets(0, 6, 0, 6));
     res.addActionListener(_ -> res.press(action));
     return res;
   }
   @SuppressWarnings("serial")
   private static final class Small extends JButton{
     private boolean wanted= true;
-    private final Timer rest= new Timer(500,_ -> super.setEnabled(wanted));
+    private final Timer rest= new Timer(500, _ -> super.setEnabled(wanted));
     Small(String text){ super(text); rest.setRepeats(false); }
     @Override public void setEnabled(boolean b){
       wanted = b;
@@ -331,6 +331,6 @@ public final class Window implements Manager.View{
   static void open(Consumer<String> refuse, Path path){
     if (!Files.exists(path)){ refuse.accept(Report.nothingToOpen(path)); return; }
     try{ OpenPath.open(path); }
-    catch (UncheckedIOException e){ refuse.accept(Report.notOpened(path,e.getCause())); }
+    catch (UncheckedIOException e){ refuse.accept(Report.notOpened(path, e.getCause())); }
   }
 }

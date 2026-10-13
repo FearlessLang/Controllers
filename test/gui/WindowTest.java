@@ -21,10 +21,10 @@ import utils.Err;
 
 /// What goes wrong while the window is made, and the messages the window raises by itself.
 final class WindowTest{
-  static{ Err.setUp(AssertionFailedError.class,Assertions::assertEquals,Assertions::assertTrue); }
+  static{ Err.setUp(AssertionFailedError.class, Assertions::assertEquals, Assertions::assertTrue); }
   @Test void aUserErrorWhileMakingTheWindowComesThroughUnchanged(){
-    var icon= Violation.couldNotDecodeIcon(Path.of("app","icon.png"));
-    assertSame(icon,assertThrows(UserError.class,() -> Window.onEdt(() -> { throw icon; })));
+    var icon= Violation.couldNotDecodeIcon(Path.of("app", "icon.png"));
+    assertSame(icon, assertThrows(UserError.class, () -> Window.onEdt(() -> { throw icon; })));
   }
   @Test void anyOtherFailureWhileMakingTheWindowReportsItsOwnReason(){
     Err.strCmp("""
@@ -33,18 +33,18 @@ final class WindowTest{
       Fearless needs to show a window, but opening the window failed.
 
       Reported reason:
-      no screen""",assertThrows(UserError.class,() -> Window.onEdt(() -> { throw new IllegalStateException("no screen"); })).getMessage());
+      no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new IllegalStateException("no screen"); })).getMessage());
   }
   @Test void documentationThatIsNotThereIsSaidToTheManager(@TempDir Path dir){
     var said= new ArrayList<String>();
     var gen= dir.resolve(Facts.outDir).resolve("gen_java");
-    Panel.openDocs(said::add,dir);
+    Panel.openDocs(said::add, dir);
     Fs.ensureDir(gen);
-    Panel.openDocs(said::add,dir);
-    Window.open(said::add,gen.resolve("index.html"));
+    Panel.openDocs(said::add, dir);
+    Window.open(said::add, gen.resolve("index.html"));
     assertEquals(List.of(
       "The documentation is not opened: no .html file is in\n  "+gen,
       "The documentation is not opened: no .html file is in\n  "+gen,
-      "Nothing is opened: nothing exists at\n  "+gen.resolve("index.html")),said);
+      "Nothing is opened: nothing exists at\n  "+gen.resolve("index.html")), said);
   }
 }

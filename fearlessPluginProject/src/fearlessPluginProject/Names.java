@@ -8,9 +8,9 @@ import java.util.stream.Stream;
 import org.eclipse.core.runtime.IPath;
 
 final class Names{
-  private static final Set<String> noExtension= Set.of("readme","license","copying","notice","authors","contributors","changelog","changes","news","todo","thanks","security","contributing","code_of_conduct");
-  private static final Set<String> multiDot= Set.of("tar.gz","tar.bz2","tar.xz","tar.zst","tar.lz","tar.lz4","d.ts","d.ts.map","js.map","css.map","min.js","min.css");
-  private static final Set<String> windows= Set.of("con","prn","aux","nul","com1","com2","com3","com4","com5","com6","com7","com8","com9","lpt1","lpt2","lpt3","lpt4","lpt5","lpt6","lpt7","lpt8","lpt9");
+  private static final Set<String> noExtension= Set.of("readme", "license", "copying", "notice", "authors", "contributors", "changelog", "changes", "news", "todo", "thanks", "security", "contributing", "code_of_conduct");
+  private static final Set<String> multiDot= Set.of("tar.gz", "tar.bz2", "tar.xz", "tar.zst", "tar.lz", "tar.lz4", "d.ts", "d.ts.map", "js.map", "css.map", "min.js", "min.css");
+  private static final Set<String> windows= Set.of("con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9");
   static Optional<String> problem(IPath container, String name, boolean file){
     var inside= container.segmentCount() > 1 && container.segment(1).equals(FearlessWatcher.srcName);
     if (!inside){ return Optional.of("\""+container+"\" is outside the folder of the project: its files and folders go inside \"src\"."); }

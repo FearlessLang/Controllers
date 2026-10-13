@@ -35,7 +35,7 @@ public final class Violation{
 
       Only one Fearless program at a time opens them, so this manager ends now.
       Starting this manager again makes it the program opening them, with every
-      kind of file its projects open.""".formatted(Join.of(programs.stream().map(p -> "  "+p),"","\n","",""));
+      kind of file its projects open.""".formatted(Join.of(programs.stream().map(p -> "  "+p), "", "\n", "", ""));
   }
   public static UserError programFolderNotFound(Path startedFrom, String expectedDirName){
     return new UserError("""
@@ -43,7 +43,7 @@ public final class Violation{
       no folder named "%s" exists above
       %s
 
-      %s""".formatted(expectedDirName,path(startedFrom.toString()),freshCopyThenReport()));
+      %s""".formatted(expectedDirName, path(startedFrom.toString()), freshCopyThenReport()));
   }
   public static UserError couldNotStartGui(Throwable cause){
     return new UserError("""
@@ -116,7 +116,7 @@ public final class Violation{
       This copy of Fearless should already have this file:
       %s
 
-      %s""".formatted(path(icon.toString()),reported(cause)), cause);
+      %s""".formatted(path(icon.toString()), reported(cause)), cause);
   }
   public static UserError couldNotDecodeIcon(Path icon){
     return new UserError("""
@@ -140,7 +140,7 @@ public final class Violation{
       %s
 
       Move or unpack Fearless into a folder with write permission, then start
-      Fearless again.""".formatted(path(dir.toString()),managerFolderIntro(),reported(cause)), cause);
+      Fearless again.""".formatted(path(dir.toString()), managerFolderIntro(), reported(cause)), cause);
   }
   public static UserError couldNotUseInstanceLock(Path lockFile, Throwable cause){
     return new UserError("""
@@ -157,7 +157,7 @@ public final class Violation{
       Common fixes are to use a manager folder with write permission, or to
       close another program that is using or blocking this folder.
       %s
-      """.formatted(managerFolderIntro(),path(lockFile.toString()),reported(cause),blockingPrograms()), cause);
+      """.formatted(managerFolderIntro(), path(lockFile.toString()), reported(cause), blockingPrograms()), cause);
   }
   public static UserError couldNotLeaveStartMessage(Path msgDir, Throwable cause){
     return new UserError("""
@@ -171,7 +171,7 @@ public final class Violation{
       starting right now) then reads and removes those files. The message
       file was written, but renaming it to its final name failed.
 
-      %s""".formatted(managerFolderIntro(),path(msgDir.toString()),reported(cause)), cause);
+      %s""".formatted(managerFolderIntro(), path(msgDir.toString()), reported(cause)), cause);
   }
   public static String willWipe(Path managerDir){
     return """
@@ -180,7 +180,7 @@ public final class Violation{
       Once this dialog is closed, Fearless deletes its manager folder
       %s
       and removes every file association of Fearless.
-      %s""".formatted(path(managerDir.toString()),freshCopyThenReport());
+      %s""".formatted(path(managerDir.toString()), freshCopyThenReport());
   }
   public static UserError notWiped(Path managerDir, Throwable cause){
     return new UserError("""
@@ -190,7 +190,7 @@ public final class Violation{
       %s
 
       Delete the manager folder.
-      %s""".formatted(path(managerDir.toString()),reported(cause),freshCopyThenReport()), cause);
+      %s""".formatted(path(managerDir.toString()), reported(cause), freshCopyThenReport()), cause);
   }
   public static UserError couldNotWatchMessageFolder(Path msgDir, Throwable cause){
     return new UserError("""
@@ -202,7 +202,7 @@ public final class Violation{
       %s
       This feature is called file-change notifications, and the request failed.
 
-      %s""".formatted(managerFolderIntro(),path(msgDir.toString()),reported(cause)), cause);
+      %s""".formatted(managerFolderIntro(), path(msgDir.toString()), reported(cause)), cause);
   }
   public static UserError messageFolderNotWatchable(Path msgDir){
     return new UserError("""
@@ -217,7 +217,7 @@ public final class Violation{
 
       The folder may have been removed, replaced, or disconnected, or the
       operating system may have stopped sending file-change notifications
-      for it.""".formatted(managerFolderIntro(),path(msgDir.toString())));
+      for it.""".formatted(managerFolderIntro(), path(msgDir.toString())));
   }
   public static UserError couldNotDrainMessageFolder(Path msgDir, Throwable cause){
     return new UserError("""
@@ -229,7 +229,7 @@ public final class Violation{
       A file may have been deleted, locked, or changed while Fearless was
       using it, or the folder itself may be blocked.
 
-      %s""".formatted(path(msgDir.toString()),reported(cause)), cause);
+      %s""".formatted(path(msgDir.toString()), reported(cause)), cause);
   }
   public static UserError couldNotSaveManagerFile(Path file, Throwable cause){
     return new UserError("""
@@ -241,6 +241,6 @@ public final class Violation{
       The change was not recorded, so Fearless will not remember it.
 
       %s
-      %s""".formatted(file.getFileName(),managerFolderIntro(),path(file.getParent().toString()),reported(cause),blockingPrograms()), cause);
+      %s""".formatted(file.getFileName(), managerFolderIntro(), path(file.getParent().toString()), reported(cause), blockingPrograms()), cause);
   }
 }

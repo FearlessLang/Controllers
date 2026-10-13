@@ -72,13 +72,13 @@ public final class Main implements Manager.Exit{
     if (args.length == 0){ return "Show"; }
     if (!args[0].startsWith(prefix)){ return file(args); }
     var verb= args[0].substring(prefix.length());
-    if (List.of("InvalidCall","FatalError").contains(verb)){ return "InvalidCall\n"+Report.reservedVerb(args[0]); }
+    if (List.of("InvalidCall", "FatalError").contains(verb)){ return "InvalidCall\n"+Report.reservedVerb(args[0]); }
     if (Stream.of(args).anyMatch(a -> a.indexOf('\n') >= 0)){ return "InvalidCall\n"+Report.argumentWithNewline(List.of(args)); }
-    var rest= List.of(args).subList(1,args.length);
-    if (!List.of("Run","Link").contains(verb) || rest.size() < 2){ return String.join("\n",Stream.concat(Stream.of(verb),rest.stream()).toList()); }
-    var words= rest.subList(1,rest.size());
+    var rest= List.of(args).subList(1, args.length);
+    if (!List.of("Run", "Link").contains(verb) || rest.size() < 2){ return String.join("\n", Stream.concat(Stream.of(verb), rest.stream()).toList()); }
+    var words= rest.subList(1, rest.size());
     var port= verb.equals("Run") && !words.isEmpty() && words.getLast().startsWith("Port:");
-    var named= String.join(" ",port ? words.subList(0,words.size()-1) : words);
+    var named= String.join(" ", port ? words.subList(0, words.size()-1) : words);
     return verb+"\n"+rest.getFirst()+"\n"+named+(port ? "\n"+words.getLast() : "");
   }
   private static String file(String[] args){
@@ -92,7 +92,7 @@ public final class Main implements Manager.Exit{
     return verb+"\n"+TaggedText.line(path.toString());
   }
   public static void command(String verb, String... args){
-    var cmd= Stream.concat(Stream.of(Association.launcher().toString(),prefix+verb),Stream.of(args)).toList();
+    var cmd= Stream.concat(Stream.of(Association.launcher().toString(), prefix+verb), Stream.of(args)).toList();
     var pb= new ProcessBuilder(cmd).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD);
     //The launcher marks the process it starts with _JPACKAGE_ variables; a launcher started by
     //that process inherits them, takes itself for that process, and ends with 1.
@@ -115,8 +115,8 @@ public final class Main implements Manager.Exit{
       if (!Fs.isMac()){ Association.eradicateAll(); }
       return Optional.empty();
     }
-    catch (UncheckedIOException w){ return Optional.of(Violation.notWiped(managerDir,w.getCause())); }
-    catch (UserError w){ return Optional.of(Violation.notWiped(managerDir,w)); }
+    catch (UncheckedIOException w){ return Optional.of(Violation.notWiped(managerDir, w.getCause())); }
+    catch (UserError w){ return Optional.of(Violation.notWiped(managerDir, w)); }
   }
   private static void display(UserError e){
     try{ e.display(); }
@@ -126,12 +126,12 @@ public final class Main implements Manager.Exit{
     var main= new Main(programDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
     started = Optional.of(main);
     try{ Files.createDirectories(main.msgDir()); }
-    catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir,e); }
-    leave(main.msgDir(),message);
+    catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir, e); }
+    leave(main.msgDir(), message);
     var lockFile= main.managerDir.resolve("instance.lock");
-    try{ lock = FileChannel.open(lockFile,CREATE,WRITE).tryLock(); }
+    try{ lock = FileChannel.open(lockFile, CREATE, WRITE).tryLock(); }
     catch (OverlappingFileLockException e){ throw Bug.unreachable(); }
-    catch (IOException e){ throw Violation.couldNotUseInstanceLock(lockFile,e); }
+    catch (IOException e){ throw Violation.couldNotUseInstanceLock(lockFile, e); }
     if (lock == null){ return; }
     UserError.becameManagerOwner();
     main.own();
@@ -143,23 +143,23 @@ public final class Main implements Manager.Exit{
     for (var dir= startedFrom; dir != null && dir.getFileName() != null; dir = dir.getParent()){
       if (dir.getFileName().toString().equals(expected)){ return dir; }
     }
-    throw Violation.programFolderNotFound(startedFrom,expected);
+    throw Violation.programFolderNotFound(startedFrom, expected);
   }
   //Write to a .tmp name, then atomically rename it to .msg: the owner drains
   //only *.msg, so it can never observe a half written file.
   private static void leave(Path msgDir, String message){
-    var name= "%020d-%s".formatted(System.currentTimeMillis(),UUID.randomUUID());
+    var name= "%020d-%s".formatted(System.currentTimeMillis(), UUID.randomUUID());
     var tmp= msgDir.resolve(name+".tmp");
-    StringFiles.writeNew(tmp,message,UserError.onFileError());
-    try{ Files.move(tmp,msgDir.resolve(name+".msg"),ATOMIC_MOVE); }
-    catch (IOException e){ throw Violation.couldNotLeaveStartMessage(msgDir,e); }
+    StringFiles.writeNew(tmp, message, UserError.onFileError());
+    try{ Files.move(tmp, msgDir.resolve(name+".msg"), ATOMIC_MOVE); }
+    catch (IOException e){ throw Violation.couldNotLeaveStartMessage(msgDir, e); }
   }
   private void own() throws Throwable{
-    try{ watcher = FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
-    catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(),e); }
+    try{ watcher = FileSystems.getDefault().newWatchService(); msgDir().register(watcher, ENTRY_CREATE); }
+    catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(), e); }
     Thread.setDefaultUncaughtExceptionHandler((_,t) -> fail(t));
-    var window= Window.create(this,managerDir);
-    manager = new Manager(managerDir,new Deployed(),window,this);
+    var window= Window.create(this, managerDir);
+    manager = new Manager(managerDir, new Deployed(), window, this);
     UserError.owner(window.frame);
     userMessages.Violation.running(() -> manager.state().running());
     window.tray(Tray.install(window));
@@ -176,7 +176,7 @@ public final class Main implements Manager.Exit{
   }
   @Override public void quit(){ done.countDown(); }
   @Override public void reset(){ reset = true; done.countDown(); }
-  @Override public void fail(Throwable problem){ failure.compareAndSet(null,problem); done.countDown(); }
+  @Override public void fail(Throwable problem){ failure.compareAndSet(null, problem); done.countDown(); }
   private void watch(WatchService watcher){
     while (true){
       WatchKey key;

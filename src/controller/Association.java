@@ -23,14 +23,14 @@ public final class Association{
   static String identity(Path launcher){
     var file= launcher.getFileName().toString();
     var dot= file.lastIndexOf('.');
-    return dot < 0 ? file : file.substring(0,dot);
+    return dot < 0 ? file : file.substring(0, dot);
   }
   public static Path iconFile(){ return JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("icon.png"); }
   static void reconcile(Path launcher, List<Icon> extensions, Function<String,String> claimedBy){
-    FileAssociations.reconcile(identity(launcher),belongsToFamily,launcher,extensions,launcher,iconFile(),
-      reported -> Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations",Association::eradicateAll),
-      locked -> Fs.isWindows() ? Violation.associationUserLocked(locked,claimedBy) : Violation.associationChosenDefault(locked,claimedBy),
-      held -> Violation.associationNotOurs(held,claimedBy),
+    FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, launcher, iconFile(),
+      reported -> Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations", Association::eradicateAll),
+      locked -> Fs.isWindows() ? Violation.associationUserLocked(locked, claimedBy) : Violation.associationChosenDefault(locked, claimedBy),
+      held -> Violation.associationNotOurs(held, claimedBy),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
   }
@@ -38,5 +38,5 @@ public final class Association{
     var mine= identity(launcher());
     return FileAssociations.identities(belongsToFamily).stream().filter(i -> !i.equals(mine)).toList();
   }
-  static void eradicateAll(){ FileAssociations.eradicateAll(belongsToFamily,Violation::associationLeftHalfDone); }
+  static void eradicateAll(){ FileAssociations.eradicateAll(belongsToFamily, Violation::associationLeftHalfDone); }
 }

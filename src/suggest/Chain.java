@@ -54,7 +54,7 @@ final class Chain{
     if (Tokens.is(it, Kind.SignedInt, Kind.SignedFloat)){
       var t= (Tok)it;
       var num= new Tok(t.kind() == Kind.SignedInt ? Kind.UnsignedInt : Kind.UnSignedFloat, t.text().substring(1), t.start()+1, t.end());
-      return new Call(recv, t.text().substring(0,1), List.of(new Atom(List.of(num))), List.of());
+      return new Call(recv, t.text().substring(0, 1), List.of(new Atom(List.of(num))), List.of());
     }
     if (!Tokens.is(it, Kind.DotName, Kind.Op)){ return unknown; }
     var name= Tokens.text(it);

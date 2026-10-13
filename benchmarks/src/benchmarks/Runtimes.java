@@ -28,8 +28,8 @@ import utils.Bug;
 /// that compiled project in this JVM, in a class loader of its own.
 public final class Runtimes{
   public static final String stlibsKey= "fearless.benchmarks.stlibs";
-  static final Path out= ResolveResource.controllerSrc.getParent().resolve(".out","benchmarks");
-  static final Path project= ResolveResource.controllerSrc.getParent().resolve("benchmarks","fearless");
+  static final Path out= ResolveResource.controllerSrc.getParent().resolve(".out", "benchmarks");
+  static final Path project= ResolveResource.controllerSrc.getParent().resolve("benchmarks", "fearless");
   public static List<String> buildAll(){
     var spec= System.getProperty(stlibsKey, "wc="+ResolveResource.stLibPath.getParent());
     var names= new ArrayList<String>();
@@ -42,7 +42,7 @@ public final class Runtimes{
     return names;
   }
   static void build(String name, Path stlib){
-    System.setProperty(JavacTool.appDirKey, ResolveResource.stLibPath.getParent().resolve("fearlessArtefact","fearless","app").toString());
+    System.setProperty(JavacTool.appDirKey, ResolveResource.stLibPath.getParent().resolve("fearlessArtefact", "fearless", "app").toString());
     var dir= out.resolve(name);
     Fs.rmTree(dir);
     var basePath= stlib.resolve("base");
@@ -84,7 +84,7 @@ public final class Runtimes{
   }
   public static Loaded load(String name){
     var dir= out.resolve(name);
-    var jars= List.of(dir.resolve("project", Coordinator.outDir, "gen_java", "bench.jar"), dir.resolve("baseCache","base.jar"));
+    var jars= List.of(dir.resolve("project", Coordinator.outDir, "gen_java", "bench.jar"), dir.resolve("baseCache", "base.jar"));
     var urls= jars.stream().map(p -> Fs.of(() -> p.toUri().toURL())).toArray(URL[]::new);
     return new Loaded(new URLClassLoader(urls, ClassLoader.getPlatformClassLoader()));
   }

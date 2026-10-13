@@ -41,10 +41,10 @@ final class Sni{
     +"<method name=\"Scroll\"><arg type=\"i\" direction=\"in\"/><arg type=\"s\" direction=\"in\"/></method>"
     +"</interface></node>";
   static final List<List<String>> items= List.of(
-    List.of("0","children-display","submenu"),
-    List.of("1","label","Show manager"),
-    List.of("2","type","separator"),
-    List.of("3","label","Quit manager"));
+    List.of("0", "children-display", "submenu"),
+    List.of("1", "label", "Show manager"),
+    List.of("2", "type", "separator"),
+    List.of("3", "label", "Quit manager"));
   private final SocketChannel channel;
   private final Runnable activate;
   private final Runnable quit;
@@ -63,12 +63,12 @@ final class Sni{
     if (address == null){ return false; }
     var path= Pattern.compile("(^|;)unix:([^;]*,)?path=([^,;]+)").matcher(address);
     if (!path.find()){ throw Violation.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS \""+address+"\" names no \"unix:path=\" socket")); }
-    var icon= new BufferedImage(64,64,BufferedImage.TYPE_INT_ARGB);
+    var icon= new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
     var g= icon.createGraphics();
-    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-    g.drawImage(image,0,0,64,64,null);
+    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+    g.drawImage(image, 0, 0, 64, 64, null);
     g.dispose();
-    var sni= new Sni(Path.of(URLDecoder.decode(path.group(3),UTF_8)),activate,quit,icon);
+    var sni= new Sni(Path.of(URLDecoder.decode(path.group(3), UTF_8)), activate, quit, icon);
     if (!sni.tray){ return false; }
     Thread.startVirtualThread(sni::serve);
     return true;
@@ -80,21 +80,21 @@ final class Sni{
     try{
       channel= SocketChannel.open(StandardProtocolFamily.UNIX);
       channel.connect(UnixDomainSocketAddress.of(socket));
-      var uid= Files.getAttribute(Path.of("/proc/self"),"unix:uid").toString();
-      write(channel,("\0AUTH EXTERNAL "+HexFormat.of().formatHex(uid.getBytes(UTF_8))+"\r\n").getBytes(UTF_8));
+      var uid= Files.getAttribute(Path.of("/proc/self"), "unix:uid").toString();
+      write(channel, ("\0AUTH EXTERNAL "+HexFormat.of().formatHex(uid.getBytes(UTF_8))+"\r\n").getBytes(UTF_8));
       var answer= line(channel);
       if (!answer.startsWith("OK ")){ throw new IOException("the session bus refused the connection: "+answer); }
-      write(channel,"BEGIN\r\n".getBytes(UTF_8));
-      await(call(bus,"/org/freedesktop/DBus",bus,"Hello","",new Writer()));
-      tray= await(call(bus,"/org/freedesktop/DBus",bus,"NameHasOwner","s",new Writer().str(watcher))).body().u32() == 1;
+      write(channel, "BEGIN\r\n".getBytes(UTF_8));
+      await(call(bus, "/org/freedesktop/DBus", bus, "Hello", "", new Writer()));
+      tray= await(call(bus, "/org/freedesktop/DBus", bus, "NameHasOwner", "s", new Writer().str(watcher))).body().u32() == 1;
       if (!tray){ channel.close(); return; }
-      await(call(bus,"/org/freedesktop/DBus",bus,"AddMatch","s",new Writer().str("type='signal',sender='"+bus+"',member='NameOwnerChanged',arg0='"+watcher+"'")));
+      await(call(bus, "/org/freedesktop/DBus", bus, "AddMatch", "s", new Writer().str("type='signal',sender='"+bus+"',member='NameOwnerChanged',arg0='"+watcher+"'")));
       register();
     }
     catch (IOException e){ throw Violation.couldNotAddTrayIcon(e); }
   }
   private void register() throws IOException{
-    await(call(watcher,"/StatusNotifierWatcher",watcher,"RegisterStatusNotifierItem","s",new Writer().str(itemPath)));
+    await(call(watcher, "/StatusNotifierWatcher", watcher, "RegisterStatusNotifierItem", "s", new Writer().str(itemPath)));
   }
   void serve(){
     try{ for (;;){ handle(next(channel)); } }
@@ -113,30 +113,30 @@ final class Sni{
   private void handle(Msg m) throws IOException{
     if (m.type() == 4){ signal(m); return; }
     if (m.type() != 1){ return; }
-    if (!m.path().equals(itemPath) && !m.path().equals(menu)){ error(m,"org.freedesktop.DBus.Error.UnknownObject","Fearless offers no object "+m.path()); return; }
+    if (!m.path().equals(itemPath) && !m.path().equals(menu)){ error(m, "org.freedesktop.DBus.Error.UnknownObject", "Fearless offers no object "+m.path()); return; }
     switch (m.member()+"("+m.signature()+")"){
-      case "GetAll(s)" -> reply(m,"a{sv}",all(m.path(),icon));
+      case "GetAll(s)" -> reply(m, "a{sv}", all(m.path(), icon));
       case "Get(ss)" -> get(m);
-      case "GetLayout(iias)" -> reply(m,"u(ia{sv}av)",layout());
-      case "GetGroupProperties(aias)" -> reply(m,"a(ia{sv})",groupProperties());
-      case "AboutToShow(i)" -> reply(m,"b",new Writer().u32(0));
-      case "AboutToShowGroup(ai)" -> reply(m,"aiai",new Writer().u32(0).u32(0));
+      case "GetLayout(iias)" -> reply(m, "u(ia{sv}av)", layout());
+      case "GetGroupProperties(aias)" -> reply(m, "a(ia{sv})", groupProperties());
+      case "AboutToShow(i)" -> reply(m, "b", new Writer().u32(0));
+      case "AboutToShowGroup(ai)" -> reply(m, "aiai", new Writer().u32(0).u32(0));
       case "Event(isvu)" -> event(m);
       case "EventGroup(a(isvu))" -> eventGroup(m);
       case "Introspect()" -> introspect(m);
-      case "ContextMenu(ii)" -> { activate.run(); reply(m,"",new Writer()); }
-      case "SecondaryActivate(ii)","Scroll(is)" -> reply(m,"",new Writer());
-      default -> error(m,"org.freedesktop.DBus.Error.UnknownMethod","Fearless offers no method "+m.member()+"("+m.signature()+")");
+      case "ContextMenu(ii)" -> { activate.run(); reply(m, "", new Writer()); }
+      case "SecondaryActivate(ii)","Scroll(is)" -> reply(m, "", new Writer());
+      default -> error(m, "org.freedesktop.DBus.Error.UnknownMethod", "Fearless offers no method "+m.member()+"("+m.signature()+")");
     }
   }
   private void introspect(Msg m) throws IOException{
-    if (!m.path().equals(itemPath)){ error(m,"org.freedesktop.DBus.Error.UnknownMethod","Fearless offers no method Introspect() on "+m.path()); return; }
-    reply(m,"s",new Writer().str(introspection));
+    if (!m.path().equals(itemPath)){ error(m, "org.freedesktop.DBus.Error.UnknownMethod", "Fearless offers no method Introspect() on "+m.path()); return; }
+    reply(m, "s", new Writer().str(introspection));
   }
   private void event(Msg m) throws IOException{
     var id= m.body().u32();
     var clicked= m.body().str().equals("clicked");
-    reply(m,"",new Writer());
+    reply(m, "", new Writer());
     if (clicked){ clicked(id); }
   }
   private void eventGroup(Msg m) throws IOException{
@@ -149,10 +149,10 @@ final class Sni{
       r.pad(8);
       int id= r.u32();
       if (r.str().equals("clicked")){ clicked.add(id); }
-      r.skip("v",0);
+      r.skip("v", 0);
       r.u32();
     }
-    reply(m,"ai",new Writer().u32(0));
+    reply(m, "ai", new Writer().u32(0));
     clicked.forEach(this::clicked);
   }
   private void clicked(int id){
@@ -169,13 +169,13 @@ final class Sni{
   private void get(Msg m) throws IOException{
     m.body().str();
     var name= m.body().str();
-    if (!props(m.path()).contains(name)){ error(m,"org.freedesktop.DBus.Error.UnknownProperty","Fearless offers no property "+name); return; }
-    reply(m,"v",prop(new Writer(),name,icon));
+    if (!props(m.path()).contains(name)){ error(m, "org.freedesktop.DBus.Error.UnknownProperty", "Fearless offers no property "+name); return; }
+    reply(m, "v", prop(new Writer(), name, icon));
   }
   static List<String> props(String path){
-    return path.equals(menu) ? List.of("Version") : List.of("Category","Id","Title","Status","IconPixmap","ToolTip","ItemIsMenu","Menu");
+    return path.equals(menu) ? List.of("Version") : List.of("Category", "Id", "Title", "Status", "IconPixmap", "ToolTip", "ItemIsMenu", "Menu");
   }
-  static Writer all(String path, BufferedImage icon){ return new Writer().array(8,w -> props(path).forEach(p -> prop(w.pad(8).str(p),p,icon))); }
+  static Writer all(String path, BufferedImage icon){ return new Writer().array(8, w -> props(path).forEach(p -> prop(w.pad(8).str(p), p, icon))); }
   static Writer prop(Writer w, String name, BufferedImage icon){
     return switch (name){
       case "Category" -> w.sig("s").str("ApplicationStatus");
@@ -184,44 +184,44 @@ final class Sni{
       case "Status" -> w.sig("s").str("Active");
       case "Menu" -> w.sig("o").str(menu);
       case "ItemIsMenu" -> w.sig("b").u32(1);
-      case "IconPixmap" -> pixmaps(w.sig("a(iiay)"),icon);
+      case "IconPixmap" -> pixmaps(w.sig("a(iiay)"), icon);
       case "ToolTip" -> pixmaps(w.sig("(sa(iiay)ss)").pad(8).str("")).str("Fearless Manager").str("");
       case "Version" -> w.sig("u").u32(3);
       default -> throw Bug.unreachable();
     };
   }
-  static Writer layout(){ return item(new Writer().u32(1).pad(8),items.getFirst()).array(1,Sni::children); }
-  private static void children(Writer w){ items.stream().skip(1).forEach(i -> item(w.sig("(ia{sv}av)").pad(8),i).u32(0)); }
-  static Writer groupProperties(){ return new Writer().array(8,w -> items.forEach(i -> item(w.pad(8),i))); }
+  static Writer layout(){ return item(new Writer().u32(1).pad(8), items.getFirst()).array(1, Sni::children); }
+  private static void children(Writer w){ items.stream().skip(1).forEach(i -> item(w.sig("(ia{sv}av)").pad(8), i).u32(0)); }
+  static Writer groupProperties(){ return new Writer().array(8, w -> items.forEach(i -> item(w.pad(8), i))); }
   private static Writer item(Writer w, List<String> item){
-    return w.u32(Integer.parseInt(item.get(0))).array(8,e -> e.str(item.get(1)).sig("s").str(item.get(2)));
+    return w.u32(Integer.parseInt(item.get(0))).array(8, e -> e.str(item.get(1)).sig("s").str(item.get(2)));
   }
-  private static Writer pixmaps(Writer w, BufferedImage... images){ return w.array(8,e -> List.of(images).forEach(i -> pixmap(e,i))); }
+  private static Writer pixmaps(Writer w, BufferedImage... images){ return w.array(8, e -> List.of(images).forEach(i -> pixmap(e, i))); }
   private static void pixmap(Writer w, BufferedImage i){
-    var argb= i.getRGB(0,0,i.getWidth(),i.getHeight(),null,0,i.getWidth());
-    w.pad(8).u32(i.getWidth()).u32(i.getHeight()).array(1,e -> IntStream.of(argb).forEach(p -> e.b(p>>24).b(p>>16).b(p>>8).b(p)));
+    var argb= i.getRGB(0, 0, i.getWidth(), i.getHeight(), null, 0, i.getWidth());
+    w.pad(8).u32(i.getWidth()).u32(i.getHeight()).array(1, e -> IntStream.of(argb).forEach(p -> e.b(p>>24).b(p>>16).b(p>>8).b(p)));
   }
   private int call(String dest, String path, String iface, String member, String sig, Writer body) throws IOException{
-    write(channel,frame(++serial,1,0,dest,path,iface,member,null,sig,body));
+    write(channel, frame(++serial, 1, 0, dest, path, iface, member, null, sig, body));
     return serial;
   }
-  private void reply(Msg m, String sig, Writer body) throws IOException{ answer(m,2,null,sig,body); }
-  private void error(Msg m, String name, String text) throws IOException{ answer(m,3,name,"s",new Writer().str(text)); }
+  private void reply(Msg m, String sig, Writer body) throws IOException{ answer(m, 2, null, sig, body); }
+  private void error(Msg m, String name, String text) throws IOException{ answer(m, 3, name, "s", new Writer().str(text)); }
   private void answer(Msg m, int type, String error, String sig, Writer body) throws IOException{
     var noReplyExpected= (m.flags()&1) != 0;
-    if (!noReplyExpected){ write(channel,frame(++serial,type,m.serial(),m.sender(),null,null,null,error,sig,body)); }
+    if (!noReplyExpected){ write(channel, frame(++serial, type, m.serial(), m.sender(), null, null, null, error, sig, body)); }
   }
   static byte[] frame(int serial, int type, int reply, String dest, String path, String iface, String member, String error, String sig, Writer body){
     return new Writer().b('l').b(type).b(0).b(1).u32(body.pos).u32(serial)
-      .array(8,h -> header(h,reply,dest,path,iface,member,error,sig)).pad(8).append(body).bytes();
+      .array(8, h -> header(h, reply, dest, path, iface, member, error, sig)).pad(8).append(body).bytes();
   }
   private static void header(Writer h, int reply, String dest, String path, String iface, String member, String error, String sig){
-    field(h,1,"o",path);
-    field(h,2,"s",iface);
-    field(h,3,"s",member);
-    field(h,4,"s",error);
-    field(h,6,"s",dest);
-    field(h,8,"g",sig);
+    field(h, 1, "o", path);
+    field(h, 2, "s", iface);
+    field(h, 3, "s", member);
+    field(h, 4, "s", error);
+    field(h, 6, "s", dest);
+    field(h, 8, "g", sig);
     if (reply != 0){ h.pad(8).b(5).sig("u").u32(reply); }
   }
   private static void field(Writer w, int code, String type, String value){
@@ -230,16 +230,16 @@ final class Sni{
     if (type.equals("g")){ w.sig(value); } else { w.str(value); }
   }
   static Msg next(SocketChannel c) throws IOException{
-    var head= read(c,16);
-    var r= new Reader(head,4,head[0] == 'B');
+    var head= read(c, 16);
+    var r= new Reader(head, 4, head[0] == 'B');
     int bodyLen= r.u32(), serial= r.u32(), fieldsLen= r.u32();
     int bodyAt= (16+fieldsLen+7)/8*8;
-    var all= Arrays.copyOf(head,bodyAt+bodyLen);
-    System.arraycopy(read(c,bodyAt-16+bodyLen),0,all,16,bodyAt-16+bodyLen);
+    var all= Arrays.copyOf(head, bodyAt+bodyLen);
+    System.arraycopy(read(c, bodyAt-16+bodyLen), 0, all, 16, bodyAt-16+bodyLen);
     return parse(all);
   }
   static Msg parse(byte[] all){
-    var h= new Reader(all,4,all[0] == 'B');
+    var h= new Reader(all, 4, all[0] == 'B');
     h.u32();
     int serial= h.u32();
     int end= 16+h.u32();
@@ -253,11 +253,11 @@ final class Sni{
         case 1,2,3,4,6,7 -> fields[code] = h.str();
         case 8 -> fields[8] = h.sig();
         case 5 -> reply = h.u32();
-        default -> h.skip(sig,0);
+        default -> h.skip(sig, 0);
       }
     }
     h.pad(8);
-    return new Msg(all[1],all[2],serial,reply,fields,h);
+    return new Msg(all[1], all[2], serial, reply, fields, h);
   }
   private static byte[] read(SocketChannel c, int n) throws IOException{
     var b= ByteBuffer.allocate(n);
@@ -266,7 +266,7 @@ final class Sni{
   }
   static String line(SocketChannel c) throws IOException{
     var sb= new StringBuilder();
-    for (int b= read(c,1)[0]; b != '\n'; b = read(c,1)[0]){ sb.append((char)b); }
+    for (int b= read(c, 1)[0]; b != '\n'; b = read(c, 1)[0]){ sb.append((char)b); }
     return sb.toString().strip();
   }
   static void write(SocketChannel c, byte[] bytes) throws IOException{
@@ -281,17 +281,17 @@ final class Sni{
     void pad(int a){ pos = (pos+a-1)/a*a; }
     int b(){ return buf[pos++]&0xff; }
     int u32(){ pad(4); int v= 0; for (int i= 0; i<4; i++){ v |= b()<<(big ? 24-8*i : 8*i); } return v; }
-    String str(){ int n= u32(); var s= new String(buf,pos,n,UTF_8); pos += n+1; return s; }
-    String sig(){ int n= b(); var s= new String(buf,pos,n,UTF_8); pos += n+1; return s; }
+    String str(){ int n= u32(); var s= new String(buf, pos, n, UTF_8); pos += n+1; return s; }
+    String sig(){ int n= b(); var s= new String(buf, pos, n, UTF_8); pos += n+1; return s; }
     int skip(String sig, int i){
       var c= sig.charAt(i);
       pad(align(c));
-      if (c == 'a'){ int n= u32(); pad(align(sig.charAt(i+1))); pos += n; return end(sig,i+1); }
-      if (c == '(' || c == '{'){ int j= i+1; while (")}".indexOf(sig.charAt(j)) < 0){ j = skip(sig,j); } return j+1; }
+      if (c == 'a'){ int n= u32(); pad(align(sig.charAt(i+1))); pos += n; return end(sig, i+1); }
+      if (c == '(' || c == '{'){ int j= i+1; while (")}".indexOf(sig.charAt(j)) < 0){ j = skip(sig, j); } return j+1; }
       switch (c){
         case 's','o' -> str();
         case 'g' -> sig();
-        case 'v' -> skip(sig(),0);
+        case 'v' -> skip(sig(), 0);
         case 'y','n','q','b','i','u','h','x','t','d' -> pos += align(c);
         default -> throw Bug.unreachable();
       }
@@ -299,10 +299,10 @@ final class Sni{
     }
     static int end(String sig, int i){
       var c= sig.charAt(i);
-      if (c == 'a'){ return end(sig,i+1); }
+      if (c == 'a'){ return end(sig, i+1); }
       if (c != '(' && c != '{'){ return i+1; }
       int j= i+1;
-      while (")}".indexOf(sig.charAt(j)) < 0){ j = end(sig,j); }
+      while (")}".indexOf(sig.charAt(j)) < 0){ j = end(sig, j); }
       return j+1;
     }
     static int align(char c){
@@ -317,7 +317,7 @@ final class Sni{
   static final class Writer{
     byte[] buf= new byte[64];
     int pos;
-    Writer b(int v){ if (pos == buf.length){ buf = Arrays.copyOf(buf,pos*2); } buf[pos++] = (byte)v; return this; }
+    Writer b(int v){ if (pos == buf.length){ buf = Arrays.copyOf(buf, pos*2); } buf[pos++] = (byte)v; return this; }
     Writer pad(int a){ while (pos%a != 0){ b(0); } return this; }
     Writer u32(int v){ pad(4); return b(v).b(v>>8).b(v>>16).b(v>>24); }
     Writer str(String s){ var bytes= s.getBytes(UTF_8); u32(bytes.length); for (var x: bytes){ b(x); } return b(0); }
@@ -331,6 +331,6 @@ final class Sni{
       return this;
     }
     Writer append(Writer w){ for (int i= 0; i<w.pos; i++){ b(w.buf[i]); } return this; }
-    byte[] bytes(){ return Arrays.copyOf(buf,pos); }
+    byte[] bytes(){ return Arrays.copyOf(buf, pos); }
   }
 }
