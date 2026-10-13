@@ -13,56 +13,56 @@ final class SystemExtensionTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(980),val(113))),
     on("xubuntu_xfce",()->click(val(986),val(93))));
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action compile= action("compile",
     on("ubuntu_gnome",()->click(val(533),val(113))),
     on("xubuntu_xfce",()->click(val(492),val(93))));
   final Action questionShown= action("questionShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(51500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(64500))));
+    on("ubuntu_gnome",()->waitAfter(val(21000))),
+    on("xubuntu_xfce",()->waitAfter(val(26000))));
   final Action allowed= action("allowed",
-    on("ubuntu_gnome",()->waitUntilTime(val(56000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(70000))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(5500))));
   final Action compileAgain= action("compileAgain",
     on("ubuntu_gnome",()->click(val(533),val(113))),
     on("xubuntu_xfce",()->click(val(492),val(93))));
   final Action compiled= action("compiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(77000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(96500))));
+    on("ubuntu_gnome",()->waitAfter(val(21000))),
+    on("xubuntu_xfce",()->waitAfter(val(26500))));
   final Action appsShownFiles= action("appsShownFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(80000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(100000))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(3500))));
   final Action terminalShownFiles= action("terminalShownFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(85000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(106500))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(100500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(126000))));
+    on("ubuntu_gnome",()->waitAfter(val(15500))),
+    on("xubuntu_xfce",()->waitAfter(val(19500))));
   final Action openLetter= action("openLetter",
     on("ubuntu_gnome",()->doubleClick(val(912),val(375))),
     on("xubuntu_xfce",()->doubleClick(val(1015),val(425))));
   final Action letterRun= action("letterRun",
-    on("ubuntu_gnome",()->waitUntilTime(val(110500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(138500))));
+    on("ubuntu_gnome",()->waitAfter(val(10000))),
+    on("xubuntu_xfce",()->waitAfter(val(12500))));
   final Action closeFiles= action("closeFiles",
     on("ubuntu_gnome",()->click(val(1414),val(303))),
     on("xubuntu_xfce",()->click(val(1275),val(309))));
   final Action filesClosed= action("filesClosed",
-    on("ubuntu_gnome",()->waitUntilTime(val(114000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(142500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(121000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(151500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var opens= filesIOFolder.resolve("opens");

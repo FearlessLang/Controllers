@@ -9,29 +9,29 @@ import tools.Fs;
 
 final class FolderGoneTest extends ManagerTest{
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action goneNoticed= action("goneNoticed",
-    on("ubuntu_gnome",()->waitUntilTime(val(34500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(43500))));
+    on("ubuntu_gnome",()->waitAfter(val(8500))),
+    on("xubuntu_xfce",()->waitAfter(val(11000))));
   final Action check= action("check",
     on("ubuntu_gnome",()->click(val(524),val(113))),
     on("xubuntu_xfce",()->click(val(474),val(93))));
   final Action checked= action("checked",
-    on("ubuntu_gnome",()->waitUntilTime(val(39000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(49000))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(5500))));
   final Action tileBack= action("tileBack",
-    on("ubuntu_gnome",()->waitUntilTime(val(47500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(59500))));
+    on("ubuntu_gnome",()->waitAfter(val(8500))),
+    on("xubuntu_xfce",()->waitAfter(val(10500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(54500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(68500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var gone= filesIOFolder.resolve("gone");

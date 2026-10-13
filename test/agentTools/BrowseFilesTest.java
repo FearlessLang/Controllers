@@ -10,38 +10,38 @@ import tools.Fs;
 
 final class BrowseFilesTest extends ManagerTest{
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action browse= action("browse",
     on("ubuntu_gnome",()->click(val(1097),val(113))),
     on("xubuntu_xfce",()->click(val(1118),val(93))));
   final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(32500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(41000))));
+    on("ubuntu_gnome",()->waitAfter(val(6500))),
+    on("xubuntu_xfce",()->waitAfter(val(8500))));
   final Action closeFiles= action("closeFiles",
     on("ubuntu_gnome",()->click(val(1414),val(303))),
     on("xubuntu_xfce",()->click(val(1275),val(309))));
   final Action filesClosed= action("filesClosed",
-    on("ubuntu_gnome",()->waitUntilTime(val(36000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(45000))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action tileChanged= action("tileChanged",
-    on("ubuntu_gnome",()->waitUntilTime(val(42500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(53500))));
+    on("ubuntu_gnome",()->waitAfter(val(6500))),
+    on("xubuntu_xfce",()->waitAfter(val(8500))));
   final Action browseAgain= action("browseAgain",
     on("ubuntu_gnome",()->click(val(1097),val(113))),
     on("xubuntu_xfce",()->click(val(1118),val(93))));
   final Action noteShown= action("noteShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(46000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(57500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(53000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(66500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var browsed= filesIOFolder.resolve("browsed");

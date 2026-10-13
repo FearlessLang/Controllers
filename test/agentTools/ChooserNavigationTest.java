@@ -10,44 +10,44 @@ import tools.Fs;
 
 final class ChooserNavigationTest extends ManagerTest{
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action chooserShown= action("chooserShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(31000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(39000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action upLevel= action("upLevel",
     on("ubuntu_gnome",()->click(val(1109),val(436))),
     on("xubuntu_xfce",()->click(val(1085),val(427))));
   final Action homeLeft= action("homeLeft",
-    on("ubuntu_gnome",()->waitUntilTime(val(34000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(42500))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(3500))));
   final Action rootShown= action("rootShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(37000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(46500))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action openData= action("openData",
     on("ubuntu_gnome",()->doubleClick(val(790),val(539))),
     on("xubuntu_xfce",()->doubleClick(val(745),val(505))));
   final Action dataShown= action("dataShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(40000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(50000))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(3500))));
   final Action openFilesIO= action("openFilesIO",
     on("ubuntu_gnome",()->doubleClick(val(940),val(473))),
     on("xubuntu_xfce",()->doubleClick(val(745),val(485))));
   final Action filesIOShown= action("filesIOShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(43000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(54000))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action openAttic= action("openAttic",
     on("ubuntu_gnome",()->doubleClick(val(790),val(473))),
     on("xubuntu_xfce",()->doubleClick(val(745),val(465))));
   final Action atticShown= action("atticShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(46000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(57500))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(3500))));
   final Action pickInner= action("pickInner",
     on("ubuntu_gnome",()->click(val(790),val(473))),
     on("xubuntu_xfce",()->click(val(745),val(465))));
@@ -55,11 +55,11 @@ final class ChooserNavigationTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1116),val(712))),
     on("xubuntu_xfce",()->click(val(1080),val(705))));
   final Action tileShown= action("tileShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(53000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(66500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(60000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(75000))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var attic= filesIOFolder.resolve("attic");

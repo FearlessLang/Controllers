@@ -18,32 +18,32 @@ final class ConnectEclipseTest extends ManagerTest{
   final Path lib= app.resolve("lib").resolve("app");
   final Path shipped= lib.resolve("eclipsePlugin");
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action chooserShown= action("chooserShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(31000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(39000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action fileName= action("fileName",
     on("ubuntu_gnome",()->click(val(1040),val(640))),
     on("xubuntu_xfce",()->click(val(1007),val(637))));
   final Action noteShown= action("noteShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(47000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(59000))));
+    on("ubuntu_gnome",()->waitAfter(val(16000))),
+    on("xubuntu_xfce",()->waitAfter(val(20000))));
   final Action chooserShownAgain= action("chooserShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(52500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(66000))));
+    on("ubuntu_gnome",()->waitAfter(val(5500))),
+    on("xubuntu_xfce",()->waitAfter(val(7000))));
   final Action connected= action("connected",
-    on("ubuntu_gnome",()->waitUntilTime(val(68000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(85000))));
+    on("ubuntu_gnome",()->waitAfter(val(15500))),
+    on("xubuntu_xfce",()->waitAfter(val(19000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(75000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(94000))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     Fs.rmTree(ide);

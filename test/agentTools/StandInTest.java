@@ -20,44 +20,44 @@ final class StandInTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1902),val(50))),
     on("xubuntu_xfce",()->click(val(1909),val(10))));
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(4500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(6000))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(9500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(12000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(27000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(34000))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(22000))));
   final Action managerHidden= action("managerHidden",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action standIn= action("standIn",
     on("ubuntu_gnome",()->click(val(1904),val(1064))),
     on("xubuntu_xfce",()->click(val(1904),val(1064))));
   final Action menuShown= action("menuShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(34000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(42500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action showItem= action("showItem",
     on("ubuntu_gnome",()->click(val(1860),val(1041))),
     on("xubuntu_xfce",()->click(val(1850),val(1045))));
   final Action managerBack= action("managerBack",
-    on("ubuntu_gnome",()->waitUntilTime(val(38500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(48500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action hiddenAgain= action("hiddenAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(42000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(52500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action standInRight= action("standInRight",
     on("ubuntu_gnome",()->rightClick(val(1904),val(1064))),
     on("xubuntu_xfce",()->rightClick(val(1904),val(1064))));
   final Action menuShownAgain= action("menuShownAgain",
-    on("ubuntu_gnome",()->waitUntilTime(val(45500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(57000))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action quitItem= action("quitItem",
     on("ubuntu_gnome",()->click(val(1860),val(1066))),
     on("xubuntu_xfce",()->click(val(1850),val(1068))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(51000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(64000))));
+    on("ubuntu_gnome",()->waitAfter(val(5500))),
+    on("xubuntu_xfce",()->waitAfter(val(7000))));
   void extensions(String what){
     var p= Fs.of(()->new ProcessBuilder(Stream.of("gnome-extensions",what,"ubuntu-appindicators@ubuntu.com").toList()).inheritIO().start());
     assert p.onExit().join().exitValue() == 0;

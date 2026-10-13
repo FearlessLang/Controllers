@@ -5,26 +5,26 @@ import java.util.List;
 
 final class LaunchOnFileTest extends ManagerTest{
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action appsShownOnFolder= action("appsShownOnFolder",
-    on("ubuntu_gnome",()->waitUntilTime(val(29000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(36500))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action terminalShownOnFolder= action("terminalShownOnFolder",
-    on("ubuntu_gnome",()->waitUntilTime(val(34000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(42500))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action selected= action("selected",
-    on("ubuntu_gnome",()->waitUntilTime(val(44000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(55000))));
+    on("ubuntu_gnome",()->waitAfter(val(10000))),
+    on("xubuntu_xfce",()->waitAfter(val(12500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(52500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(66000))));
+    on("ubuntu_gnome",()->waitAfter(val(8500))),
+    on("xubuntu_xfce",()->waitAfter(val(11000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var project= project("helloWorld");

@@ -35,12 +35,12 @@ abstract class ManagerTest{
   final Path channel= Path.of(System.getProperty("channelFolder"));
   final Path filesIOFolder= Path.of(System.getProperty("filesIOFolder"));
   final Pilot pilot= new Pilot();
-  long start;
+  long last;
   int inputIndex;
   List<Object> inputs;
   abstract void walk() throws Throwable;
   @Test void test() throws Throwable{
-    start= System.currentTimeMillis();
+    last= System.currentTimeMillis();
     try{ walk(); }
     finally{
       ProcessHandle.allProcesses().filter(this::ofApp).forEach(ProcessHandle::destroyForcibly);
@@ -52,7 +52,11 @@ abstract class ManagerTest{
   static On on(String desk, Run steps){ return new On(desk,steps); }
   record Action(ManagerTest m, String name, Run run){
     void go() throws Throwable{
-      if (!m.agent){ run.run(); return; }
+      if (m.agent){ ask(); }
+      run.run();
+      m.last= System.currentTimeMillis();
+    }
+    private void ask(){
       m.inputIndex= 0;
       Fs.cleanDir(m.channel);
       var file= m.channel.resolve(name);
@@ -60,7 +64,6 @@ abstract class ManagerTest{
       var text= Fs.readUtf8(file).strip();
       for (; !text.endsWith(";"); text= Fs.readUtf8(file).strip()){ Pilot.pause(100); }
       m.inputs= text.substring(0,text.length()-1).lines().map(String::strip).map(Action::input).toList();
-      run.run();
     }
     static Object input(String s){ return s.startsWith("\"") ? s.substring(1,s.length()-1) : Integer.valueOf(s); }
   }
@@ -68,8 +71,8 @@ abstract class ManagerTest{
   record On(String desk, Run steps){}
   @SuppressWarnings("unchecked")
   <T> T val(T recorded){ return agent ? (T)inputs.get(inputIndex++) : recorded; }
-  void waitUntilTime(int time){
-    var left= start+time-System.currentTimeMillis();
+  void waitAfter(int millis){
+    var left= last+millis-System.currentTimeMillis();
     if (left>0){ Pilot.pause((int)left); }
   }
   void click(int x, int y){ pilot.click(x,y); }

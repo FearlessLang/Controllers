@@ -14,53 +14,53 @@ final class ShortcutFileTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(1012),val(113))),
     on("xubuntu_xfce",()->click(val(1024),val(93))));
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(30500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(38500))));
+    on("ubuntu_gnome",()->waitAfter(val(4500))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action compile= action("compile",
     on("ubuntu_gnome",()->click(val(565),val(113))),
     on("xubuntu_xfce",()->click(val(529),val(93))));
   final Action compiled= action("compiled",
-    on("ubuntu_gnome",()->waitUntilTime(val(51500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(64500))));
+    on("ubuntu_gnome",()->waitAfter(val(21000))),
+    on("xubuntu_xfce",()->waitAfter(val(26000))));
   final Action shortcutIcon= action("shortcutIcon",
     on("ubuntu_gnome",()->doubleClick(val(476),val(162))),
     on("xubuntu_xfce",()->doubleClick(val(409),val(142))));
   final Action ranFromManager= action("ranFromManager",
-    on("ubuntu_gnome",()->waitUntilTime(val(58500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(73500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   final Action appsShownFiles= action("appsShownFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(61500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(77000))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(3500))));
   final Action terminalShownFiles= action("terminalShownFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(66500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(83500))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action filesShown= action("filesShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(82000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(102500))));
+    on("ubuntu_gnome",()->waitAfter(val(15500))),
+    on("xubuntu_xfce",()->waitAfter(val(19000))));
   final Action openShortcut= action("openShortcut",
     on("ubuntu_gnome",()->doubleClick(val(912),val(375))),
     on("xubuntu_xfce",()->doubleClick(val(1015),val(425))));
   final Action ranFromFiles= action("ranFromFiles",
-    on("ubuntu_gnome",()->waitUntilTime(val(92000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(115000))));
+    on("ubuntu_gnome",()->waitAfter(val(10000))),
+    on("xubuntu_xfce",()->waitAfter(val(12500))));
   final Action closeFiles= action("closeFiles",
     on("ubuntu_gnome",()->click(val(1414),val(303))),
     on("xubuntu_xfce",()->click(val(1275),val(309))));
   final Action filesClosed= action("filesClosed",
-    on("ubuntu_gnome",()->waitUntilTime(val(95500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(119500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(102500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(128500))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     noManagerData();
     var shortcuts= filesIOFolder.resolve("shortcuts");

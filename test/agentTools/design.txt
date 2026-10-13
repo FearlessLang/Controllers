@@ -13,12 +13,12 @@ class ManagerTest{
   Path channel= property("channelFolder")
   Path filesIOFolder =property("filesIOFolder");
   abstract void walk() throws Throwable;
-  Time start;
+  Time last;
   int inputIndex=0;
   String inputName;
   List<Object> inputs;
   @Test void test() throws Throwable{
-    start = now();
+    last = now();
     walk();
   }
   Action action(String name, On...ons){ return new Action(this,name,ons.find(desk).orCrash); }
@@ -27,14 +27,16 @@ class ManagerTest{
 }
 record Action(ManagerTest m, String name, Run run){
   void go() throws Throwable{
-    if(!m.agent){ run.run(); return; }
-    m.name = name;
-    m.inputIndex = 0;
-    cleanDir(channelFolder);
-    makeFile(channel,name);
-    waitUntilFileEndsWithSemicolon(channel,name);
-    inputs=makeInputs(channel,name);
-    run.run(); 
+    if(m.agent){
+      m.name = name;
+      m.inputIndex = 0;
+      cleanDir(channelFolder);
+      makeFile(channel,name);
+      waitUntilFileEndsWithSemicolon(channel,name);
+      inputs=makeInputs(channel,name);
+    }
+    run.run();
+    m.last = now();
   }
 }
 interface Run{ void run() throws Throwable; }
@@ -51,11 +53,10 @@ List<Object> makeInputs(channel,name){
     .map(s->s.startsWith("\"")?parseStr(s):parseInteger(s))
     .toList();
 }
-void waitUtilTime(Time time){
-  Time current=now();
-  while (start-current>time){}//implementation should not busy loop so fast
-  return;
+void waitAfter(Time time){
+  while (now()-last<time){}//implementation should not busy loop so fast
 }
+A wait is the time after the end of the previous action; a recorded wait is the shortest that passes, in steps of 100 ms, at most 500 ms unless a comment next to it says why it needs more.
 void click(long x, long y){ pilot.click(x,y); }
 void doubleClick(long x, long y){ pilot.doubleClick(x,y); }
 void drag(long x0, long y0, long x1, long y1){ pilot.drag(x0,y0,x1,y1); }
@@ -73,8 +74,8 @@ class ExampleTest extends ManagerTest{
     on("ubuntu_gnome",()->click(val(120),val(80))),
     on("windows",()->doubleClick(val(60),val(40))));
   Action settled= action("settled",
-    on("ubuntu_gnome",()->waitUtilTime(val(2000))),
-    on("windows",()->waitUtilTime(val(500))));
+    on("ubuntu_gnome",()->waitAfter(val(200))),
+    on("windows",()->waitAfter(val(100))));
   Action chooseSecond= action("chooseSecond",
     on("ubuntu_gnome",()->click(val(300),val(200))),
     on("windows",()->click(val(150),val(90))));

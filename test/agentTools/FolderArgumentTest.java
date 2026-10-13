@@ -9,26 +9,26 @@ import tools.Fs;
 
 final class FolderArgumentTest extends ManagerTest{
   final Action appsShown= action("appsShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(3500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(4500))));
+    on("ubuntu_gnome",()->waitAfter(val(3500))),
+    on("xubuntu_xfce",()->waitAfter(val(4500))));
   final Action terminalShown= action("terminalShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(8500))),
-    on("xubuntu_xfce",()->waitUntilTime(val(11000))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6500))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome",()->waitUntilTime(val(26000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(32500))));
+    on("ubuntu_gnome",()->waitAfter(val(17500))),
+    on("xubuntu_xfce",()->waitAfter(val(21500))));
   final Action appsShownSecond= action("appsShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(29000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(36500))));
+    on("ubuntu_gnome",()->waitAfter(val(3000))),
+    on("xubuntu_xfce",()->waitAfter(val(4000))));
   final Action terminalShownSecond= action("terminalShownSecond",
-    on("ubuntu_gnome",()->waitUntilTime(val(34000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(42500))));
+    on("ubuntu_gnome",()->waitAfter(val(5000))),
+    on("xubuntu_xfce",()->waitAfter(val(6000))));
   final Action registered= action("registered",
-    on("ubuntu_gnome",()->waitUntilTime(val(45000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(56500))));
+    on("ubuntu_gnome",()->waitAfter(val(11000))),
+    on("xubuntu_xfce",()->waitAfter(val(14000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome",()->waitUntilTime(val(52000))),
-    on("xubuntu_xfce",()->waitUntilTime(val(65000))));
+    on("ubuntu_gnome",()->waitAfter(val(7000))),
+    on("xubuntu_xfce",()->waitAfter(val(8500))));
   @Override void walk() throws Throwable{
     noManagerData();
     var loose= filesIOFolder.resolve("loose");
