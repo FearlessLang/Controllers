@@ -60,9 +60,9 @@ public final class Main implements Manager.Exit{
     NativeLocaleForcer.forceEnglish();
     var exitCode= 0;
     try{ run(message(args)); }
-    catch(UserError e){ exitCode = 1; fatal(e); }
-    catch(VirtualMachineError|LinkageError e){ exitCode = 2; fatal(Violation.vmOrLinkageFailure(e)); }
-    catch(Throwable t){ exitCode = 3; fatal(UserError.crashed(t)); }
+    catch (UserError e){ exitCode = 1; fatal(e); }
+    catch (VirtualMachineError|LinkageError e){ exitCode = 2; fatal(Violation.vmOrLinkageFailure(e)); }
+    catch (Throwable t){ exitCode = 3; fatal(UserError.crashed(t)); }
     System.exit(exitCode);
   }
   //TO TEST: on Windows the launcher hands Java a '?' in place of an unpaired surrogate of the
@@ -85,7 +85,7 @@ public final class Main implements Manager.Exit{
     if (args.length > 1){ return "InvalidCall\n"+Report.tooManyArguments(List.of(args)); }
     Path path;
     try{ path= Path.of(args[0]).toAbsolutePath().normalize(); }
-    catch(InvalidPathException e){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
+    catch (InvalidPathException e){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
     if (args[0].isBlank() || path.getFileName() == null){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
     var project= Files.isDirectory(path) || path.getFileName().toString().endsWith(Names.ext);
     var verb= project ? "Register" : "OpenWithOrShortcut";
@@ -115,23 +115,23 @@ public final class Main implements Manager.Exit{
       if (!Fs.isMac()){ Association.eradicateAll(); }
       return Optional.empty();
     }
-    catch(UncheckedIOException w){ return Optional.of(Violation.notWiped(managerDir,w.getCause())); }
-    catch(UserError w){ return Optional.of(Violation.notWiped(managerDir,w)); }
+    catch (UncheckedIOException w){ return Optional.of(Violation.notWiped(managerDir,w.getCause())); }
+    catch (UserError w){ return Optional.of(Violation.notWiped(managerDir,w)); }
   }
   private static void display(UserError e){
     try{ e.display(); }
-    catch(InterruptedException ie){ e.displayStderr(ie); }
+    catch (InterruptedException ie){ e.displayStderr(ie); }
   }
   private static void run(String message) throws Throwable{
     var main= new Main(programDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
     started = Optional.of(main);
     try{ Files.createDirectories(main.msgDir()); }
-    catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir,e); }
+    catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir,e); }
     leave(main.msgDir(),message);
     var lockFile= main.managerDir.resolve("instance.lock");
     try{ lock = FileChannel.open(lockFile,CREATE,WRITE).tryLock(); }
-    catch(OverlappingFileLockException e){ throw Bug.unreachable(); }
-    catch(IOException e){ throw Violation.couldNotUseInstanceLock(lockFile,e); }
+    catch (OverlappingFileLockException e){ throw Bug.unreachable(); }
+    catch (IOException e){ throw Violation.couldNotUseInstanceLock(lockFile,e); }
     if (lock == null){ return; }
     UserError.becameManagerOwner();
     main.own();
@@ -140,7 +140,7 @@ public final class Main implements Manager.Exit{
   static Path programDir(){
     var expected= "fearlessManaged"+versionId()+(Fs.isMac() ? ".app" : "");
     var startedFrom= JavacTool.reqAppDir(userMessages.Violation::mustUseLauncher).toAbsolutePath().normalize();
-    for(var dir= startedFrom; dir != null && dir.getFileName() != null; dir = dir.getParent()){
+    for (var dir= startedFrom; dir != null && dir.getFileName() != null; dir = dir.getParent()){
       if (dir.getFileName().toString().equals(expected)){ return dir; }
     }
     throw Violation.programFolderNotFound(startedFrom,expected);
@@ -152,11 +152,11 @@ public final class Main implements Manager.Exit{
     var tmp= msgDir.resolve(name+".tmp");
     StringFiles.writeNew(tmp,message,UserError.onFileError());
     try{ Files.move(tmp,msgDir.resolve(name+".msg"),ATOMIC_MOVE); }
-    catch(IOException e){ throw Violation.couldNotLeaveStartMessage(msgDir,e); }
+    catch (IOException e){ throw Violation.couldNotLeaveStartMessage(msgDir,e); }
   }
   private void own() throws Throwable{
     try{ watcher = FileSystems.getDefault().newWatchService(); msgDir().register(watcher,ENTRY_CREATE); }
-    catch(IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(),e); }
+    catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(),e); }
     Thread.setDefaultUncaughtExceptionHandler((_,t) -> fail(t));
     var window= Window.create(this,managerDir);
     manager = new Manager(managerDir,new Deployed(),window,this);
@@ -168,7 +168,7 @@ public final class Main implements Manager.Exit{
     Thread.startVirtualThread(() -> watch(watcher));
     manager.start();
     try{ done.await(); }
-    catch(InterruptedException e){ throw Bug.of(e); }
+    catch (InterruptedException e){ throw Bug.of(e); }
     var problem= failure.get();
     if (problem != null){ throw problem; }
     if (!reset){ manager.stop(); return; }
@@ -178,10 +178,10 @@ public final class Main implements Manager.Exit{
   @Override public void reset(){ reset = true; done.countDown(); }
   @Override public void fail(Throwable problem){ failure.compareAndSet(null,problem); done.countDown(); }
   private void watch(WatchService watcher){
-    while(true){
+    while (true){
       WatchKey key;
       try{ key= watcher.take(); }
-      catch(InterruptedException e){ throw Bug.of(e); }
+      catch (InterruptedException e){ throw Bug.of(e); }
       key.pollEvents();
       manager.drain();
       if (!key.reset()){ fail(Violation.messageFolderNotWatchable(msgDir())); return; }

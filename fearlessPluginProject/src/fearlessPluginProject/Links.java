@@ -34,7 +34,7 @@ final class Links implements IPatternMatchListener{
   @Override public void disconnect(){ console = null; }
   @Override public void matchFound(PatternMatchEvent event){
     try{ link(event.getOffset(), console.getDocument().get(event.getOffset(), event.getLength())); }
-    catch(BadLocationException e){ throw new IllegalStateException(e); }
+    catch (BadLocationException e){ throw new IllegalStateException(e); }
   }
   private void link(int offset, String text) throws BadLocationException{
     var m= at.matcher(text);
@@ -60,7 +60,7 @@ final class Links implements IPatternMatchListener{
         IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), marker, true);
         marker.delete();
       }
-      catch(CoreException e){ throw new IllegalStateException(e); }
+      catch (CoreException e){ throw new IllegalStateException(e); }
     }
     @Override public void linkEntered(){}
     @Override public void linkExited(){}

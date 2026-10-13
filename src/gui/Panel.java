@@ -144,7 +144,7 @@ final class Panel{
   }
   private void act(){
     var alias= project.alias();
-    switch(project.action()){
+    switch (project.action()){
       case check -> Main.command("Check",alias);
       case compile -> Main.command("Compile",alias);
       case terminate -> Main.command("Terminate",alias);
@@ -182,7 +182,7 @@ final class Panel{
     name.setText(p.alias());
     var a= p.action();
     var several= a == Project.Action.run && p.knownMains().size() > 1;
-    action.setText(switch(a){ case check -> "Check"; case compile -> "Compile"; case run -> "Run"; case terminate -> "Terminate"; });
+    action.setText(switch (a){ case check -> "Check"; case compile -> "Compile"; case run -> "Run"; case terminate -> "Terminate"; });
     action.setIcon(several ? new Arrow() : null);
     action.setHorizontalTextPosition(JButton.LEADING);
     action.setEnabled(a != Project.Action.run || !p.knownMains().isEmpty());

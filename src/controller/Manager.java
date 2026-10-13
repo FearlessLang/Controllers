@@ -137,37 +137,37 @@ public final class Manager{
   public void message(String text){ post(() -> apply(text)); }
   void stop(){
     try{ core.submit(() -> live.values().stream().filter(l -> l.child != null).forEach(l -> l.child.kill())).get(1,TimeUnit.MINUTES); }
-    catch(InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
+    catch (InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
     core.shutdownNow();
   }
   //Runs once before the watcher thread starts, then only from that thread: never concurrently.
   public void drain(){
     var msgDir= dir.resolve("messages");
     try{ Fs.ofV(() -> take(msgDir)); }
-    catch(UncheckedIOException e){ throw Violation.couldNotDrainMessageFolder(msgDir,e.getCause()); }
+    catch (UncheckedIOException e){ throw Violation.couldNotDrainMessageFolder(msgDir,e.getCause()); }
   }
   private void take(Path msgDir) throws IOException{
-    for(var file: Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".msg")).toList()){
+    for (var file: Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".msg")).toList()){
       Runnable r;
       try{ var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(); r= () -> apply(text); }
-      catch(CharacterCodingException e){ r = () -> view.refuse(Report.unreadableMessage(file)); }
+      catch (CharacterCodingException e){ r = () -> view.refuse(Report.unreadableMessage(file)); }
       Files.deleteIfExists(file);
       post(r);
     }
     var old= Instant.now().minusSeconds(60);
-    for(var file: Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".tmp")).toList()){
+    for (var file: Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".tmp")).toList()){
       try{ if (Files.getLastModifiedTime(file).toInstant().isBefore(old)){ Files.deleteIfExists(file); } }
-      catch(NoSuchFileException e){}
+      catch (NoSuchFileException e){}
     }
   }
   void settle(){
     try{ core.submit(() -> {}).get(1,TimeUnit.MINUTES); }
-    catch(InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
+    catch (InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
   }
   private void post(Runnable r){ core.execute(() -> step(r)); }
   private void step(Runnable r){
     try{ r.run(); associate(registry.extensions()); publish(); }
-    catch(Throwable t){ exit.fail(t); }
+    catch (Throwable t){ exit.fail(t); }
   }
   private void load(){
     registry.all().forEach(e -> live.put(e.path(),new Live()));
@@ -188,12 +188,12 @@ public final class Manager{
       if (Project.claimants(f,alias(f),claims).allMatch(this::allowed)){ l.claims = claims; return; }
       uncache(f).ifPresent(w -> output(f,Report.cacheNotDeleted(w)));
     }
-    catch(Refused e){ l.claims = Project.noClaims; failed(f,0,e.getMessage()); }
+    catch (Refused e){ l.claims = Project.noClaims; failed(f,0,e.getMessage()); }
   }
   private MainsInfo read(Path f){
     if (registry.of(f).orElseThrow().kind() != Kind.code){ return Project.noClaims; }
     try{ return MainsInfo.read(f).orElse(Project.noClaims); }
-    catch(UserError|UncheckedIOException e){ return Project.noClaims; }
+    catch (UserError|UncheckedIOException e){ return Project.noClaims; }
   }
   private boolean allowed(Project.Claimant c){ return !Registry.isSystem(c.claim().extension()) || registry.extensions().contains(c.claim().extension()); }
   private void associate(List<String> extensions){
@@ -232,14 +232,14 @@ public final class Manager{
     if (verb.equals("InvalidCall")){ view.refuse(String.join("\n",args)); return; }
     if (verb.equals("FatalError")){ throw Violation.fatalFromRun(String.join("\n",args)); }
     try{ request(verb,args); }
-    catch(Refused r){ view.refuse(r.getMessage()); }
+    catch (Refused r){ view.refuse(r.getMessage()); }
   }
   private void request(String verb, List<String> args){
     var takes= verbs.get(verb);
     if (takes == null){ throw new Refused(Report.unknownVerb(verb,List.copyOf(verbs.keySet()))); }
     if (!takes.contains(args.size())){ throw new Refused(Report.wrongLines(verb,args,takes)); }
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
-    switch(verb){
+    switch (verb){
       case "Quit" -> exit.quit();
       case "Reset" -> exit.reset();
       case "Register" -> register(path(verb,args.getFirst()));
@@ -253,13 +253,13 @@ public final class Manager{
     var given= TaggedText.read(text,m -> new Refused(Report.notTagged(verb,m)));
     if (given.isBlank()){ throw new Refused(Report.blankPath(verb)); }
     try{ return Path.of(given).toAbsolutePath().normalize(); }
-    catch(InvalidPathException e){ throw new Refused(Report.notAPath(verb,given,e.getReason())); }
+    catch (InvalidPathException e){ throw new Refused(Report.notAPath(verb,given,e.getReason())); }
   }
   private void project(String verb, List<String> args){
     var name= args.getFirst();
     var f= registry.named(name).orElseThrow(() -> new Refused(Report.unknownProject(verb,name,registry.all().stream().map(Entry::alias).toList()))).path();
     scan(f);
-    switch(verb){
+    switch (verb){
       case "Show" -> { selected = Optional.of(f); view.show(); }
       case "Run" -> followed(args.size() > 2 ? args.get(2) : "",fl -> run(f,args.size() > 1 ? args.get(1) : "",fl));
       case "Compile" -> followed(args.size() > 1 ? args.get(1) : "",fl -> compile(f,fl));
@@ -275,7 +275,7 @@ public final class Manager{
   private static void followed(String port, Consumer<Optional<Follow>> job){
     var follow= port.isEmpty() ? Optional.<Follow>empty() : Optional.of(Follow.to(port));
     try{ job.accept(follow); }
-    catch(Refused r){ follow.ifPresent(Follow::end); throw r; }
+    catch (Refused r){ follow.ifPresent(Follow::end); throw r; }
   }
   private void idle(Path f, String verb){
     var job= live.get(f).job;
@@ -342,7 +342,7 @@ public final class Manager{
   private void start(Path f, String what, Supplier<ChildJvm> jvm){
     var l= live.get(f);
     try{ l.child = jvm.get(); }
-    catch(UncheckedIOException e){
+    catch (UncheckedIOException e){
       output(f,"--- "+(what.equals(Project.compiling) ? "compile" : what)+" did not start: "+Report.fileFailure(e.getCause())+" ---\n");
       ended(f);
       return;
@@ -355,7 +355,7 @@ public final class Manager{
   private void await(Path f, Live l, ChildJvm child){
     int ec;
     try{ ec= child.await(); }
-    catch(InterruptedException e){ throw Bug.of(e); }
+    catch (InterruptedException e){ throw Bug.of(e); }
     post(() -> exited(f,l,child,ec));
   }
   private void exited(Path f, Live l, ChildJvm child, int ec){
@@ -378,8 +378,8 @@ public final class Manager{
       associate(registry.extensions());
       failure= Optional.empty();
     }
-    catch(Refused e){ failure = Optional.of(e.getMessage()); }
-    catch(UserError e){ l.claims = previous; failure = Optional.of(e.getMessage()); }
+    catch (Refused e){ failure = Optional.of(e.getMessage()); }
+    catch (UserError e){ l.claims = previous; failure = Optional.of(e.getMessage()); }
     failure.ifPresentOrElse(why -> failed(f,ec,why),() -> succeeded(f,l));
     output(f,"--- compile "+(failure.isEmpty() ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
     l.job = "";
@@ -399,8 +399,8 @@ public final class Manager{
       if (!filled.equals(read)){ Fs.writeUtf8(f.resolve(Facts.outDir).resolve("mains.info"),filled.print()); }
       return filled;
     }
-    catch(UserError e){ throw new Refused(e.getMessage()); }
-    catch(UncheckedIOException e){ throw new Refused(Report.claimsNotSaved(e.getCause())); }
+    catch (UserError e){ throw new Refused(e.getMessage()); }
+    catch (UncheckedIOException e){ throw new Refused(Report.claimsNotSaved(e.getCause())); }
   }
   private void succeeded(Path f, Live l){
     Project.shortcuts(Project.claimants(f,alias(f),l.claims)).stream().map(f::resolve).filter(p -> Files.notExists(p,LinkOption.NOFOLLOW_LINKS)).forEach(p -> shortcut(f,p));
@@ -410,7 +410,7 @@ public final class Manager{
   private void failed(Path f, int ec, String why){
     if (ec == 0){ output(f,why.stripTrailing()+"\n"); }
     try{ Files.deleteIfExists(f.resolve(Facts.outDir).resolve("mains.info")); }
-    catch(IOException e){ output(f,Report.notWritten("mains.info",e)); }
+    catch (IOException e){ output(f,Report.notWritten("mains.info",e)); }
     errorFile(f,"compile_error.txt",Optional.of(why));
   }
   private void errorFile(Path f, String name, Optional<String> why){
@@ -420,7 +420,7 @@ public final class Manager{
       Files.createDirectories(file.getParent());
       Files.writeString(file,why.get());
     }
-    catch(IOException e){ output(f,Report.notWritten(name,e)); }
+    catch (IOException e){ output(f,Report.notWritten(name,e)); }
   }
   private void allow(List<Project.Claimant> refused){
     var extensions= new TreeSet<>(registry.extensions());
@@ -429,13 +429,13 @@ public final class Manager{
   }
   private void shortcut(Path f, Path file){
     try{ Files.writeString(file,MakeDemo.markerContent,StandardOpenOption.CREATE_NEW); }
-    catch(IOException e){ output(f,Report.notWritten(file.getFileName().toString(),e)); }
+    catch (IOException e){ output(f,Report.notWritten(file.getFileName().toString(),e)); }
   }
   private void unclaimedIcons(Path f, MainsInfo claims){
     var kept= Project.claimants(f,alias(f),claims).flatMap(c -> Stream.of(c.icon(".png"),c.icon(Fs.isWindows() ? ".ico" : ".png"))).toList();
-    try(var s= Files.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p: s.filter(p -> !kept.contains(p)).toList()){ Files.delete(p); } }
-    catch(NoSuchFileException e){}
-    catch(IOException e){ output(f,Report.notWritten("icons",e)); }
+    try (var s= Files.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p: s.filter(p -> !kept.contains(p)).toList()){ Files.delete(p); } }
+    catch (NoSuchFileException e){}
+    catch (IOException e){ output(f,Report.notWritten("icons",e)); }
   }
   private void terminate(Path f){
     selected = Optional.of(f);
@@ -458,7 +458,7 @@ public final class Manager{
   }
   private static Optional<String> uncache(Path f){
     try{ Fs.rmTree(f.resolve(Facts.outDir)); return Optional.empty(); }
-    catch(UncheckedIOException e){ return Optional.of(Report.fileFailure(e.getCause())); }
+    catch (UncheckedIOException e){ return Optional.of(Report.fileFailure(e.getCause())); }
   }
   private void kind(Path f, String text){
     var kind= Kind.of(text).orElseThrow(() -> new Refused(Report.unknownKind(alias(f),text)));
@@ -508,7 +508,7 @@ public final class Manager{
       Fs.rmTree(folder.resolve(Facts.outDir));
       alias= Names.makeUnique(folder,registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
     }
-    catch(UncheckedIOException e){ throw new Refused(Report.registerRefused(folder,e.getCause())); }
+    catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder,e.getCause())); }
     registry.add(alias,folder);
     open(registry.of(folder).orElseThrow());
   }
@@ -518,7 +518,7 @@ public final class Manager{
       eclipse= Eclipse.find(chosen).orElseThrow(() -> new Refused(Report.noEclipse(chosen)));
       tools.connect(eclipse,dir);
     }
-    catch(UncheckedIOException e){ throw new Refused(Report.eclipseNotConnected(chosen,e.getCause())); }
+    catch (UncheckedIOException e){ throw new Refused(Report.eclipseNotConnected(chosen,e.getCause())); }
     view.tell(Report.eclipseConnected(eclipse));
   }
   private void editMetadata(Path file){
@@ -528,12 +528,12 @@ public final class Manager{
       var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString();
       next= Registry.parse(text,file,Registry::real,dir);
     }
-    catch(CharacterCodingException e){ throw new Refused(Report.metadataNotUtf8(file)); }
-    catch(IOException e){ throw new Refused(Report.metadataUnreadable(file,e)); }
-    catch(UserError e){ throw new Refused(e.getMessage()); }
+    catch (CharacterCodingException e){ throw new Refused(Report.metadataNotUtf8(file)); }
+    catch (IOException e){ throw new Refused(Report.metadataUnreadable(file,e)); }
+    catch (UserError e){ throw new Refused(e.getMessage()); }
     if (!registry.extensions().containsAll(next.extensions())){
       try{ associate(next.extensions()); }
-      catch(UserError e){ throw new Refused(e.getMessage()); }
+      catch (UserError e){ throw new Refused(e.getMessage()); }
     }
     var old= registry.content();
     live.keySet().stream().filter(f -> next.projects().stream().noneMatch(e -> e.path().equals(f))).toList().forEach(this::drop);
@@ -575,8 +575,8 @@ public final class Manager{
     if (e.kind() != Kind.code || fresh.stale().isPresent()){ return; }
     Optional<String> error= Optional.empty();
     try{ l.mains = tools.mains(f); }
-    catch(UserError err){ error = Optional.of(err.getMessage()); }
-    catch(UncheckedIOException err){ error = Optional.of(Report.fileFailure(err.getCause())); }
+    catch (UserError err){ error = Optional.of(err.getMessage()); }
+    catch (UncheckedIOException err){ error = Optional.of(Report.fileFailure(err.getCause())); }
     if (!Facts.of(f,e.alias(),e.kind()).equals(fresh)){ scan(f); return; }
     if (l.mains.isEmpty()){ l.facts = fresh.outOfDate(error.orElse(Report.packagesToCompile())); }
   }

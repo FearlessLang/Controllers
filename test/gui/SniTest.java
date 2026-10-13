@@ -78,7 +78,7 @@ final class SniTest{
       r.pad(8);
       var key= r.str();
       var sig= r.sig();
-      switch(sig){
+      switch (sig){
         case "s","o" -> seen.put(key,r.str());
         case "b" -> seen.put(key,""+r.u32());
         case "a(iiay)" -> seen.put(key,pixmaps(r));
@@ -160,9 +160,9 @@ final class SniTest{
     var socket= dir.resolve("bus");
     var icon= new BufferedImage(2,2,BufferedImage.TYPE_INT_ARGB);
     var log= new ArrayList<String>();
-    try(var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
+    try (var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
       server.bind(UnixDomainSocketAddress.of(socket));
-      var bus= new FutureTask<Void>(() -> { try(var c= server.accept()){ busScript(c,icon); } return null; });
+      var bus= new FutureTask<Void>(() -> { try (var c= server.accept()){ busScript(c,icon); } return null; });
       Thread.startVirtualThread(bus);
       var e= assertThrows(UserError.class,() -> new Sni(socket,() -> log.add("activate"),() -> log.add("quit"),icon).serve());
       bus.get();
@@ -223,9 +223,9 @@ final class SniTest{
     Assumptions.assumeTrue(Fs.isLinux());
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
-    try(var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
+    try (var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
       server.bind(UnixDomainSocketAddress.of(socket));
-      var bus= new FutureTask<Void>(() -> { try(var c= server.accept()){ noWatcherScript(c); } return null; });
+      var bus= new FutureTask<Void>(() -> { try (var c= server.accept()){ noWatcherScript(c); } return null; });
       Thread.startVirtualThread(bus);
       var sni= new Sni(socket,() -> { throw Bug.unreachable(); },() -> { throw Bug.unreachable(); },new BufferedImage(2,2,BufferedImage.TYPE_INT_ARGB));
       bus.get();

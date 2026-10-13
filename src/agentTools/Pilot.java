@@ -35,7 +35,7 @@ public final class Pilot{
   private Set<Button> down= none;
   private static Robot robot(){
     try{ return new Robot(); }
-    catch(AWTException e){ throw Bug.of(e); }
+    catch (AWTException e){ throw Bug.of(e); }
   }
   /// Puts the pointer at (x0,y0) holding exactly the buttons in held, glides it to (x1,y1) at about a pixel a millisecond, then holds exactly the buttons in then.
   public void glide(int x0, int y0, Set<Button> held, int x1, int y1, Set<Button> then){
@@ -90,7 +90,7 @@ public final class Pilot{
   }
   public static void main(String[] args) throws IOException{
     var pilot= new Pilot();
-    var img= switch(args[0]){
+    var img= switch (args[0]){
       case "seen" -> pilot.seen();
       case "shot" -> pilot.shot();
       default -> throw Bug.of("The first argument is \"seen\" or \"shot\", not \""+args[0]+"\"");
@@ -103,7 +103,7 @@ public final class Pilot{
   }
   public static void pause(int millis){
     try{ Thread.sleep(millis); }
-    catch(InterruptedException e){ throw new RuntimeException(e); }
+    catch (InterruptedException e){ throw new RuntimeException(e); }
   }
   /// The box around the largest connected area that differs between the two shots, counting only pixels whose whole (2r+1) square neighbourhood differs: r=0 finds any change, r=6 ignores changing text and finds a new window.
   public static Rectangle changed(BufferedImage a, BufferedImage b, int r){

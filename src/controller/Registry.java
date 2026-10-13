@@ -68,7 +68,7 @@ public final class Registry{
   }
   public static Path real(Path folder){
     try{ return folder.toRealPath(); }
-    catch(IOException e){ return folder; }
+    catch (IOException e){ return folder; }
   }
   static Path placed(Path folder, Path managerDir, Function<String,RuntimeException> err){
     var manager= real(managerDir);
@@ -98,7 +98,7 @@ public final class Registry{
     assert of(folder).isPresent();
     var next= new Content(all().stream().map(e -> e.path().equals(folder) ? op.apply(e) : e).toList(),extensions());
     try{ parse(text(next),infoFile(),p -> p,dir); }
-    catch(UserError e){ throw new Refused(e.getMessage()); }
+    catch (UserError e){ throw new Refused(e.getMessage()); }
     save(next);
   }
   public void replace(Content next){ save(next); }
@@ -126,7 +126,7 @@ public final class Registry{
     assert parse(text,infoFile(),p -> p,dir).equals(c);
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     try{ Files.writeString(tmp,text,CREATE_NEW); Files.move(tmp,infoFile(),ATOMIC_MOVE); }
-    catch(IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(),e); }
+    catch (IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(),e); }
     content = c;
   }
   public static Content parse(String source, Path file, UnaryOperator<Path> identity, Path managerDir){
@@ -178,7 +178,7 @@ public final class Registry{
     if (s.isEmpty()){ throw Info.err(source,field.value().span(),Report.infoEmptyPath()); }
     Path path;
     try{ path= Path.of(s); }
-    catch(InvalidPathException e){ throw Info.err(source,field.value().span(),Report.infoNotAPath(e.getMessage())); }
+    catch (InvalidPathException e){ throw Info.err(source,field.value().span(),Report.infoNotAPath(e.getMessage())); }
     if (!path.isAbsolute()){ throw Info.err(source,field.value().span(),Report.infoNotAbsolute(s)); }
     return path.normalize();
   }

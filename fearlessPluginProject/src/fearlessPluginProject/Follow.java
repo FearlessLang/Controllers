@@ -30,17 +30,17 @@ final class Follow{
     MainButton.refresh();
     ServerSocket server;
     try{ server= new ServerSocket(0, 1, InetAddress.getLoopbackAddress()); server.setSoTimeout(60_000); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
     Thread.startVirtualThread(() -> job.follow(server));
     ManagerLink.send(verb, Stream.concat(Stream.of(args), Stream.of("Port:"+server.getLocalPort())).toArray(String[]::new));
   }
   private void follow(ServerSocket server){
-    try(server; var out= Output.start(alias); var s= server.accept(); var in= new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8)){
+    try (server; var out= Output.start(alias); var s= server.accept(); var in= new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8)){
       var buf= new char[8192];
       for (int n; (n = in.read(buf)) != -1; ){ out.print(new String(buf, 0, n)); }
     }
-    catch(SocketTimeoutException e){}
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (SocketTimeoutException e){}
+    catch (IOException e){ throw new UncheckedIOException(e); }
     finally{ followed = followed.filter(j -> j != this); MainButton.refresh(); }
   }
 }

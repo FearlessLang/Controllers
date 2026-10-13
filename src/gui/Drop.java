@@ -30,7 +30,7 @@ public final class Drop{
       var flavor= uriList(t);
       return flavor.isEmpty() ? List.of() : fromUriList(text(t.getTransferData(flavor.get())),refused);
     }
-    catch(UnsupportedFlavorException|IOException e){ refused.accept(Report.dropUnreadable(e)); return List.of(); }
+    catch (UnsupportedFlavorException|IOException e){ refused.accept(Report.dropUnreadable(e)); return List.of(); }
   }
   private static Optional<DataFlavor> uriList(Transferable t){
     return Stream.of(t.getTransferDataFlavors()).filter(f -> f.getPrimaryType().equalsIgnoreCase("text") && f.getSubType().equalsIgnoreCase("uri-list")).findFirst();
@@ -39,7 +39,7 @@ public final class Drop{
     if (data instanceof String s){ return s; }
     var r= data instanceof Reader reader ? reader : new InputStreamReader((InputStream)data,StandardCharsets.UTF_8);
     var out= new StringWriter();
-    try(r){ r.transferTo(out); }
+    try (r){ r.transferTo(out); }
     return out.toString();
   }
   public static List<Path> fromUriList(String data, Consumer<String> refused){
@@ -51,8 +51,8 @@ public final class Drop{
       if ("file".equalsIgnoreCase(uri.getScheme())){ return Stream.of(Path.of(uri)); }
       refused.accept(Report.dropRefused(line,"only a \"file:\" URI names a file or folder of this computer"));
     }
-    catch(URISyntaxException e){ refused.accept(Report.dropRefused(line,"it is not a URI: "+e.getReason())); }
-    catch(IllegalArgumentException e){ refused.accept(Report.dropRefused(line,"it names no file or folder of this computer: "+e.getMessage())); }
+    catch (URISyntaxException e){ refused.accept(Report.dropRefused(line,"it is not a URI: "+e.getReason())); }
+    catch (IllegalArgumentException e){ refused.accept(Report.dropRefused(line,"it names no file or folder of this computer: "+e.getMessage())); }
     return Stream.of();
   }
 }

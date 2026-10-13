@@ -91,8 +91,8 @@ public final class Runtimes{
   interface Reflect<T>{ T get() throws ReflectiveOperationException; }
   static <T> T reflect(Reflect<T> r){
     try{ return r.get(); }
-    catch(InvocationTargetException e){ throw sneaky(e.getCause()); }
-    catch(ReflectiveOperationException e){ throw Bug.of(e.toString()); }
+    catch (InvocationTargetException e){ throw sneaky(e.getCause()); }
+    catch (ReflectiveOperationException e){ throw Bug.of(e.toString()); }
   }
   @SuppressWarnings("unchecked") static <E extends Throwable> RuntimeException sneaky(Throwable t) throws E{ throw (E)t; }
   public static final class Loaded{

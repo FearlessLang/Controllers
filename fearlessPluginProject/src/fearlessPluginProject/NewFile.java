@@ -26,7 +26,7 @@ public final class NewFile extends BasicNewResourceWizard{
     if (file == null){ return false; }
     selectAndReveal(file);
     try{ IDE.openEditor(getWorkbench().getActiveWorkbenchWindow().getActivePage(), file); }
-    catch(PartInitException e){ throw new IllegalStateException(e); }
+    catch (PartInitException e){ throw new IllegalStateException(e); }
     return true;
   }
 }

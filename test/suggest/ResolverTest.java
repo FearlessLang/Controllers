@@ -300,7 +300,7 @@ final class ResolverTest{
   @Test void noTextNorCursorMakesTheSuggestionsThrow() throws IOException{
     var heads= head+"\nuse Foo as B;\nuse base. as C;\nuse as D;\nuse lib.Str as;\nuse lib.Nat as N;";
     List<Path> fear;
-    try(var all= Files.walk(ResolveResource.stLibPath)){ fear= all.filter(p -> p.toString().endsWith(".fear")).sorted().toList(); }
+    try (var all= Files.walk(ResolveResource.stLibPath)){ fear= all.filter(p -> p.toString().endsWith(".fear")).sorted().toList(); }
     for (var p : fear){
       var t= Files.readString(p);
       var r= Resolver.of(compiled,"base",Map.of("lib","base"),heads,t);

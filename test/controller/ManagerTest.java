@@ -183,12 +183,12 @@ final class ManagerTest{
   }
   private static void until(Manager m, Predicate<State> done){
     var end= System.nanoTime()+Duration.ofSeconds(30).toNanos();
-    while(true){
+    while (true){
       m.settle();
       if (done.test(m.state())){ return; }
       assertTrue(System.nanoTime() < end);
       try{ Thread.sleep(20); }
-      catch(InterruptedException e){ throw new AssertionError(e); }
+      catch (InterruptedException e){ throw new AssertionError(e); }
     }
   }
   private static void idle(Manager m){ until(m,s -> s.projects().stream().noneMatch(Project::busy)); }
@@ -801,15 +801,15 @@ final class ManagerTest{
     assertEquals(Project.State.codeCompiled,project(again,hello).state());
   }
   private static String listen(ServerSocket server){
-    try(var s= server.accept(); var in= s.getInputStream()){ return new String(in.readAllBytes(),StandardCharsets.UTF_8); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    try (var s= server.accept(); var in= s.getInputStream()){ return new String(in.readAllBytes(),StandardCharsets.UTF_8); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static CompletableFuture<String> follower(ServerSocket server){ return CompletableFuture.supplyAsync(() -> listen(server)); }
   private static ServerSocket port(){ return Fs.of(() -> new ServerSocket(0,1,InetAddress.getLoopbackAddress())); }
   @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEnd(@TempDir Path dir){
     var m= manager(dir,"hello.Hello");
     var hello= code(m,dir,"hello");
-    try(var server= port()){
+    try (var server= port()){
       var compile= follower(server);
       send(m,"Compile","hello","Port:"+server.getLocalPort());
       same("--- compiling hello ---\ncompiled\n--- compile done ---\n",compile.join());
@@ -823,7 +823,7 @@ final class ManagerTest{
       send(m,"Run","hello","hello.Nope","Port:"+server.getLocalPort());
       assertEquals("",refused.join());
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
     assertEquals(1,view.refused.size());
     idle(m);
     assertEquals(Project.State.codeCompiled,project(m,hello).state());
@@ -832,8 +832,8 @@ final class ManagerTest{
     var m= manager(dir,"hello.Hello");
     var hello= code(m,dir,"hello");
     int closed;
-    try(var server= port()){ closed= server.getLocalPort(); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    try (var server= port()){ closed= server.getLocalPort(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
     send(m,"Compile","hello","Port:"+closed);
     send(m,"Compile","hello","Port:0");
     send(m,"Compile","hello","51234");
@@ -1035,7 +1035,7 @@ final class ManagerTest{
   }
   private static byte[] zip(String entry, byte[] content){
     var out= new ByteArrayOutputStream();
-    Fs.ofV(() -> { try(var z= new ZipOutputStream(out)){ z.putNextEntry(new ZipEntry(entry)); z.write(content); } });
+    Fs.ofV(() -> { try (var z= new ZipOutputStream(out)){ z.putNextEntry(new ZipEntry(entry)); z.write(content); } });
     return out.toByteArray();
   }
   private static byte[] bytes(Path file){ return Fs.of(() -> Files.readAllBytes(file)); }

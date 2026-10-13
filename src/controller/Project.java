@@ -100,7 +100,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
     var name= AutoloadHandler.fileName(main.substring(main.lastIndexOf('.')+1)).orElseThrow(() -> Report.shortcutNoFileName(main));
     var file= name+"."+ext;
     try{ BuildWithZip.checkIndividualVisibleSegment(new PathEntry(project,Path.of(file))); }
-    catch(UserError e){ throw Report.shortcutBadFileName(main,file); }
+    catch (UserError e){ throw Report.shortcutBadFileName(main,file); }
     var masks= userMessages.Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name),LinkOption.NOFOLLOW_LINKS);
     if (masks){ throw Report.shortcutMasksFile(main,file,name); }
     return file;
@@ -108,7 +108,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   public State state(){
     if (busy()){ return State.busy; }
     if (problem().isPresent()){ return kind() == Kind.code ? State.codeInvalid : State.dataInvalid; }
-    return switch(kind()){
+    return switch (kind()){
       case idle -> State.idle;
       case dataReadOnly -> State.dataReadOnly;
       case dataReadWrite -> State.dataReadWrite;

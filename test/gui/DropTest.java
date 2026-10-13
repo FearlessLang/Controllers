@@ -69,7 +69,7 @@ final class DropTest{
   }
   private static DataFlavor uriList(String repClass){
     try{ return new DataFlavor("text/uri-list;class="+repClass); }
-    catch(ClassNotFoundException e){ throw new RuntimeException(e); }
+    catch (ClassNotFoundException e){ throw new RuntimeException(e); }
   }
   private static void assertUris(List<Path> paths, String... expected){
     assertEquals(List.of(expected),paths.stream().map(Path::toUri).map(Object::toString).toList());

@@ -91,17 +91,17 @@ final class Sni{
       await(call(bus,"/org/freedesktop/DBus",bus,"AddMatch","s",new Writer().str("type='signal',sender='"+bus+"',member='NameOwnerChanged',arg0='"+watcher+"'")));
       register();
     }
-    catch(IOException e){ throw Violation.couldNotAddTrayIcon(e); }
+    catch (IOException e){ throw Violation.couldNotAddTrayIcon(e); }
   }
   private void register() throws IOException{
     await(call(watcher,"/StatusNotifierWatcher",watcher,"RegisterStatusNotifierItem","s",new Writer().str(itemPath)));
   }
   void serve(){
-    try{ for(;;){ handle(next(channel)); } }
-    catch(IOException e){ throw Violation.trayConnectionLost(e); }
+    try{ for (;;){ handle(next(channel)); } }
+    catch (IOException e){ throw Violation.trayConnectionLost(e); }
   }
   private Msg await(int serial) throws IOException{
-    for(;;){
+    for (;;){
       var m= next(channel);
       var answers= (m.type() == 2 || m.type() == 3) && m.replySerial() == serial;
       if (!answers){ handle(m); continue; }
@@ -114,7 +114,7 @@ final class Sni{
     if (m.type() == 4){ signal(m); return; }
     if (m.type() != 1){ return; }
     if (!m.path().equals(itemPath) && !m.path().equals(menu)){ error(m,"org.freedesktop.DBus.Error.UnknownObject","Fearless offers no object "+m.path()); return; }
-    switch(m.member()+"("+m.signature()+")"){
+    switch (m.member()+"("+m.signature()+")"){
       case "GetAll(s)" -> reply(m,"a{sv}",all(m.path(),icon));
       case "Get(ss)" -> get(m);
       case "GetLayout(iias)" -> reply(m,"u(ia{sv}av)",layout());
@@ -177,7 +177,7 @@ final class Sni{
   }
   static Writer all(String path, BufferedImage icon){ return new Writer().array(8,w -> props(path).forEach(p -> prop(w.pad(8).str(p),p,icon))); }
   static Writer prop(Writer w, String name, BufferedImage icon){
-    return switch(name){
+    return switch (name){
       case "Category" -> w.sig("s").str("ApplicationStatus");
       case "Id" -> w.sig("s").str("fearless-manager");
       case "Title" -> w.sig("s").str("Fearless Manager");
@@ -249,7 +249,7 @@ final class Sni{
       h.pad(8);
       int code= h.b();
       var sig= h.sig();
-      switch(code){
+      switch (code){
         case 1,2,3,4,6,7 -> fields[code] = h.str();
         case 8 -> fields[8] = h.sig();
         case 5 -> reply = h.u32();
@@ -288,7 +288,7 @@ final class Sni{
       pad(align(c));
       if (c == 'a'){ int n= u32(); pad(align(sig.charAt(i+1))); pos += n; return end(sig,i+1); }
       if (c == '(' || c == '{'){ int j= i+1; while (")}".indexOf(sig.charAt(j)) < 0){ j = skip(sig,j); } return j+1; }
-      switch(c){
+      switch (c){
         case 's','o' -> str();
         case 'g' -> sig();
         case 'v' -> skip(sig(),0);
@@ -306,7 +306,7 @@ final class Sni{
       return j+1;
     }
     static int align(char c){
-      return switch(c){
+      return switch (c){
         case 'y','g','v' -> 1;
         case 'n','q' -> 2;
         case 'x','t','d','(','{' -> 8;

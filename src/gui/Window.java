@@ -119,8 +119,8 @@ public final class Window implements Manager.View{
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
     var result= new AtomicReference<T>();
     try{ SwingUtilities.invokeAndWait(() -> result.set(make.get())); }
-    catch(InterruptedException e){ throw Bug.of(e); }
-    catch(InvocationTargetException e){
+    catch (InterruptedException e){ throw Bug.of(e); }
+    catch (InvocationTargetException e){
       if (e.getCause() instanceof UserError u){ throw u; }
       if (e.getCause() instanceof VirtualMachineError || e.getCause() instanceof LinkageError){ throw (Error)e.getCause(); }
       throw Violation.couldNotStartGui(e.getCause());
@@ -331,6 +331,6 @@ public final class Window implements Manager.View{
   static void open(Consumer<String> refuse, Path path){
     if (!Files.exists(path)){ refuse.accept(Report.nothingToOpen(path)); return; }
     try{ OpenPath.open(path); }
-    catch(UncheckedIOException e){ refuse.accept(Report.notOpened(path,e.getCause())); }
+    catch (UncheckedIOException e){ refuse.accept(Report.notOpened(path,e.getCause())); }
   }
 }

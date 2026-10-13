@@ -27,6 +27,6 @@ public final class Output extends ViewPart{
     var page= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
     if (!page.getPerspective().getId().equals(FearlessPerspective.id)){ return; }
     try{ page.showView(id, null, IWorkbenchPage.VIEW_VISIBLE); }
-    catch(PartInitException e){ throw new IllegalStateException(e); }
+    catch (PartInitException e){ throw new IllegalStateException(e); }
   }
 }

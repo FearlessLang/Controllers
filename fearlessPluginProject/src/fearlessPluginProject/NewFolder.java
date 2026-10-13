@@ -26,7 +26,7 @@ public final class NewFolder extends BasicNewResourceWizard{
   @Override public boolean performFinish(){
     var folder= page.parent.getFolder(new Path(page.name.getText()));
     try{ folder.create(false, true, null); }
-    catch(CoreException e){ throw new IllegalStateException(e); }
+    catch (CoreException e){ throw new IllegalStateException(e); }
     selectAndReveal(folder);
     return true;
   }

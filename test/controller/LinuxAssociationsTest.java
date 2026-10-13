@@ -98,7 +98,7 @@ final class LinuxAssociationsTest{
   private String mimeTypes(){ return Fs.readUtf8(desktopFile()).lines().filter(l -> l.startsWith("MimeType=")).findFirst().orElseThrow(); }
   private List<String> icons(){
     if (!Files.isDirectory(mimetypes())){ return List.of(); }
-    return Fs.of(() -> { try(var s= Files.list(mimetypes())){ return s.map(p -> p.getFileName().toString()).sorted().toList(); }});
+    return Fs.of(() -> { try (var s= Files.list(mimetypes())){ return s.map(p -> p.getFileName().toString()).sorted().toList(); }});
   }
   private List<List<String>> rebuilt(){
     return List.of(List.of("update-mime-database",home.resolve("mime").toString()),List.of("update-desktop-database",home.resolve("applications").toString()));
@@ -221,7 +221,7 @@ final class LinuxAssociationsTest{
     Fs.writeUtf8(appIcon().resolveSibling("other.png"),"");
     FileAssociations.eradicateAll(Association.belongsToFamily,IllegalStateException::new);
     assertEquals(List.of("fearlessBin0_001.png","other-a52baa.png"),icons());
-    assertEquals(List.of(appIcon().resolveSibling("other.png")),Fs.of(() -> { try(var s= Files.list(appIcon().getParent())){ return s.toList(); }}));
+    assertEquals(List.of(appIcon().resolveSibling("other.png")),Fs.of(() -> { try (var s= Files.list(appIcon().getParent())){ return s.toList(); }}));
     assertEquals(List.of(),ran);
   }
   @Test void eachReconcileLeavesOnlyTheIconsItWantsOfItsIdentity(){

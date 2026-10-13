@@ -65,7 +65,7 @@ public final class TaggedText{
       return res.toString();
     }
     try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
-    catch(CharacterCodingException e){ throw bad.apply("\""+text+"\" names a path this system can not give to Java: its bytes are not valid in "+System.getProperty("sun.jnu.encoding")+"."); }
+    catch (CharacterCodingException e){ throw bad.apply("\""+text+"\" names a path this system can not give to Java: its bytes are not valid in "+System.getProperty("sun.jnu.encoding")+"."); }
   }
   private static String strExpr(String s){
     var parts= List.of(s.split("\n",-1));
@@ -135,7 +135,7 @@ public final class TaggedText{
     private RuntimeException fail(String expected){ return bad.apply("\"UStr:"+s+"\" is malformed: "+expected+" was expected at offset "+i+" after \"UStr:\"."); }
     private String expr(){
       var sb= new StringBuilder(atom());
-      while(true){
+      while (true){
         ws();
         if (i == s.length()){ return sb.toString(); }
         var c= s.charAt(i);
@@ -174,6 +174,6 @@ public final class TaggedText{
       if (Arrays.stream(cps).anyMatch(cp -> cp > 0x10FFFF || surrogate(cp))){ throw fail("Unicode scalars (no D800 to DFFF, nothing above 10FFFF)"); }
       return new String(cps,0,cps.length);
     }
-    private void ws(){ while(i < s.length() && s.charAt(i) == ' '){ i += 1; } }
+    private void ws(){ while (i < s.length() && s.charAt(i) == ' '){ i += 1; } }
   }
 }

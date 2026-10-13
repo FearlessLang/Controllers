@@ -78,7 +78,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var alias= target(HandlerUtil.getActiveWorkbenchWindow(event)).orElseThrow();
     if (Follow.followed().isPresent()){ ManagerLink.send("Terminate", alias); return null; }
     var s= of(alias, ManagerLink.projects());
-    switch(s.action()){
+    switch (s.action()){
       case check -> ManagerLink.send("Check", alias);
       case compile -> Follow.compile(alias);
       case run -> run(alias, s.mains().size() == 1 ? s.mains() : chosen(s, HandlerUtil.getActiveShell(event)));
@@ -108,13 +108,13 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var alias= target(window);
     var terminate= alias.isPresent() && Follow.followed().filter(f -> f.alias.equals(alias.get())).isPresent();
     var s= alias.map(found::get).orElse(new State(Action.run, List.of(), List.of()));
-    var icon= terminate ? List.of("org.eclipse.debug.ui", "icons/full/elcl16/terminate_co.png") : switch(s.action()){
+    var icon= terminate ? List.of("org.eclipse.debug.ui", "icons/full/elcl16/terminate_co.png") : switch (s.action()){
       case check -> List.of("org.eclipse.ui.ide", "icons/full/etool16/problem_category.png");
       case compile -> List.of("org.eclipse.ui.ide", "icons/full/etool16/build_exec.png");
       case run -> List.of("org.eclipse.debug.ui", "icons/full/obj16/lrun_obj.png");
     };
     element.setIcon(ResourceLocator.imageDescriptorFromBundle(icon.get(0), icon.get(1)).orElseThrow());
-    var verb= terminate ? "Terminate" : switch(s.action()){ case check -> "Check"; case compile -> "Compile"; case run -> s.mains().size() > 1 ? "Run V" : "Run"; };
+    var verb= terminate ? "Terminate" : switch (s.action()){ case check -> "Check"; case compile -> "Compile"; case run -> s.mains().size() > 1 ? "Run V" : "Run"; };
     element.setTooltip(alias.map(a -> verb+" "+a).orElse(verb));
   }
   private static Optional<String> target(IWorkbenchWindow window){
@@ -129,14 +129,14 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
       && p.edits().stream().allMatch(a -> projects.containsKey(a) && projects.get(a).kind().equals("data:readWrite"));
     if (!p.kind().equals("code") || !linked || !marked(p.folder(), alias)){ return Action.check; }
     try{ return outOfDate(p.folder()) ? Action.compile : Action.run; }
-    catch(Invalid e){ return Action.check; }
+    catch (Invalid e){ return Action.check; }
   }
   private static boolean marked(Path folder, String alias){
     if (!Files.isDirectory(folder)){ return false; }
-    try(var s= Files.list(folder)){
+    try (var s= Files.list(folder)){
       return s.filter(f -> f.getFileName().toString().endsWith(".fearless") && Files.isRegularFile(f)).map(f -> f.getFileName().toString()).toList().equals(List.of(alias+".fearless"));
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static final class Invalid extends RuntimeException{ private static final long serialVersionUID= 1L; }
   private record Ref(List<String> segments, long stamp){
@@ -196,17 +196,17 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   }
   private static List<Ref> refs(Path folder){
     var res= new ArrayList<Ref>();
-    try(var all= Files.walk(folder)){
+    try (var all= Files.walk(folder)){
       for (var p: all.filter(p -> !Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)).toList()){
         var segments= StreamSupport.stream(folder.relativize(p).spliterator(), false).map(Path::toString).toList();
         if (invisible(segments) || generatedTests(p)){ continue; }
         if (!Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)){ throw new Invalid(); }
         dated(stamp(p));
         if (!segments.getLast().endsWith(".zip")){ res.add(new Ref(segments, stamp(p))); continue; }
-        try(var in= Files.newInputStream(p)){ zip(unzipped(segments), in, stamp(p), res); }
+        try (var in= Files.newInputStream(p)){ zip(unzipped(segments), in, stamp(p), res); }
       }
     }
-    catch(IOException|UncheckedIOException e){ throw new Invalid(); }
+    catch (IOException|UncheckedIOException e){ throw new Invalid(); }
     res.removeIf(r -> invisible(r.segments()));
     res.sort(Comparator.comparing(Ref::fearPath));
     return res;
@@ -233,7 +233,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   private static boolean invisible(List<String> segments){ return segments.stream().anyMatch(s -> s.startsWith(".")); }
   private static long stamp(Path file){
     try{ return Files.getLastModifiedTime(file, LinkOption.NOFOLLOW_LINKS).toMillis(); }
-    catch(NoSuchFileException e){ return -1; }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (NoSuchFileException e){ return -1; }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
 }

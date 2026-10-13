@@ -75,16 +75,16 @@ public final class Assist implements IContentAssistProcessorExtension{
     return pkg.equals("base") ? ManagerLink.baseCache.resolve("base.txt") : out.resolve("gen_java").resolve(pkg+".txt");
   }
   private static String head(Path pkgDir){
-    try(var files= Files.list(pkgDir)){
+    try (var files= Files.list(pkgDir)){
       var heads= files.filter(p -> p.getFileName().toString().startsWith("_rank_")).toList();
       return heads.size() == 1 ? ManagerLink.read(heads.get(0)) : "";
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static Stream<Path> jsons(Path out){
     if (!Files.isDirectory(out)){ return Stream.of(); }
-    try(var files= Files.list(out)){ return files.filter(p -> p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    try (var files= Files.list(out)){ return files.filter(p -> p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static synchronized List<Type> types(Path json){
     var stamp= json.toFile().lastModified();

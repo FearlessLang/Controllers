@@ -43,7 +43,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       folder= Files.createDirectories(page.folder()).toRealPath();
       if (!demo.isEmpty()){ write(folder, demo); }
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
     ManagerLink.send("Register", ManagerLink.pathArg(folder));
     if (!demo.isEmpty()){ becomeCode(folder); }
     return true;
@@ -54,14 +54,14 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
         var alias= ManagerLink.projects().entrySet().stream().filter(e -> e.getValue().folder().equals(folder)).map(Map.Entry::getKey).findFirst();
         if (alias.isPresent()){ ManagerLink.send("Kind", alias.get(), "code"); return Status.OK_STATUS; }
         try{ Thread.sleep(250); }
-        catch(InterruptedException e){ Thread.currentThread().interrupt(); return Status.CANCEL_STATUS; }
+        catch (InterruptedException e){ Thread.currentThread().interrupt(); return Status.CANCEL_STATUS; }
       }
       return Status.error("The manager did not register "+folder+" within 30 seconds: make it code from the manager.");
     }).schedule();
   }
   private static final List<String> demos= List.of("", "Hello world", "Simple GUI", "Shortcut and OpenWith");
   private static void write(Path folder, String demo) throws IOException{
-    switch(demo){
+    switch (demo){
       case "Hello world" -> Files.writeString(Files.createDirectories(folder.resolve("_hello")).resolve("_rank_app.fear"), hello);
       case "Simple GUI" -> Files.writeString(Files.createDirectories(folder.resolve("_gui")).resolve("_rank_app.fear"), gui);
       default -> {
@@ -178,8 +178,8 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       if (folder.getText().isBlank()){ return Optional.of("Choose the folder of the project."); }
       var f= folder();
       if (demo.isEmpty() || !Files.exists(f)){ return Optional.empty(); }
-      try(var entries= Files.list(f)){ return entries.findAny().map(e -> "The folder "+f+" is not empty: a demo goes in a new or empty folder."); }
-      catch(IOException e){ return Optional.of("The folder "+f+" can not be read: "+e.getMessage()); }
+      try (var entries= Files.list(f)){ return entries.findAny().map(e -> "The folder "+f+" is not empty: a demo goes in a new or empty folder."); }
+      catch (IOException e){ return Optional.of("The folder "+f+" can not be read: "+e.getMessage()); }
     }
     private void browse(){
       var chosen= new DirectoryDialog(getShell()).open();

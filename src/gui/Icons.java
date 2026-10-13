@@ -33,7 +33,7 @@ public final class Icons{
   public static Image of(Project p, int size){ return p.facts().icon().<Image>map(i -> i.image()).orElseGet(() -> generated(p.alias(),size)); }
   public static Image of(Project.Claimant c, int size){
     try{ return read(c.icon(".png")).getScaledInstance(size,size,Image.SCALE_SMOOTH); }
-    catch(UserError e){ return generated(c.label(),size); }
+    catch (UserError e){ return generated(c.label(),size); }
   }
   static Image read(Path file){
     try{
@@ -41,7 +41,7 @@ public final class Icons{
       if (res == null){ throw Violation.couldNotDecodeIcon(file); }
       return res;
     }
-    catch(IOException e){ throw Violation.couldNotLoadIcon(file,e); }
+    catch (IOException e){ throw Violation.couldNotLoadIcon(file,e); }
   }
   //Four coloured quarters chosen by the name, under the first two letters of the name.
   static BufferedImage generated(String name, int size){
@@ -73,7 +73,7 @@ public final class Icons{
       var g2= (Graphics2D)g.create();
       g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
       g2.drawImage(image,x,y,size,size,c);
-      switch(state){
+      switch (state){
         case idle -> dot(g2,x,y,new Color(0x757575),"");
         case dataReadOnly -> dot(g2,x,y,new Color(0x1565C0),"R");
         case dataReadWrite -> dot(g2,x,y,new Color(0x6A1B9A),"W");

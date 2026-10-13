@@ -33,7 +33,7 @@ final class Info{
       if (p.i != p.text.length()){ throw p.bad("the end of the file"); }
       return res;
     }
-    catch(IndexOutOfBoundsException e){ throw p.bad("more text"); }
+    catch (IndexOutOfBoundsException e){ throw p.bad("more text"); }
   }
   @SuppressWarnings("unchecked") static Map<String,Object> obj(Object value){ return (Map<String,Object>)value; }
   @SuppressWarnings("unchecked") static List<Object> lst(Object value){ return (List<Object>)value; }
@@ -47,7 +47,7 @@ final class Info{
         if (p.i != p.text.length()){ throw p.bad("the end of the text"); }
         return res;
       }
-      catch(IndexOutOfBoundsException e){ throw p.bad("more text"); }
+      catch (IndexOutOfBoundsException e){ throw p.bad("more text"); }
     }
     if (!s.startsWith("Base16:") || !s.substring("Base16:".length()).matches("(?:[0-9A-F]{2})+")){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
     return path(HexFormat.of().parseHex(s.substring("Base16:".length())), s);
@@ -62,7 +62,7 @@ final class Info{
       return res.toString();
     }
     try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
-    catch(CharacterCodingException e){ throw new IllegalStateException("The manager wrote the path \""+s+"\", which this system can not give to Java.", e); }
+    catch (CharacterCodingException e){ throw new IllegalStateException("The manager wrote the path \""+s+"\", which this system can not give to Java.", e); }
   }
   private Object value(){
     ws();
@@ -74,7 +74,7 @@ final class Info{
     expect('[');
     if (next(']')){ return res; }
     do{ res.add(value()); }
-    while(next(','));
+    while (next(','));
     expect(']');
     return res;
   }
@@ -88,7 +88,7 @@ final class Info{
       expect(':');
       if (res.put(key, value()) != null){ throw bad("a key other than \""+key+"\""); }
     }
-    while(next(','));
+    while (next(','));
     expect('}');
     return res;
   }
@@ -107,7 +107,7 @@ final class Info{
   }
   private String expr(){
     var sb= new StringBuilder(atom());
-    while(true){
+    while (true){
       ws();
       if (i == text.length()){ return sb.toString(); }
       var c= text.charAt(i);
@@ -150,6 +150,6 @@ final class Info{
     return true;
   }
   private void expect(char c){ if (!next(c)){ throw bad("'"+c+"'"); } }
-  private void ws(){ while(i < text.length() && (text.charAt(i) == ' ' || text.charAt(i) == '\n')){ i += 1; } }
+  private void ws(){ while (i < text.length() && (text.charAt(i) == ' ' || text.charAt(i) == '\n')){ i += 1; } }
   private IllegalStateException bad(String expected){ return new IllegalStateException(file+" is not what the manager writes: "+expected+" was expected at offset "+i+"."); }
 }

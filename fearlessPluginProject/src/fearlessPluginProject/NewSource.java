@@ -138,7 +138,7 @@ public final class NewSource extends AbstractHandler{
       var folder= src().findMember(t.substring(0, t.lastIndexOf('/')+1));
       if (!(folder instanceof IContainer c)){ return Optional.empty(); }
       try{ return Stream.of(c.members()).map(IResource::getName).filter(n -> n.startsWith("_rank_")).findFirst().map(n -> "The package already has the rank file \""+n+"\": a package has exactly one."); }
-      catch(CoreException e){ throw new IllegalStateException(e); }
+      catch (CoreException e){ throw new IllegalStateException(e); }
     }
     private IFolder src(){ return project.getFolder(FearlessWatcher.srcName); }
     private void validate(){
@@ -162,7 +162,7 @@ public final class NewSource extends AbstractHandler{
         }
         if (type){ open(create(at.getFile(new Path(segments[segments.length-1])))); }
       }
-      catch(CoreException e){ throw new IllegalStateException(e); }
+      catch (CoreException e){ throw new IllegalStateException(e); }
       super.okPressed();
     }
     private IFile create(IFile file) throws CoreException{
@@ -176,7 +176,7 @@ public final class NewSource extends AbstractHandler{
     }
     private void open(IFile file){
       try{ IDE.openEditor(page, file); }
-      catch(PartInitException e){ throw new IllegalStateException(e); }
+      catch (PartInitException e){ throw new IllegalStateException(e); }
     }
   }
 }

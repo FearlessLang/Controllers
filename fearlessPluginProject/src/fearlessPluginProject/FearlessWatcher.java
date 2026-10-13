@@ -49,7 +49,7 @@ public final class FearlessWatcher extends Job implements IStartup{
   @Override protected IStatus run(IProgressMonitor monitor){
     if (stopped){ return Status.CANCEL_STATUS; }
     try{ tick(monitor); }
-    catch(CoreException|RuntimeException|ExceptionInInitializerError e){
+    catch (CoreException|RuntimeException|ExceptionInInitializerError e){
       stopped = true;
       StatusManager.getManager().handle(Status.error("Fearless stopped following the manager.", e), StatusManager.SHOW|StatusManager.LOG);
       return Status.CANCEL_STATUS;
@@ -104,7 +104,7 @@ public final class FearlessWatcher extends Job implements IStartup{
     if (report.isEmpty() || report.get().equals(reports.put(alias, report.get()))){ return; }
     var copy= Platform.getStateLocation(FrameworkUtil.getBundle(getClass())).append("report.xml").toFile().toPath();
     try{ Files.writeString(copy, report.get()); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
     JUnitCore.importTestRunSession(copy.toFile());
   }
   private static void mark(IResource on, String problem, int line) throws CoreException{

@@ -27,10 +27,10 @@ public final class Names{
   public static boolean isName(String name){
     PathEntry kid;
     try{ kid= new PathEntry(anyRoot,Path.of(name+ext)); }
-    catch(InvalidPathException e){ return false; }
+    catch (InvalidPathException e){ return false; }
     if (kid.local().getNameCount() != 1 || kid.local().isAbsolute() || BuildWithZip.isInvisible(kid)){ return false; }
     try{ BuildWithZip.checkIndividualVisibleSegment(kid); return true; }
-    catch(UserError e){ return false; }
+    catch (UserError e){ return false; }
   }
   public static Optional<String> markerProblem(Path folder, String alias){
     var all= markers(folder);
@@ -67,7 +67,7 @@ public final class Names{
     }
     if (all.isEmpty() || Fs.of(() -> Files.size(target)) == 0){ Fs.writeUtf8(target,MakeDemo.markerContent); }
   }
-  static List<Path> list(Path dir){ return Fs.of(() -> { try(var s= Files.list(dir)){ return s.sorted(Comparator.comparing(p -> p.getFileName().toString())).toList(); } }); }
+  static List<Path> list(Path dir){ return Fs.of(() -> { try (var s= Files.list(dir)){ return s.sorted(Comparator.comparing(p -> p.getFileName().toString())).toList(); } }); }
   static Optional<Path> child(Path dir, String name){ return OneOr.opt(name,list(dir).stream().filter(p -> p.getFileName().toString().equals(name))); }
   static Optional<Path> folder(Path dir, String name){ return child(dir,name).filter(Files::isDirectory); }
   private static List<Path> markers(Path folder){

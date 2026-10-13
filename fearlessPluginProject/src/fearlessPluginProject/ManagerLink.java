@@ -76,12 +76,12 @@ public final class ManagerLink{
       }
     };
     try{ Files.walkFileTree(folder, visitor); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
     return res[0];
   }
   private static long stamp(Path file){
     try{ return Files.getLastModifiedTime(file).toMillis(); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   static String pathArg(Path path){
     var text= path.toString();
@@ -94,20 +94,20 @@ public final class ManagerLink{
   static void send(String verb, String... args){
     var cmd= Stream.concat(Stream.of(launcher.toString(), "FearlessCommand"+verb), Stream.of(args)).toList();
     try{ new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
-    catch(InterruptedException e){ Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    catch (InterruptedException e){ Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
   }
   static String read(Path file){
     try{ return Files.readString(file); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   static String lines(Path file){
     try{
       var bytes= Files.readAllBytes(file);
       var end= bytes.length;
-      while(end > 0 && bytes[end-1] != '\n'){ end -= 1; }
+      while (end > 0 && bytes[end-1] != '\n'){ end -= 1; }
       return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes, 0, end)).toString();
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
 }

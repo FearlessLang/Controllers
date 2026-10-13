@@ -41,7 +41,7 @@ public final class Tray{
     });
     var tray= SystemTray.getSystemTray();
     try{ tray.add(icon); }
-    catch(AWTException e){ throw Violation.couldNotAddTrayIcon(e); }
+    catch (AWTException e){ throw Violation.couldNotAddTrayIcon(e); }
     PropertyChangeListener gone= _ -> { if (!SystemTray.isSupported() || !Arrays.asList(tray.getTrayIcons()).contains(icon)){ window.fail(Violation.trayIconRemoved()); } };
     tray.addPropertyChangeListener("systemTray",gone);
     tray.addPropertyChangeListener("trayIcons",gone);

@@ -18,12 +18,12 @@ final class UnitTests{
   static Optional<String> report(String name, Path folder){
     var logs= folder.resolve(".out").resolve("logs");
     if (!Files.isDirectory(logs)){ return Optional.empty(); }
-    try(var all= Files.walk(logs)){
+    try (var all= Files.walk(logs)){
       var newest= all.filter(p -> p.getFileName().toString().startsWith("unit_test_log") && p.toString().endsWith(".log")).max(Comparator.comparing(p -> p.getFileName().toString()));
       return newest.map(log -> document(name, complete(log)));
     }
-    catch(NoSuchFileException e){ return Optional.empty(); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (NoSuchFileException e){ return Optional.empty(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static String document(String name, String log){
     var body= disabled.matcher(log).replaceAll(UnitTests::skipped).replaceAll("(?m)^PLAN\\|RUN\\|.*$\\r?\\n?","");
@@ -40,13 +40,13 @@ final class UnitTests{
     try{
       var bytes= Files.readAllBytes(log);
       var end= bytes.length;
-      while(end > 0 && bytes[end-1] != '\n'){ end -= 1; }
+      while (end > 0 && bytes[end-1] != '\n'){ end -= 1; }
       text= StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes, 0, end)).toString();
     }
-    catch(CharacterCodingException e){ throw new IllegalStateException("The unit test log "+log+" is not UTF-8 text.", e); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (CharacterCodingException e){ throw new IllegalStateException("The unit test log "+log+" is not UTF-8 text.", e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
     var done= 0;
-    while(done < text.length()){
+    while (done < text.length()){
       var close= text.startsWith("<testcase ", done) ? text.indexOf("</testcase>\n", done) : done;
       if (close < 0){ return text.substring(0, done); }
       done = text.indexOf('\n', close)+1;

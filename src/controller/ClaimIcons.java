@@ -33,8 +33,8 @@ final class ClaimIcons{
     var steps= c.zipSteps().isEmpty() ? List.<String>of() : List.of(c.zipSteps().split(";"));
     byte[] bytes;
     try{ bytes= c.zipEntry().isEmpty() ? Fs.of(() -> Files.readAllBytes(file)) : ZipLocator.entryBytes(file,steps,c.zipEntry()); }
-    catch(UncheckedIOException e){ throw Report.iconUnreadable(claimant,Report.fileFailure(e.getCause())); }
-    catch(UserError e){ throw Report.iconUnreadable(claimant,e.getMessage().stripTrailing()); }
+    catch (UncheckedIOException e){ throw Report.iconUnreadable(claimant,Report.fileFailure(e.getCause())); }
+    catch (UserError e){ throw Report.iconUnreadable(claimant,e.getMessage().stripTrailing()); }
     if (bytes.length < 24 || !Arrays.equals(bytes,0,16,pngHead,0,16)){ throw Report.iconRefused(claimant,"is not a PNG image"); }
     var w= ByteBuffer.wrap(bytes).getInt(16);
     var h= ByteBuffer.wrap(bytes).getInt(20);
@@ -44,7 +44,7 @@ final class ClaimIcons{
   }
   private static boolean decodes(byte[] bytes){
     try{ return ImageIO.read(new ByteArrayInputStream(bytes)) != null; }
-    catch(IOException e){ return false; }
+    catch (IOException e){ return false; }
   }
   static void materialise(Path dir, String icon, byte[] bytes){
     var png= dir.resolve(icon+".png");

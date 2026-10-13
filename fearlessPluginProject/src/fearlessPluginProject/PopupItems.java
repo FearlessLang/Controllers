@@ -48,14 +48,14 @@ public final class PopupItems extends CompoundContributionItem{
   /// each in a browser tab of its own that opening again reuses.
   private static void docs(Path folder){
     var genJava= folder.resolve(".fearless_out").resolve("gen_java");
-    try(var pages= Files.isDirectory(genJava) ? Files.walk(genJava) : Stream.<Path>of()){
+    try (var pages= Files.isDirectory(genJava) ? Files.walk(genJava) : Stream.<Path>of()){
       Stream.concat(pages.filter(p -> p.toString().endsWith(".html")).sorted(), Stream.of(ManagerLink.baseCache.resolve("base.html"))).forEach(PopupItems::open);
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static void open(Path page){
     var support= PlatformUI.getWorkbench().getBrowserSupport();
     try{ support.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR, page.toString(), page.getFileName().toString(), null).openURL(page.toUri().toURL()); }
-    catch(PartInitException|MalformedURLException e){ throw new IllegalStateException(e); }
+    catch (PartInitException|MalformedURLException e){ throw new IllegalStateException(e); }
   }
 }
