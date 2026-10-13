@@ -28,6 +28,7 @@ public final class Tray{
     if (!SystemTray.isSupported()){ return false; }
     var menu= menu();
     var anchor= new JWindow();
+    anchor.setType(java.awt.Window.Type.POPUP);
     anchor.setAlwaysOnTop(true);
     menu.addPopupMenuListener(new PopupMenuListener(){
       @Override public void popupMenuWillBecomeVisible(PopupMenuEvent e){}
