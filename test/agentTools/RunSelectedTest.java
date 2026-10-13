@@ -2,49 +2,50 @@ package agentTools;
 
 final class RunSelectedTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(1027), val(113))),
-    on("xubuntu_xfce", () -> click(val(1040), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(1027), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(1040), val(93))));
   final Action openHelloWorld= action("openHelloWorld",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
+  //double clicks the marker, the file ending with .fearless; not the folder starting with _
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome", () -> waitAfter(val(null))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(null))));
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome", () -> waitAfter(val(17500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
   final Action codeShown= action("codeShown",
-    on("ubuntu_gnome", () -> waitAfter(val(4500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(580), val(113))),
-    on("xubuntu_xfce", () -> click(val(545), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(595), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(545), val(93))));
   final Action compiled= action("compiled",
-    on("ubuntu_gnome", () -> waitAfter(val(21000))),
+    on("ubuntu_gnome", () -> waitAfter(val(2000))),//the compile of hello_world runs in its own JVM
     on("xubuntu_xfce", () -> waitAfter(val(26000))));
   final Action runV= action("runV",
-    on("ubuntu_gnome", () -> click(val(580), val(113))),
-    on("xubuntu_xfce", () -> click(val(538), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(582), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(538), val(93))));
   final Action mainsShown= action("mainsShown",
-    on("ubuntu_gnome", () -> waitAfter(val(3000))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));
   final Action tickHello4= action("tickHello4",
-    on("ubuntu_gnome", () -> click(val(574), val(189))),
-    on("xubuntu_xfce", () -> click(val(512), val(164))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(618), val(189))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(512), val(164))));
   final Action tickHello1= action("tickHello1",
-    on("ubuntu_gnome", () -> click(val(574), val(139))),
-    on("xubuntu_xfce", () -> click(val(512), val(118))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(618), val(139))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(512), val(118))));
   final Action runTicked= action("runTicked",
-    on("ubuntu_gnome", () -> click(val(584), val(265))),
-    on("xubuntu_xfce", () -> click(val(524), val(232))));
+    on("ubuntu_gnome", () -> waitClick(val(100), val(583), val(263))),
+    on("xubuntu_xfce", () -> waitClick(val(null), val(524), val(232))));
   final Action runsDone= action("runsDone",
-    on("ubuntu_gnome", () -> waitAfter(val(9000))),
+    on("ubuntu_gnome", () -> waitAfter(val(2000))),//the two ticked mains run one after the other, each in its own JVM
     on("xubuntu_xfce", () -> waitAfter(val(11000))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome", () -> waitAfter(val(7000))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(9000))));
   @Override void walk() throws Throwable{
     var project= project("helloWorld");
@@ -54,7 +55,6 @@ final class RunSelectedTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -87,6 +87,7 @@ final class RunSelectedTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, output);
   }
 }
