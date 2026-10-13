@@ -596,7 +596,7 @@ final class ManagerTest{
     view.visible = false;
     for (var request: List.of(List.of("Link", "data", "other read Other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Kind", "data", "library"))){
       var valid= Files.exists(data);
-      if (valid){ Fs.rmTree(data); } else { data(dir); Fs.writeUtf8(data.resolve("data.fearless"), ""); }
+      if (valid){ Fs.rmTree(data); } else{ data(dir); Fs.writeUtf8(data.resolve("data.fearless"), ""); }
       send(m, request.toArray(String[]::new));
       assertEquals(valid ? Project.State.dataInvalid : Project.State.idle, project(m, data).state());
     }

@@ -486,7 +486,7 @@ public final class Manager{
   }
   private static Map<String,List<String>> with(Map<String,List<String>> map, String key, List<String> names){
     var out= new LinkedHashMap<>(map);
-    if (names.isEmpty()){ out.remove(key); } else { out.put(key, names); }
+    if (names.isEmpty()){ out.remove(key); } else{ out.put(key, names); }
     return out;
   }
   private static List<String> words(String text){ return Stream.of(text.split(" +")).filter(w -> !w.isEmpty()).toList(); }

@@ -50,7 +50,7 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     Map<String,Boolean> built= Map.of();
     Optional<String> problem;
     try{
-      if (kind == Kind.code){ built = Coordinator.pkgsBuilt(folder); } else { new RealSourceOracleWithZip(folder); }
+      if (kind == Kind.code){ built = Coordinator.pkgsBuilt(folder); } else{ new RealSourceOracleWithZip(folder); }
       problem= Names.markerProblem(folder, alias);
     }
     catch (UserError e){ problem = Optional.of(e.getMessage()); }

@@ -50,7 +50,7 @@ public final class Pilot{
     down = want;
     pause(200);
   }
-  private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else { robot.mouseRelease(b.mask); } }
+  private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else{ robot.mouseRelease(b.mask); } }
   /// A press and release as short as a person's: a desk reads a button held longer, from about 400 milliseconds, as a long press, which is not a click.
   public void click(Button b, int x, int y){
     glide(x, y, none, x, y, none);

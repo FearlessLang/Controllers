@@ -227,7 +227,7 @@ final class Sni{
   private static void field(Writer w, int code, String type, String value){
     if (value == null || value.isEmpty()){ return; }
     w.pad(8).b(code).sig(type);
-    if (type.equals("g")){ w.sig(value); } else { w.str(value); }
+    if (type.equals("g")){ w.sig(value); } else{ w.str(value); }
   }
   static Msg next(SocketChannel c) throws IOException{
     var head= read(c, 16);
