@@ -323,7 +323,7 @@ abstract class ManagerTest{
     on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
-  //brings to the front the file manager window that an earlier start() or toFiles() left open
+  //brings to the front the file manager window that an earlier start() or toFiles() left open; on a desk that tiles the windows side by side that window is already visible, and this is a wait
   final Action fileManagerToFront= action("fileManagerToFront",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(128))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -331,9 +331,9 @@ abstract class ManagerTest{
     on("fedora_cosmic", () -> waitClick(val(100), val(918), val(1040))),
     on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitClick(val(100), val(390), val(12))),
-    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
-    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action closeFileManager= action("closeFileManager",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1414), val(304))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
