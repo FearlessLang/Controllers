@@ -22,38 +22,37 @@ import managerMessages.Report;
 
 /// The folders a desktop drags into the window: a file list, or the text/uri-list some desktops offer instead.
 public final class Drop{
-  private Drop(){}
   public static boolean hasFiles(Transferable t){ return t.isDataFlavorSupported(DataFlavor.javaFileListFlavor) || uriList(t).isPresent(); }
   @SuppressWarnings("unchecked")
   public static List<Path> paths(Transferable t, Consumer<String> refused){
     try{
       if (t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)){ return ((List<File>)t.getTransferData(DataFlavor.javaFileListFlavor)).stream().map(File::toPath).toList(); }
       var flavor= uriList(t);
-      return flavor.isEmpty() ? List.of() : fromUriList(text(t.getTransferData(flavor.get())),refused);
+      return flavor.isEmpty() ? List.of() : fromUriList(text(t.getTransferData(flavor.get())), refused);
     }
-    catch(UnsupportedFlavorException|IOException e){ refused.accept(Report.dropUnreadable(e)); return List.of(); }
+    catch (UnsupportedFlavorException|IOException e){ refused.accept(Report.dropUnreadable(e)); return List.of(); }
   }
   private static Optional<DataFlavor> uriList(Transferable t){
-    return Stream.of(t.getTransferDataFlavors()).filter(f->f.getPrimaryType().equalsIgnoreCase("text") && f.getSubType().equalsIgnoreCase("uri-list")).findFirst();
+    return Stream.of(t.getTransferDataFlavors()).filter(f -> f.getPrimaryType().equalsIgnoreCase("text") && f.getSubType().equalsIgnoreCase("uri-list")).findFirst();
   }
   private static String text(Object data) throws IOException{
     if (data instanceof String s){ return s; }
-    var r= data instanceof Reader reader ? reader : new InputStreamReader((InputStream)data,StandardCharsets.UTF_8);
+    var r= data instanceof Reader reader ? reader : new InputStreamReader((InputStream)data, StandardCharsets.UTF_8);
     var out= new StringWriter();
-    try(r){ r.transferTo(out); }
+    try (r){ r.transferTo(out); }
     return out.toString();
   }
   public static List<Path> fromUriList(String data, Consumer<String> refused){
-    return data.lines().map(String::strip).filter(l->!l.isEmpty() && !l.startsWith("#")).flatMap(l->path(l,refused)).toList();
+    return data.lines().map(String::strip).filter(l -> !l.isEmpty() && !l.startsWith("#")).flatMap(l -> path(l, refused)).toList();
   }
   private static Stream<Path> path(String line, Consumer<String> refused){
     try{
       var uri= new URI(line);
       if ("file".equalsIgnoreCase(uri.getScheme())){ return Stream.of(Path.of(uri)); }
-      refused.accept(Report.dropRefused(line,"only a \"file:\" URI names a file or folder of this computer"));
+      refused.accept(Report.dropRefused(line, "only a \"file:\" URI names a file or folder of this computer"));
     }
-    catch(URISyntaxException e){ refused.accept(Report.dropRefused(line,"it is not a URI: "+e.getReason())); }
-    catch(IllegalArgumentException e){ refused.accept(Report.dropRefused(line,"it names no file or folder of this computer: "+e.getMessage())); }
+    catch (URISyntaxException e){ refused.accept(Report.dropRefused(line, "it is not a URI: "+e.getReason())); }
+    catch (IllegalArgumentException e){ refused.accept(Report.dropRefused(line, "it names no file or folder of this computer: "+e.getMessage())); }
     return Stream.of();
   }
 }

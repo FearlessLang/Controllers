@@ -10,10 +10,10 @@ public final class NewFile extends BasicNewResourceWizard{
   private WizardNewFileCreationPage page;
   @Override public void addPages(){
     setWindowTitle("New File");
-    page= new WizardNewFileCreationPage("file", getSelection()){
+    page = new WizardNewFileCreationPage("file", getSelection()){
       @Override protected boolean validatePage(){
         if (!super.validatePage()){ return false; }
-        Names.problem(getContainerFullPath(), getFileName(), true).ifPresent(p->setMessage(p, IMessageProvider.WARNING));
+        Names.problem(getContainerFullPath(), getFileName(), true).ifPresent(p -> setMessage(p, IMessageProvider.WARNING));
         return true;
       }
     };
@@ -26,7 +26,7 @@ public final class NewFile extends BasicNewResourceWizard{
     if (file == null){ return false; }
     selectAndReveal(file);
     try{ IDE.openEditor(getWorkbench().getActiveWorkbenchWindow().getActivePage(), file); }
-    catch(PartInitException e){ throw new IllegalStateException(e); }
+    catch (PartInitException e){ throw new IllegalStateException(e); }
     return true;
   }
 }

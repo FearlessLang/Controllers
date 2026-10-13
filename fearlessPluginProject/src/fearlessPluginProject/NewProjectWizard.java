@@ -43,25 +43,25 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       folder= Files.createDirectories(page.folder()).toRealPath();
       if (!demo.isEmpty()){ write(folder, demo); }
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
     ManagerLink.send("Register", ManagerLink.pathArg(folder));
     if (!demo.isEmpty()){ becomeCode(folder); }
     return true;
   }
   private static void becomeCode(Path folder){
-    Job.create("Fearless project becomes code", (IProgressMonitor monitor)->{
+    Job.create("Fearless project becomes code", (IProgressMonitor monitor) -> {
       for (int i= 0; i < 120; i++){
-        var alias= ManagerLink.projects().entrySet().stream().filter(e->e.getValue().folder().equals(folder)).map(Map.Entry::getKey).findFirst();
+        var alias= ManagerLink.projects().entrySet().stream().filter(e -> e.getValue().folder().equals(folder)).map(Map.Entry::getKey).findFirst();
         if (alias.isPresent()){ ManagerLink.send("Kind", alias.get(), "code"); return Status.OK_STATUS; }
         try{ Thread.sleep(250); }
-        catch(InterruptedException e){ Thread.currentThread().interrupt(); return Status.CANCEL_STATUS; }
+        catch (InterruptedException e){ Thread.currentThread().interrupt(); return Status.CANCEL_STATUS; }
       }
       return Status.error("The manager did not register "+folder+" within 30 seconds: make it code from the manager.");
     }).schedule();
   }
   private static final List<String> demos= List.of("", "Hello world", "Simple GUI", "Shortcut and OpenWith");
   private static void write(Path folder, String demo) throws IOException{
-    switch(demo){
+    switch (demo){
       case "Hello world" -> Files.writeString(Files.createDirectories(folder.resolve("_hello")).resolve("_rank_app.fear"), hello);
       case "Simple GUI" -> Files.writeString(Files.createDirectories(folder.resolve("_gui")).resolve("_rank_app.fear"), gui);
       default -> {
@@ -76,7 +76,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     var data= new ImageData(64, 64, 24, new PaletteData(0xFF0000, 0xFF00, 0xFF));
     for (int y= 0; y < 64; y++){ for (int x= 0; x < 64; x++){ data.setPixel(x, y, app ? appPixel(x, y) : filePixel(x, y)); } }
     var loader= new ImageLoader();
-    loader.data= new ImageData[]{data};
+    loader.data = new ImageData[]{data};
     loader.save(file.toString(), SWT.IMAGE_PNG);
   }
   private static int appPixel(int x, int y){ return x >= 22 && x <= 46 && Math.abs(y-32) <= (46-x)/2 ? 0xFFFFFF : 0x2F6FD0; }
@@ -149,16 +149,16 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       var root= new Composite(parent, SWT.NONE);
       root.setLayout(new GridLayout(3, false));
       new Label(root, SWT.NONE).setText("Folder:");
-      folder= new Text(root, SWT.BORDER);
+      folder = new Text(root, SWT.BORDER);
       folder.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-      folder.addModifyListener(e->validate());
+      folder.addModifyListener(e -> validate());
       var browse= new Button(root, SWT.PUSH);
       browse.setText("Browse...");
-      browse.addListener(SWT.Selection, e->browse());
+      browse.addListener(SWT.Selection, e -> browse());
       var label= new Label(root, SWT.NONE);
       label.setText("Content:");
       label.setLayoutData(new GridData(SWT.LEFT, SWT.TOP, false, false, 1, demos.size()));
-      demos.forEach(d->radio(root, d));
+      demos.forEach(d -> radio(root, d));
       setPageComplete(false);
       setControl(root);
     }
@@ -167,7 +167,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       b.setText(d.isEmpty() ? "The folder as it is" : "Demo: "+d+" (the project becomes code)");
       b.setSelection(d.isEmpty());
       b.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 2, 1));
-      b.addListener(SWT.Selection, e->{ if (b.getSelection()){ demo= d; validate(); } });
+      b.addListener(SWT.Selection, e -> { if (b.getSelection()){ demo = d; validate(); } });
     }
     private void validate(){
       var problem= problem();
@@ -178,8 +178,8 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
       if (folder.getText().isBlank()){ return Optional.of("Choose the folder of the project."); }
       var f= folder();
       if (demo.isEmpty() || !Files.exists(f)){ return Optional.empty(); }
-      try(var entries= Files.list(f)){ return entries.findAny().map(e->"The folder "+f+" is not empty: a demo goes in a new or empty folder."); }
-      catch(IOException e){ return Optional.of("The folder "+f+" can not be read: "+e.getMessage()); }
+      try (var entries= Files.list(f)){ return entries.findAny().map(e -> "The folder "+f+" is not empty: a demo goes in a new or empty folder."); }
+      catch (IOException e){ return Optional.of("The folder "+f+" can not be read: "+e.getMessage()); }
     }
     private void browse(){
       var chosen= new DirectoryDialog(getShell()).open();

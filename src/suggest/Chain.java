@@ -34,14 +34,14 @@ final class Chain{
   }
   static E parse(E recv, List<Item> posts){ return new Chain(posts).posts(recv); }
   private E posts(E e){
-    while (i < items.size()){ e= post(e); }
+    while (i < items.size()){ e = post(e); }
     return e;
   }
   private boolean peek(Kind... kinds){ return i < items.size() && Tokens.is(items.get(i), kinds); }
   private boolean peekGroup(Kind open){ return i < items.size() && Tokens.isGroup(items.get(i), open); }
   private E atom(){
     var rc= peek(Kind.RCap);
-    if (rc){ i+= 1; }
+    if (rc){ i += 1; }
     if (i >= items.size() || rc && !peek(Tokens.typeName)){ return unknown; }
     var res= new ArrayList<Item>(List.of(items.get(i++)));
     if (!Tokens.is(res.get(0), Tokens.typeName)){ return new Atom(res); }
@@ -54,7 +54,7 @@ final class Chain{
     if (Tokens.is(it, Kind.SignedInt, Kind.SignedFloat)){
       var t= (Tok)it;
       var num= new Tok(t.kind() == Kind.SignedInt ? Kind.UnsignedInt : Kind.UnSignedFloat, t.text().substring(1), t.start()+1, t.end());
-      return new Call(recv, t.text().substring(0,1), List.of(new Atom(List.of(num))), List.of());
+      return new Call(recv, t.text().substring(0, 1), List.of(new Atom(List.of(num))), List.of());
     }
     if (!Tokens.is(it, Kind.DotName, Kind.Op)){ return unknown; }
     var name= Tokens.text(it);
@@ -63,10 +63,10 @@ final class Chain{
     var sugar= (peek(Kind.LowercaseId) || peekGroup(Kind.OCurly)) && i+1 < items.size() && Tokens.is(items.get(i+1), Kind.Eq);
     if (sugar){
       var x= peek(Kind.LowercaseId) ? Tokens.text(items.get(i)) : "_";
-      i+= 2;
+      i += 2;
       var thunk= atom();
       var rest= List.copyOf(items.subList(i, items.size()));
-      i= items.size();
+      i = items.size();
       return new Sugar(new Call(recv, name, List.of(thunk, unknown), targs), x, rest);
     }
     if (i >= items.size() || peek(Kind.DotName, Kind.Op, Kind.Colon)){ return new Call(recv, name, List.of(), targs); }
@@ -78,7 +78,7 @@ final class Chain{
     for (var it : items){
       if (!Tokens.is(it, sep)){ cur.add(it); continue; }
       res.add(cur);
-      cur= new ArrayList<>();
+      cur = new ArrayList<>();
     }
     res.add(cur);
     return items.isEmpty() ? List.of() : res;
@@ -93,21 +93,21 @@ final class Chain{
     var res= new ArrayList<Meth>();
     var cur= new ArrayList<Item>();
     var start= g.start;
-    for (int j= selfName(g).isPresent() ? 2 : 0; j <= g.items.size(); j+= 1){
+    for (int j= selfName(g).isPresent() ? 2 : 0; j <= g.items.size(); j += 1){
       var last= j == g.items.size();
       if (!last && !Tokens.is(g.items.get(j), Kind.SemiColon)){ cur.add(g.items.get(j)); continue; }
       if (!cur.isEmpty()){ res.add(meth(cur, start, last ? g.end : g.items.get(j).start())); }
-      cur= new ArrayList<>();
-      if (!last){ start= g.items.get(j).start(); }
+      cur = new ArrayList<>();
+      if (!last){ start = g.items.get(j).start(); }
     }
     return res;
   }
   private static Meth meth(List<Item> cur, int start, int end){
-    var arrow= cur.stream().filter(it->Tokens.is(it, Kind.Arrow)).findFirst().map(cur::indexOf);
+    var arrow= cur.stream().filter(it -> Tokens.is(it, Kind.Arrow)).findFirst().map(cur::indexOf);
     var rc= Tokens.is(cur.get(0), Kind.RCap) ? 1 : 0;
     var sig= arrow.isPresent() || rc < cur.size() && Tokens.is(cur.get(rc), Kind.DotName, Kind.Op);
     var head= !sig ? List.<Item>of() : cur.subList(0, arrow.orElse(cur.size()));
-    var body= !sig ? cur : cur.subList(arrow.map(a->a+1).orElse(cur.size()), cur.size());
+    var body= !sig ? cur : cur.subList(arrow.map(a -> a+1).orElse(cur.size()), cur.size());
     var k= head.isEmpty() ? 0 : rc;
     var name= k < head.size() && Tokens.is(head.get(k), Kind.DotName, Kind.Op) ? Optional.of(Tokens.text(head.get(k++))) : Optional.<String>empty();
     var xs= k < head.size() && Tokens.isGroup(head.get(k), Kind.OSquareArg) ? generics(head.get(k++)) : List.<String>of();
@@ -122,7 +122,7 @@ final class Chain{
   }
   /// the names of the generics declared in a [..] group
   private static List<String> generics(Item square){
-    return split(((Group)square).items, Kind.Comma).stream().filter(a->!a.isEmpty() && Tokens.is(a.get(0), Kind.UppercaseId)).map(a->Tokens.text(a.get(0))).toList();
+    return split(((Group)square).items, Kind.Comma).stream().filter(a -> !a.isEmpty() && Tokens.is(a.get(0), Kind.UppercaseId)).map(a -> Tokens.text(a.get(0))).toList();
   }
   private static Param param(List<Item> p){
     var named= !p.isEmpty() && (Tokens.is(p.get(0), Kind.LowercaseId, Kind.Underscore) || Tokens.isGroup(p.get(0), Kind.OCurly));
@@ -131,7 +131,7 @@ final class Chain{
     return new Param(Tokens.is(p.get(0), Kind.LowercaseId) ? Tokens.text(p.get(0)) : "_", type);
   }
   private static boolean hasImplicit(List<Item> items){
-    return items.stream().anyMatch(it->it instanceof Group g ? g.open != Kind.OCurly && hasImplicit(g.items) : Tokens.is(it, Kind.ColonColon));
+    return items.stream().anyMatch(it -> it instanceof Group g ? g.open != Kind.OCurly && hasImplicit(g.items) : Tokens.is(it, Kind.ColonColon));
   }
   static Optional<String> selfName(Group g){
     var self= g.items.size() >= 2 && Tokens.is(g.items.get(0), Kind.SQuote) && Tokens.is(g.items.get(1), Kind.LowercaseId);
@@ -142,7 +142,7 @@ final class Chain{
   static Optional<Header> header(Group g){
     var items= g.parent.items;
     int j= items.indexOf(g)-1;
-    for (; j >= 0 && !Tokens.is(items.get(j), Kind.Colon); j-= 1){
+    for (; j >= 0 && !Tokens.is(items.get(j), Kind.Colon); j -= 1){
       if (!Tokens.is(items.get(j), Kind.UppercaseId, Kind.Comma) && !Tokens.isGroup(items.get(j), Kind.OSquareArg)){ return Optional.empty(); }
     }
     var supers= split(items.subList(j+1, items.indexOf(g)), Kind.Comma);

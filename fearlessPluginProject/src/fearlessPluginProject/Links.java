@@ -30,11 +30,11 @@ final class Links implements IPatternMatchListener{
   @Override public String getLineQualifier(){ return null; }
   private static final Pattern marked= Pattern.compile("(?m)^(\\d+)\\| .*\\n *\\| [ ^~-]*\\^");
   private TextConsole console;
-  @Override public void connect(TextConsole console){ this.console= console; }
-  @Override public void disconnect(){ console= null; }
+  @Override public void connect(TextConsole console){ this.console = console; }
+  @Override public void disconnect(){ console = null; }
   @Override public void matchFound(PatternMatchEvent event){
     try{ link(event.getOffset(), console.getDocument().get(event.getOffset(), event.getLength())); }
-    catch(BadLocationException e){ throw new IllegalStateException(e); }
+    catch (BadLocationException e){ throw new IllegalStateException(e); }
   }
   private void link(int offset, String text) throws BadLocationException{
     var m= at.matcher(text);
@@ -43,7 +43,7 @@ final class Links implements IPatternMatchListener{
     var file= m.group(frame ? 2 : 3);
     var f= ResourcesPlugin.getWorkspace().getRoot().getProject(Output.alias).getFolder(FearlessWatcher.srcName).getFile(new Path(file));
     if (!f.exists()){ return; }
-    IntSupplier line= frame ? ()->Integer.parseInt(m.group(1)) : ()->markedLineAfter(console.getDocument(), offset);
+    IntSupplier line= frame ? () -> Integer.parseInt(m.group(1)) : () -> markedLineAfter(console.getDocument(), offset);
     console.addHyperlink(new Link(f, line), offset+m.start(frame ? 2 : 3), file.length());
   }
   private static int markedLineAfter(IDocument doc, int offset){
@@ -60,7 +60,7 @@ final class Links implements IPatternMatchListener{
         IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), marker, true);
         marker.delete();
       }
-      catch(CoreException e){ throw new IllegalStateException(e); }
+      catch (CoreException e){ throw new IllegalStateException(e); }
     }
     @Override public void linkEntered(){}
     @Override public void linkExited(){}

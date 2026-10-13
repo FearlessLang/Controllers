@@ -26,18 +26,18 @@ final class Collapsible extends JPanel{
     head.setFocusPainted(false);
     head.setContentAreaFilled(false);
     head.setFont(head.getFont().deriveFont(Font.BOLD));
-    head.addActionListener(_->setOpen(!body.isVisible()));
+    head.addActionListener(_ -> setOpen(!body.isVisible()));
     setBorder(BorderFactory.createEtchedBorder());
     var bar= new JPanel(new BorderLayout());
-    bar.add(head,BorderLayout.CENTER);
-    var right= new JPanel(new FlowLayout(FlowLayout.RIGHT,4,0));
-    for(var c: trailing){ right.add(c); }
-    bar.add(right,BorderLayout.EAST);
-    add(bar,BorderLayout.NORTH);
-    add(body,BorderLayout.CENTER);
+    bar.add(head, BorderLayout.CENTER);
+    var right= new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+    for (var c: trailing){ right.add(c); }
+    bar.add(right, BorderLayout.EAST);
+    add(bar, BorderLayout.NORTH);
+    add(body, BorderLayout.CENTER);
     setOpen(open);
   }
-  @Override public Dimension getMaximumSize(){ return new Dimension(Integer.MAX_VALUE,getPreferredSize().height); }
+  @Override public Dimension getMaximumSize(){ return new Dimension(Integer.MAX_VALUE, getPreferredSize().height); }
   void setOpen(boolean open){
     body.setVisible(open);
     head.setText((open ? "[-] " : "[+] ")+title);

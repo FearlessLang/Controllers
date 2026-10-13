@@ -50,18 +50,18 @@ final class Tokens{
   }
   /// every token of the text, the dropped ones included
   static List<Tok> tokens(String text){
-    var matchers= Arrays.stream(Kind.values()).map(k->k.pattern.matcher(text).useTransparentBounds(true)).toList();
+    var matchers= Arrays.stream(Kind.values()).map(k -> k.pattern.matcher(text).useTransparentBounds(true)).toList();
     var res= new ArrayList<Tok>();
     for (int i= 0; i < text.length();){
       var best= Kind.Ws;
       var end= i;
       for (var k : Kind.values()){
         var m= matchers.get(k.ordinal()).region(i, text.length());
-        if (m.lookingAt() && m.end() > end){ best= k; end= m.end(); }
+        if (m.lookingAt() && m.end() > end){ best = k; end = m.end(); }
       }
-      if (end == i){ i+= 1; continue; }
+      if (end == i){ i += 1; continue; }
       res.add(new Tok(best, text.substring(i, end), i, end));
-      i= end;
+      i = end;
     }
     return res;
   }
@@ -71,8 +71,8 @@ final class Tokens{
     for (var t : tokens){
       if (t.kind.hidden()){ continue; }
       switch (t.kind){
-        case OCurly, ORound, OSquareArg -> { var g= new Group(t.kind, t.start, cur); cur.items.add(g); cur= g; }
-        case CCurly, CCurlyId, CRound, CSquare -> cur= close(cur, t);
+        case OCurly, ORound, OSquareArg -> { var g= new Group(t.kind, t.start, cur); cur.items.add(g); cur = g; }
+        case CCurly, CCurlyId, CRound, CSquare -> cur = close(cur, t);
         default -> cur.items.add(t);
       }
     }
@@ -81,9 +81,9 @@ final class Tokens{
   private static Group close(Group cur, Tok closer){
     var open= switch (closer.kind){ case CRound -> Kind.ORound; case CSquare -> Kind.OSquareArg; default -> Kind.OCurly; };
     var g= cur;
-    while (g.parent != null && g.open != open){ g= g.parent; }
+    while (g.parent != null && g.open != open){ g = g.parent; }
     if (g.parent == null){ return cur; }
-    for (var h= cur; h != g.parent; h= h.parent){ h.end= closer.start; }
+    for (var h= cur; h != g.parent; h = h.parent){ h.end = closer.start; }
     return g.parent;
   }
   static Group innermost(Group g, int pos){

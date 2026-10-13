@@ -32,13 +32,13 @@ public final class PopupItems extends CompoundContributionItem{
     var alias= Adapters.adapt(selection.getFirstElement(), IResource.class).getProject().getName();
     var p= ManagerLink.project(alias);
     var res= new ArrayList<IContributionItem>();
-    res.add(action("Documentation", ()->docs(p.folder())));
+    res.add(action("Documentation", () -> docs(p.folder())));
     res.add(new Separator());
     var kinds= p.kind().equals("idle") ? List.of(List.of("Become data", "data:readOnly"), List.of("Become editable data", "data:readWrite"), List.of("Become code", "code")) : List.of(List.of("Back to idle", "idle"));
-    kinds.forEach(k->res.add(action(k.get(0), ()->ManagerLink.send("Kind", alias, k.get(1)))));
+    kinds.forEach(k -> res.add(action(k.get(0), () -> ManagerLink.send("Kind", alias, k.get(1)))));
     res.add(new Separator());
-    res.add(action("Show in manager", ()->ManagerLink.send("Show", alias)));
-    res.add(action("Forget project", ()->ManagerLink.send("Forget", alias)));
+    res.add(action("Show in manager", () -> ManagerLink.send("Show", alias)));
+    res.add(action("Forget project", () -> ManagerLink.send("Forget", alias)));
     return res.toArray(IContributionItem[]::new);
   }
   private static IContributionItem action(String text, Runnable run){
@@ -48,14 +48,14 @@ public final class PopupItems extends CompoundContributionItem{
   /// each in a browser tab of its own that opening again reuses.
   private static void docs(Path folder){
     var genJava= folder.resolve(".fearless_out").resolve("gen_java");
-    try(var pages= Files.isDirectory(genJava) ? Files.walk(genJava) : Stream.<Path>of()){
-      Stream.concat(pages.filter(p->p.toString().endsWith(".html")).sorted(), Stream.of(ManagerLink.baseCache.resolve("base.html"))).forEach(PopupItems::open);
+    try (var pages= Files.isDirectory(genJava) ? Files.walk(genJava) : Stream.<Path>of()){
+      Stream.concat(pages.filter(p -> p.toString().endsWith(".html")).sorted(), Stream.of(ManagerLink.baseCache.resolve("base.html"))).forEach(PopupItems::open);
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static void open(Path page){
     var support= PlatformUI.getWorkbench().getBrowserSupport();
     try{ support.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR, page.toString(), page.getFileName().toString(), null).openURL(page.toUri().toURL()); }
-    catch(PartInitException|MalformedURLException e){ throw new IllegalStateException(e); }
+    catch (PartInitException|MalformedURLException e){ throw new IllegalStateException(e); }
   }
 }

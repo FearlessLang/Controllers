@@ -18,7 +18,7 @@ public final class Output extends ViewPart{
   @Override public void createPartControl(Composite parent){ new TextConsoleViewer(parent, console).setEditable(false); }
   @Override public void setFocus(){}
   static MessageConsoleStream start(String alias){
-    Output.alias= alias;
+    Output.alias = alias;
     console.clearConsole();
     Display.getDefault().asyncExec(Output::show);
     return console.newMessageStream();
@@ -27,6 +27,6 @@ public final class Output extends ViewPart{
     var page= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
     if (!page.getPerspective().getId().equals(FearlessPerspective.id)){ return; }
     try{ page.showView(id, null, IWorkbenchPage.VIEW_VISIBLE); }
-    catch(PartInitException e){ throw new IllegalStateException(e); }
+    catch (PartInitException e){ throw new IllegalStateException(e); }
   }
 }

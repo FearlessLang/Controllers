@@ -35,99 +35,99 @@ final class NamesTest{
     assertFalse(Names.isName("a.b"));
   }
   @Test void aFolderNameIsTurnedIntoANameFearlessAccepts(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    assertEquals("helloworld",Names.free(project,"helloWorld",Set.of()));
-    assertEquals("map_a_to_pkc",Names.free(project,"map_a_to_pkc",Set.of()));
-    assertEquals("a_b",Names.free(project,"a - b",Set.of()));
-    assertEquals("p2fast",Names.free(project,"2fast",Set.of()));
-    assertEquals("pcon",Names.free(project,"con",Set.of()));
+    var project= folder(dir, "someProject");
+    assertEquals("helloworld", Names.free(project, "helloWorld", Set.of()));
+    assertEquals("map_a_to_pkc", Names.free(project, "map_a_to_pkc", Set.of()));
+    assertEquals("a_b", Names.free(project, "a - b", Set.of()));
+    assertEquals("p2fast", Names.free(project, "2fast", Set.of()));
+    assertEquals("pcon", Names.free(project, "con", Set.of()));
   }
   @Test void aTakenNameGetsANumber(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    assertEquals("hello2",Names.free(project,"hello",Set.of("hello")));
-    assertEquals("hello3",Names.free(project,"hello",Set.of("hello","hello2")));
+    var project= folder(dir, "someProject");
+    assertEquals("hello2", Names.free(project, "hello", Set.of("hello")));
+    assertEquals("hello3", Names.free(project, "hello", Set.of("hello", "hello2")));
   }
   @Test void aFreeNameIsKeptAndGetsAMarkerFile(@TempDir Path dir){
-    var project= folder(dir,"someproject");
-    assertEquals("someproject",Names.makeUnique(project,Set.of("other")));
-    assertEquals(Optional.empty(),Names.markerProblem(project,"someproject"));
+    var project= folder(dir, "someproject");
+    assertEquals("someproject", Names.makeUnique(project, Set.of("other")));
+    assertEquals(Optional.empty(), Names.markerProblem(project, "someproject"));
     assertTrue(Files.isRegularFile(project.resolve("someproject.fearless")));
   }
   @Test void makeUniqueIsIdempotentOnAnAlreadyMarkedFolder(@TempDir Path dir){
-    var project= folder(dir,"someproject");
-    Names.makeUnique(project,Set.of("other"));
-    assertEquals("someproject",Names.makeUnique(project,Set.of("other")));
-    assertEquals(Optional.empty(),Names.markerProblem(project,"someproject"));
+    var project= folder(dir, "someproject");
+    Names.makeUnique(project, Set.of("other"));
+    assertEquals("someproject", Names.makeUnique(project, Set.of("other")));
+    assertEquals(Optional.empty(), Names.markerProblem(project, "someproject"));
   }
   @Test void anUnsafeFolderNameIsMadeAcceptableEvenWithNoCollision(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    assertEquals("someproject",Names.makeUnique(project,Set.of("other")));
+    var project= folder(dir, "someProject");
+    assertEquals("someproject", Names.makeUnique(project, Set.of("other")));
     assertTrue(Files.isRegularFile(project.resolve("someproject.fearless")));
   }
   @Test void aTakenNameGetsANumberAndANewFearlessFile(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    assertEquals("someproject2",Names.makeUnique(project,Set.of("someproject")));
-    assertEquals(Optional.empty(),Names.markerProblem(project,"someproject2"));
+    var project= folder(dir, "someProject");
+    assertEquals("someproject2", Names.makeUnique(project, Set.of("someproject")));
+    assertEquals(Optional.empty(), Names.markerProblem(project, "someproject2"));
     assertFalse(Fs.readUtf8(project.resolve("someproject2.fearless")).isEmpty());
   }
   @Test void theChosenNameIsTheFolderNameMadeAcceptableAndFree(@TempDir Path dir){
-    var project= folder(dir,"helloWorld");
-    Fs.writeUtf8(project.resolve("start.fearless"),"");
-    assertEquals("helloworld2",Names.makeUnique(project,Set.of("start","helloworld")));
-    assertEquals(Optional.empty(),Names.markerProblem(project,"helloworld2"));
+    var project= folder(dir, "helloWorld");
+    Fs.writeUtf8(project.resolve("start.fearless"), "");
+    assertEquals("helloworld2", Names.makeUnique(project, Set.of("start", "helloworld")));
+    assertEquals(Optional.empty(), Names.markerProblem(project, "helloworld2"));
   }
   @Test void anExistingFearlessFileIsRenamedNotDuplicated(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    Fs.writeUtf8(project.resolve("start.fearless"),"kept\n");
-    assertEquals("someproject",Names.makeUnique(project,Set.of("start")));
+    var project= folder(dir, "someProject");
+    Fs.writeUtf8(project.resolve("start.fearless"), "kept\n");
+    assertEquals("someproject", Names.makeUnique(project, Set.of("start")));
     assertFalse(Files.exists(project.resolve("start.fearless")));
-    assertEquals("kept\n",Fs.readUtf8(project.resolve("someproject.fearless")));
+    assertEquals("kept\n", Fs.readUtf8(project.resolve("someproject.fearless")));
   }
   @Test void anEmptyFearlessFileIsGivenTheMarkerText(@TempDir Path dir){
-    var project= folder(dir,"someproject");
-    Fs.writeUtf8(project.resolve("someproject.fearless"),"");
-    assertEquals("someproject",Names.makeUnique(project,Set.of("other")));
-    assertEquals(mainCoordinator.MakeDemo.markerContent,Fs.readUtf8(project.resolve("someproject.fearless")));
+    var project= folder(dir, "someproject");
+    Fs.writeUtf8(project.resolve("someproject.fearless"), "");
+    assertEquals("someproject", Names.makeUnique(project, Set.of("other")));
+    assertEquals(mainCoordinator.MakeDemo.markerContent, Fs.readUtf8(project.resolve("someproject.fearless")));
   }
   @Test void anEmptyFearlessFileIsRenamedAndGivenTheMarkerText(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    Fs.writeUtf8(project.resolve("start.fearless"),"");
-    assertEquals("someproject",Names.makeUnique(project,Set.of("start")));
-    assertEquals(mainCoordinator.MakeDemo.markerContent,Fs.readUtf8(project.resolve("someproject.fearless")));
+    var project= folder(dir, "someProject");
+    Fs.writeUtf8(project.resolve("start.fearless"), "");
+    assertEquals("someproject", Names.makeUnique(project, Set.of("start")));
+    assertEquals(mainCoordinator.MakeDemo.markerContent, Fs.readUtf8(project.resolve("someproject.fearless")));
   }
   @Test void markerProblemIsEmptyWhenTheMarkerMatchesTheAlias(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    Fs.writeUtf8(project.resolve("my_game.fearless"),"");
-    assertEquals(Optional.empty(),Names.markerProblem(project,"my_game"));
+    var project= folder(dir, "someProject");
+    Fs.writeUtf8(project.resolve("my_game.fearless"), "");
+    assertEquals(Optional.empty(), Names.markerProblem(project, "my_game"));
   }
   @Test void markerProblemReportsAMissingMarker(@TempDir Path dir){
-    var problem= Names.markerProblem(folder(dir,"someProject"),"my_game");
+    var problem= Names.markerProblem(folder(dir, "someProject"), "my_game");
     assertTrue(problem.orElseThrow().contains("my_game.fearless"));
   }
   @Test void markerProblemReportsMoreThanOneMarker(@TempDir Path dir){
-    var project= folder(dir,"someProject");
-    Fs.writeUtf8(project.resolve("my_game.fearless"),"");
-    Fs.writeUtf8(project.resolve("other.fearless"),"");
-    assertTrue(Names.markerProblem(project,"my_game").orElseThrow().contains("More than one"));
+    var project= folder(dir, "someProject");
+    Fs.writeUtf8(project.resolve("my_game.fearless"), "");
+    Fs.writeUtf8(project.resolve("other.fearless"), "");
+    assertTrue(Names.markerProblem(project, "my_game").orElseThrow().contains("More than one"));
   }
   @Test void everyChosenNameIsAValidFreeName(@TempDir Path dir){
     var taken= new HashSet<String>();
-    var names= List.of("com","lpt","con","aux","a".repeat(250),"---","1abc","_","base","rank","caf\u00e9","\u65e5\u672c","\u00c4rger","Com");
+    var names= List.of("com", "lpt", "con", "aux", "a".repeat(250), "---", "1abc", "_", "base", "rank", "caf\u00e9", "\u65e5\u672c", "\u00c4rger", "Com");
     for (var i= 0; i < 12; i++){
       for (var n: names){
-        var chosen= Names.makeUnique(folder(dir.resolve(i+"_"+names.indexOf(n)),n),Set.copyOf(taken));
-        assertTrue(Names.isName(chosen),chosen);
-        assertTrue(taken.add(chosen),chosen);
+        var chosen= Names.makeUnique(folder(dir.resolve(i+"_"+names.indexOf(n)), n), Set.copyOf(taken));
+        assertTrue(Names.isName(chosen), chosen);
+        assertTrue(taken.add(chosen), chosen);
       }
     }
   }
   @Test void aMarkerDifferingOnlyInCaseIsMissingAndRegisteringRenamesIt(@TempDir Path dir){
-    var project= folder(dir,"hello");
-    Fs.writeUtf8(project.resolve("Hello.fearless"),"kept\n");
-    same("The marker file \"hello.fearless\" is missing from[###]",Names.markerProblem(project,"hello").orElseThrow());
-    assertEquals("hello",Names.makeUnique(project,Set.of()));
-    assertEquals(List.of(project.resolve("hello.fearless")),Names.list(project));
-    assertEquals("kept\n",Fs.readUtf8(project.resolve("hello.fearless")));
-    assertEquals(Optional.empty(),Names.markerProblem(project,"hello"));
+    var project= folder(dir, "hello");
+    Fs.writeUtf8(project.resolve("Hello.fearless"), "kept\n");
+    same("The marker file \"hello.fearless\" is missing from[###]", Names.markerProblem(project, "hello").orElseThrow());
+    assertEquals("hello", Names.makeUnique(project, Set.of()));
+    assertEquals(List.of(project.resolve("hello.fearless")), Names.list(project));
+    assertEquals("kept\n", Fs.readUtf8(project.resolve("hello.fearless")));
+    assertEquals(Optional.empty(), Names.markerProblem(project, "hello"));
   }
 }

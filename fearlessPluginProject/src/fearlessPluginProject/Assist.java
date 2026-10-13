@@ -53,17 +53,17 @@ public final class Assist implements IContentAssistProcessorExtension{
     var text= viewer.getDocument().get();
     var head= file.getName().startsWith("_rank_") ? text : head(project.folder().resolve(pkgDir));
     var base= ManagerLink.baseCache.resolve("base.json");
-    var types= Stream.concat(Stream.of(base), jsons(out)).flatMap(p->types(p).stream()).toList();
+    var types= Stream.concat(Stream.of(base), jsons(out)).flatMap(p -> types(p).stream()).toList();
     var packages= Files.isDirectory(out) ? Api.packages(ManagerLink.read(out.resolve("_map.json")), pkgDir.substring(1)) : Map.<String,String>of();
     var api= new Api(types);
     var s= Resolver.of(api, pkgDir.substring(1), packages, head, text).suggest(offset);
-    var typeProposals= s.types().stream().map(t->typeProposal(t, s.from(), offset, docs(txt(out, pkg(t.name())))));
+    var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, docs(txt(out, pkg(t.name())))));
     if (s.rows().isEmpty()){ return typeProposals.toArray(ICompletionProposal[]::new); }
-    var docs= api.entry(s.receiver()).map(t->docs(txt(out, pkg(t.name()))));
-    return Stream.concat(s.rows().stream().map(r->proposal(r, s.from(), offset, docs, s.receiver())), typeProposals).toArray(ICompletionProposal[]::new);
+    var docs= api.entry(s.receiver()).map(t -> docs(txt(out, pkg(t.name()))));
+    return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, docs, s.receiver())), typeProposals).toArray(ICompletionProposal[]::new);
   }
   private static ICompletionProposal proposal(Row r, int from, int offset, Optional<Docs> docs, Ty receiver){
-    return new CompletionProposal(r.insert(), from, offset-from, r.insert().length(), null, r.display(), null, docs.flatMap(d->d.method(simple(receiver.name()), receiver.args().size(), r.name(), r.ts().size())).orElse(null));
+    return new CompletionProposal(r.insert(), from, offset-from, r.insert().length(), null, r.display(), null, docs.flatMap(d -> d.method(simple(receiver.name()), receiver.args().size(), r.name(), r.ts().size())).orElse(null));
   }
   private static ICompletionProposal typeProposal(Ty t, int from, int offset, Docs docs){
     var name= simple(t.name());
@@ -75,24 +75,24 @@ public final class Assist implements IContentAssistProcessorExtension{
     return pkg.equals("base") ? ManagerLink.baseCache.resolve("base.txt") : out.resolve("gen_java").resolve(pkg+".txt");
   }
   private static String head(Path pkgDir){
-    try(var files= Files.list(pkgDir)){
-      var heads= files.filter(p->p.getFileName().toString().startsWith("_rank_")).toList();
+    try (var files= Files.list(pkgDir)){
+      var heads= files.filter(p -> p.getFileName().toString().startsWith("_rank_")).toList();
       return heads.size() == 1 ? ManagerLink.read(heads.get(0)) : "";
     }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static Stream<Path> jsons(Path out){
     if (!Files.isDirectory(out)){ return Stream.of(); }
-    try(var files= Files.list(out)){ return files.filter(p->p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
-    catch(IOException e){ throw new UncheckedIOException(e); }
+    try (var files= Files.list(out)){ return files.filter(p -> p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static synchronized List<Type> types(Path json){
     var stamp= json.toFile().lastModified();
-    return loaded.compute(json, (p,old)->old != null && old.stamp == stamp ? old : new Loaded(stamp, Api.parse(ManagerLink.read(json)))).types;
+    return loaded.compute(json, (p,old) -> old != null && old.stamp == stamp ? old : new Loaded(stamp, Api.parse(ManagerLink.read(json)))).types;
   }
   private static synchronized Docs docs(Path txt){
     var stamp= txt.toFile().lastModified();
-    return texts.compute(txt, (p,old)->old != null && old.stamp == stamp ? old : new Text(stamp, new Docs(ManagerLink.read(txt)))).docs;
+    return texts.compute(txt, (p,old) -> old != null && old.stamp == stamp ? old : new Text(stamp, new Docs(ManagerLink.read(txt)))).docs;
   }
   @Override public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset){ return null; }
   @Override public boolean isCompletionProposalAutoActivation(char c, ITextViewer viewer, int offset){ return c == '.'; }

@@ -28,9 +28,8 @@ import utils.Bug;
 /// that compiled project in this JVM, in a class loader of its own.
 public final class Runtimes{
   public static final String stlibsKey= "fearless.benchmarks.stlibs";
-  static final Path out= ResolveResource.controllerSrc.getParent().resolve(".out","benchmarks");
-  static final Path project= ResolveResource.controllerSrc.getParent().resolve("benchmarks","fearless");
-  private Runtimes(){}
+  static final Path out= ResolveResource.controllerSrc.getParent().resolve(".out", "benchmarks");
+  static final Path project= ResolveResource.controllerSrc.getParent().resolve("benchmarks", "fearless");
   public static List<String> buildAll(){
     var spec= System.getProperty(stlibsKey, "wc="+ResolveResource.stLibPath.getParent());
     var names= new ArrayList<String>();
@@ -43,7 +42,7 @@ public final class Runtimes{
     return names;
   }
   static void build(String name, Path stlib){
-    System.setProperty(JavacTool.appDirKey, ResolveResource.stLibPath.getParent().resolve("fearlessArtefact","fearless","app").toString());
+    System.setProperty(JavacTool.appDirKey, ResolveResource.stLibPath.getParent().resolve("fearlessArtefact", "fearless", "app").toString());
     var dir= out.resolve(name);
     Fs.rmTree(dir);
     var basePath= stlib.resolve("base");
@@ -70,7 +69,7 @@ public final class Runtimes{
         return BackendTools.of(pkgName, oracle, other, core, scratch, baseCachePath(), Optional.empty(), rtPath, capabilities);
       }
     };
-    OutputOracle o= ()->scratch;
+    OutputOracle o= () -> scratch;
     var other= OtherPackages.empty();
     var oracle= c.sourceOracle(basePath);
     var rich= SourceOracleWithAutoload.ofBase(oracle);
@@ -85,15 +84,15 @@ public final class Runtimes{
   }
   public static Loaded load(String name){
     var dir= out.resolve(name);
-    var jars= List.of(dir.resolve("project", Coordinator.outDir, "gen_java", "bench.jar"), dir.resolve("baseCache","base.jar"));
-    var urls= jars.stream().map(p->Fs.of(()->p.toUri().toURL())).toArray(URL[]::new);
+    var jars= List.of(dir.resolve("project", Coordinator.outDir, "gen_java", "bench.jar"), dir.resolve("baseCache", "base.jar"));
+    var urls= jars.stream().map(p -> Fs.of(() -> p.toUri().toURL())).toArray(URL[]::new);
     return new Loaded(new URLClassLoader(urls, ClassLoader.getPlatformClassLoader()));
   }
   interface Reflect<T>{ T get() throws ReflectiveOperationException; }
   static <T> T reflect(Reflect<T> r){
     try{ return r.get(); }
-    catch(InvocationTargetException e){ throw sneaky(e.getCause()); }
-    catch(ReflectiveOperationException e){ throw Bug.of(e.toString()); }
+    catch (InvocationTargetException e){ throw sneaky(e.getCause()); }
+    catch (ReflectiveOperationException e){ throw Bug.of(e.toString()); }
   }
   @SuppressWarnings("unchecked") static <E extends Throwable> RuntimeException sneaky(Throwable t) throws E{ throw (E)t; }
   public static final class Loaded{
@@ -101,10 +100,10 @@ public final class Runtimes{
     final Object system;
     Loaded(ClassLoader cl){
       this.cl= cl;
-      this.system= reflect(()->cl.loadClass("_base._System$2o$0").getConstructor().newInstance());
+      this.system= reflect(() -> cl.loadClass("_base._System$2o$0").getConstructor().newInstance());
     }
     public void run(String main){
-      reflect(()->{
+      reflect(() -> {
         var c= cl.loadClass("_bench."+main+"$"+tag(main)+"$0");
         var instance= c.getField("instance").get(null);
         return c.getMethod("imm$main$1", Object.class).invoke(instance, system);

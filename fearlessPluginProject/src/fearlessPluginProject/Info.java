@@ -33,7 +33,7 @@ final class Info{
       if (p.i != p.text.length()){ throw p.bad("the end of the file"); }
       return res;
     }
-    catch(IndexOutOfBoundsException e){ throw p.bad("more text"); }
+    catch (IndexOutOfBoundsException e){ throw p.bad("more text"); }
   }
   @SuppressWarnings("unchecked") static Map<String,Object> obj(Object value){ return (Map<String,Object>)value; }
   @SuppressWarnings("unchecked") static List<Object> lst(Object value){ return (List<Object>)value; }
@@ -47,7 +47,7 @@ final class Info{
         if (p.i != p.text.length()){ throw p.bad("the end of the text"); }
         return res;
       }
-      catch(IndexOutOfBoundsException e){ throw p.bad("more text"); }
+      catch (IndexOutOfBoundsException e){ throw p.bad("more text"); }
     }
     if (!s.startsWith("Base16:") || !s.substring("Base16:".length()).matches("(?:[0-9A-F]{2})+")){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
     return path(HexFormat.of().parseHex(s.substring("Base16:".length())), s);
@@ -58,11 +58,11 @@ final class Info{
     if (System.getProperty("os.name").startsWith("Windows")){
       if (bytes.length % 2 != 0){ throw new IllegalStateException("The manager wrote the malformed path \""+s+"\"."); }
       var res= new StringBuilder();
-      for (int j= 0; j < bytes.length; j+= 2){ res.append((char)((bytes[j] & 0xFF) | (bytes[j+1] & 0xFF) << 8)); }
+      for (int j= 0; j < bytes.length; j += 2){ res.append((char)((bytes[j] & 0xFF) | (bytes[j+1] & 0xFF) << 8)); }
       return res.toString();
     }
     try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
-    catch(CharacterCodingException e){ throw new IllegalStateException("The manager wrote the path \""+s+"\", which this system can not give to Java.", e); }
+    catch (CharacterCodingException e){ throw new IllegalStateException("The manager wrote the path \""+s+"\", which this system can not give to Java.", e); }
   }
   private Object value(){
     ws();
@@ -74,7 +74,7 @@ final class Info{
     expect('[');
     if (next(']')){ return res; }
     do{ res.add(value()); }
-    while(next(','));
+    while (next(','));
     expect(']');
     return res;
   }
@@ -88,14 +88,14 @@ final class Info{
       expect(':');
       if (res.put(key, value()) != null){ throw bad("a key other than \""+key+"\""); }
     }
-    while(next(','));
+    while (next(','));
     expect('}');
     return res;
   }
   private String str(){
     expect('"');
     var sb= new StringBuilder();
-    for (var c= text.charAt(i++); c != '"'; c= text.charAt(i++)){
+    for (var c= text.charAt(i++); c != '"'; c = text.charAt(i++)){
       sb.append(c == '\\' ? escape(text.charAt(i++)) : c);
     }
     return sb.toString();
@@ -107,14 +107,14 @@ final class Info{
   }
   private String expr(){
     var sb= new StringBuilder(atom());
-    while(true){
+    while (true){
       ws();
       if (i == text.length()){ return sb.toString(); }
       var c= text.charAt(i);
-      if (c == '+'){ i+= 1; sb.append(atom()); continue; }
-      if (c == '|' || c == '^'){ i+= 1; sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
+      if (c == '+'){ i += 1; sb.append(atom()); continue; }
+      if (c == '|' || c == '^'){ i += 1; sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
       if (!text.startsWith(".u", i) || (i+2 < text.length() && Character.isLetterOrDigit(text.charAt(i+2)))){ return sb.toString(); }
-      i+= 2;
+      i += 2;
       if (atomNext()){ sb.append(codePoints(atom())); }
     }
   }
@@ -133,23 +133,23 @@ final class Info{
     var end= text.indexOf(open, i);
     if (end < 0){ throw bad("the closing "+open); }
     var res= text.substring(i, end);
-    i= end+1;
+    i = end+1;
     return res;
   }
   private String codePoints(String body){
     if (body.isEmpty()){ return ""; }
     if (!uCodeText.matcher(body).matches()){ throw bad("code points in .u\"...\", each 1 to 6 uppercase hex digits, separated by single spaces,"); }
-    var cps= Stream.of(body.split(" ")).mapToInt(h->Integer.parseInt(h,16)).toArray();
-    if (Arrays.stream(cps).anyMatch(cp->cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))){ throw bad("code points in .u\"...\" of Unicode scalars only (no D800 to DFFF, nothing above 10FFFF)"); }
-    return new String(cps,0,cps.length);
+    var cps= Stream.of(body.split(" ")).mapToInt(h -> Integer.parseInt(h, 16)).toArray();
+    if (Arrays.stream(cps).anyMatch(cp -> cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))){ throw bad("code points in .u\"...\" of Unicode scalars only (no D800 to DFFF, nothing above 10FFFF)"); }
+    return new String(cps, 0, cps.length);
   }
   private boolean next(char c){
     ws();
     if (text.charAt(i) != c){ return false; }
-    i+= 1;
+    i += 1;
     return true;
   }
   private void expect(char c){ if (!next(c)){ throw bad("'"+c+"'"); } }
-  private void ws(){ while(i < text.length() && (text.charAt(i) == ' ' || text.charAt(i) == '\n')){ i+= 1; } }
+  private void ws(){ while (i < text.length() && (text.charAt(i) == ' ' || text.charAt(i) == '\n')){ i += 1; } }
   private IllegalStateException bad(String expected){ return new IllegalStateException(file+" is not what the manager writes: "+expected+" was expected at offset "+i+"."); }
 }

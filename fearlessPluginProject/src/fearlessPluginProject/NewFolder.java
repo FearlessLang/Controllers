@@ -20,13 +20,13 @@ public final class NewFolder extends BasicNewResourceWizard{
   @Override public void addPages(){
     setWindowTitle("New Folder");
     var on= Adapters.adapt(getSelection().getFirstElement(), IResource.class);
-    page= new Page(on instanceof IContainer c ? c : on.getParent());
+    page = new Page(on instanceof IContainer c ? c : on.getParent());
     addPage(page);
   }
   @Override public boolean performFinish(){
     var folder= page.parent.getFolder(new Path(page.name.getText()));
     try{ folder.create(false, true, null); }
-    catch(CoreException e){ throw new IllegalStateException(e); }
+    catch (CoreException e){ throw new IllegalStateException(e); }
     selectAndReveal(folder);
     return true;
   }
@@ -43,11 +43,11 @@ public final class NewFolder extends BasicNewResourceWizard{
       var root= new Composite(parentControl, SWT.NONE);
       root.setLayout(new GridLayout(2, false));
       new Label(root, SWT.NONE).setText("Folder name:");
-      name= new Text(root, SWT.BORDER);
+      name = new Text(root, SWT.BORDER);
       var wide= new GridData(SWT.FILL, SWT.CENTER, true, false);
-      wide.widthHint= 480;
+      wide.widthHint = 480;
       name.setLayoutData(wide);
-      name.addModifyListener(e->validate());
+      name.addModifyListener(e -> validate());
       setPageComplete(false);
       setControl(root);
     }

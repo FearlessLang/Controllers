@@ -19,9 +19,9 @@ public final class Nature implements IProjectNature{
   }
   @Override public void deconfigure(){}
   @Override public IProject getProject(){ return project; }
-  @Override public void setProject(IProject project){ this.project= project; }
+  @Override public void setProject(IProject project){ this.project = project; }
   public static boolean marks(IProject project){
     try{ return project.isAccessible() && project.hasNature(id); }
-    catch(CoreException e){ throw new IllegalStateException(e); }
+    catch (CoreException e){ throw new IllegalStateException(e); }
   }
 }

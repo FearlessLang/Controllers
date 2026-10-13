@@ -34,43 +34,43 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
   }
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
   public static Facts of(Path folder, String alias, Kind kind){
-    try{ return retried(()->read(folder,alias,kind)); }
-    catch(UncheckedIOException e){ return invalid(Report.folderUnreadable(folder,e.getCause())); }
+    try{ return retried(() -> read(folder, alias, kind)); }
+    catch (UncheckedIOException e){ return invalid(Report.folderUnreadable(folder, e.getCause())); }
   }
-  private static Facts invalid(String problem){ return new Facts(false,Optional.empty(),Optional.empty(),List.of(),Optional.of(problem)); }
+  private static Facts invalid(String problem){ return new Facts(false, Optional.empty(), Optional.empty(), List.of(), Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
-    for(var left= 10;; left-= 1){
+    for (var left= 10;; left -= 1){
       try{ return read.get(); }
-      catch(UncheckedIOException e){ if (left == 0 || !(e.getCause() instanceof NoSuchFileException)){ throw e; } }
+      catch (UncheckedIOException e){ if (left == 0 || !(e.getCause() instanceof NoSuchFileException)){ throw e; } }
     }
   }
   private static Facts read(Path folder, String alias, Kind kind){
     if (!Files.isDirectory(folder)){ return invalid(Report.folderMissing(folder)); }
-    UserError.root= folder;
+    UserError.root = folder;
     Map<String,Boolean> built= Map.of();
     Optional<String> problem;
     try{
-      if (kind == Kind.code){ built= Coordinator.pkgsBuilt(folder); } else { new RealSourceOracleWithZip(folder); }
-      problem= Names.markerProblem(folder,alias);
+      if (kind == Kind.code){ built = Coordinator.pkgsBuilt(folder); } else{ new RealSourceOracleWithZip(folder); }
+      problem= Names.markerProblem(folder, alias);
     }
-    catch(UserError e){ problem= Optional.of(e.getMessage()); }
+    catch (UserError e){ problem = Optional.of(e.getMessage()); }
     Optional<Icon> icon= Optional.empty();
-    try{ icon= icon(folder); }
-    catch(UserError e){ if (problem.isEmpty()){ problem= Optional.of(e.getMessage()); } }
+    try{ icon = icon(folder); }
+    catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
     var out= folder.resolve(outDir);
-    var hasCache= Files.isDirectory(out) && Names.list(out).stream().anyMatch(p->p.getFileName().toString().endsWith(".built"));
-    var stalePkgs= built.entrySet().stream().filter(e->!e.getValue()).map(Map.Entry::getKey).toList();
+    var hasCache= Files.isDirectory(out) && Names.list(out).stream().anyMatch(p -> p.getFileName().toString().endsWith(".built"));
+    var stalePkgs= built.entrySet().stream().filter(e -> !e.getValue()).map(Map.Entry::getKey).toList();
     var stale= kind != Kind.code ? Optional.<String>empty()
       : !hasCache || built.isEmpty() ? Optional.of(Report.noCache())
       : stalePkgs.isEmpty() ? Optional.<String>empty() : Optional.of(Report.stalePackages(stalePkgs));
-    return new Facts(hasCache,stale,icon,LogFiles.list(folder),problem);
+    return new Facts(hasCache, stale, icon, LogFiles.list(folder), problem);
   }
-  Facts outOfDate(String why){ return new Facts(hasCache,Optional.of(why),icon,logs,problem); }
+  Facts outOfDate(String why){ return new Facts(hasCache, Optional.of(why), icon, logs, problem); }
   static Optional<Icon> icon(Path folder){
-    var dir= Names.folder(folder,".config").flatMap(c->Names.folder(c,"icon"));
+    var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));
     if (dir.isEmpty()){ return Optional.empty(); }
-    var pngs= Names.list(dir.get()).stream().filter(p->p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png") && Files.isRegularFile(p)).toList();
-    if (pngs.size() > 1){ throw Report.projectIconsMany(dir.get(),pngs); }
+    var pngs= Names.list(dir.get()).stream().filter(p -> p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".png") && Files.isRegularFile(p)).toList();
+    if (pngs.size() > 1){ throw Report.projectIconsMany(dir.get(), pngs); }
     if (pngs.isEmpty()){ return Optional.empty(); }
     var png= pngs.getFirst();
     var stamp= Fs.lastModified(png);
@@ -78,10 +78,10 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     if (known != null && known.stamp() == stamp){ return Optional.of(known); }
     BufferedImage image;
     try{ image= ImageIO.read(png.toFile()); }
-    catch(IOException e){ throw Report.projectIconUnreadable(png); }
+    catch (IOException e){ throw Report.projectIconUnreadable(png); }
     if (image == null){ throw Report.projectIconUnreadable(png); }
-    var res= new Icon(png,stamp,image);
-    decoded.put(png,res);
+    var res= new Icon(png, stamp, image);
+    decoded.put(png, res);
     return Optional.of(res);
   }
 }
