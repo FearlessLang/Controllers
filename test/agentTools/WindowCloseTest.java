@@ -2,10 +2,10 @@ package agentTools;
 
 final class WindowCloseTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(380))),
     on("xubuntu_xfce",()->waitDoubleClick(val(100),val(878),val(430))));
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(380))),
     on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1015),val(430))));
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome",()->waitAfter(val(100))),

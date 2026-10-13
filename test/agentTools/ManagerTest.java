@@ -181,27 +181,27 @@ abstract class ManagerTest{
     on("ubuntu_gnome",()->waitClick(val(100),val(613),val(743))),
     on("xubuntu_xfce",()->waitClick(val(100),val(704),val(610))));
   final Action openApp= action("openApp",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(806),val(380))),
     on("xubuntu_xfce",()->waitDoubleClick(val(100),val(880),val(430))));
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(380))),
     on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1015),val(430))));
   final Action openBin= action("openBin",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(378))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(798),val(380))),
     on("xubuntu_xfce",()->waitDoubleClick(val(100),val(878),val(430))));
   //double clicks fearlessManaged0_001w, the launcher whose name ends with w
   final Action openLauncher= action("openLauncher",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(378))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(911),val(380))),
     on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1015),val(430))));
   final Action openFiles= action("openFiles",
-    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(1024),val(378))),
+    on("ubuntu_gnome",()->waitDoubleClick(val(100),val(1024),val(380))),
     on("xubuntu_xfce",()->waitDoubleClick(val(100),val(1150),val(430))));
   //brings to the front the file manager window that an earlier start() or toFiles() left open
   final Action fileManagerToFront= action("fileManagerToFront",
-    on("ubuntu_gnome",()->waitClick(val(null),val(null),val(null))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(33),val(128))),
     on("xubuntu_xfce",()->waitClick(val(100),val(390),val(12))));
   final Action closeFileManager= action("closeFileManager",
-    on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(303))),
+    on("ubuntu_gnome",()->waitClick(val(100),val(1414),val(304))),
     on("xubuntu_xfce",()->waitClick(val(100),val(1269),val(311))));
   boolean filesOpen;
   void toPilotio() throws Throwable{
