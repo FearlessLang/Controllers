@@ -52,12 +52,12 @@ final class WindowCloseTest extends ManagerTest{
     toFiles();//fileManagerToFront (the file manager window of start() is open behind the manager), pilotioBookmark, openFiles: see ManagerTest.toFiles()
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     var shown= look();
     closeWindow.go();
     managerHidden.go();
     changed(shown,tiles);
+    closeFiles();//the manager window is hidden, so the file manager is visible on every desk
     start();//filesIcon or fileManagerToFront, pilotioBookmark, openApp or openAppNextToManagerFolder, openBin, openLauncher (double click fearlessManaged0_001w): see ManagerTest.start()
     managerBack.go();
     same(shown,tiles);
