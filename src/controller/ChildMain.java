@@ -8,7 +8,7 @@ import managerMessages.Violation;
 import userMessages.UserError;
 
 /// The child JVM the manager starts to compile one project: the arg is the project folder.
-public class ChildMain{
+public final class ChildMain{
   public static void main(String[] args){
     NativeLocaleForcer.forceEnglish();
     ChildJvm.watchParent();
