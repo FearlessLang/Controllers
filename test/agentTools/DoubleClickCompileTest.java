@@ -6,8 +6,8 @@ import tools.Fs;
 
 final class DoubleClickCompileTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(976), val(112))),
-    on("xubuntu_xfce", () -> click(val(982), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(976), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(982), val(93))));
   final Action openHasty= action("openHasty",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
@@ -24,8 +24,8 @@ final class DoubleClickCompileTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compileTwice= action("compileTwice",
-    on("ubuntu_gnome", () -> doubleClick(val(544), val(112))),
-    on("xubuntu_xfce", () -> doubleClick(val(488), val(93))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(544), val(112))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(488), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));

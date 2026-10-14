@@ -9,8 +9,8 @@ import tools.Fs;
 
 final class ForgetProjectTest extends ManagerTest{
   final Action forgetIdle= action("forgetIdle",
-    on("ubuntu_gnome", () -> click(val(1132), val(113))),
-    on("xubuntu_xfce", () -> click(val(1158), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1132), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1158), val(93))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));

@@ -23,8 +23,8 @@ final class SecondMarkerTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(10000))),
     on("xubuntu_xfce", () -> waitAfter(val(12500))));
   final Action check= action("check",
-    on("ubuntu_gnome", () -> click(val(527), val(113))),
-    on("xubuntu_xfce", () -> click(val(478), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(527), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(478), val(93))));
   final Action checked= action("checked",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
@@ -32,8 +32,8 @@ final class SecondMarkerTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(10000))),
     on("xubuntu_xfce", () -> waitAfter(val(12500))));
   final Action checkAgain= action("checkAgain",
-    on("ubuntu_gnome", () -> click(val(527), val(113))),
-    on("xubuntu_xfce", () -> click(val(478), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(527), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(478), val(93))));
   final Action checkedAgain= action("checkedAgain",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));

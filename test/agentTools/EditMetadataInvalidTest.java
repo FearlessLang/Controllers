@@ -19,11 +19,11 @@ final class EditMetadataInvalidTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("xubuntu_xfce", () -> waitAfter(val(7000))));
   final Action kindIdle= action("kindIdle",
-    on("ubuntu_gnome", () -> doubleClick(val(730), val(376))),
-    on("xubuntu_xfce", () -> doubleClick(val(697), val(373))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(730), val(376))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(697), val(373))));
   final Action commit= action("commit",
-    on("ubuntu_gnome", () -> click(val(1278), val(830))),
-    on("xubuntu_xfce", () -> click(val(1245), val(827))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1278), val(830))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1245), val(827))));
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome", () -> waitAfter(val(8500))),
     on("xubuntu_xfce", () -> waitAfter(val(10500))));
@@ -31,8 +31,8 @@ final class EditMetadataInvalidTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitClick(val(null), val(null), val(null))));
   final Action close= action("close",
-    on("ubuntu_gnome", () -> click(val(1357), val(830))),
-    on("xubuntu_xfce", () -> click(val(1324), val(827))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1357), val(830))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1324), val(827))));
   final Action editorClosed= action("editorClosed",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));

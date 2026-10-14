@@ -14,8 +14,8 @@ final class TileSwitchTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
   final Action checkHello= action("checkHello",
-    on("ubuntu_gnome", () -> click(val(580), val(113))),
-    on("xubuntu_xfce", () -> click(val(538), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(580), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(538), val(93))));
   final Action helloChecked= action("helloChecked",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
@@ -29,14 +29,14 @@ final class TileSwitchTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(13500))));
   final Action helloTile= action("helloTile",
-    on("ubuntu_gnome", () -> click(val(133), val(130))),
-    on("xubuntu_xfce", () -> click(val(66), val(110))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(133), val(130))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(66), val(110))));
   final Action helloShown= action("helloShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(5000))));
   final Action startTile= action("startTile",
-    on("ubuntu_gnome", () -> click(val(261), val(130))),
-    on("xubuntu_xfce", () -> click(val(194), val(110))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(261), val(130))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(194), val(110))));
   final Action startShown= action("startShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(5000))));

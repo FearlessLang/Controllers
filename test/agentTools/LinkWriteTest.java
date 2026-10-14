@@ -8,11 +8,11 @@ import tools.Fs;
 
 final class LinkWriteTest extends ManagerTest{
   final Action becomeEditableData= action("becomeEditableData",
-    on("ubuntu_gnome", () -> click(val(842), val(113))),
-    on("xubuntu_xfce", () -> click(val(828), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(842), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(828), val(93))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(974), val(113))),
-    on("xubuntu_xfce", () -> click(val(980), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(974), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(980), val(93))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
@@ -26,32 +26,32 @@ final class LinkWriteTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));
   final Action openLinks= action("openLinks",
-    on("ubuntu_gnome", () -> click(val(450), val(356))),
-    on("xubuntu_xfce", () -> click(val(383), val(336))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(450), val(356))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(383), val(336))));
   final Action linksShown= action("linksShown",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4500))));
   final Action writeField= action("writeField",
-    on("ubuntu_gnome", () -> click(val(768), val(398))),
-    on("xubuntu_xfce", () -> click(val(701), val(378))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(768), val(398))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(701), val(378))));
   final Action editsSaved= action("editsSaved",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("xubuntu_xfce", () -> waitAfter(val(9000))));
   final Action readField= action("readField",
-    on("ubuntu_gnome", () -> click(val(560), val(398))),
-    on("xubuntu_xfce", () -> click(val(493), val(378))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(560), val(398))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(493), val(378))));
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("xubuntu_xfce", () -> waitAfter(val(8500))));
   final Action readFieldAgain= action("readFieldAgain",
-    on("ubuntu_gnome", () -> click(val(560), val(398))),
-    on("xubuntu_xfce", () -> click(val(493), val(378))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(560), val(398))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(493), val(378))));
   final Action readEmptied= action("readEmptied",
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("xubuntu_xfce", () -> waitAfter(val(7000))));
   final Action writeFieldAgain= action("writeFieldAgain",
-    on("ubuntu_gnome", () -> click(val(768), val(398))),
-    on("xubuntu_xfce", () -> click(val(701), val(378))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(768), val(398))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(701), val(378))));
   final Action writeEmptied= action("writeEmptied",
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("xubuntu_xfce", () -> waitAfter(val(7000))));

@@ -18,8 +18,8 @@ final class DropFolderTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(19500))));
   final Action carryDropped= action("carryDropped",
-    on("ubuntu_gnome", () -> drag(val(798), val(380), val(300), val(600))),
-    on("xubuntu_xfce", () -> drag(val(879), val(425), val(200), val(700))));
+    on("ubuntu_gnome", () -> waitDrag(val(0), val(798), val(380), val(300), val(600))),
+    on("xubuntu_xfce", () -> waitDrag(val(0), val(879), val(425), val(200), val(700))));
   final Action droppedSaved= action("droppedSaved",
     on("ubuntu_gnome", () -> waitAfter(val(300))),
     on("xubuntu_xfce", () -> waitAfter(val(12500))));

@@ -2,8 +2,8 @@ package agentTools;
 
 final class RelaunchKeepsRegistryTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(1027), val(113))),
-    on("xubuntu_xfce", () -> click(val(1040), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1027), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1040), val(93))));
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));

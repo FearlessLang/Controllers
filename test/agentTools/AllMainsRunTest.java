@@ -4,8 +4,8 @@ import java.util.List;
 
 final class AllMainsRunTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(1027), val(113))),
-    on("xubuntu_xfce", () -> click(val(1040), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1027), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1040), val(93))));
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
@@ -22,23 +22,23 @@ final class AllMainsRunTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(580), val(113))),
-    on("xubuntu_xfce", () -> click(val(545), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(580), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(545), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));
   final Action runV= action("runV",
-    on("ubuntu_gnome", () -> click(val(580), val(113))),
-    on("xubuntu_xfce", () -> click(val(538), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(580), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(538), val(93))));
   final Action mainsShown= action("mainsShown",
     on("ubuntu_gnome", () -> waitAfter(val(3000))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));
   final Action tick= action("tick",
-    on("ubuntu_gnome", () -> List.of(140, 166, 190, 216, 241).forEach(y -> click(val(574), val(y)))),
-    on("xubuntu_xfce", () -> List.of(118, 141, 164, 187, 210).forEach(y -> click(val(512), val(y)))));
+    on("ubuntu_gnome", () -> List.of(140, 166, 190, 216, 241).forEach(y -> waitClick(val(0), val(574), val(y)))),
+    on("xubuntu_xfce", () -> List.of(118, 141, 164, 187, 210).forEach(y -> waitClick(val(0), val(512), val(y)))));
   final Action runTicked= action("runTicked",
-    on("ubuntu_gnome", () -> click(val(584), val(265))),
-    on("xubuntu_xfce", () -> click(val(524), val(232))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(584), val(265))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(524), val(232))));
   final Action runsDone= action("runsDone",
     on("ubuntu_gnome", () -> waitAfter(val(20500))),
     on("xubuntu_xfce", () -> waitAfter(val(25500))));
