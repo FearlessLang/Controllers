@@ -21,7 +21,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> region(val(343), val(148), val(1000), val(80))),
     on("arch_sway", () -> region(val(1306), val(152), val(1000), val(80))),
     on("void_i3", () -> region(val(1306), val(115), val(1000), val(80))),
-    on("omarchy_hyprland", () -> region(val(1311), val(135), val(1000), val(80))));
+    on("omarchy_hyprland", () -> region(val(1308), val(132), val(586), val(178))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -35,7 +35,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitAfter(val(21500))),
     on("arch_sway", () -> waitAfter(val(null))),
     on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
+    on("omarchy_hyprland", () -> waitAfter(val(20000))));//the manager starts from the launcher: a JVM start in the guest, then the first paint of its window
   final Action openTwins= action("openTwins",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -49,7 +49,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
+    on("omarchy_hyprland", () -> waitDoubleClick(val(500), val(304), val(155))));
   final Action openA= action("openA",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -63,7 +63,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
+    on("omarchy_hyprland", () -> waitDoubleClick(val(500), val(304), val(155))));
   final Action openB= action("openB",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -77,7 +77,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
+    on("omarchy_hyprland", () -> waitDoubleClick(val(500), val(485), val(155))));
   final Action openTwin= action("openTwin",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -91,7 +91,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
+    on("omarchy_hyprland", () -> waitDoubleClick(val(500), val(304), val(155))));
   final Action openTwinMarker= action("openTwinMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -105,7 +105,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
+    on("omarchy_hyprland", () -> waitDoubleClick(val(500), val(485), val(155))));
   final Action firstShown= action("firstShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -119,7 +119,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitAfter(val(null))),
     on("arch_sway", () -> waitAfter(val(null))),
     on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
+    on("omarchy_hyprland", () -> waitAfter(val(8000))));//the marker double click starts a second launcher in the guest, which hands its message to the manager, which registers the project
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome", () -> waitAfter(val(11000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -133,7 +133,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitAfter(val(14000))),
     on("arch_sway", () -> waitAfter(val(null))),
     on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
+    on("omarchy_hyprland", () -> waitAfter(val(12000))));//the marker double click starts a second launcher in the guest, which hands its message to the manager, which registers the project under its alias
   final Action check= action("check",
     on("ubuntu_gnome", () -> waitClick(val(0), val(529), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -147,7 +147,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitClick(val(0), val(468), val(93))),
     on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
+    on("omarchy_hyprland", () -> waitClick(val(100), val(1434), val(79))));
   final Action checked= action("checked",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -161,7 +161,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitAfter(val(5500))),
     on("arch_sway", () -> waitAfter(val(null))),
     on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
+    on("omarchy_hyprland", () -> waitAfter(val(5000))));//the check of the project runs in the manager before its output shows
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -175,7 +175,7 @@ final class AliasClashTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitAfter(val(9000))),
     on("arch_sway", () -> waitAfter(val(null))),
     on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
+    on("omarchy_hyprland", () -> waitAfter(val(8000))));//the manager ends its jobs and its JVM before its window goes away
   @Override void walk() throws Throwable{
     var twins= files.resolve("twins");
     var first= twins.resolve("a").resolve("twin");

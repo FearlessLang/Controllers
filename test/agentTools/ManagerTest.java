@@ -122,7 +122,7 @@ abstract class ManagerTest{
     on("xubuntu_xfce", () -> waitClick(val(null), val(38), val(62))),
     on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
+    on("omarchy_hyprland", () -> waitClick(val(100), val(997), val(46))));
   final Action addFolder= action("addFolder",
     on("ubuntu_gnome", () -> waitClick(val(null), val(110), val(103))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -192,7 +192,7 @@ abstract class ManagerTest{
     on("xubuntu_xfce", () -> waitClick(val(null), val(21), val(182))),
     on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
+    on("omarchy_hyprland", () -> waitClick(val(100), val(985), val(167))));
   final Action closeWindow= action("closeWindow",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1901), val(49))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(1905), val(14))),
@@ -306,7 +306,7 @@ abstract class ManagerTest{
     on("xubuntu_xfce", () -> waitClick(val(100), val(704), val(610))),
     on("arch_sway", () -> waitClick(val(100), val(67), val(271))),
     on("void_i3", () -> waitClick(val(100), val(66), val(151))),
-    on("omarchy_hyprland", () -> waitClick(val(500), val(76), val(462))));
+    on("omarchy_hyprland", () -> waitClick(val(2000), val(76), val(462))));//the file manager window, started from the apps menu, takes up to two seconds to show its final layout
   final Action openApp= action("openApp",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(806), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(788), val(305))),
@@ -320,7 +320,7 @@ abstract class ManagerTest{
     on("xubuntu_xfce", () -> waitDoubleClick(val(100), val(880), val(430))),
     on("arch_sway", () -> waitDoubleClick(val(100), val(240), val(165))),
     on("void_i3", () -> waitDoubleClick(val(100), val(241), val(122))),
-    on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(349), val(155))));
+    on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(348), val(155))));
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(925), val(305))),
@@ -348,7 +348,7 @@ abstract class ManagerTest{
     on("xubuntu_xfce", () -> waitDoubleClick(val(100), val(878), val(430))),
     on("arch_sway", () -> waitDoubleClick(val(100), val(240), val(165))),
     on("void_i3", () -> waitDoubleClick(val(100), val(241), val(122))),
-    on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(349), val(155))));
+    on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(348), val(155))));
   //double clicks fearlessManaged0_001w, the launcher whose name ends with w
   final Action openLauncher= action("openLauncher",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
