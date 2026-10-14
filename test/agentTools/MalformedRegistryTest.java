@@ -190,10 +190,10 @@ final class MalformedRegistryTest extends ManagerTest{
     Fs.writeUtf8(info, remembered.substring(0, remembered.length()-2));
     stabilize();
     var before= look();
-    centerArea.go();
-    var center= region;
     start();
     errorShown.go();
+    centerArea.go();
+    var center= region;
     changed(before, center);
     stabilize();
     assertTrue(Files.exists(filesIOFolder.resolve(data)));

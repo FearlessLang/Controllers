@@ -9,6 +9,20 @@ import java.util.List;
 import tools.Fs;
 
 final class LinkReadTest extends ManagerTest{
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
+    on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
+    on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
+    on("fedora_gnome", () -> region(val(344), val(168), val(1000), val(80))),
+    on("debian_gnome_x11", () -> region(val(344), val(168), val(1000), val(80))),
+    on("fedora_cosmic", () -> region(val(344), val(167), val(1000), val(80))),
+    on("debian_mate", () -> region(val(344), val(158), val(1000), val(80))),
+    on("xubuntu_xfce", () -> region(val(343), val(148), val(1000), val(80))),
+    on("arch_sway", () -> region(val(1306), val(152), val(1000), val(80))),
+    on("void_i3", () -> region(val(1306), val(115), val(1000), val(80))),
+    on("omarchy_hyprland", () -> region(val(1311), val(135), val(1000), val(80))));
   final Action becomeData= action("becomeData",
     on("ubuntu_gnome", () -> waitClick(val(0), val(714), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -437,7 +451,8 @@ final class LinkReadTest extends ManagerTest{
     var before= look();
     check.go();
     checked.go();
-    changed(before, inWindow(410, 168, 1000, 80));
+    outputArea.go();
+    changed(before, region);
     stabilize();
     assertEquals(List.of(".fearless_out/check_error.txt"), Fs.walk(reader.resolve(".fearless_out"), st -> st.filter(Files::isRegularFile).map(p -> slashed(reader.relativize(p))).toList()));
     checkContent(files.resolve("links/reader/.fearless_out/check_error.txt"), "\"reads\" refers to \"store\", but the kind of \"store\" is \"idle\"; \"reads\" accepts only \"data:readOnly\" or \"data:readWrite\".");

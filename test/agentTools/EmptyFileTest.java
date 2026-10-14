@@ -7,6 +7,20 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class EmptyFileTest extends ManagerTest{
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(170), val(1000), val(90))),
+    on("kubuntu_plasma", () -> region(val(344), val(129), val(1000), val(90))),
+    on("opensuse_plasma", () -> region(val(344), val(129), val(1000), val(90))),
+    on("debian_cinnamon", () -> region(val(344), val(138), val(1000), val(90))),
+    on("lubuntu_lxqt", () -> region(val(344), val(131), val(1000), val(90))),
+    on("fedora_gnome", () -> region(val(344), val(170), val(1000), val(90))),
+    on("debian_gnome_x11", () -> region(val(344), val(170), val(1000), val(90))),
+    on("fedora_cosmic", () -> region(val(344), val(169), val(1000), val(90))),
+    on("debian_mate", () -> region(val(344), val(160), val(1000), val(90))),
+    on("xubuntu_xfce", () -> region(val(343), val(150), val(1000), val(90))),
+    on("arch_sway", () -> region(val(1306), val(154), val(1000), val(90))),
+    on("void_i3", () -> region(val(1306), val(117), val(1000), val(90))),
+    on("omarchy_hyprland", () -> region(val(1311), val(137), val(1000), val(90))));
   final Action centerArea= action("centerArea",
     on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
@@ -207,15 +221,16 @@ final class EmptyFileTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    centerArea.go();
-    var center= region;
-    var output= inWindow(410, 170, 1000, 90);
     var compiledLook= look();
     toFiles();
     openBlanksAgain.go();
     openNote.go();
     noteRun.go();
+    centerArea.go();
+    var center= region;
     same(compiledLook, center);
+    outputArea.go();
+    var output= region;
     changed(compiledLook, output);
     managerMenu.go();
     quitManager.go();

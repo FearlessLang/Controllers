@@ -3,7 +3,6 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
@@ -12,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -257,24 +255,6 @@ abstract class ManagerTest{
     pilot.glide(s.width/2-40, s.height/2-40, Pilot.none, s.width/2, s.height/2, Pilot.none);
   }
   BufferedImage look(){ park(); return pilot.shot(); }
-  static final Map<String,Point> content= Map.ofEntries(
-    Map.entry("ubuntu_gnome", new Point(67, 92)),
-    Map.entry("xubuntu_xfce", new Point(0, 72)),
-    Map.entry("lubuntu_lxqt", new Point(1, 53)),
-    Map.entry("fedora_gnome", new Point(1, 92)),
-    Map.entry("fedora_cosmic", new Point(1, 91)),
-    Map.entry("debian_mate", new Point(1, 82)),
-    Map.entry("debian_cinnamon", new Point(1, 60)),
-    Map.entry("debian_gnome_x11", new Point(1, 92)),
-    Map.entry("arch_sway", new Point(963, 76)),
-    Map.entry("void_i3", new Point(963, 39)),
-    Map.entry("omarchy_hyprland", new Point(968, 59)),
-    Map.entry("opensuse_plasma", new Point(1, 51)),
-    Map.entry("kubuntu_plasma", new Point(1, 51)));
-  Rectangle inWindow(int x, int y, int w, int h){
-    var at= content.get(desk);
-    return new Rectangle(x-67+at.x, y-92+at.y, w, h);
-  }
   Rectangle region;
   void region(int x, int y, int w, int h){ region = new Rectangle(x, y, w, h); }
   static int[] pixels(BufferedImage img, Rectangle r){ return img.getRGB(r.x, r.y, r.width, r.height, null, 0, r.width); }

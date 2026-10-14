@@ -210,11 +210,11 @@ final class TerminateTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    programArea.go();
-    var program= region;
     var before= look();
     run.go();
     programShown.go();
+    programArea.go();
+    var program= region;
     changed(before, program);
     terminate.go();
     terminated.go();

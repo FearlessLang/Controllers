@@ -5,6 +5,20 @@ import java.nio.file.Files;
 import tools.Fs;
 
 final class EditMetadataRenameTest extends ManagerTest{
+  final Action tileArea= action("tileArea",
+    on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
+    on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("opensuse_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("debian_cinnamon", () -> region(val(3), val(63), val(128), val(85))),
+    on("lubuntu_lxqt", () -> region(val(3), val(56), val(128), val(85))),
+    on("fedora_gnome", () -> region(val(3), val(95), val(128), val(85))),
+    on("debian_gnome_x11", () -> region(val(3), val(95), val(128), val(85))),
+    on("fedora_cosmic", () -> region(val(3), val(94), val(128), val(85))),
+    on("debian_mate", () -> region(val(3), val(85), val(128), val(85))),
+    on("xubuntu_xfce", () -> region(val(2), val(75), val(128), val(85))),
+    on("arch_sway", () -> region(val(965), val(79), val(128), val(85))),
+    on("void_i3", () -> region(val(965), val(42), val(128), val(85))),
+    on("omarchy_hyprland", () -> region(val(970), val(62), val(128), val(85))));
   final Action openOld= action("openOld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -155,7 +169,6 @@ final class EditMetadataRenameTest extends ManagerTest{
     openOld.go();
     openOldMarker.go();
     projectShown.go();
-    var tile= inWindow(69, 95, 128, 85);
     var valid= look();
     managerMenu.go();
     editMetadata.go();
@@ -164,6 +177,8 @@ final class EditMetadataRenameTest extends ManagerTest{
     type("fresh");
     commit.go();
     renamed.go();
+    tileArea.go();
+    var tile= region;
     changed(valid, tile);
     stabilize();
     checkContent(info, """

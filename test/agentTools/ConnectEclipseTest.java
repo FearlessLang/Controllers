@@ -178,8 +178,6 @@ final class ConnectEclipseTest extends ManagerTest{
     var bare= look();
     start();
     managerShown.go();
-    centerArea.go();
-    var center= region;
     var before= look();
     managerMenu.go();
     connectEclipse.go();
@@ -188,6 +186,8 @@ final class ConnectEclipseTest extends ManagerTest{
     type(elsewhere.toString());
     openButton.go();
     noteShown.go();
+    centerArea.go();
+    var center= region;
     changed(before, center);
     stabilize();
     assertEquals(List.of(".eclipseproduct", "dropins/fearless/plugins/fearlessPluginProject_3.2.0.jar"), ideFiles());

@@ -1,6 +1,20 @@
 package agentTools;
 
 final class ForgetRunningProjectTest extends ManagerTest{
+  final Action greyedArea= action("greyedArea",
+    on("ubuntu_gnome", () -> region(val(720), val(102), val(197), val(22))),
+    on("kubuntu_plasma", () -> region(val(654), val(61), val(197), val(22))),
+    on("opensuse_plasma", () -> region(val(654), val(61), val(197), val(22))),
+    on("debian_cinnamon", () -> region(val(654), val(70), val(197), val(22))),
+    on("lubuntu_lxqt", () -> region(val(654), val(63), val(197), val(22))),
+    on("fedora_gnome", () -> region(val(654), val(102), val(197), val(22))),
+    on("debian_gnome_x11", () -> region(val(654), val(102), val(197), val(22))),
+    on("fedora_cosmic", () -> region(val(654), val(101), val(197), val(22))),
+    on("debian_mate", () -> region(val(654), val(92), val(197), val(22))),
+    on("xubuntu_xfce", () -> region(val(653), val(82), val(197), val(22))),
+    on("arch_sway", () -> region(val(1616), val(86), val(197), val(22))),
+    on("void_i3", () -> region(val(1616), val(49), val(197), val(22))),
+    on("omarchy_hyprland", () -> region(val(1621), val(69), val(197), val(22))));
   final Action centerArea= action("centerArea",
     on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
@@ -262,16 +276,17 @@ final class ForgetRunningProjectTest extends ManagerTest{
         "systemExtensions": []
       }
       """.formatted(slashed(gui));
-    centerArea.go();
-    var center= region;
-    var greyed= inWindow(720, 102, 197, 22);
     var compiledLook= look();
     run.go();
     programShown.go();
     var running= look();
     forget.go();
     ignored.go();
+    greyedArea.go();
+    var greyed= region;
     same(running, greyed);
+    centerArea.go();
+    var center= region;
     same(compiledLook, center);
     stabilize();
     checkContent(info, code);

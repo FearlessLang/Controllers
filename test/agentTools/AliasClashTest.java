@@ -8,6 +8,20 @@ import java.util.List;
 import tools.Fs;
 
 final class AliasClashTest extends ManagerTest{
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
+    on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
+    on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
+    on("fedora_gnome", () -> region(val(344), val(168), val(1000), val(80))),
+    on("debian_gnome_x11", () -> region(val(344), val(168), val(1000), val(80))),
+    on("fedora_cosmic", () -> region(val(344), val(167), val(1000), val(80))),
+    on("debian_mate", () -> region(val(344), val(158), val(1000), val(80))),
+    on("xubuntu_xfce", () -> region(val(343), val(148), val(1000), val(80))),
+    on("arch_sway", () -> region(val(1306), val(152), val(1000), val(80))),
+    on("void_i3", () -> region(val(1306), val(115), val(1000), val(80))),
+    on("omarchy_hyprland", () -> region(val(1311), val(135), val(1000), val(80))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -204,10 +218,11 @@ final class AliasClashTest extends ManagerTest{
     assertEquals(List.of("a/twin/_twin/_rank_app.fear", "a/twin/twin.fearless", "b/twin/_twin/_rank_app.fear", "b/twin/twin2.fearless"),
       Fs.walk(twins, s -> s.filter(Files::isRegularFile).map(p -> slashed(twins.relativize(p))).sorted().toList()));
     checkContent(files.resolve("twins/b/twin/twin2.fearless"), "\n");
-    var output= inWindow(410, 168, 1000, 80);
     var before= look();
     check.go();
     checked.go();
+    outputArea.go();
+    var output= region;
     changed(before, output);
     managerMenu.go();
     quitManager.go();

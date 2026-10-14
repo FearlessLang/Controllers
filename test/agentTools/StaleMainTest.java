@@ -3,6 +3,20 @@ package agentTools;
 import tools.Fs;
 
 final class StaleMainTest extends ManagerTest{
+  final Action buttonArea= action("buttonArea",
+    on("ubuntu_gnome", () -> region(val(517), val(102), val(30), val(20))),
+    on("kubuntu_plasma", () -> region(val(451), val(61), val(30), val(20))),
+    on("opensuse_plasma", () -> region(val(451), val(61), val(30), val(20))),
+    on("debian_cinnamon", () -> region(val(451), val(70), val(30), val(20))),
+    on("lubuntu_lxqt", () -> region(val(451), val(63), val(30), val(20))),
+    on("fedora_gnome", () -> region(val(451), val(102), val(30), val(20))),
+    on("debian_gnome_x11", () -> region(val(451), val(102), val(30), val(20))),
+    on("fedora_cosmic", () -> region(val(451), val(101), val(30), val(20))),
+    on("debian_mate", () -> region(val(451), val(92), val(30), val(20))),
+    on("xubuntu_xfce", () -> region(val(450), val(82), val(30), val(20))),
+    on("arch_sway", () -> region(val(1413), val(86), val(30), val(20))),
+    on("void_i3", () -> region(val(1413), val(49), val(30), val(20))),
+    on("omarchy_hyprland", () -> region(val(1418), val(69), val(30), val(20))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(979), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -292,11 +306,12 @@ final class StaleMainTest extends ManagerTest{
     runsDone.go();
     stabilize();
     checkContent(info, registry.formatted(slashed(menu), "\"menu.Second\", \"menu.Third\""));
-    var button= inWindow(517, 102, 30, 20);
     var runnable= look();
     Fs.writeUtf8(source, mains);
     stabilize();
     editNoticed.go();
+    buttonArea.go();
+    var button= region;
     changed(runnable, button);
     compileEdited.go();
     editedCompiled.go();

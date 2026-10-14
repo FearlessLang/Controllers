@@ -3,6 +3,20 @@ package agentTools;
 import tools.Fs;
 
 final class RecompileAfterEditTest extends ManagerTest{
+  final Action buttonArea= action("buttonArea",
+    on("ubuntu_gnome", () -> region(val(509), val(102), val(30), val(20))),
+    on("kubuntu_plasma", () -> region(val(443), val(61), val(30), val(20))),
+    on("opensuse_plasma", () -> region(val(443), val(61), val(30), val(20))),
+    on("debian_cinnamon", () -> region(val(443), val(70), val(30), val(20))),
+    on("lubuntu_lxqt", () -> region(val(443), val(63), val(30), val(20))),
+    on("fedora_gnome", () -> region(val(443), val(102), val(30), val(20))),
+    on("debian_gnome_x11", () -> region(val(443), val(102), val(30), val(20))),
+    on("fedora_cosmic", () -> region(val(443), val(101), val(30), val(20))),
+    on("debian_mate", () -> region(val(443), val(92), val(30), val(20))),
+    on("xubuntu_xfce", () -> region(val(442), val(82), val(30), val(20))),
+    on("arch_sway", () -> region(val(1405), val(86), val(30), val(20))),
+    on("void_i3", () -> region(val(1405), val(49), val(30), val(20))),
+    on("omarchy_hyprland", () -> region(val(1410), val(69), val(30), val(20))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(100), val(971), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -190,11 +204,12 @@ final class RecompileAfterEditTest extends ManagerTest{
     firstCompiled.go();
     stabilize();
     checkContent(files.resolve("draft/.fearless_out/mains.info"), "{\n  \"draft.First\": [###]\n}\n");
-    var button= inWindow(509, 102, 30, 20);
     var runnable= look();
     Fs.writeUtf8(source, first+"Second:Main{s->base.Debug#(\"second\")}\n");
     stabilize();
     editNoticed.go();
+    buttonArea.go();
+    var button= region;
     changed(runnable, button);
     var outdated= look();
     compileEdited.go();

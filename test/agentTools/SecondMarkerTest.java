@@ -7,6 +7,34 @@ import java.nio.file.Files;
 import tools.Fs;
 
 final class SecondMarkerTest extends ManagerTest{
+  final Action tileArea= action("tileArea",
+    on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
+    on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("opensuse_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("debian_cinnamon", () -> region(val(3), val(63), val(128), val(85))),
+    on("lubuntu_lxqt", () -> region(val(3), val(56), val(128), val(85))),
+    on("fedora_gnome", () -> region(val(3), val(95), val(128), val(85))),
+    on("debian_gnome_x11", () -> region(val(3), val(95), val(128), val(85))),
+    on("fedora_cosmic", () -> region(val(3), val(94), val(128), val(85))),
+    on("debian_mate", () -> region(val(3), val(85), val(128), val(85))),
+    on("xubuntu_xfce", () -> region(val(2), val(75), val(128), val(85))),
+    on("arch_sway", () -> region(val(965), val(79), val(128), val(85))),
+    on("void_i3", () -> region(val(965), val(42), val(128), val(85))),
+    on("omarchy_hyprland", () -> region(val(970), val(62), val(128), val(85))));
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
+    on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
+    on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
+    on("fedora_gnome", () -> region(val(344), val(168), val(1000), val(80))),
+    on("debian_gnome_x11", () -> region(val(344), val(168), val(1000), val(80))),
+    on("fedora_cosmic", () -> region(val(344), val(167), val(1000), val(80))),
+    on("debian_mate", () -> region(val(344), val(158), val(1000), val(80))),
+    on("xubuntu_xfce", () -> region(val(343), val(148), val(1000), val(80))),
+    on("arch_sway", () -> region(val(1306), val(152), val(1000), val(80))),
+    on("void_i3", () -> region(val(1306), val(115), val(1000), val(80))),
+    on("omarchy_hyprland", () -> region(val(1311), val(135), val(1000), val(80))));
   final Action openTwice= action("openTwice",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -173,15 +201,17 @@ final class SecondMarkerTest extends ManagerTest{
     openTwice.go();
     openTwiceMarker.go();
     projectShown.go();
-    var tile= inWindow(69, 95, 128, 85);
-    var output= inWindow(410, 168, 1000, 80);
     var valid= look();
     Fs.writeUtf8(second, "\n");
     stabilize();
     secondNoticed.go();
+    tileArea.go();
+    var tile= region;
     changed(valid, tile);
     check.go();
     checked.go();
+    outputArea.go();
+    var output= region;
     changed(valid, output);
     stabilize();
     var error= files.resolve("twice/.fearless_out/check_error.txt");

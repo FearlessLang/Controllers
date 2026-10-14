@@ -275,13 +275,13 @@ final class NestedFolderTest extends ManagerTest{
     projectShown.go();
     stabilize();
     checkContent(info, remembered);
-    centerArea.go();
-    var center= region;
     var before= look();
     toFiles();
     openNestAgain.go();
     openNestMarker.go();
     noteShown.go();
+    centerArea.go();
+    var center= region;
     changed(before, center);
     stabilize();
     checkContent(info, remembered);

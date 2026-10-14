@@ -1,6 +1,20 @@
 package agentTools;
 
 final class WindowCloseTest extends ManagerTest{
+  final Action tileArea= action("tileArea",
+    on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
+    on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("opensuse_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("debian_cinnamon", () -> region(val(3), val(63), val(128), val(85))),
+    on("lubuntu_lxqt", () -> region(val(3), val(56), val(128), val(85))),
+    on("fedora_gnome", () -> region(val(3), val(95), val(128), val(85))),
+    on("debian_gnome_x11", () -> region(val(3), val(95), val(128), val(85))),
+    on("fedora_cosmic", () -> region(val(3), val(94), val(128), val(85))),
+    on("debian_mate", () -> region(val(3), val(85), val(128), val(85))),
+    on("xubuntu_xfce", () -> region(val(2), val(75), val(128), val(85))),
+    on("arch_sway", () -> region(val(965), val(79), val(128), val(85))),
+    on("void_i3", () -> region(val(965), val(42), val(128), val(85))),
+    on("omarchy_hyprland", () -> region(val(970), val(62), val(128), val(85))));
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(788), val(305))),
@@ -199,7 +213,6 @@ final class WindowCloseTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   @Override void walk() throws Throwable{
     project("helloWorld");
-    var tile= inWindow(69, 95, 128, 85);
     start();//showFilesIcon and filesIcon, or showFileManager and fileManagerToFront, pilotioBookmark, openApp or openAppNextToManagerFolder, openBin, openLauncher (double click fearlessManaged0_001w), confirmLauncher: see ManagerTest.start()
     managerShown.go();
     var empty= look();
@@ -208,6 +221,8 @@ final class WindowCloseTest extends ManagerTest{
     openHelloWorldMarker.go();
     projectShown.go();
     var shown= look();
+    tileArea.go();
+    var tile= region;
     changed(empty, tile);
     closeWindow.go();
     managerHidden.go();

@@ -1,6 +1,48 @@
 package agentTools;
 
 final class NothingTickedTest extends ManagerTest{
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(692), val(170), val(968), val(90))),
+    on("kubuntu_plasma", () -> region(val(626), val(129), val(968), val(90))),
+    on("opensuse_plasma", () -> region(val(626), val(129), val(968), val(90))),
+    on("debian_cinnamon", () -> region(val(626), val(138), val(968), val(90))),
+    on("lubuntu_lxqt", () -> region(val(626), val(131), val(968), val(90))),
+    on("fedora_gnome", () -> region(val(626), val(170), val(968), val(90))),
+    on("debian_gnome_x11", () -> region(val(626), val(170), val(968), val(90))),
+    on("fedora_cosmic", () -> region(val(626), val(169), val(968), val(90))),
+    on("debian_mate", () -> region(val(626), val(160), val(968), val(90))),
+    on("xubuntu_xfce", () -> region(val(625), val(150), val(968), val(90))),
+    on("arch_sway", () -> region(val(1588), val(154), val(968), val(90))),
+    on("void_i3", () -> region(val(1588), val(117), val(968), val(90))),
+    on("omarchy_hyprland", () -> region(val(1593), val(137), val(968), val(90))));
+  final Action runButtonArea= action("runButtonArea",
+    on("ubuntu_gnome", () -> region(val(562), val(252), val(50), val(24))),
+    on("kubuntu_plasma", () -> region(val(496), val(211), val(50), val(24))),
+    on("opensuse_plasma", () -> region(val(496), val(211), val(50), val(24))),
+    on("debian_cinnamon", () -> region(val(496), val(220), val(50), val(24))),
+    on("lubuntu_lxqt", () -> region(val(496), val(213), val(50), val(24))),
+    on("fedora_gnome", () -> region(val(496), val(252), val(50), val(24))),
+    on("debian_gnome_x11", () -> region(val(496), val(252), val(50), val(24))),
+    on("fedora_cosmic", () -> region(val(496), val(251), val(50), val(24))),
+    on("debian_mate", () -> region(val(496), val(242), val(50), val(24))),
+    on("xubuntu_xfce", () -> region(val(495), val(232), val(50), val(24))),
+    on("arch_sway", () -> region(val(1458), val(236), val(50), val(24))),
+    on("void_i3", () -> region(val(1458), val(199), val(50), val(24))),
+    on("omarchy_hyprland", () -> region(val(1463), val(219), val(50), val(24))));
+  final Action mainsArea= action("mainsArea",
+    on("ubuntu_gnome", () -> region(val(562), val(125), val(100), val(150))),
+    on("kubuntu_plasma", () -> region(val(496), val(84), val(100), val(150))),
+    on("opensuse_plasma", () -> region(val(496), val(84), val(100), val(150))),
+    on("debian_cinnamon", () -> region(val(496), val(93), val(100), val(150))),
+    on("lubuntu_lxqt", () -> region(val(496), val(86), val(100), val(150))),
+    on("fedora_gnome", () -> region(val(496), val(125), val(100), val(150))),
+    on("debian_gnome_x11", () -> region(val(496), val(125), val(100), val(150))),
+    on("fedora_cosmic", () -> region(val(496), val(124), val(100), val(150))),
+    on("debian_mate", () -> region(val(496), val(115), val(100), val(150))),
+    on("xubuntu_xfce", () -> region(val(495), val(105), val(100), val(150))),
+    on("arch_sway", () -> region(val(1458), val(109), val(100), val(150))),
+    on("void_i3", () -> region(val(1458), val(72), val(100), val(150))),
+    on("omarchy_hyprland", () -> region(val(1463), val(92), val(100), val(150))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1027), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -237,15 +279,16 @@ final class NothingTickedTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    var output= inWindow(692, 170, 968, 90);
-    var runButton= inWindow(562, 252, 50, 24);
-    var mains= inWindow(562, 125, 100, 150);
     var closed= look();
     runV.go();
     mainsShown.go();
     var none= look();
+    mainsArea.go();
+    var mains= region;
     changed(closed, mains);
     tickHello3.go();
+    runButtonArea.go();
+    var runButton= region;
     changed(none, runButton);
     untickHello3.go();
     same(none, runButton);
@@ -253,6 +296,8 @@ final class NothingTickedTest extends ManagerTest{
     nothingRan.go();
     same(none, runButton);
     changed(closed, mains);
+    outputArea.go();
+    var output= region;
     same(closed, output);
     closeMains.go();
     same(closed, mains);

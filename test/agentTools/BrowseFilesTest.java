@@ -216,11 +216,11 @@ final class BrowseFilesTest extends ManagerTest{
     var folder= look();
     openBrowsedMarker.go();
     projectShown.go();
-    centerArea.go();
-    var center= region;
     var before= look();
     browse.go();
     filesShown.go();
+    centerArea.go();
+    var center= region;
     same(folder, center);
     closeFiles.go();
     filesClosed.go();

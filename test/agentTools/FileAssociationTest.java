@@ -6,6 +6,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 
 final class FileAssociationTest extends ManagerTest{
+  final Action menuBarArea= action("menuBarArea",
+    on("ubuntu_gnome", () -> region(val(67), val(70), val(200), val(20))),
+    on("kubuntu_plasma", () -> region(val(1), val(29), val(200), val(20))),
+    on("opensuse_plasma", () -> region(val(1), val(29), val(200), val(20))),
+    on("debian_cinnamon", () -> region(val(1), val(38), val(200), val(20))),
+    on("lubuntu_lxqt", () -> region(val(1), val(31), val(200), val(20))),
+    on("fedora_gnome", () -> region(val(1), val(70), val(200), val(20))),
+    on("debian_gnome_x11", () -> region(val(1), val(70), val(200), val(20))),
+    on("fedora_cosmic", () -> region(val(1), val(69), val(200), val(20))),
+    on("debian_mate", () -> region(val(1), val(60), val(200), val(20))),
+    on("xubuntu_xfce", () -> region(val(0), val(50), val(200), val(20))),
+    on("arch_sway", () -> region(val(963), val(54), val(200), val(20))),
+    on("void_i3", () -> region(val(963), val(17), val(200), val(20))),
+    on("omarchy_hyprland", () -> region(val(968), val(37), val(200), val(20))));
+  final Action tileArea= action("tileArea",
+    on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
+    on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("opensuse_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("debian_cinnamon", () -> region(val(3), val(63), val(128), val(85))),
+    on("lubuntu_lxqt", () -> region(val(3), val(56), val(128), val(85))),
+    on("fedora_gnome", () -> region(val(3), val(95), val(128), val(85))),
+    on("debian_gnome_x11", () -> region(val(3), val(95), val(128), val(85))),
+    on("fedora_cosmic", () -> region(val(3), val(94), val(128), val(85))),
+    on("debian_mate", () -> region(val(3), val(85), val(128), val(85))),
+    on("xubuntu_xfce", () -> region(val(2), val(75), val(128), val(85))),
+    on("arch_sway", () -> region(val(965), val(79), val(128), val(85))),
+    on("void_i3", () -> region(val(965), val(42), val(128), val(85))),
+    on("omarchy_hyprland", () -> region(val(970), val(62), val(128), val(85))));
   final Action iconArea= action("iconArea",
     on("ubuntu_gnome", () -> region(val(880), val(340), val(64), val(64))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
@@ -330,12 +358,6 @@ final class FileAssociationTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(null))));
   @Override void walk() throws Throwable{
     project("helloWorld");
-    iconArea.go();
-    var icon= region;
-    trayArea.go();
-    var tray= region;
-    var menuBar= inWindow(67, 70, 200, 20);
-    var tile= inWindow(69, 95, 128, 85);
     var bare= look();
     start();
     managerShown.go();
@@ -350,7 +372,11 @@ final class FileAssociationTest extends ManagerTest{
     resetAsked.go();
     cancelReset.go();
     resetCancelled.go();
+    menuBarArea.go();
+    var menuBar= region;
     changed(bare, menuBar);
+    trayArea.go();
+    var tray= region;
     changed(bare, tray);
     stabilize();
     assertTrue(Files.exists(info));
@@ -366,6 +392,8 @@ final class FileAssociationTest extends ManagerTest{
     leaveHelloWorldAgain.go();
     openHelloWorldThird.go();
     genericShown.go();
+    iconArea.go();
+    var icon= region;
     changed(associated, icon);
     start();
     managerShownAgain.go();
@@ -376,6 +404,8 @@ final class FileAssociationTest extends ManagerTest{
     same(associated, icon);
     openHelloWorldMarker.go();
     projectShown.go();
+    tileArea.go();
+    var tile= region;
     changed(empty, tile);
     managerMenu.go();
     quitManager.go();
