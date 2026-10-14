@@ -237,7 +237,8 @@ final class Sni{
   private static void field(Writer w, int code, String type, String value){
     if (value == null || value.isEmpty()){ return; }
     w.pad(8).b(code).sig(type);
-    if (type.equals("g")){ w.sig(value); } else{ w.str(value); }
+    if (type.equals("g")){ w.sig(value); }
+    else{ w.str(value); }
   }
   static Msg next(SocketChannel c) throws IOException{
     var head= read(c, 16);
@@ -290,7 +291,7 @@ final class Sni{
     Reader(byte[] buf, int pos, boolean big){ this.buf= buf; this.pos= pos; this.big= big; }
     void pad(int a){ pos = (pos+a-1)/a*a; }
     int b(){ return buf[pos++]&0xff; }
-    int u32(){ pad(4); int v= 0; for (int i= 0; i<4; i++){ v |= b()<<(big ? 24-8*i : 8*i); } return v; }
+    int u32(){ pad(4); int v= 0; for (int i= 0; i<4; i += 1){ v |= b()<<(big ? 24-8*i : 8*i); } return v; }
     String str(){ int n= u32(); var s= new String(buf, pos, n, UTF_8); pos += n+1; return s; }
     String sig(){ int n= b(); var s= new String(buf, pos, n, UTF_8); pos += n+1; return s; }
     int skip(String sig, int i){
@@ -330,17 +331,17 @@ final class Sni{
     Writer b(int v){ if (pos == buf.length){ buf = Arrays.copyOf(buf, pos*2); } buf[pos++] = (byte)v; return this; }
     Writer pad(int a){ while (pos%a != 0){ b(0); } return this; }
     Writer u32(int v){ pad(4); return b(v).b(v>>8).b(v>>16).b(v>>24); }
-    Writer str(String s){ var bytes= s.getBytes(UTF_8); u32(bytes.length); for (var x: bytes){ b(x); } return b(0); }
-    Writer sig(String s){ b(s.length()); for (var x: s.getBytes(UTF_8)){ b(x); } return b(0); }
+    Writer str(String s){ var bytes= s.getBytes(UTF_8); u32(bytes.length); for (var x : bytes){ b(x); } return b(0); }
+    Writer sig(String s){ b(s.length()); for (var x : s.getBytes(UTF_8)){ b(x); } return b(0); }
     Writer array(int align, Consumer<Writer> elements){
       int at= u32(0).pos-4;
       pad(align);
       int start= pos;
       elements.accept(this);
-      for (int i= 0; i<4; i++){ buf[at+i] = (byte)((pos-start)>>(8*i)); }
+      for (int i= 0; i<4; i += 1){ buf[at+i] = (byte)((pos-start)>>(8*i)); }
       return this;
     }
-    Writer append(Writer w){ for (int i= 0; i<w.pos; i++){ b(w.buf[i]); } return this; }
+    Writer append(Writer w){ for (int i= 0; i<w.pos; i += 1){ b(w.buf[i]); } return this; }
     byte[] bytes(){ return Arrays.copyOf(buf, pos); }
   }
 }

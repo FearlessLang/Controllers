@@ -113,8 +113,8 @@ final class NamesTest{
   @Test void everyChosenNameIsAValidFreeName(@TempDir Path dir){
     var taken= new HashSet<String>();
     var names= List.of("com", "lpt", "con", "aux", "a".repeat(250), "---", "1abc", "_", "base", "rank", "caf\u00e9", "\u65e5\u672c", "\u00c4rger", "Com");
-    for (var i= 0; i < 12; i++){
-      for (var n: names){
+    for (var i= 0; i < 12; i += 1){
+      for (var n : names){
         var chosen= Names.makeUnique(folder(dir.resolve(i+"_"+names.indexOf(n)), n), Set.copyOf(taken));
         assertTrue(Names.isName(chosen), chosen);
         assertTrue(taken.add(chosen), chosen);

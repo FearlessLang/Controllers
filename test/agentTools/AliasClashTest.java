@@ -45,7 +45,7 @@ final class AliasClashTest extends ManagerTest{
     var twins= files.resolve("twins");
     var first= twins.resolve("a").resolve("twin");
     var second= twins.resolve("b").resolve("twin");
-    for (var f: List.of(first, second)){
+    for (var f : List.of(first, second)){
       Fs.writeUtf8(f.resolve("twin.fearless"), "\n");
       Fs.writeUtf8(f.resolve("_twin").resolve("_rank_app.fear"), "use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"twin\")}\n");
     }

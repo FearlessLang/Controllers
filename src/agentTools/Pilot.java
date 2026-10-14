@@ -42,15 +42,18 @@ public final class Pilot{
     robot.mouseMove(x0, y0);
     hold(held);
     int n= Math.max(Math.abs(x1-x0), Math.abs(y1-y0))/4+1;
-    for (int i= 1; i<=n; i++){ robot.mouseMove(x0+(x1-x0)*i/n, y0+(y1-y0)*i/n); pause(4); }
+    for (int i= 1; i<=n; i += 1){ robot.mouseMove(x0+(x1-x0)*i/n, y0+(y1-y0)*i/n); pause(4); }
     hold(then);
   }
   private void hold(Set<Button> want){
-    for (var b: Button.values()){ if (down.contains(b)!=want.contains(b)){ button(b, want.contains(b)); } }
+    for (var b : Button.values()){ if (down.contains(b)!=want.contains(b)){ button(b, want.contains(b)); } }
     down = want;
     pause(200);
   }
-  private void button(Button b, boolean press){ if (press){ robot.mousePress(b.mask); } else{ robot.mouseRelease(b.mask); } }
+  private void button(Button b, boolean press){
+    if (press){ robot.mousePress(b.mask); }
+    else{ robot.mouseRelease(b.mask); }
+  }
   /// A press and release as short as a person's: a desk reads a button held longer, from about 400 milliseconds, as a long press, which is not a click.
   public void click(Button b, int x, int y){
     glide(x, y, none, x, y, none);
@@ -62,15 +65,15 @@ public final class Pilot{
   /// Two clicks close enough together to be read as one gesture, which is what opens an icon on every desk. Calling click twice does not make one: a desk counts the time from the first press to the second, about 400 milliseconds, and a click leaves the pointer settled for longer than that.
   public void doubleClick(int x, int y){
     glide(x, y, none, x, y, none);
-    for (int i= 0; i<2; i++){ button(Button.left, true); pause(50); button(Button.left, false); pause(50); }
+    for (int i= 0; i<2; i += 1){ button(Button.left, true); pause(50); button(Button.left, false); pause(50); }
     pause(200);
   }
   /// Takes hold at x0,y0, carries to x1,y1, and waits there before letting go: what is dropped lands on whatever is under the pointer, and that has to be given its moment to see the pointer arrive.
   public void drag(int x0, int y0, int x1, int y1){ glide(x0, y0, none, x0, y0, left); glide(x0, y0, left, x1, y1, left); glide(x1, y1, left, x1, y1, none); }
   /// Presses the java.awt.event.KeyEvent codes in order and releases them in reverse.
   public void chord(int... codes){
-    for (int c: codes){ robot.keyPress(c); }
-    for (int i= codes.length-1; i>=0; i--){ robot.keyRelease(codes[i]); }
+    for (int c : codes){ robot.keyPress(c); }
+    for (int i= codes.length-1; i>=0; i -= 1){ robot.keyRelease(codes[i]); }
     pause(200);
   }
   public BufferedImage shot(){
@@ -112,22 +115,22 @@ public final class Pilot{
     var pa= a.getRGB(0, 0, w, h, null, 0, w);
     var pb= b.getRGB(0, 0, w, h, null, 0, w);
     var sum= new int[(w+1)*(h+1)];
-    for (int y= 0; y<h; y++){ for (int x= 0; x<w; x++){ sum[(y+1)*(w+1)+x+1] = (differs(pa[y*w+x], pb[y*w+x])?1:0)+sum[y*(w+1)+x+1]+sum[(y+1)*(w+1)+x]-sum[y*(w+1)+x]; } }
+    for (int y= 0; y<h; y += 1){ for (int x= 0; x<w; x += 1){ sum[(y+1)*(w+1)+x+1] = (differs(pa[y*w+x], pb[y*w+x])?1:0)+sum[y*(w+1)+x+1]+sum[(y+1)*(w+1)+x]-sum[y*(w+1)+x]; } }
     var solid= new boolean[w*h];
-    for (int y= r; y<h-r; y++){ for (int x= r; x<w-r; x++){ solid[y*w+x] = box(sum, w, x-r, y-r, x+r+1, y+r+1)==side*side; } }
+    for (int y= r; y<h-r; y += 1){ for (int x= r; x<w-r; x += 1){ solid[y*w+x] = box(sum, w, x-r, y-r, x+r+1, y+r+1)==side*side; } }
     var stack= new int[w*h];
     var best= new Rectangle();
     int bestN= 0;
-    for (int i= 0; i<w*h; i++){
+    for (int i= 0; i<w*h; i += 1){
       if (!solid[i]){ continue; }
       int n= 0, top= 0, minx= w, maxx= 0, miny= h, maxy= 0;
       stack[top++] = i;
       solid[i] = false;
       while (top>0){
         int p= stack[--top], x= p%w, y= p/w;
-        n++;
+        n += 1;
         minx = Math.min(minx, x); maxx = Math.max(maxx, x); miny = Math.min(miny, y); maxy = Math.max(maxy, y);
-        for (int q: new int[]{p-1, p+1, p-w, p+w}){ if (q>=0 && q<w*h && solid[q] && Math.abs(q%w-x)<=1){ solid[q] = false; stack[top++] = q; } }
+        for (int q : new int[]{p-1, p+1, p-w, p+w}){ if (q>=0 && q<w*h && solid[q] && Math.abs(q%w-x)<=1){ solid[q] = false; stack[top++] = q; } }
       }
       if (n>bestN){ bestN = n; best = new Rectangle(minx-r, miny-r, maxx-minx+1+2*r, maxy-miny+1+2*r); }
     }

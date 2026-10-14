@@ -92,7 +92,7 @@ final class DividerPlaceTest extends ManagerTest{
   void listEnd(int x, int y, int end){
     var shot= pilot.shot();
     var at= x;
-    for (; at<shot.getWidth() && (shot.getRGB(at, y)&0xffffff)==0xffffff; at++){}
+    for (; at<shot.getWidth() && (shot.getRGB(at, y)&0xffffff)==0xffffff; at += 1){}
     assertEquals(end, at, "The tile list, white along the row y="+y+" from x="+x+", ends at x="+at);
   }
 }

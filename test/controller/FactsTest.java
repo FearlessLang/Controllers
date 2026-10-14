@@ -176,7 +176,7 @@ final class FactsTest{
   }
   @Test void aFolderDeletedWhileItIsCheckedIsMissing(@TempDir Path dir){
     assertTimeoutPreemptively(Duration.ofSeconds(60), () -> {
-      for (var i: Range.of(0, 20)){
+      for (var i : Range.of(0, 20)){
         var project= project(dir, "p"+i);
         IntStream.range(0, 300).forEach(j -> Fs.writeUtf8(project.resolve("_hello").resolve("f"+j+".fear"), ""));
         var gone= Thread.startVirtualThread(() -> Fs.rmTree(project));

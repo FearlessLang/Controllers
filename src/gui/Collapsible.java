@@ -31,7 +31,7 @@ final class Collapsible extends JPanel{
     var bar= new JPanel(new BorderLayout());
     bar.add(head, BorderLayout.CENTER);
     var right= new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
-    for (var c: trailing){ right.add(c); }
+    for (var c : trailing){ right.add(c); }
     bar.add(right, BorderLayout.EAST);
     add(bar, BorderLayout.NORTH);
     add(body, BorderLayout.CENTER);

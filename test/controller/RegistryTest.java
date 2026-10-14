@@ -273,7 +273,7 @@ final class RegistryTest{
   }
   private Optional<String> linkProblem(Path dir, Entry e, Entry... others){
     var r= registry(dir);
-    for (var o: others){ r.add(o.alias(), o.path()); r.update(o.path(), _ -> o); }
+    for (var o : others){ r.add(o.alias(), o.path()); r.update(o.path(), _ -> o); }
     r.add(e.alias(), e.path());
     r.update(e.path(), _ -> e);
     return r.linkProblem(e, _ -> Optional.empty());

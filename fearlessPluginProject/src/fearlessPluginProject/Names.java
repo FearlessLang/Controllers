@@ -18,7 +18,7 @@ final class Names{
   }
   static Optional<String> problem(String path, boolean file){
     var segments= List.of(path.split("/", -1));
-    for (int i= 0; i < segments.size(); i++){
+    for (int i= 0; i < segments.size(); i += 1){
       var p= segment(segments.get(i), file && i == segments.size()-1);
       if (p.isPresent()){ return p; }
     }

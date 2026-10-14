@@ -140,7 +140,7 @@ final class ManagerTest{
   @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); }
   private Manager manager(Path dir, String... mains){
     var map= new LinkedHashMap<String,String>();
-    for (var m: mains){ map.put(m, "_hello/_rank_app.fear"); }
+    for (var m : mains){ map.put(m, "_hello/_rank_app.fear"); }
     var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
     return manager(dir, _ -> known);
   }
@@ -193,7 +193,7 @@ final class ManagerTest{
   }
   private static void idle(Manager m){ until(m, s -> s.projects().stream().noneMatch(Project::busy)); }
   private static void compiled(Manager m, String... names){
-    for (var n: names){ send(m, "Compile", n); }
+    for (var n : names){ send(m, "Compile", n); }
     idle(m);
   }
   private static Project project(Manager m, Path folder){ return m.state().of(folder).orElseThrow(); }
@@ -594,9 +594,10 @@ final class ManagerTest{
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     view.visible = false;
-    for (var request: List.of(List.of("Link", "data", "other read Other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Kind", "data", "library"))){
+    for (var request : List.of(List.of("Link", "data", "other read Other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Kind", "data", "library"))){
       var valid= Files.exists(data);
-      if (valid){ Fs.rmTree(data); } else{ data(dir); Fs.writeUtf8(data.resolve("data.fearless"), ""); }
+      if (valid){ Fs.rmTree(data); }
+      else{ data(dir); Fs.writeUtf8(data.resolve("data.fearless"), ""); }
       send(m, request.toArray(String[]::new));
       assertEquals(valid ? Project.State.dataInvalid : Project.State.idle, project(m, data).state());
     }
@@ -1048,7 +1049,7 @@ final class ManagerTest{
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
     infos.put("hello", claiming("hello.Hello", "fapp010", "foo"));
-    for (var side: List.of(64, 1024)){
+    for (var side : List.of(64, 1024)){
       var png= image(hello.resolve("art").resolve("foo.png"), side, side, "png");
       touch(hello);
       compiled(m, "hello");
@@ -1056,7 +1057,7 @@ final class ManagerTest{
       assertArrayEquals(png, bytes(icons(hello).resolve("hello.IconsFoo.png")));
     }
     var accepted= project(m, hello).claims();
-    for (var size: List.of(List.of(63, 63), List.of(1025, 1025), List.of(300, 200))){
+    for (var size : List.of(List.of(63, 63), List.of(1025, 1025), List.of(300, 200))){
       image(hello.resolve("art").resolve("foo.png"), size.get(0), size.get(1), "png");
       touch(hello);
       compiled(m, "hello");
@@ -1075,7 +1076,7 @@ final class ManagerTest{
     var png= image(foo, 64, 64, "png");
     var huge= ByteBuffer.allocate(33).put(png, 0, 16).putInt(100000).putInt(100000).put(png, 24, 9).array();
     infos.put("hello", info("hello.Hello", claim("hello.IconsFoo", "art/foo.png", "", "", ""), ""));
-    for (var c: List.of(Map.entry(huge, "is 100000x100000 pixels"), Map.entry(Arrays.copyOf(png, png.length/2), "is not a PNG image"), Map.entry(Arrays.copyOf(png, 20), "is not a PNG image"))){
+    for (var c : List.of(Map.entry(huge, "is 100000x100000 pixels"), Map.entry(Arrays.copyOf(png, png.length/2), "is not a PNG image"), Map.entry(Arrays.copyOf(png, 20), "is not a PNG image"))){
       Fs.ofV(() -> Files.write(foo, c.getKey()));
       touch(hello);
       compiled(m, "hello");
@@ -1368,7 +1369,7 @@ final class ManagerTest{
     var accepted= project(m, hello).claims();
     var before= top(hello);
     var main= "[\"_hello/_rank_app.fear\", ["+bar+"], []]";
-    for (var c: List.of(
+    for (var c : List.of(
       Map.entry("{\"hello.Foo'\": "+main+"}\n", "Main \"hello.Foo'\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
       Map.entry("{\"hello.Foo_bar\": "+main+"}\n", "Main \"hello.Foo_bar\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
       Map.entry("{\"hello.Con\": "+main+"}\n", "Main \"hello.Con\" can not have the shortcut file \"con.fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
@@ -1390,7 +1391,7 @@ final class ManagerTest{
     var calls= associated.size();
     var bar= claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010");
     var longName= "hello.L"+"o".repeat(192);
-    for (var c: List.of(
+    for (var c : List.of(
       Map.entry(info(longName, bar, ""), "Main \""+longName+"\" can not have the shortcut file \"l"+"o".repeat(192)+".fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
       Map.entry(info("hello.Todo", bar, ""), "Main \"hello.Todo\" can not have the shortcut file \"todo.fapp010\": the project has the file \"todo\", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
       infos.put("hello", c.getKey());
