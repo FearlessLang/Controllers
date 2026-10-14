@@ -132,11 +132,11 @@ final class SecondLaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    managerToFront.go();
+    managerToFrontUnlessSelf();
     toFiles();
     openHelloStackTraces.go();
     openStartMarker.go();
-    managerToFront.go();
+    managerToFrontUnlessSelf();
     secondShown.go();
     stabilize();
     checkContent(info, """

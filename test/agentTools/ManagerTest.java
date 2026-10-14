@@ -514,6 +514,9 @@ abstract class ManagerTest{
     openLauncher.go();
     confirmLauncher.go();
   }
+  void managerToFrontUnlessSelf() throws Throwable{
+    if (!Fs.isWindows()){ managerToFront.go(); }
+  }
   void startAlone() throws Throwable{
     fileManagerFront= Fs.isWindows();
     start();

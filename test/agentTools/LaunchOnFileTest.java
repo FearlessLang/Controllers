@@ -4,7 +4,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action tilesArea= action("tilesArea",
     on("ubuntu_gnome", () -> region(val(69), val(95), val(1100), val(85))),
     on("kubuntu_plasma", () -> region(val(3), val(54), val(1100), val(85))),
-    on("windows", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(3), val(47), val(315), val(85))),
     on("opensuse_plasma", () -> region(val(3), val(54), val(1100), val(85))),
     on("debian_cinnamon", () -> region(val(3), val(63), val(1100), val(85))),
     on("lubuntu_lxqt", () -> region(val(3), val(56), val(1100), val(85))),
@@ -19,7 +19,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action centerArea= action("centerArea",
     on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
-    on("windows", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(760), val(460), val(400), val(160))),
     on("opensuse_plasma", () -> region(val(null), val(null), val(null), val(null))),
     on("debian_cinnamon", () -> region(val(null), val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> region(val(null), val(null), val(null), val(null))),
@@ -34,7 +34,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -49,7 +49,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action selected= action("selected",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the launcher passes the file to the running manager, which selects the project
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -64,7 +64,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -79,7 +79,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -95,7 +95,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(260), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -110,7 +110,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the launcher passes the file to the running manager, which opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -125,7 +125,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action openHelloWorldAgain= action("openHelloWorldAgain",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -141,7 +141,7 @@ final class LaunchOnFileTest extends ManagerTest{
   final Action openHelloWorldMarkerAgain= action("openHelloWorldMarkerAgain",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(260), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -171,7 +171,7 @@ final class LaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    managerToFront.go();
+    managerToFrontUnlessSelf();
     projectShown.go();
     stabilize();
     checkContent(info, remembered);
@@ -179,7 +179,7 @@ final class LaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorldAgain.go();
     openHelloWorldMarkerAgain.go();
-    managerToFront.go();
+    managerToFrontUnlessSelf();
     selected.go();
     centerArea.go();
     same(before, region);
