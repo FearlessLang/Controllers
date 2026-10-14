@@ -26,7 +26,7 @@ import utils.OneOr;
 
 /// The icon is the way back to a closed window: with no tray the window shows its StandIn
 /// instead, and a failure while adding the icon, or the desktop later taking the icon away, stops the manager.
-/// On Linux the icon is a StatusNotifierItem on the session bus (Sni); elsewhere it is the AWT tray icon.
+/// On Linux the icon is a StatusNotifierItem on the session bus (Sni) when the desktop has a watcher for it; otherwise it is the AWT tray icon.
 /// The icon lives for the whole process life and is removed by process death.
 public final class Tray{
   public static boolean install(Window window){
@@ -39,7 +39,7 @@ public final class Tray{
       @Override public void popupMenuWillBecomeInvisible(PopupMenuEvent e){ anchor.setVisible(false); }
       @Override public void popupMenuCanceled(PopupMenuEvent e){}
     });
-    if (Fs.isLinux()){ return Sni.install(() -> Main.command("Show"), () -> Main.command("Quit"), at -> SwingUtilities.invokeLater(() -> open(anchor, menu, at)), Icons.app()); }
+    if (Fs.isLinux() && Sni.install(() -> Main.command("Show"), () -> Main.command("Quit"), at -> SwingUtilities.invokeLater(() -> open(anchor, menu, at)), Icons.app())){ return true; }
     if (!SystemTray.isSupported()){ return false; }
     var icon= new TrayIcon(Icons.app(), "Fearless Manager");
     icon.setImageAutoSize(true);
