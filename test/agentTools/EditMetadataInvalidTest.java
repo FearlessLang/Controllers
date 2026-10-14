@@ -58,7 +58,6 @@ final class EditMetadataInvalidTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     managerMenu.go();
     editMetadata.go();
@@ -82,6 +81,7 @@ final class EditMetadataInvalidTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, center);
   }
 }

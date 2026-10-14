@@ -101,6 +101,7 @@ final class ChooserNavigationTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, inWindow(100, 200, 200, 400));
   }
 }

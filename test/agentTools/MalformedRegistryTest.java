@@ -57,7 +57,6 @@ final class MalformedRegistryTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     stabilize();
     checkContent(info, remembered);
@@ -86,5 +85,6 @@ final class MalformedRegistryTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     freshQuit.go();
+    closeFiles();
   }
 }

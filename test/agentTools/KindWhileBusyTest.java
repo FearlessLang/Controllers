@@ -58,7 +58,6 @@ final class KindWhileBusyTest extends ManagerTest{
     toFiles();
     openTestGui1.go();
     openStartMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -98,5 +97,6 @@ final class KindWhileBusyTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
 }

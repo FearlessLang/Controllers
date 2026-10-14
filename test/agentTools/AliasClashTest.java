@@ -57,14 +57,12 @@ final class AliasClashTest extends ManagerTest{
     openA.go();
     openTwin.go();
     openTwinMarker.go();
-    closeFiles();
     firstShown.go();
     toFiles();
     openTwins.go();
     openB.go();
     openTwin.go();
     openTwinMarker.go();
-    closeFiles();
     secondShown.go();
     stabilize();
     checkContent(info, """
@@ -93,6 +91,7 @@ final class AliasClashTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, output);
   }
 }

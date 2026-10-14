@@ -58,7 +58,6 @@ final class ForgetRunningProjectTest extends ManagerTest{
     toFiles();
     openTestGui1.go();
     openStartMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -96,5 +95,6 @@ final class ForgetRunningProjectTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
 }

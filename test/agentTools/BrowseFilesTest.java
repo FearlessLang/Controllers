@@ -59,7 +59,6 @@ final class BrowseFilesTest extends ManagerTest{
     openBrowsed.go();
     var folder= look();
     openBrowsedMarker.go();
-    closeFiles();
     projectShown.go();
     var center= new Rectangle(760, 460, 400, 160);
     var before= look();
@@ -80,6 +79,7 @@ final class BrowseFilesTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, center);
   }
 }

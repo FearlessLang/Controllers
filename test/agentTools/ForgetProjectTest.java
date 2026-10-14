@@ -43,11 +43,9 @@ final class ForgetProjectTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     toFiles();
     openHelloStackTraces.go();
     openStartMarker.go();
-    closeFiles();
     otherShown.go();
     stabilize();
     var files= files(other);
@@ -69,6 +67,7 @@ final class ForgetProjectTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
   static List<String> files(Path other){ return Fs.walk(other, s -> s.map(p -> p+" "+Fs.lastModified(p)).toList()); }
 }

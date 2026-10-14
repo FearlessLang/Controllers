@@ -44,7 +44,6 @@ final class FolderGoneTest extends ManagerTest{
     toFiles();
     openGone.go();
     openGoneMarker.go();
-    closeFiles();
     projectShown.go();
     var tile= inWindow(69, 95, 128, 85);
     var output= inWindow(410, 168, 1000, 80);
@@ -76,5 +75,6 @@ final class FolderGoneTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
 }

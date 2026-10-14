@@ -53,7 +53,6 @@ final class ProjectIconTest extends ManagerTest{
     toFiles();
     openPic.go();
     openPicMarker.go();
-    closeFiles();
     projectShown.go();
     var tile= inWindow(69, 95, 128, 85);
     var output= inWindow(410, 168, 1000, 80);
@@ -77,6 +76,7 @@ final class ProjectIconTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, tile);
   }
   static void png(Path file, int rgb) throws Exception{

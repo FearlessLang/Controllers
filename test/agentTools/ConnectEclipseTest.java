@@ -92,6 +92,7 @@ final class ConnectEclipseTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, center);
   }
   List<String> ideFiles(){ return Fs.walk(ide, s -> s.filter(Files::isRegularFile).map(p -> slashed(ide.relativize(p))).sorted().toList()); }

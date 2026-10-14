@@ -76,7 +76,6 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     toFiles();
     openChain.go();
     openChainMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -115,6 +114,7 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, output);
   }
 }

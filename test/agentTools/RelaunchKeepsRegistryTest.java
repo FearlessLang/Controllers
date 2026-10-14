@@ -39,7 +39,6 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -73,6 +72,7 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuitAgain.go();
+    closeFiles();
     same(bare, panel);
   }
 }

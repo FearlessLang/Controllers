@@ -83,7 +83,6 @@ final class NestedFolderTest extends ManagerTest{
     openNest.go();
     openInner.go();
     openInnerMarker.go();
-    closeFiles();
     projectShown.go();
     stabilize();
     checkContent(info, remembered);
@@ -92,7 +91,6 @@ final class NestedFolderTest extends ManagerTest{
     toFiles();
     openNestAgain.go();
     openNestMarker.go();
-    closeFiles();
     noteShown.go();
     changed(before, center);
     stabilize();
@@ -104,7 +102,6 @@ final class NestedFolderTest extends ManagerTest{
     openInnerAgain.go();
     openUnderscoreInner.go();
     openSourceMarker.go();
-    closeFiles();
     noteShownAgain.go();
     changed(before, center);
     stabilize();
@@ -114,6 +111,7 @@ final class NestedFolderTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
   List<Path> tree(){ return Fs.walk(nest, s -> s.sorted().toList()); }
 }

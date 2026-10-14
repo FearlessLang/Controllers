@@ -114,7 +114,6 @@ final class LinkWriteTest extends ManagerTest{
     openLedger.go();
     openVault.go();
     openVaultMarker.go();
-    closeFiles();
     vaultListed.go();
     becomeEditableData.go();
     dataSaved.go();
@@ -122,7 +121,6 @@ final class LinkWriteTest extends ManagerTest{
     openLedgerAgain.go();
     openTeller.go();
     openTellerMarker.go();
-    closeFiles();
     tellerShown.go();
     becomeCode.go();
     codeSaved.go();
@@ -168,6 +166,7 @@ final class LinkWriteTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
   static String registry(Path vault, Path teller, String links){
     return """

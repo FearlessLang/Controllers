@@ -84,7 +84,6 @@ final class EditMetadataConflictTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     managerMenu.go();
     editMetadata.go();
@@ -94,7 +93,6 @@ final class EditMetadataConflictTest extends ManagerTest{
     toFiles();
     openHelloStackTraces.go();
     openStartMarker.go();
-    closeFiles();
     secondHanded.go();
     var both= two.formatted(slashed(project), "idle", slashed(other));
     stabilize();
@@ -123,6 +121,7 @@ final class EditMetadataConflictTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, center);
   }
 }

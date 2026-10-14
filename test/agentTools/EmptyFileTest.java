@@ -57,7 +57,6 @@ final class EmptyFileTest extends ManagerTest{
     toFiles();
     openBlanks.go();
     openBlanksMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -69,12 +68,12 @@ final class EmptyFileTest extends ManagerTest{
     toFiles();
     openBlanksAgain.go();
     openNote.go();
-    closeFiles();
     noteRun.go();
     same(compiledLook, center);
     changed(compiledLook, output);
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
 }

@@ -70,6 +70,7 @@ final class AddFolderTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, tiles);
   }
 }

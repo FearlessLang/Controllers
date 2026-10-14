@@ -58,7 +58,6 @@ final class DividerPlaceTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     tilesEnd.go();
     closeWindow.go();
@@ -82,12 +81,12 @@ final class DividerPlaceTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShownFourth.go();
     tilesEnd.go();
     managerMenu.go();
     quitManager.go();
     fourthQuit.go();
+    closeFiles();
   }
   void listEnd(int x, int y, int end){
     var shot= pilot.shot();

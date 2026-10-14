@@ -104,7 +104,6 @@ final class LinkReadTest extends ManagerTest{
     openLinksFolder.go();
     openStore.go();
     openStoreMarker.go();
-    closeFiles();
     storeListed.go();
     becomeData.go();
     dataSaved.go();
@@ -112,7 +111,6 @@ final class LinkReadTest extends ManagerTest{
     openLinksFolderAgain.go();
     openReader.go();
     openReaderMarker.go();
-    closeFiles();
     readerShown.go();
     becomeCode.go();
     codeSaved.go();
@@ -149,6 +147,7 @@ final class LinkReadTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
   static String registry(Path store, Path reader, String storeKind, String links){
     return """

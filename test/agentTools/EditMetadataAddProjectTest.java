@@ -55,7 +55,6 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
     projectShown.go();
     managerMenu.go();
     editMetadata.go();
@@ -91,6 +90,7 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     same(bare, output);
   }
 }
