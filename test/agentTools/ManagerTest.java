@@ -415,7 +415,7 @@ abstract class ManagerTest{
   final Action managerToFront= action("managerToFront",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(387))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(878), val(696))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
