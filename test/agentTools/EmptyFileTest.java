@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import javax.imageio.ImageIO;
@@ -8,6 +7,9 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class EmptyFileTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(985), val(113))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(992), val(93))));
@@ -62,7 +64,8 @@ final class EmptyFileTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var output= inWindow(410, 170, 1000, 90);
     var compiledLook= look();
     toFiles();

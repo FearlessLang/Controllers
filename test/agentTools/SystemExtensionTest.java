@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import javax.imageio.ImageIO;
@@ -8,6 +7,9 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class SystemExtensionTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(980), val(113))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(986), val(93))));
@@ -70,7 +72,8 @@ final class SystemExtensionTest extends ManagerTest{
     projectShown.go();
     becomeCode.go();
     codeShown.go();
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var before= look();
     compile.go();
     questionShown.go();

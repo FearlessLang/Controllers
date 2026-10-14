@@ -1,10 +1,12 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 import tools.Fs;
 
 final class RefusedFolderTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(null))));
@@ -25,7 +27,8 @@ final class RefusedFolderTest extends ManagerTest{
     on("xubuntu_xfce", () -> waitAfter(val(10500))));
   @Override void walk() throws Throwable{
     var folder= filesIOFolder.resolve(data);
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var bare= look();
     start();
     managerShown.go();

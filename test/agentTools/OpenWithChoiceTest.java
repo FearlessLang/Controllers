@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import javax.imageio.ImageIO;
@@ -8,6 +7,9 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class OpenWithChoiceTest extends ManagerTest{
+  final Action listingArea= action("listingArea",
+    on("ubuntu_gnome", () -> region(val(840), val(460), val(240), val(100))),
+    on("xubuntu_xfce", () -> region(val(840), val(460), val(240), val(100))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(983), val(113))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(990), val(93))));
@@ -82,7 +84,8 @@ final class OpenWithChoiceTest extends ManagerTest{
     var listing= look();
     openNote.go();
     chooserShown.go();
-    changed(listing, new Rectangle(840, 460, 240, 100));
+    listingArea.go();
+    changed(listing, region);
     secondChoice.go();
     runButton.go();
     ranSecond.go();

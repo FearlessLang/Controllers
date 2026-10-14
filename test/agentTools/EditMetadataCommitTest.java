@@ -1,6 +1,9 @@
 package agentTools;
 
 final class EditMetadataCommitTest extends ManagerTest{
+  final Action editorArea= action("editorArea",
+    on("ubuntu_gnome", () -> region(val(640), val(360), val(600), val(300))),
+    on("xubuntu_xfce", () -> region(val(640), val(360), val(600), val(300))));
   final Action backToIdle= action("backToIdle",
     on("ubuntu_gnome", () -> waitClick(val(0), val(780), val(113))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(749), val(93))));
@@ -64,7 +67,8 @@ final class EditMetadataCommitTest extends ManagerTest{
     type("code");
     commit.go();
     codeSaved.go();
-    changed(editor, new java.awt.Rectangle(640, 360, 600, 300));
+    editorArea.go();
+    changed(editor, region);
     stabilize();
     checkContent(info, registry.formatted(slashed(project), "code"));
     backToIdle.go();

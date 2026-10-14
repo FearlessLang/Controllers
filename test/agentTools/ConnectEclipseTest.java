@@ -2,7 +2,6 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.awt.Rectangle;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -11,6 +10,9 @@ import tools.Fs;
 import utils.OneOr;
 
 final class ConnectEclipseTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Path ide= files.resolve("ide");
   final Path elsewhere= files.resolve("elsewhere");
   final Path dropins= ide.resolve("dropins");
@@ -55,7 +57,8 @@ final class ConnectEclipseTest extends ManagerTest{
     var bare= look();
     start();
     managerShown.go();
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var before= look();
     managerMenu.go();
     connectEclipse.go();

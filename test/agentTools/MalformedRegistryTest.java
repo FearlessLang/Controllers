@@ -3,12 +3,14 @@ package agentTools;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.awt.Rectangle;
 import java.nio.file.Files;
 
 import tools.Fs;
 
 final class MalformedRegistryTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
@@ -67,7 +69,8 @@ final class MalformedRegistryTest extends ManagerTest{
     Fs.writeUtf8(info, remembered.substring(0, remembered.length()-2));
     stabilize();
     var before= look();
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     start();
     errorShown.go();
     changed(before, center);

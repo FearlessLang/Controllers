@@ -1,8 +1,10 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 final class LaunchOnFileTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
@@ -57,7 +59,8 @@ final class LaunchOnFileTest extends ManagerTest{
     openHelloWorldMarkerAgain.go();
     managerToFront.go();
     selected.go();
-    same(before, new Rectangle(760, 460, 400, 160));
+    centerArea.go();
+    same(before, region);
     same(before, inWindow(69, 95, 1100, 85));
     stabilize();
     checkContent(info, remembered);

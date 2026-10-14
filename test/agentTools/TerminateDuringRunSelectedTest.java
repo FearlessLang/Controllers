@@ -1,10 +1,12 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 import tools.Fs;
 
 final class TerminateDuringRunSelectedTest extends ManagerTest{
+  final Action programArea= action("programArea",
+    on("ubuntu_gnome", () -> region(val(920), val(510), val(150), val(94))),
+    on("xubuntu_xfce", () -> region(val(920), val(510), val(150), val(94))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(975), val(113))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(980), val(93))));
@@ -81,7 +83,8 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    var program= new Rectangle(920, 510, 150, 94);
+    programArea.go();
+    var program= region;
     var output= inWindow(410, 168, 1000, 80);
     var before= look();
     runV.go();

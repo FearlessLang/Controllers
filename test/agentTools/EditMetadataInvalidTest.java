@@ -1,8 +1,10 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 final class EditMetadataInvalidTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
@@ -67,7 +69,8 @@ final class EditMetadataInvalidTest extends ManagerTest{
     var editor= look();
     commit.go();
     noteShown.go();
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     changed(editor, center);
     stabilize();
     checkContent(info, idle);

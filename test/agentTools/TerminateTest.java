@@ -1,8 +1,10 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 final class TerminateTest extends ManagerTest{
+  final Action programArea= action("programArea",
+    on("ubuntu_gnome", () -> region(val(930), val(500), val(120), val(120))),
+    on("xubuntu_xfce", () -> region(val(930), val(500), val(120), val(120))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(100), val(970), val(112))),
     on("xubuntu_xfce", () -> waitClick(val(null), val(976), val(93))));
@@ -55,7 +57,8 @@ final class TerminateTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    var program= new Rectangle(930, 500, 120, 120);
+    programArea.go();
+    var program= region;
     var before= look();
     run.go();
     programShown.go();

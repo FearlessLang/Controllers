@@ -1,12 +1,14 @@
 package agentTools;
 
-import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 
 import tools.Fs;
 
 final class LinkWriteTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action becomeEditableData= action("becomeEditableData",
     on("ubuntu_gnome", () -> waitClick(val(0), val(842), val(113))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(828), val(93))));
@@ -145,7 +147,8 @@ final class LinkWriteTest extends ManagerTest{
     type("Coin");
     leaveReadField.go();
     noteShown.go();
-    changed(before, new Rectangle(760, 460, 400, 160));
+    centerArea.go();
+    changed(before, region);
     stabilize();
     checkContent(info, edits);
     okButton.go();

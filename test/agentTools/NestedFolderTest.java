@@ -2,13 +2,15 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.awt.Rectangle;
 import java.nio.file.Path;
 import java.util.List;
 
 import tools.Fs;
 
 final class NestedFolderTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Path nest= files.resolve("nest");
   final Path inner= nest.resolve("inner");
   final Path source= inner.resolve("_inner");
@@ -86,7 +88,8 @@ final class NestedFolderTest extends ManagerTest{
     projectShown.go();
     stabilize();
     checkContent(info, remembered);
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var before= look();
     toFiles();
     openNestAgain.go();

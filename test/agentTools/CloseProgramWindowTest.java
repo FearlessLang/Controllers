@@ -1,10 +1,12 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 import tools.Fs;
 
 final class CloseProgramWindowTest extends ManagerTest{
+  final Action programArea= action("programArea",
+    on("ubuntu_gnome", () -> region(val(930), val(510), val(126), val(94))),
+    on("xubuntu_xfce", () -> region(val(930), val(510), val(126), val(94))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(100), val(967), val(112))),
     on("xubuntu_xfce", () -> waitClick(val(null), val(972), val(93))));
@@ -67,7 +69,8 @@ final class CloseProgramWindowTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    var program= new Rectangle(930, 510, 126, 94);
+    programArea.go();
+    var program= region;
     var button= inWindow(505, 102, 30, 20);
     var before= look();
     run.go();

@@ -1,8 +1,10 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 final class KindWhileBusyTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(970), val(113))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(976), val(93))));
@@ -75,7 +77,8 @@ final class KindWhileBusyTest extends ManagerTest{
       }
       """.formatted(slashed(gui));
     var button= inWindow(508, 102, 30, 20);
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var greyed= inWindow(720, 102, 197, 22);
     var compiledLook= look();
     run.go();

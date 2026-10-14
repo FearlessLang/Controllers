@@ -1,8 +1,10 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 final class EditMetadataConflictTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   static final String two= """
     {
       "projects": {
@@ -97,7 +99,8 @@ final class EditMetadataConflictTest extends ManagerTest{
     var both= two.formatted(slashed(project), "idle", slashed(other));
     stabilize();
     checkContent(info, both);
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var editor= look();
     commit.go();
     noteShown.go();

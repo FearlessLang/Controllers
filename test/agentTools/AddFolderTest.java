@@ -1,8 +1,10 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 final class AddFolderTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
@@ -35,7 +37,8 @@ final class AddFolderTest extends ManagerTest{
     var bare= look();
     start();
     managerShown.go();
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var tiles= inWindow(69, 95, 128, 85);
     var empty= look();
     managerMenu.go();

@@ -1,10 +1,12 @@
 package agentTools;
 
-import java.awt.Rectangle;
 
 import tools.Fs;
 
 final class DoubleClickCompileTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(976), val(112))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(982), val(93))));
@@ -45,7 +47,8 @@ final class DoubleClickCompileTest extends ManagerTest{
     projectShown.go();
     becomeCode.go();
     codeShown.go();
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var output= inWindow(410, 170, 1000, 90);
     var before= look();
     compileTwice.go();

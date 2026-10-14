@@ -1,6 +1,5 @@
 package agentTools;
 
-import java.awt.Rectangle;
 import java.nio.file.Files;
 
 import tools.Fs;
@@ -8,6 +7,9 @@ import utils.Err;
 import utils.OneOr;
 
 final class LogsSectionTest extends ManagerTest{
+  final Action listedArea= action("listedArea",
+    on("ubuntu_gnome", () -> region(val(640), val(360), val(600), val(400))),
+    on("xubuntu_xfce", () -> region(val(640), val(360), val(600), val(400))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(971), val(113))),
     on("xubuntu_xfce", () -> waitClick(val(0), val(978), val(93))));
@@ -94,7 +96,8 @@ final class LogsSectionTest extends ManagerTest{
     var listed= look();
     logsButton.go();
     filesShown.go();
-    changed(listed, new Rectangle(640, 360, 600, 400));
+    listedArea.go();
+    changed(listed, region);
     closeFiles.go();
     filesClosed.go();
     managerMenu.go();

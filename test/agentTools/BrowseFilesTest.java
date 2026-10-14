@@ -2,12 +2,14 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.awt.Rectangle;
 import java.nio.file.Files;
 
 import tools.Fs;
 
 final class BrowseFilesTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))));
   final Action openBrowsed= action("openBrowsed",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
@@ -60,7 +62,8 @@ final class BrowseFilesTest extends ManagerTest{
     var folder= look();
     openBrowsedMarker.go();
     projectShown.go();
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var before= look();
     browse.go();
     filesShown.go();
