@@ -9,7 +9,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action buttonArea= action("buttonArea",
     on("ubuntu_gnome", () -> region(val(565), val(102), val(30), val(20))),
     on("kubuntu_plasma", () -> region(val(499), val(61), val(30), val(20))),
-    on("windows", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(499), val(61), val(30), val(20))),
     on("opensuse_plasma", () -> region(val(499), val(61), val(30), val(20))),
     on("debian_cinnamon", () -> region(val(499), val(70), val(30), val(20))),
     on("lubuntu_lxqt", () -> region(val(499), val(63), val(30), val(20))),
@@ -24,7 +24,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1027), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(961), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -39,7 +39,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action clean= action("clean",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1006), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(936), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -54,7 +54,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -69,7 +69,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(265), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -84,7 +84,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -99,7 +99,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -114,7 +114,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager switches the tile to the code view
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -129,7 +129,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action compile= action("compile",
     on("ubuntu_gnome", () -> waitClick(val(0), val(595), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(529), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -144,7 +144,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(2000))),//the compile of hello_world runs in its own JVM
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(12000))),//the compile of hello_world runs in its own JVM
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -159,7 +159,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action cacheCleared= action("cacheCleared",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager deletes .fearless_out and redraws the compile button
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -174,7 +174,7 @@ final class ClearCacheTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
