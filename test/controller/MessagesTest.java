@@ -179,7 +179,7 @@ Reported reason:
 The I/O operation has been aborted because of either a thread exit or an application request""", Violation.couldNotWatchMessageFolder(msgDir, cause).getMessage());
   }
   @Test void newFilesNotReported(){
-    var msgDir= Path.of("/data/fearless0_007/messages");
+    var msgDir= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager\\messages");
     same("""
 Fearless gets no file-change notifications for its manager folder.
 
@@ -190,7 +190,7 @@ coordination information into files.
 
 Fearless asked the operating system to tell it when files appear in this
 folder:
-  /data/fearless0_007/messages
+  C:\\Users\\ada\\AppData\\Local\\Fearless\\manager\\messages
 Fearless created a file in it, and no notification came within 5 seconds.
 Some drives, for example some network drives, send no such notifications.
 
