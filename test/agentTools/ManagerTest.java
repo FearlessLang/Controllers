@@ -172,7 +172,7 @@ abstract class ManagerTest{
   final Action resetManager= action("resetManager",
     on("ubuntu_gnome", () -> waitClick(val(null), val(90), val(191))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(24), val(145))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -399,7 +399,7 @@ abstract class ManagerTest{
   final Action fileManagerToFront= action("fileManagerToFront",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(128))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(212), val(1052))),
-    on("windows", () -> waitClick(val(100), val(750), val(696))),
+    on("windows", () -> waitClick(val(100), val(665), val(696))),
     on("opensuse_plasma", () -> waitClick(val(100), val(221), val(1057))),
     on("debian_cinnamon", () -> waitClick(val(100), val(75), val(1057))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(215), val(1064))),
@@ -513,6 +513,11 @@ abstract class ManagerTest{
     openBin.go();
     openLauncher.go();
     confirmLauncher.go();
+  }
+  void startAlone() throws Throwable{
+    fileManagerFront= Fs.isWindows();
+    start();
+    fileManagerFront= false;
   }
   void toFiles() throws Throwable{
     toPilotio();

@@ -2,8 +2,6 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import tools.Fs;
-
 final class DividerPlaceTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -281,11 +279,6 @@ final class DividerPlaceTest extends ManagerTest{
     quitManager.go();
     fourthQuit.go();
     closeFiles();
-  }
-  void startAlone() throws Throwable{
-    fileManagerFront= Fs.isWindows();
-    start();
-    fileManagerFront= false;
   }
   void listEnd(int x, int y, int end){
     var shot= pilot.shot();
