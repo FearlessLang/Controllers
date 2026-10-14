@@ -10,7 +10,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action tileArea= action("tileArea",
     on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
     on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
-    on("windows", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(3), val(47), val(128), val(85))),
     on("opensuse_plasma", () -> region(val(3), val(54), val(128), val(85))),
     on("debian_cinnamon", () -> region(val(3), val(63), val(128), val(85))),
     on("lubuntu_lxqt", () -> region(val(3), val(56), val(128), val(85))),
@@ -25,7 +25,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action outputArea= action("outputArea",
     on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
     on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
-    on("windows", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(330), val(120), val(940), val(80))),
     on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
     on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
     on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
@@ -40,7 +40,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -55,7 +55,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action goneNoticed= action("goneNoticed",
     on("ubuntu_gnome", () -> waitAfter(val(8500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager polls the project folder and notices that it is gone
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -70,7 +70,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action check= action("check",
     on("ubuntu_gnome", () -> waitClick(val(0), val(524), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(464), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -85,7 +85,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action checked= action("checked",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager checks the project and reports that its folder is gone
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -100,7 +100,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action tileBack= action("tileBack",
     on("ubuntu_gnome", () -> waitAfter(val(8500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager polls the project folder and notices that it is back
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -115,7 +115,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -130,7 +130,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action openGone= action("openGone",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(266), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -145,7 +145,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action openGoneMarker= action("openGoneMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(250), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -160,7 +160,7 @@ final class FolderGoneTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
