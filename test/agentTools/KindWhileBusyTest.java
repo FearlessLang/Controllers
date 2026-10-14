@@ -1,56 +1,244 @@
 package agentTools;
 
-import java.awt.Rectangle;
-
 final class KindWhileBusyTest extends ManagerTest{
+  final Action centerArea= action("centerArea",
+    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
+    on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> region(val(null), val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> region(val(null), val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> region(val(null), val(null), val(null), val(null))),
+    on("fedora_gnome", () -> region(val(null), val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> region(val(null), val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> region(val(null), val(null), val(null), val(null))),
+    on("debian_mate", () -> region(val(null), val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))),
+    on("arch_sway", () -> region(val(null), val(null), val(null), val(null))),
+    on("void_i3", () -> region(val(null), val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> region(val(null), val(null), val(null), val(null))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(970), val(113))),
-    on("xubuntu_xfce", () -> waitClick(val(0), val(976), val(93))));
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(976), val(93))),
+    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
+    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
-    on("xubuntu_xfce", () -> waitAfter(val(21500))));
+    on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("opensuse_plasma", () -> waitAfter(val(null))),
+    on("debian_cinnamon", () -> waitAfter(val(null))),
+    on("lubuntu_lxqt", () -> waitAfter(val(null))),
+    on("fedora_gnome", () -> waitAfter(val(null))),
+    on("debian_gnome_x11", () -> waitAfter(val(null))),
+    on("fedora_cosmic", () -> waitAfter(val(null))),
+    on("debian_mate", () -> waitAfter(val(null))),
+    on("xubuntu_xfce", () -> waitAfter(val(21500))),
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
-    on("xubuntu_xfce", () -> waitAfter(val(6000))));
+    on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("opensuse_plasma", () -> waitAfter(val(null))),
+    on("debian_cinnamon", () -> waitAfter(val(null))),
+    on("lubuntu_lxqt", () -> waitAfter(val(null))),
+    on("fedora_gnome", () -> waitAfter(val(null))),
+    on("debian_gnome_x11", () -> waitAfter(val(null))),
+    on("fedora_cosmic", () -> waitAfter(val(null))),
+    on("debian_mate", () -> waitAfter(val(null))),
+    on("xubuntu_xfce", () -> waitAfter(val(6000))),
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action compile= action("compile",
     on("ubuntu_gnome", () -> waitClick(val(0), val(523), val(113))),
-    on("xubuntu_xfce", () -> waitClick(val(0), val(481), val(93))));
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(481), val(93))),
+    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
+    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
-    on("xubuntu_xfce", () -> waitAfter(val(26000))));
+    on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("opensuse_plasma", () -> waitAfter(val(null))),
+    on("debian_cinnamon", () -> waitAfter(val(null))),
+    on("lubuntu_lxqt", () -> waitAfter(val(null))),
+    on("fedora_gnome", () -> waitAfter(val(null))),
+    on("debian_gnome_x11", () -> waitAfter(val(null))),
+    on("fedora_cosmic", () -> waitAfter(val(null))),
+    on("debian_mate", () -> waitAfter(val(null))),
+    on("xubuntu_xfce", () -> waitAfter(val(26000))),
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action run= action("run",
     on("ubuntu_gnome", () -> waitClick(val(0), val(523), val(113))),
-    on("xubuntu_xfce", () -> waitClick(val(0), val(466), val(93))));
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(466), val(93))),
+    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
+    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action programShown= action("programShown",
     on("ubuntu_gnome", () -> waitAfter(val(8500))),
-    on("xubuntu_xfce", () -> waitAfter(val(10500))));
+    on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("opensuse_plasma", () -> waitAfter(val(null))),
+    on("debian_cinnamon", () -> waitAfter(val(null))),
+    on("lubuntu_lxqt", () -> waitAfter(val(null))),
+    on("fedora_gnome", () -> waitAfter(val(null))),
+    on("debian_gnome_x11", () -> waitAfter(val(null))),
+    on("fedora_cosmic", () -> waitAfter(val(null))),
+    on("debian_mate", () -> waitAfter(val(null))),
+    on("xubuntu_xfce", () -> waitAfter(val(10500))),
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action backToIdleBusy= action("backToIdleBusy",
     on("ubuntu_gnome", () -> waitClick(val(0), val(733), val(113))),
-    on("xubuntu_xfce", () -> waitClick(val(0), val(701), val(93))));
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(701), val(93))),
+    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
+    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action forgetBusy= action("forgetBusy",
     on("ubuntu_gnome", () -> waitClick(val(0), val(892), val(113))),
-    on("xubuntu_xfce", () -> waitClick(val(0), val(878), val(93))));
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(878), val(93))),
+    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
+    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action ignored= action("ignored",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
-    on("xubuntu_xfce", () -> waitAfter(val(6000))));
+    on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("opensuse_plasma", () -> waitAfter(val(null))),
+    on("debian_cinnamon", () -> waitAfter(val(null))),
+    on("lubuntu_lxqt", () -> waitAfter(val(null))),
+    on("fedora_gnome", () -> waitAfter(val(null))),
+    on("debian_gnome_x11", () -> waitAfter(val(null))),
+    on("fedora_cosmic", () -> waitAfter(val(null))),
+    on("debian_mate", () -> waitAfter(val(null))),
+    on("xubuntu_xfce", () -> waitAfter(val(6000))),
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action terminate= action("terminate",
     on("ubuntu_gnome", () -> waitClick(val(0), val(523), val(113))),
-    on("xubuntu_xfce", () -> waitClick(val(0), val(489), val(93))));
+    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
+    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(489), val(93))),
+    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
+    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action terminated= action("terminated",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
-    on("xubuntu_xfce", () -> waitAfter(val(5500))));
+    on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("opensuse_plasma", () -> waitAfter(val(null))),
+    on("debian_cinnamon", () -> waitAfter(val(null))),
+    on("lubuntu_lxqt", () -> waitAfter(val(null))),
+    on("fedora_gnome", () -> waitAfter(val(null))),
+    on("debian_gnome_x11", () -> waitAfter(val(null))),
+    on("fedora_cosmic", () -> waitAfter(val(null))),
+    on("debian_mate", () -> waitAfter(val(null))),
+    on("xubuntu_xfce", () -> waitAfter(val(5500))),
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
-    on("xubuntu_xfce", () -> waitAfter(val(8500))));
+    on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("opensuse_plasma", () -> waitAfter(val(null))),
+    on("debian_cinnamon", () -> waitAfter(val(null))),
+    on("lubuntu_lxqt", () -> waitAfter(val(null))),
+    on("fedora_gnome", () -> waitAfter(val(null))),
+    on("debian_gnome_x11", () -> waitAfter(val(null))),
+    on("fedora_cosmic", () -> waitAfter(val(null))),
+    on("debian_mate", () -> waitAfter(val(null))),
+    on("xubuntu_xfce", () -> waitAfter(val(8500))),
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action openTestGui1= action("openTestGui1",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
+    on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("fedora_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("debian_mate", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action openStartMarker= action("openStartMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
+    on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("fedora_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("debian_gnome_x11", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("fedora_cosmic", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("debian_mate", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
-    on("xubuntu_xfce", () -> waitAfter(val(null))));
+    on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("opensuse_plasma", () -> waitAfter(val(null))),
+    on("debian_cinnamon", () -> waitAfter(val(null))),
+    on("lubuntu_lxqt", () -> waitAfter(val(null))),
+    on("fedora_gnome", () -> waitAfter(val(null))),
+    on("debian_gnome_x11", () -> waitAfter(val(null))),
+    on("fedora_cosmic", () -> waitAfter(val(null))),
+    on("debian_mate", () -> waitAfter(val(null))),
+    on("xubuntu_xfce", () -> waitAfter(val(null))),
+    on("arch_sway", () -> waitAfter(val(null))),
+    on("void_i3", () -> waitAfter(val(null))),
+    on("omarchy_hyprland", () -> waitAfter(val(null))));
   @Override void walk() throws Throwable{
     var gui= project("testGui1");
     start();
@@ -58,7 +246,6 @@ final class KindWhileBusyTest extends ManagerTest{
     toFiles();
     openTestGui1.go();
     openStartMarker.go();
-    closeFiles();
     projectShown.go();
     becomeCode.go();
     codeShown.go();
@@ -76,7 +263,8 @@ final class KindWhileBusyTest extends ManagerTest{
       }
       """.formatted(slashed(gui));
     var button= inWindow(508, 102, 30, 20);
-    var center= new Rectangle(760, 460, 400, 160);
+    centerArea.go();
+    var center= region;
     var greyed= inWindow(720, 102, 197, 22);
     var compiledLook= look();
     run.go();
@@ -98,5 +286,6 @@ final class KindWhileBusyTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
   }
 }
