@@ -292,7 +292,7 @@ abstract class ManagerTest{
     on("xubuntu_xfce", () -> waitClick(val(100), val(935), val(1057))),
     on("arch_sway", () -> waitType(val(100), "thunar\n")),//types thunar and Enter in the launcher
     on("void_i3", () -> waitType(val(100), "thunar\n")),//types thunar and Enter in the launcher
-    on("omarchy_hyprland", () -> waitClick(val(100), val(903), val(758))));//Files, in the apps menu
+    on("omarchy_hyprland", () -> waitType(val(100), "files\n")));//types files and Enter in the apps menu
   final Action pilotioBookmark= action("pilotioBookmark",
     on("ubuntu_gnome", () -> waitClick(val(100), val(613), val(743))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(629), val(544))),
