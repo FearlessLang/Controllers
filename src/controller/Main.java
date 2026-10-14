@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -157,6 +158,7 @@ public final class Main implements Manager.Exit{
   private void own() throws Throwable{
     try{ watcher = FileSystems.getDefault().newWatchService(); msgDir().register(watcher, ENTRY_CREATE); }
     catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(), e); }
+    probe(watcher);
     Thread.setDefaultUncaughtExceptionHandler((_,t) -> fail(t));
     var window= Window.create(this, managerDir);
     manager = new Manager(managerDir, new Deployed(), window, this);
@@ -173,6 +175,15 @@ public final class Main implements Manager.Exit{
     if (problem != null){ throw problem; }
     if (!reset){ manager.stop(); return; }
     wipe().ifPresent(Main::display);
+  }
+  private void probe(WatchService watcher){
+    StringFiles.writeNew(msgDir().resolve("%020d-%s.tmp".formatted(System.currentTimeMillis(), UUID.randomUUID())), "", UserError.onFileError());
+    WatchKey key;
+    try{ key= watcher.poll(5, TimeUnit.SECONDS); }
+    catch (InterruptedException e){ throw Bug.of(e); }
+    if (key == null){ throw Violation.newFilesNotReported(msgDir()); }
+    key.pollEvents();
+    if (!key.reset()){ throw Violation.messageFolderNotWatchable(msgDir()); }
   }
   @Override public void quit(){ done.countDown(); }
   @Override public void reset(){ reset = true; done.countDown(); }

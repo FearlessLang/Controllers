@@ -204,6 +204,19 @@ public final class Violation{
 
       %s""".formatted(managerFolderIntro(), path(msgDir.toString()), reported(cause)), cause);
   }
+  public static UserError newFilesNotReported(Path msgDir){
+    return new UserError("""
+      Fearless gets no file-change notifications for its manager folder.
+
+      %s
+      Fearless asked the operating system to tell it when files appear in this
+      folder:
+      %s
+      Fearless created a file in it, and no notification came within 5 seconds.
+      Some drives, for example some network drives, send no such notifications.
+
+      Put this Fearless folder on a disk of this computer.""".formatted(managerFolderIntro(), path(msgDir.toString())));
+  }
   public static UserError messageFolderNotWatchable(Path msgDir){
     return new UserError("""
       Fearless can no longer watch its manager folder.

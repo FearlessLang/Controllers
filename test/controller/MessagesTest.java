@@ -178,6 +178,24 @@ This feature is called file-change notifications, and the request failed.
 Reported reason:
 The I/O operation has been aborted because of either a thread exit or an application request""", Violation.couldNotWatchMessageFolder(msgDir, cause).getMessage());
   }
+  @Test void newFilesNotReported(){
+    var msgDir= Path.of("/data/fearless0_007/messages");
+    same("""
+Fearless gets no file-change notifications for its manager folder.
+
+Fearless uses one process (called the manager process)
+to keep track of other Fearless processes (the user processes).
+The manager folder is the folder used by the manager process to store
+coordination information into files.
+
+Fearless asked the operating system to tell it when files appear in this
+folder:
+  /data/fearless0_007/messages
+Fearless created a file in it, and no notification came within 5 seconds.
+Some drives, for example some network drives, send no such notifications.
+
+Put this Fearless folder on a disk of this computer.""", Violation.newFilesNotReported(msgDir).getMessage());
+  }
   @Test void messageFolderNotWatchable(){
     var msgDir= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager\\messages");
     same("""
