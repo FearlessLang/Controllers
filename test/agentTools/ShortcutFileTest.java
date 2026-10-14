@@ -10,6 +10,20 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class ShortcutFileTest extends ManagerTest{
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(256), val(1000), val(60))),
+    on("kubuntu_plasma", () -> region(val(344), val(215), val(1000), val(60))),
+    on("opensuse_plasma", () -> region(val(344), val(215), val(1000), val(60))),
+    on("debian_cinnamon", () -> region(val(344), val(224), val(1000), val(60))),
+    on("lubuntu_lxqt", () -> region(val(344), val(217), val(1000), val(60))),
+    on("fedora_gnome", () -> region(val(344), val(256), val(1000), val(60))),
+    on("debian_gnome_x11", () -> region(val(344), val(256), val(1000), val(60))),
+    on("fedora_cosmic", () -> region(val(344), val(255), val(1000), val(60))),
+    on("debian_mate", () -> region(val(344), val(246), val(1000), val(60))),
+    on("xubuntu_xfce", () -> region(val(343), val(236), val(1000), val(60))),
+    on("arch_sway", () -> region(val(1306), val(240), val(1000), val(60))),
+    on("void_i3", () -> region(val(1306), val(203), val(1000), val(60))),
+    on("omarchy_hyprland", () -> region(val(1311), val(223), val(1000), val(60))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1012), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -239,10 +253,11 @@ final class ShortcutFileTest extends ManagerTest{
     compiled.go();
     stabilize();
     assertEquals(List.of("hello.fapp"), Fs.walk(shortcuts, s -> s.filter(p -> p.getParent().equals(shortcuts)).map(p -> p.getFileName().toString().replaceAll("[0-9]{3}$", "")).filter(n -> n.startsWith("hello.")).toList()));
-    var output= inWindow(410, 256, 1000, 60);
     var compiledLook= look();
     shortcutIcon.go();
     ranFromManager.go();
+    outputArea.go();
+    var output= region;
     changed(compiledLook, output);
     clearOutput.go();
     outputCleared.go();

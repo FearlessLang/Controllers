@@ -103,8 +103,6 @@ final class RefusedFolderTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitAfter(val(null))));
   @Override void walk() throws Throwable{
     var folder= filesIOFolder.resolve(data);
-    centerArea.go();
-    var center= region;
     var bare= look();
     start();
     managerShown.go();
@@ -115,6 +113,8 @@ final class RefusedFolderTest extends ManagerTest{
     openManagerFolder.go();
     openInside.go();
     noteShownAgain.go();
+    centerArea.go();
+    var center= region;
     changed(before, center);
     stabilize();
     checkContent(info, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");

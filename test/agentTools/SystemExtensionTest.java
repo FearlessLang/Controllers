@@ -7,6 +7,20 @@ import javax.imageio.ImageIO;
 import tools.Fs;
 
 final class SystemExtensionTest extends ManagerTest{
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
+    on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
+    on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
+    on("fedora_gnome", () -> region(val(344), val(168), val(1000), val(80))),
+    on("debian_gnome_x11", () -> region(val(344), val(168), val(1000), val(80))),
+    on("fedora_cosmic", () -> region(val(344), val(167), val(1000), val(80))),
+    on("debian_mate", () -> region(val(344), val(158), val(1000), val(80))),
+    on("xubuntu_xfce", () -> region(val(343), val(148), val(1000), val(80))),
+    on("arch_sway", () -> region(val(1306), val(152), val(1000), val(80))),
+    on("void_i3", () -> region(val(1306), val(115), val(1000), val(80))),
+    on("omarchy_hyprland", () -> region(val(1311), val(135), val(1000), val(80))));
   final Action centerArea= action("centerArea",
     on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
@@ -248,11 +262,11 @@ final class SystemExtensionTest extends ManagerTest{
     projectShown.go();
     becomeCode.go();
     codeShown.go();
-    centerArea.go();
-    var center= region;
     var before= look();
     compile.go();
     questionShown.go();
+    centerArea.go();
+    var center= region;
     changed(before, center);
     stabilize();
     checkContent(files.resolve("opens/.fearless_out/compile_error.txt"), "The system extension \"fzz\" of [###] of main \"hello.Hello\" is not in \"systemExtensions\" of projects.info.");
@@ -272,12 +286,13 @@ final class SystemExtensionTest extends ManagerTest{
       """.formatted(slashed(opens)));
     compileAgain.go();
     compiled.go();
-    var output= inWindow(410, 168, 1000, 80);
     var compiledLook= look();
     toFiles();
     openOpens.go();
     openLetter.go();
     letterRun.go();
+    outputArea.go();
+    var output= region;
     changed(compiledLook, output);
     managerMenu.go();
     quitManager.go();

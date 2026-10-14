@@ -3,6 +3,20 @@ package agentTools;
 import tools.Fs;
 
 final class CloseProgramWindowTest extends ManagerTest{
+  final Action buttonArea= action("buttonArea",
+    on("ubuntu_gnome", () -> region(val(505), val(102), val(30), val(20))),
+    on("kubuntu_plasma", () -> region(val(439), val(61), val(30), val(20))),
+    on("opensuse_plasma", () -> region(val(439), val(61), val(30), val(20))),
+    on("debian_cinnamon", () -> region(val(439), val(70), val(30), val(20))),
+    on("lubuntu_lxqt", () -> region(val(439), val(63), val(30), val(20))),
+    on("fedora_gnome", () -> region(val(439), val(102), val(30), val(20))),
+    on("debian_gnome_x11", () -> region(val(439), val(102), val(30), val(20))),
+    on("fedora_cosmic", () -> region(val(439), val(101), val(30), val(20))),
+    on("debian_mate", () -> region(val(439), val(92), val(30), val(20))),
+    on("xubuntu_xfce", () -> region(val(438), val(82), val(30), val(20))),
+    on("arch_sway", () -> region(val(1401), val(86), val(30), val(20))),
+    on("void_i3", () -> region(val(1401), val(49), val(30), val(20))),
+    on("omarchy_hyprland", () -> region(val(1406), val(69), val(30), val(20))));
   final Action programArea= action("programArea",
     on("ubuntu_gnome", () -> region(val(930), val(510), val(126), val(94))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
@@ -222,13 +236,14 @@ final class CloseProgramWindowTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    programArea.go();
-    var program= region;
-    var button= inWindow(505, 102, 30, 20);
     var before= look();
     run.go();
     programShown.go();
+    programArea.go();
+    var program= region;
     changed(before, program);
+    buttonArea.go();
+    var button= region;
     changed(before, button);
     closeProgram.go();
     programEnded.go();

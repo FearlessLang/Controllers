@@ -6,6 +6,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 
 final class ClearCacheTest extends ManagerTest{
+  final Action buttonArea= action("buttonArea",
+    on("ubuntu_gnome", () -> region(val(565), val(102), val(30), val(20))),
+    on("kubuntu_plasma", () -> region(val(499), val(61), val(30), val(20))),
+    on("opensuse_plasma", () -> region(val(499), val(61), val(30), val(20))),
+    on("debian_cinnamon", () -> region(val(499), val(70), val(30), val(20))),
+    on("lubuntu_lxqt", () -> region(val(499), val(63), val(30), val(20))),
+    on("fedora_gnome", () -> region(val(499), val(102), val(30), val(20))),
+    on("debian_gnome_x11", () -> region(val(499), val(102), val(30), val(20))),
+    on("fedora_cosmic", () -> region(val(499), val(101), val(30), val(20))),
+    on("debian_mate", () -> region(val(499), val(92), val(30), val(20))),
+    on("xubuntu_xfce", () -> region(val(498), val(82), val(30), val(20))),
+    on("arch_sway", () -> region(val(1461), val(86), val(30), val(20))),
+    on("void_i3", () -> region(val(1461), val(49), val(30), val(20))),
+    on("omarchy_hyprland", () -> region(val(1466), val(69), val(30), val(20))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1027), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -174,7 +188,8 @@ final class ClearCacheTest extends ManagerTest{
     var notCompiled= look();
     compile.go();
     compiled.go();
-    var button= inWindow(565, 102, 30, 20);
+    buttonArea.go();
+    var button= region;
     changed(notCompiled, button);
     stabilize();
     assertTrue(Files.isDirectory(project.resolve(".fearless_out")));

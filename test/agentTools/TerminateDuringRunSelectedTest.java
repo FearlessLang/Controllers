@@ -3,6 +3,34 @@ package agentTools;
 import tools.Fs;
 
 final class TerminateDuringRunSelectedTest extends ManagerTest{
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
+    on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
+    on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
+    on("fedora_gnome", () -> region(val(344), val(168), val(1000), val(80))),
+    on("debian_gnome_x11", () -> region(val(344), val(168), val(1000), val(80))),
+    on("fedora_cosmic", () -> region(val(344), val(167), val(1000), val(80))),
+    on("debian_mate", () -> region(val(344), val(158), val(1000), val(80))),
+    on("xubuntu_xfce", () -> region(val(343), val(148), val(1000), val(80))),
+    on("arch_sway", () -> region(val(1306), val(152), val(1000), val(80))),
+    on("void_i3", () -> region(val(1306), val(115), val(1000), val(80))),
+    on("omarchy_hyprland", () -> region(val(1311), val(135), val(1000), val(80))));
+  final Action runningArea= action("runningArea",
+    on("ubuntu_gnome", () -> region(val(410), val(220), val(1000), val(34))),
+    on("kubuntu_plasma", () -> region(val(344), val(179), val(1000), val(34))),
+    on("opensuse_plasma", () -> region(val(344), val(179), val(1000), val(34))),
+    on("debian_cinnamon", () -> region(val(344), val(188), val(1000), val(34))),
+    on("lubuntu_lxqt", () -> region(val(344), val(181), val(1000), val(34))),
+    on("fedora_gnome", () -> region(val(344), val(220), val(1000), val(34))),
+    on("debian_gnome_x11", () -> region(val(344), val(220), val(1000), val(34))),
+    on("fedora_cosmic", () -> region(val(344), val(219), val(1000), val(34))),
+    on("debian_mate", () -> region(val(344), val(210), val(1000), val(34))),
+    on("xubuntu_xfce", () -> region(val(343), val(200), val(1000), val(34))),
+    on("arch_sway", () -> region(val(1306), val(204), val(1000), val(34))),
+    on("void_i3", () -> region(val(1306), val(167), val(1000), val(34))),
+    on("omarchy_hyprland", () -> region(val(1311), val(187), val(1000), val(34))));
   final Action programArea= action("programArea",
     on("ubuntu_gnome", () -> region(val(920), val(510), val(150), val(94))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
@@ -291,9 +319,6 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     codeShown.go();
     compile.go();
     compiled.go();
-    programArea.go();
-    var program= region;
-    var output= inWindow(410, 168, 1000, 80);
     var before= look();
     runV.go();
     mainsShown.go();
@@ -301,6 +326,8 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     tickTell.go();
     runTicked.go();
     programShown.go();
+    programArea.go();
+    var program= region;
     changed(before, program);
     var running= look();
     terminate.go();
@@ -319,9 +346,12 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
         "systemExtensions": []
       }
       """.formatted(slashed(chain)));
+    outputArea.go();
+    var output= region;
     assert differing(running, look(), output) > 0;
     tellWouldHaveRun.go();
-    same(running, inWindow(410, 220, 1000, 34));
+    runningArea.go();
+    same(running, region);
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

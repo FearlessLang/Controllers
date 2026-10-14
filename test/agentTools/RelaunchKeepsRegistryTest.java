@@ -1,6 +1,20 @@
 package agentTools;
 
 final class RelaunchKeepsRegistryTest extends ManagerTest{
+  final Action panelArea= action("panelArea",
+    on("ubuntu_gnome", () -> region(val(410), val(95), val(420), val(60))),
+    on("kubuntu_plasma", () -> region(val(344), val(54), val(420), val(60))),
+    on("opensuse_plasma", () -> region(val(344), val(54), val(420), val(60))),
+    on("debian_cinnamon", () -> region(val(344), val(63), val(420), val(60))),
+    on("lubuntu_lxqt", () -> region(val(344), val(56), val(420), val(60))),
+    on("fedora_gnome", () -> region(val(344), val(95), val(420), val(60))),
+    on("debian_gnome_x11", () -> region(val(344), val(95), val(420), val(60))),
+    on("fedora_cosmic", () -> region(val(344), val(94), val(420), val(60))),
+    on("debian_mate", () -> region(val(344), val(85), val(420), val(60))),
+    on("xubuntu_xfce", () -> region(val(343), val(75), val(420), val(60))),
+    on("arch_sway", () -> region(val(1306), val(79), val(420), val(60))),
+    on("void_i3", () -> region(val(1306), val(42), val(420), val(60))),
+    on("omarchy_hyprland", () -> region(val(1311), val(62), val(420), val(60))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1027), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -152,7 +166,6 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     projectShown.go();
     becomeCode.go();
     codeShown.go();
-    var panel= inWindow(410, 95, 420, 60);
     var selected= look();
     var remembered= """
       {
@@ -170,6 +183,8 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    panelArea.go();
+    var panel= region;
     same(bare, panel);
     start();
     managerShownAgain.go();

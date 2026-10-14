@@ -318,11 +318,11 @@ final class EditMetadataConflictTest extends ManagerTest{
     var both= two.formatted(slashed(project), "idle", slashed(other));
     stabilize();
     checkContent(info, both);
-    centerArea.go();
-    var center= region;
     var editor= look();
     commit.go();
     noteShown.go();
+    centerArea.go();
+    var center= region;
     changed(editor, center);
     stabilize();
     checkContent(info, both);

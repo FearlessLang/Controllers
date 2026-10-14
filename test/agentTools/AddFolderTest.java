@@ -1,6 +1,20 @@
 package agentTools;
 
 final class AddFolderTest extends ManagerTest{
+  final Action tilesArea= action("tilesArea",
+    on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
+    on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("opensuse_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("debian_cinnamon", () -> region(val(3), val(63), val(128), val(85))),
+    on("lubuntu_lxqt", () -> region(val(3), val(56), val(128), val(85))),
+    on("fedora_gnome", () -> region(val(3), val(95), val(128), val(85))),
+    on("debian_gnome_x11", () -> region(val(3), val(95), val(128), val(85))),
+    on("fedora_cosmic", () -> region(val(3), val(94), val(128), val(85))),
+    on("debian_mate", () -> region(val(3), val(85), val(128), val(85))),
+    on("xubuntu_xfce", () -> region(val(2), val(75), val(128), val(85))),
+    on("arch_sway", () -> region(val(965), val(79), val(128), val(85))),
+    on("void_i3", () -> region(val(965), val(42), val(128), val(85))),
+    on("omarchy_hyprland", () -> region(val(970), val(62), val(128), val(85))));
   final Action centerArea= action("centerArea",
     on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
@@ -146,13 +160,12 @@ final class AddFolderTest extends ManagerTest{
     var bare= look();
     start();
     managerShown.go();
-    centerArea.go();
-    var center= region;
-    var tiles= inWindow(69, 95, 128, 85);
     var empty= look();
     managerMenu.go();
     addFolder.go();
     chooserShown.go();
+    centerArea.go();
+    var center= region;
     changed(empty, center);
     cancel.go();
     chooserGone.go();
@@ -166,6 +179,8 @@ final class AddFolderTest extends ManagerTest{
     type(project.toString());
     openButton.go();
     tileShown.go();
+    tilesArea.go();
+    var tiles= region;
     changed(empty, tiles);
     stabilize();
     checkContent(info, """

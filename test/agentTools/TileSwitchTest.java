@@ -1,6 +1,48 @@
 package agentTools;
 
 final class TileSwitchTest extends ManagerTest{
+  final Action panelArea= action("panelArea",
+    on("ubuntu_gnome", () -> region(val(410), val(95), val(1000), val(155))),
+    on("kubuntu_plasma", () -> region(val(344), val(54), val(1000), val(155))),
+    on("opensuse_plasma", () -> region(val(344), val(54), val(1000), val(155))),
+    on("debian_cinnamon", () -> region(val(344), val(63), val(1000), val(155))),
+    on("lubuntu_lxqt", () -> region(val(344), val(56), val(1000), val(155))),
+    on("fedora_gnome", () -> region(val(344), val(95), val(1000), val(155))),
+    on("debian_gnome_x11", () -> region(val(344), val(95), val(1000), val(155))),
+    on("fedora_cosmic", () -> region(val(344), val(94), val(1000), val(155))),
+    on("debian_mate", () -> region(val(344), val(85), val(1000), val(155))),
+    on("xubuntu_xfce", () -> region(val(343), val(75), val(1000), val(155))),
+    on("arch_sway", () -> region(val(1306), val(79), val(1000), val(155))),
+    on("void_i3", () -> region(val(1306), val(42), val(1000), val(155))),
+    on("omarchy_hyprland", () -> region(val(1311), val(62), val(1000), val(155))));
+  final Action nameArea= action("nameArea",
+    on("ubuntu_gnome", () -> region(val(450), val(95), val(50), val(32))),
+    on("kubuntu_plasma", () -> region(val(384), val(54), val(50), val(32))),
+    on("opensuse_plasma", () -> region(val(384), val(54), val(50), val(32))),
+    on("debian_cinnamon", () -> region(val(384), val(63), val(50), val(32))),
+    on("lubuntu_lxqt", () -> region(val(384), val(56), val(50), val(32))),
+    on("fedora_gnome", () -> region(val(384), val(95), val(50), val(32))),
+    on("debian_gnome_x11", () -> region(val(384), val(95), val(50), val(32))),
+    on("fedora_cosmic", () -> region(val(384), val(94), val(50), val(32))),
+    on("debian_mate", () -> region(val(384), val(85), val(50), val(32))),
+    on("xubuntu_xfce", () -> region(val(383), val(75), val(50), val(32))),
+    on("arch_sway", () -> region(val(1346), val(79), val(50), val(32))),
+    on("void_i3", () -> region(val(1346), val(42), val(50), val(32))),
+    on("omarchy_hyprland", () -> region(val(1351), val(62), val(50), val(32))));
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
+    on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
+    on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
+    on("fedora_gnome", () -> region(val(344), val(168), val(1000), val(80))),
+    on("debian_gnome_x11", () -> region(val(344), val(168), val(1000), val(80))),
+    on("fedora_cosmic", () -> region(val(344), val(167), val(1000), val(80))),
+    on("debian_mate", () -> region(val(344), val(158), val(1000), val(80))),
+    on("xubuntu_xfce", () -> region(val(343), val(148), val(1000), val(80))),
+    on("arch_sway", () -> region(val(1306), val(152), val(1000), val(80))),
+    on("void_i3", () -> region(val(1306), val(115), val(1000), val(80))),
+    on("omarchy_hyprland", () -> region(val(1311), val(135), val(1000), val(80))));
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -207,12 +249,11 @@ final class TileSwitchTest extends ManagerTest{
     openHelloWorld.go();
     openHelloWorldMarker.go();
     projectShown.go();
-    var panel= inWindow(410, 95, 1000, 155);
-    var name= inWindow(450, 95, 50, 32);
-    var output= inWindow(410, 168, 1000, 80);
     var helloEmpty= look();
     checkHello.go();
     helloChecked.go();
+    panelArea.go();
+    var panel= region;
     changed(helloEmpty, panel);
     var hello= look();
     toFiles();
@@ -223,7 +264,11 @@ final class TileSwitchTest extends ManagerTest{
     var start= look();
     helloTile.go();
     helloShown.go();
+    nameArea.go();
+    var name= region;
     same(hello, name);
+    outputArea.go();
+    var output= region;
     same(hello, output);
     startTile.go();
     startShown.go();

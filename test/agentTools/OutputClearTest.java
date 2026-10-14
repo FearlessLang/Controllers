@@ -3,6 +3,20 @@ package agentTools;
 import tools.Fs;
 
 final class OutputClearTest extends ManagerTest{
+  final Action outputArea= action("outputArea",
+    on("ubuntu_gnome", () -> region(val(410), val(170), val(1000), val(90))),
+    on("kubuntu_plasma", () -> region(val(344), val(129), val(1000), val(90))),
+    on("opensuse_plasma", () -> region(val(344), val(129), val(1000), val(90))),
+    on("debian_cinnamon", () -> region(val(344), val(138), val(1000), val(90))),
+    on("lubuntu_lxqt", () -> region(val(344), val(131), val(1000), val(90))),
+    on("fedora_gnome", () -> region(val(344), val(170), val(1000), val(90))),
+    on("debian_gnome_x11", () -> region(val(344), val(170), val(1000), val(90))),
+    on("fedora_cosmic", () -> region(val(344), val(169), val(1000), val(90))),
+    on("debian_mate", () -> region(val(344), val(160), val(1000), val(90))),
+    on("xubuntu_xfce", () -> region(val(343), val(150), val(1000), val(90))),
+    on("arch_sway", () -> region(val(1306), val(154), val(1000), val(90))),
+    on("void_i3", () -> region(val(1306), val(117), val(1000), val(90))),
+    on("omarchy_hyprland", () -> region(val(1311), val(137), val(1000), val(90))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(100), val(962), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -225,10 +239,11 @@ final class OutputClearTest extends ManagerTest{
     projectShown.go();
     becomeCode.go();
     codeShown.go();
-    var output= inWindow(410, 170, 1000, 90);
     var empty= look();
     compile.go();
     compiled.go();
+    outputArea.go();
+    var output= region;
     changed(empty, output);
     clear.go();
     cleared.go();

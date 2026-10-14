@@ -7,6 +7,20 @@ import utils.Err;
 import utils.OneOr;
 
 final class LogsSectionTest extends ManagerTest{
+  final Action listArea= action("listArea",
+    on("ubuntu_gnome", () -> region(val(410), val(400), val(1000), val(60))),
+    on("kubuntu_plasma", () -> region(val(344), val(359), val(1000), val(60))),
+    on("opensuse_plasma", () -> region(val(344), val(359), val(1000), val(60))),
+    on("debian_cinnamon", () -> region(val(344), val(368), val(1000), val(60))),
+    on("lubuntu_lxqt", () -> region(val(344), val(361), val(1000), val(60))),
+    on("fedora_gnome", () -> region(val(344), val(400), val(1000), val(60))),
+    on("debian_gnome_x11", () -> region(val(344), val(400), val(1000), val(60))),
+    on("fedora_cosmic", () -> region(val(344), val(399), val(1000), val(60))),
+    on("debian_mate", () -> region(val(344), val(390), val(1000), val(60))),
+    on("xubuntu_xfce", () -> region(val(343), val(380), val(1000), val(60))),
+    on("arch_sway", () -> region(val(1306), val(384), val(1000), val(60))),
+    on("void_i3", () -> region(val(1306), val(347), val(1000), val(60))),
+    on("omarchy_hyprland", () -> region(val(1311), val(367), val(1000), val(60))));
   final Action listedArea= action("listedArea",
     on("ubuntu_gnome", () -> region(val(640), val(360), val(600), val(400))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
@@ -281,10 +295,11 @@ final class LogsSectionTest extends ManagerTest{
     compiled.go();
     openLogs.go();
     logsShown.go();
-    var list= inWindow(410, 400, 1000, 60);
     var empty= look();
     run.go();
     ran.go();
+    listArea.go();
+    var list= region;
     changed(empty, list);
     stabilize();
     var logs= "diary/.out/logs/diary";

@@ -8,6 +8,20 @@ import java.util.List;
 import tools.Fs;
 
 final class DropFolderTest extends ManagerTest{
+  final Action tileListArea= action("tileListArea",
+    on("ubuntu_gnome", () -> region(val(100), val(200), val(200), val(400))),
+    on("kubuntu_plasma", () -> region(val(34), val(159), val(200), val(400))),
+    on("opensuse_plasma", () -> region(val(34), val(159), val(200), val(400))),
+    on("debian_cinnamon", () -> region(val(34), val(168), val(200), val(400))),
+    on("lubuntu_lxqt", () -> region(val(34), val(161), val(200), val(400))),
+    on("fedora_gnome", () -> region(val(34), val(200), val(200), val(400))),
+    on("debian_gnome_x11", () -> region(val(34), val(200), val(200), val(400))),
+    on("fedora_cosmic", () -> region(val(34), val(199), val(200), val(400))),
+    on("debian_mate", () -> region(val(34), val(190), val(200), val(400))),
+    on("xubuntu_xfce", () -> region(val(33), val(180), val(200), val(400))),
+    on("arch_sway", () -> region(val(996), val(184), val(200), val(400))),
+    on("void_i3", () -> region(val(996), val(147), val(200), val(400))),
+    on("omarchy_hyprland", () -> region(val(1001), val(167), val(200), val(400))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -137,6 +151,7 @@ final class DropFolderTest extends ManagerTest{
     managerQuit.go();
     closeFiles();
     filesClosed.go();
-    same(bare, inWindow(100, 200, 200, 400));
+    tileListArea.go();
+    same(bare, region);
   }
 }
