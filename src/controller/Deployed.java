@@ -48,6 +48,7 @@ public final class Deployed implements Manager.Tools{
     return Coordinator.startMain(folder, stdLib("base"), main, coordinator(folder).sharedClasspath(), out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
+  @Override public Path baseCache(){ return stdLib("baseCache"); }
   @Override public void associate(List<Icon> captured, Function<String,String> claimedBy){
     if (Fs.isMac()){ return; }
     var launcher= Association.launcher();
