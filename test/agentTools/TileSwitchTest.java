@@ -4,6 +4,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action panelArea= action("panelArea",
     on("ubuntu_gnome", () -> region(val(410), val(95), val(1000), val(155))),
     on("kubuntu_plasma", () -> region(val(344), val(54), val(1000), val(155))),
+    on("windows", () -> region(val(338), val(48), val(900), val(155))),
     on("opensuse_plasma", () -> region(val(344), val(54), val(1000), val(155))),
     on("debian_cinnamon", () -> region(val(344), val(63), val(1000), val(155))),
     on("lubuntu_lxqt", () -> region(val(344), val(56), val(1000), val(155))),
@@ -18,6 +19,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action nameArea= action("nameArea",
     on("ubuntu_gnome", () -> region(val(450), val(95), val(50), val(32))),
     on("kubuntu_plasma", () -> region(val(384), val(54), val(50), val(32))),
+    on("windows", () -> region(val(384), val(51), val(50), val(32))),
     on("opensuse_plasma", () -> region(val(384), val(54), val(50), val(32))),
     on("debian_cinnamon", () -> region(val(384), val(63), val(50), val(32))),
     on("lubuntu_lxqt", () -> region(val(384), val(56), val(50), val(32))),
@@ -32,6 +34,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action outputArea= action("outputArea",
     on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
     on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("windows", () -> region(val(340), val(120), val(900), val(80))),
     on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
     on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
     on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
@@ -46,6 +49,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -60,6 +64,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -74,6 +79,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -88,6 +94,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -102,6 +109,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action checkHello= action("checkHello",
     on("ubuntu_gnome", () -> waitClick(val(0), val(580), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(523), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -116,6 +124,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action helloChecked= action("helloChecked",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the Check runs and shows its output
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -130,6 +139,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action openHelloStackTraces= action("openHelloStackTraces",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(293), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -144,6 +154,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action openStartMarker= action("openStartMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(270), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -158,6 +169,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(6000))),//the manager opens the second project and shows it
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -172,6 +184,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action helloTile= action("helloTile",
     on("ubuntu_gnome", () -> waitClick(val(0), val(133), val(130))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(65), val(88))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -186,6 +199,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action helloShown= action("helloShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager switches to the tile of helloWorld
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -200,6 +214,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action startTile= action("startTile",
     on("ubuntu_gnome", () -> waitClick(val(0), val(261), val(130))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(193), val(88))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -214,6 +229,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action startShown= action("startShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager switches to the tile of helloStackTraces
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -228,6 +244,7 @@ final class TileSwitchTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),

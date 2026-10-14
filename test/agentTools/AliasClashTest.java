@@ -11,6 +11,7 @@ final class AliasClashTest extends ManagerTest{
   final Action outputArea= action("outputArea",
     on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
     on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("windows", () -> region(val(340), val(120), val(928), val(180))),
     on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
     on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
     on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
@@ -25,6 +26,7 @@ final class AliasClashTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -39,6 +41,7 @@ final class AliasClashTest extends ManagerTest{
   final Action openTwins= action("openTwins",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(265), val(225))),//the file manager lists the folder files
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -53,6 +56,7 @@ final class AliasClashTest extends ManagerTest{
   final Action openA= action("openA",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(250), val(225))),//the file manager lists the folder twins
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -67,6 +71,7 @@ final class AliasClashTest extends ManagerTest{
   final Action openB= action("openB",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(256), val(254))),//the file manager lists the folder twins
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -81,6 +86,7 @@ final class AliasClashTest extends ManagerTest{
   final Action openTwin= action("openTwin",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(265), val(225))),//the file manager lists the folder a or b
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -95,6 +101,7 @@ final class AliasClashTest extends ManagerTest{
   final Action openTwinMarker= action("openTwinMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(262), val(254))),//the file manager lists the folder twin
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -109,6 +116,7 @@ final class AliasClashTest extends ManagerTest{
   final Action firstShown= action("firstShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the first project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -123,6 +131,7 @@ final class AliasClashTest extends ManagerTest{
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome", () -> waitAfter(val(11000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(6000))),//the manager opens the second project under the alias twin2 and shows it
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -137,6 +146,7 @@ final class AliasClashTest extends ManagerTest{
   final Action check= action("check",
     on("ubuntu_gnome", () -> waitClick(val(0), val(529), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(467), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -151,6 +161,7 @@ final class AliasClashTest extends ManagerTest{
   final Action checked= action("checked",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the Check runs and shows its output
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -165,6 +176,7 @@ final class AliasClashTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
