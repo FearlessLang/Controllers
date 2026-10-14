@@ -4,28 +4,30 @@ import java.awt.Rectangle;
 
 final class LaunchOnFileTest extends ManagerTest{
   final Action managerShown= action("managerShown",
-    on("ubuntu_gnome", () -> waitAfter(val(17500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
   final Action selected= action("selected",
-    on("ubuntu_gnome", () -> waitAfter(val(10000))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(12500))));
   final Action managerQuit= action("managerQuit",
-    on("ubuntu_gnome", () -> waitAfter(val(8500))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(11000))));
   final Action openHelloWorld= action("openHelloWorld",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
+  //double clicks the marker, the file ending with .fearless; not the folder starting with _
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action projectShown= action("projectShown",
-    on("ubuntu_gnome", () -> waitAfter(val(null))),
+    on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(null))));
   final Action openHelloWorldAgain= action("openHelloWorldAgain",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
+  //double clicks the marker, the file ending with .fearless; not the folder starting with _
   final Action openHelloWorldMarkerAgain= action("openHelloWorldMarkerAgain",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
   @Override void walk() throws Throwable{
     var project= project("helloWorld");
@@ -45,7 +47,7 @@ final class LaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    closeFiles();
+    managerToFront.go();
     projectShown.go();
     stabilize();
     checkContent(info, remembered);
@@ -53,7 +55,7 @@ final class LaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorldAgain.go();
     openHelloWorldMarkerAgain.go();
-    closeFiles();
+    managerToFront.go();
     selected.go();
     same(before, new Rectangle(760, 460, 400, 160));
     same(before, inWindow(69, 95, 1100, 85));
@@ -62,6 +64,7 @@ final class LaunchOnFileTest extends ManagerTest{
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
+    closeFiles();
     stabilize();
     checkContent(info, remembered);
   }

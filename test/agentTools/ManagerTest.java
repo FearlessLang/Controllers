@@ -413,6 +413,10 @@ abstract class ManagerTest{
     on("arch_sway", () -> waitAfter(val(100))),
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
+  //brings the manager window to the front after a marker opens, on a desk that leaves it behind the window in use; on a desk where the manager window comes to the front by itself a wait, which is not a finding
+  final Action managerToFront= action("managerToFront",
+    on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(387))),
+    on("xubuntu_xfce", () -> waitAfter(val(null))));
   final Action closeFileManager= action("closeFileManager",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1414), val(304))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(1326), val(197))),
