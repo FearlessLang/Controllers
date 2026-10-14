@@ -69,6 +69,7 @@ public final class Manager{
     ChildJvm run(Path folder, String main, Consumer<String> out);
     Optional<Map<String,String>> mains(Path folder);
     Path stdLibBase();
+    Path baseCache();
     void associate(List<Icon> captured, Function<String,String> claimedBy);
     List<String> others();
     void connect(Path eclipse, Path managerDir);
@@ -568,7 +569,7 @@ public final class Manager{
     var l= live.get(f);
     if (!l.job.isEmpty()){ return; }
     var e= registry.of(f).orElseThrow();
-    var fresh= Facts.of(f, e.alias(), e.kind());
+    var fresh= Facts.of(f, e.alias(), e.kind(), tools.baseCache());
     if (fresh.equals(l.scanned)){ return; }
     l.scanned = fresh;
     l.facts = fresh;
@@ -578,7 +579,7 @@ public final class Manager{
     try{ l.mains = tools.mains(f); }
     catch (UserError err){ error = Optional.of(err.getMessage()); }
     catch (UncheckedIOException err){ error = Optional.of(Report.fileFailure(err.getCause())); }
-    if (!Facts.of(f, e.alias(), e.kind()).equals(fresh)){ scan(f); return; }
+    if (!Facts.of(f, e.alias(), e.kind(), tools.baseCache()).equals(fresh)){ scan(f); return; }
     if (l.mains.isEmpty()){ l.facts = fresh.outOfDate(error.orElse(Report.packagesToCompile())); }
   }
   private void rotate(){

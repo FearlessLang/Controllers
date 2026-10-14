@@ -75,6 +75,7 @@ final class ManagerTest{
       }
       """);
     Fs.runTool("javac", List.of("-d", classes.toString(), src.toString()));
+    FactsTest.baseCache(classes);
   }
   record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked, List<String> others, List<Path> connected) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
@@ -88,6 +89,7 @@ final class ManagerTest{
     @Override public ChildJvm run(Path folder, String main, Consumer<String> out){ return jvm(out, "ran "+main, "0", main.endsWith("Slow") ? "60000" : "0"); }
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
+    @Override public Path baseCache(){ return classes.resolve("baseCache"); }
     @Override public void associate(List<Icon> captured, Function<String,String> claimedBy){
       captured.forEach(i -> Fs.of(() -> Files.readAllBytes(i.png())));
       associated.add(captured);

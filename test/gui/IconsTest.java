@@ -29,7 +29,7 @@ final class IconsTest{
     var alias= folder.getFileName().toString().toLowerCase();
     Fs.writeUtf8(folder.resolve(alias+".fearless"), "");
     var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), Map.of(), Map.of());
-    return new Project(entry, Facts.of(entry.path(), alias, kind), Optional.empty(), Project.noClaims, Optional.empty(), "");
+    return new Project(entry, Facts.of(entry.path(), alias, kind, folder.resolve("unused")), Optional.empty(), Project.noClaims, Optional.empty(), "");
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);

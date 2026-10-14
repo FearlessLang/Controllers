@@ -33,8 +33,8 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     @Override public int hashCode(){ return file.hashCode(); }
   }
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
-  public static Facts of(Path folder, String alias, Kind kind){
-    try{ return retried(() -> read(folder, alias, kind)); }
+  public static Facts of(Path folder, String alias, Kind kind, Path baseCache){
+    try{ return retried(() -> read(folder, alias, kind, baseCache)); }
     catch (UncheckedIOException e){ return invalid(Report.folderUnreadable(folder, e.getCause())); }
   }
   private static Facts invalid(String problem){ return new Facts(false, Optional.empty(), Optional.empty(), List.of(), Optional.of(problem)); }
@@ -44,13 +44,13 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
       catch (UncheckedIOException e){ if (left == 0 || !(e.getCause() instanceof NoSuchFileException)){ throw e; } }
     }
   }
-  private static Facts read(Path folder, String alias, Kind kind){
+  private static Facts read(Path folder, String alias, Kind kind, Path baseCache){
     if (!Files.isDirectory(folder)){ return invalid(Report.folderMissing(folder)); }
     UserError.root = folder;
     Map<String,Boolean> built= Map.of();
     Optional<String> problem;
     try{
-      if (kind == Kind.code){ built = Coordinator.pkgsBuilt(folder); }
+      if (kind == Kind.code){ built = Coordinator.pkgsBuilt(folder, baseCache); }
       else{ new RealSourceOracleWithZip(folder); }
       problem= Names.markerProblem(folder, alias);
     }
