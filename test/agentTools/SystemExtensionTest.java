@@ -9,8 +9,8 @@ import tools.Fs;
 
 final class SystemExtensionTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(980), val(113))),
-    on("xubuntu_xfce", () -> click(val(986), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(980), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(986), val(93))));
   final Action openOpens= action("openOpens",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
@@ -27,8 +27,8 @@ final class SystemExtensionTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(533), val(113))),
-    on("xubuntu_xfce", () -> click(val(492), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(533), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(492), val(93))));
   final Action questionShown= action("questionShown",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));
@@ -39,8 +39,8 @@ final class SystemExtensionTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));
   final Action compileAgain= action("compileAgain",
-    on("ubuntu_gnome", () -> click(val(533), val(113))),
-    on("xubuntu_xfce", () -> click(val(492), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(533), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(492), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26500))));

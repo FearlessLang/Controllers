@@ -9,8 +9,8 @@ import tools.Fs;
 
 final class OpenWithChoiceTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(983), val(113))),
-    on("xubuntu_xfce", () -> click(val(990), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(983), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(990), val(93))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
@@ -18,8 +18,8 @@ final class OpenWithChoiceTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(536), val(113))),
-    on("xubuntu_xfce", () -> click(val(496), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(536), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(496), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));

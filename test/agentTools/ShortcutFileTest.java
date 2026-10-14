@@ -11,8 +11,8 @@ import tools.Fs;
 
 final class ShortcutFileTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(1012), val(113))),
-    on("xubuntu_xfce", () -> click(val(1024), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1012), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1024), val(93))));
   final Action openShortcuts= action("openShortcuts",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
@@ -29,14 +29,14 @@ final class ShortcutFileTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(565), val(113))),
-    on("xubuntu_xfce", () -> click(val(529), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(565), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(529), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));
   final Action shortcutIcon= action("shortcutIcon",
-    on("ubuntu_gnome", () -> doubleClick(val(476), val(162))),
-    on("xubuntu_xfce", () -> doubleClick(val(409), val(142))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(476), val(162))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(409), val(142))));
   final Action ranFromManager= action("ranFromManager",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("xubuntu_xfce", () -> waitAfter(val(9000))));

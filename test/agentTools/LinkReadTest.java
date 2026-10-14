@@ -10,14 +10,14 @@ import tools.Fs;
 
 final class LinkReadTest extends ManagerTest{
   final Action becomeData= action("becomeData",
-    on("ubuntu_gnome", () -> click(val(714), val(113))),
-    on("xubuntu_xfce", () -> click(val(679), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(714), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(679), val(93))));
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(986), val(113))),
-    on("xubuntu_xfce", () -> click(val(992), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(986), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(992), val(93))));
   final Action backToIdle= action("backToIdle",
-    on("ubuntu_gnome", () -> click(val(726), val(113))),
-    on("xubuntu_xfce", () -> click(val(687), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(726), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(687), val(93))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
@@ -31,20 +31,20 @@ final class LinkReadTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));
   final Action openLinks= action("openLinks",
-    on("ubuntu_gnome", () -> click(val(450), val(356))),
-    on("xubuntu_xfce", () -> click(val(383), val(336))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(450), val(356))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(383), val(336))));
   final Action linksShown= action("linksShown",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4500))));
   final Action readField= action("readField",
-    on("ubuntu_gnome", () -> click(val(560), val(398))),
-    on("xubuntu_xfce", () -> click(val(493), val(378))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(560), val(398))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(493), val(378))));
   final Action readsSaved= action("readsSaved",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("xubuntu_xfce", () -> waitAfter(val(9000))));
   final Action storeTile= action("storeTile",
-    on("ubuntu_gnome", () -> click(val(261), val(130))),
-    on("xubuntu_xfce", () -> click(val(194), val(110))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(261), val(130))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(194), val(110))));
   final Action storeShown= action("storeShown",
     on("ubuntu_gnome", () -> waitAfter(val(4000))),
     on("xubuntu_xfce", () -> waitAfter(val(5000))));
@@ -52,14 +52,14 @@ final class LinkReadTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));
   final Action readerTile= action("readerTile",
-    on("ubuntu_gnome", () -> click(val(133), val(130))),
-    on("xubuntu_xfce", () -> click(val(66), val(110))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(133), val(130))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(66), val(110))));
   final Action readerShownAgain= action("readerShownAgain",
     on("ubuntu_gnome", () -> waitAfter(val(4000))),
     on("xubuntu_xfce", () -> waitAfter(val(5000))));
   final Action check= action("check",
-    on("ubuntu_gnome", () -> click(val(539), val(113))),
-    on("xubuntu_xfce", () -> click(val(477), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(539), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(477), val(93))));
   final Action checked= action("checked",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));

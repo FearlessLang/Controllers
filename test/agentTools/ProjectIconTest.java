@@ -31,8 +31,8 @@ final class ProjectIconTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("xubuntu_xfce", () -> waitAfter(val(8500))));
   final Action check= action("check",
-    on("ubuntu_gnome", () -> click(val(504), val(113))),
-    on("xubuntu_xfce", () -> click(val(454), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(504), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(454), val(93))));
   final Action checked= action("checked",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));

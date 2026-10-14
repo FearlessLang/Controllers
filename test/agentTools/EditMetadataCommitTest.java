@@ -2,8 +2,8 @@ package agentTools;
 
 final class EditMetadataCommitTest extends ManagerTest{
   final Action backToIdle= action("backToIdle",
-    on("ubuntu_gnome", () -> click(val(780), val(113))),
-    on("xubuntu_xfce", () -> click(val(749), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(780), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(749), val(93))));
   static final String registry= """
     {
       "projects": {
@@ -31,11 +31,11 @@ final class EditMetadataCommitTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("xubuntu_xfce", () -> waitAfter(val(7000))));
   final Action kindIdle= action("kindIdle",
-    on("ubuntu_gnome", () -> doubleClick(val(730), val(376))),
-    on("xubuntu_xfce", () -> doubleClick(val(697), val(373))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(730), val(376))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(697), val(373))));
   final Action commit= action("commit",
-    on("ubuntu_gnome", () -> click(val(1278), val(830))),
-    on("xubuntu_xfce", () -> click(val(1245), val(827))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1278), val(830))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1245), val(827))));
   final Action codeSaved= action("codeSaved",
     on("ubuntu_gnome", () -> waitAfter(val(8500))),
     on("xubuntu_xfce", () -> waitAfter(val(10500))));

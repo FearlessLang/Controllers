@@ -28,14 +28,14 @@ final class FileAssociationTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4500))));
   final Action managerMenuBehind= action("managerMenuBehind",
-    on("ubuntu_gnome", () -> click(val(99), val(79))),
-    on("xubuntu_xfce", () -> click(val(38), val(62))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(99), val(79))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(38), val(62))));
   final Action resetAsked= action("resetAsked",
     on("ubuntu_gnome", () -> waitAfter(val(5000))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action cancelReset= action("cancelReset",
-    on("ubuntu_gnome", () -> click(val(1026), val(596))),
-    on("xubuntu_xfce", () -> click(val(993), val(593))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1026), val(596))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(993), val(593))));
   final Action resetCancelled= action("resetCancelled",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4500))));
@@ -43,8 +43,8 @@ final class FileAssociationTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4000))),
     on("xubuntu_xfce", () -> waitAfter(val(5000))));
   final Action confirmReset= action("confirmReset",
-    on("ubuntu_gnome", () -> click(val(958), val(596))),
-    on("xubuntu_xfce", () -> click(val(925), val(593))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(958), val(596))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(925), val(593))));
   final Action managerReset= action("managerReset",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));

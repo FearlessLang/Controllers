@@ -21,14 +21,14 @@ final class BrowseFilesTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
   final Action browse= action("browse",
-    on("ubuntu_gnome", () -> click(val(1097), val(113))),
-    on("xubuntu_xfce", () -> click(val(1118), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1097), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1118), val(93))));
   final Action filesShown= action("filesShown",
     on("ubuntu_gnome", () -> waitAfter(val(6500))),
     on("xubuntu_xfce", () -> waitAfter(val(8500))));
   final Action closeFiles= action("closeFiles",
-    on("ubuntu_gnome", () -> click(val(1414), val(303))),
-    on("xubuntu_xfce", () -> click(val(1275), val(309))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1414), val(303))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1275), val(309))));
   final Action filesClosed= action("filesClosed",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));
@@ -36,8 +36,8 @@ final class BrowseFilesTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(6500))),
     on("xubuntu_xfce", () -> waitAfter(val(8500))));
   final Action browseAgain= action("browseAgain",
-    on("ubuntu_gnome", () -> click(val(1097), val(113))),
-    on("xubuntu_xfce", () -> click(val(1118), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1097), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1118), val(93))));
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));

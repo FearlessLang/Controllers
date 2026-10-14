@@ -4,8 +4,8 @@ import java.awt.Rectangle;
 
 final class KindWhileBusyTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(970), val(113))),
-    on("xubuntu_xfce", () -> click(val(976), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(970), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(976), val(93))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
@@ -13,29 +13,29 @@ final class KindWhileBusyTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(523), val(113))),
-    on("xubuntu_xfce", () -> click(val(481), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(523), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(481), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));
   final Action run= action("run",
-    on("ubuntu_gnome", () -> click(val(523), val(113))),
-    on("xubuntu_xfce", () -> click(val(466), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(523), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(466), val(93))));
   final Action programShown= action("programShown",
     on("ubuntu_gnome", () -> waitAfter(val(8500))),
     on("xubuntu_xfce", () -> waitAfter(val(10500))));
   final Action backToIdleBusy= action("backToIdleBusy",
-    on("ubuntu_gnome", () -> click(val(733), val(113))),
-    on("xubuntu_xfce", () -> click(val(701), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(733), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(701), val(93))));
   final Action forgetBusy= action("forgetBusy",
-    on("ubuntu_gnome", () -> click(val(892), val(113))),
-    on("xubuntu_xfce", () -> click(val(878), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(892), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(878), val(93))));
   final Action ignored= action("ignored",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action terminate= action("terminate",
-    on("ubuntu_gnome", () -> click(val(523), val(113))),
-    on("xubuntu_xfce", () -> click(val(489), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(523), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(489), val(93))));
   final Action terminated= action("terminated",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));

@@ -27,8 +27,8 @@ final class TileDoubleClickTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action tileTwice= action("tileTwice",
-    on("ubuntu_gnome", () -> doubleClick(val(132), val(128))),
-    on("xubuntu_xfce", () -> doubleClick(val(66), val(110))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(132), val(128))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(66), val(110))));
   final Action notRun= action("notRun",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(6500))));
@@ -39,8 +39,8 @@ final class TileDoubleClickTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(2000))),//the compile of tapped runs in its own JVM
     on("xubuntu_xfce", () -> waitAfter(val(26500))));
   final Action tileTwiceCompiled= action("tileTwiceCompiled",
-    on("ubuntu_gnome", () -> doubleClick(val(132), val(128))),
-    on("xubuntu_xfce", () -> doubleClick(val(66), val(110))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(132), val(128))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(66), val(110))));
   final Action ran= action("ran",
     on("ubuntu_gnome", () -> waitAfter(val(1500))),//the main of tapped runs in its own JVM
     on("xubuntu_xfce", () -> waitAfter(val(10500))));

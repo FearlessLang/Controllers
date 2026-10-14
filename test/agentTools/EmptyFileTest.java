@@ -9,8 +9,8 @@ import tools.Fs;
 
 final class EmptyFileTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(985), val(113))),
-    on("xubuntu_xfce", () -> click(val(992), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(985), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(992), val(93))));
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("xubuntu_xfce", () -> waitAfter(val(21500))));
@@ -18,8 +18,8 @@ final class EmptyFileTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(538), val(113))),
-    on("xubuntu_xfce", () -> click(val(498), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(538), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(498), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));

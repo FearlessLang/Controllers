@@ -4,8 +4,8 @@ import tools.Fs;
 
 final class StaleMainTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(979), val(113))),
-    on("xubuntu_xfce", () -> click(val(982), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(979), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(982), val(93))));
   static final String mains= "use base.Main as Main;\n\nFirst: Main{sys -> sys.out.println \"First\"}\nSecond: Main{sys -> sys.out.println \"Second\"}\n";
   static final String registry= """
     {
@@ -35,26 +35,26 @@ final class StaleMainTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(532), val(113))),
-    on("xubuntu_xfce", () -> click(val(487), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(532), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(487), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));
   final Action runV= action("runV",
-    on("ubuntu_gnome", () -> click(val(532), val(113))),
-    on("xubuntu_xfce", () -> click(val(480), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(532), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(480), val(93))));
   final Action mainsShown= action("mainsShown",
     on("ubuntu_gnome", () -> waitAfter(val(3000))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));
   final Action tickSecond= action("tickSecond",
-    on("ubuntu_gnome", () -> click(val(526), val(164))),
-    on("xubuntu_xfce", () -> click(val(454), val(141))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(526), val(164))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(454), val(141))));
   final Action tickThird= action("tickThird",
-    on("ubuntu_gnome", () -> click(val(526), val(189))),
-    on("xubuntu_xfce", () -> click(val(454), val(164))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(526), val(189))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(454), val(164))));
   final Action runTicked= action("runTicked",
-    on("ubuntu_gnome", () -> click(val(535), val(213))),
-    on("xubuntu_xfce", () -> click(val(466), val(186))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(535), val(213))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(466), val(186))));
   final Action runsDone= action("runsDone",
     on("ubuntu_gnome", () -> waitAfter(val(9000))),
     on("xubuntu_xfce", () -> waitAfter(val(11000))));
@@ -62,8 +62,8 @@ final class StaleMainTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(11000))),
     on("xubuntu_xfce", () -> waitAfter(val(14000))));
   final Action compileEdited= action("compileEdited",
-    on("ubuntu_gnome", () -> click(val(532), val(113))),
-    on("xubuntu_xfce", () -> click(val(487), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(532), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(487), val(93))));
   final Action editedCompiled= action("editedCompiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("xubuntu_xfce", () -> waitAfter(val(26000))));

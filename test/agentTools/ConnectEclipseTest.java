@@ -24,8 +24,8 @@ final class ConnectEclipseTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(5000))),
     on("xubuntu_xfce", () -> waitAfter(val(6500))));
   final Action fileName= action("fileName",
-    on("ubuntu_gnome", () -> click(val(1040), val(640))),
-    on("xubuntu_xfce", () -> click(val(1007), val(637))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1040), val(640))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1007), val(637))));
   final Action openButton= action("openButton",
     on("ubuntu_gnome", () -> waitClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitClick(val(null), val(null), val(null))));

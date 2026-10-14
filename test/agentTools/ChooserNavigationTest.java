@@ -15,8 +15,8 @@ final class ChooserNavigationTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(5000))),
     on("xubuntu_xfce", () -> waitAfter(val(6500))));
   final Action upLevel= action("upLevel",
-    on("ubuntu_gnome", () -> click(val(1109), val(436))),
-    on("xubuntu_xfce", () -> click(val(1085), val(427))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1109), val(436))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1085), val(427))));
   final Action homeLeft= action("homeLeft",
     on("ubuntu_gnome", () -> waitAfter(val(3000))),
     on("xubuntu_xfce", () -> waitAfter(val(3500))));
@@ -24,14 +24,14 @@ final class ChooserNavigationTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(3000))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));
   final Action openDataInChooser= action("openDataInChooser",
-    on("ubuntu_gnome", () -> doubleClick(val(790), val(539))),
-    on("xubuntu_xfce", () -> doubleClick(val(745), val(505))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(790), val(539))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(745), val(505))));
   final Action dataShown= action("dataShown",
     on("ubuntu_gnome", () -> waitAfter(val(3000))),
     on("xubuntu_xfce", () -> waitAfter(val(3500))));
   final Action openFilesIO= action("openFilesIO",
-    on("ubuntu_gnome", () -> doubleClick(val(940), val(473))),
-    on("xubuntu_xfce", () -> doubleClick(val(745), val(485))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(940), val(473))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(745), val(485))));
   final Action filesIOShown= action("filesIOShown",
     on("ubuntu_gnome", () -> waitAfter(val(3000))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));
@@ -39,17 +39,17 @@ final class ChooserNavigationTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
   final Action openAttic= action("openAttic",
-    on("ubuntu_gnome", () -> doubleClick(val(790), val(473))),
-    on("xubuntu_xfce", () -> doubleClick(val(745), val(465))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(790), val(473))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(745), val(465))));
   final Action atticShown= action("atticShown",
     on("ubuntu_gnome", () -> waitAfter(val(3000))),
     on("xubuntu_xfce", () -> waitAfter(val(3500))));
   final Action pickInner= action("pickInner",
-    on("ubuntu_gnome", () -> click(val(790), val(473))),
-    on("xubuntu_xfce", () -> click(val(745), val(465))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(790), val(473))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(745), val(465))));
   final Action open= action("open",
-    on("ubuntu_gnome", () -> click(val(1116), val(712))),
-    on("xubuntu_xfce", () -> click(val(1080), val(705))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1116), val(712))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1080), val(705))));
   final Action tileShown= action("tileShown",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("xubuntu_xfce", () -> waitAfter(val(9000))));

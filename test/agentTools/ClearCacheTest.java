@@ -7,11 +7,11 @@ import java.nio.file.Files;
 
 final class ClearCacheTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
-    on("ubuntu_gnome", () -> click(val(1027), val(112))),
-    on("xubuntu_xfce", () -> click(val(1040), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1027), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1040), val(93))));
   final Action clean= action("clean",
-    on("ubuntu_gnome", () -> click(val(1006), val(112))),
-    on("xubuntu_xfce", () -> click(val(1007), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1006), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1007), val(93))));
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
@@ -28,8 +28,8 @@ final class ClearCacheTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
   final Action compile= action("compile",
-    on("ubuntu_gnome", () -> click(val(595), val(112))),
-    on("xubuntu_xfce", () -> click(val(545), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(595), val(112))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(545), val(93))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(2000))),//the compile of hello_world runs in its own JVM
     on("xubuntu_xfce", () -> waitAfter(val(26000))));

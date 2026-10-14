@@ -33,8 +33,8 @@ final class AliasClashTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(11000))),
     on("xubuntu_xfce", () -> waitAfter(val(14000))));
   final Action check= action("check",
-    on("ubuntu_gnome", () -> click(val(529), val(113))),
-    on("xubuntu_xfce", () -> click(val(468), val(93))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(529), val(113))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(468), val(93))));
   final Action checked= action("checked",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(5500))));

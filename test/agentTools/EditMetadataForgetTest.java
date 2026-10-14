@@ -23,14 +23,14 @@ final class EditMetadataForgetTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("xubuntu_xfce", () -> waitAfter(val(7000))));
   final Action focusText= action("focusText",
-    on("ubuntu_gnome", () -> click(val(940), val(660))),
-    on("xubuntu_xfce", () -> click(val(907), val(657))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(940), val(660))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(907), val(657))));
   final Action selectText= action("selectText",
     on("ubuntu_gnome", () -> waitDrag(val(null), val(null), val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDrag(val(null), val(null), val(null), val(null), val(null))));
   final Action commit= action("commit",
-    on("ubuntu_gnome", () -> click(val(1278), val(830))),
-    on("xubuntu_xfce", () -> click(val(1245), val(827))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1278), val(830))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1245), val(827))));
   final Action onlySaved= action("onlySaved",
     on("ubuntu_gnome", () -> waitAfter(val(43000))),
     on("xubuntu_xfce", () -> waitAfter(val(53500))));

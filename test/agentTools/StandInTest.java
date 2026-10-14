@@ -13,8 +13,8 @@ final class StandInTest extends ManagerTest{
     on("ubuntu_gnome", () -> extensions("enable")),
     on("xubuntu_xfce", () -> session("setsid -f xfce4-panel >/dev/null 2>&1")));
   final Action closeWindowBare= action("closeWindowBare",
-    on("ubuntu_gnome", () -> click(val(1902), val(50))),
-    on("xubuntu_xfce", () -> click(val(1909), val(10))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1902), val(50))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1909), val(10))));
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(null), val(null), val(null))));
@@ -31,14 +31,14 @@ final class StandInTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4500))));
   final Action standIn= action("standIn",
-    on("ubuntu_gnome", () -> click(val(1904), val(1064))),
-    on("xubuntu_xfce", () -> click(val(1904), val(1064))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1904), val(1064))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1904), val(1064))));
   final Action menuShown= action("menuShown",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));
   final Action showItem= action("showItem",
-    on("ubuntu_gnome", () -> click(val(1860), val(1041))),
-    on("xubuntu_xfce", () -> click(val(1850), val(1045))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1860), val(1041))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1850), val(1045))));
   final Action managerBack= action("managerBack",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("xubuntu_xfce", () -> waitAfter(val(6000))));
@@ -46,14 +46,14 @@ final class StandInTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4000))));
   final Action standInRight= action("standInRight",
-    on("ubuntu_gnome", () -> rightClick(val(1904), val(1064))),
-    on("xubuntu_xfce", () -> rightClick(val(1904), val(1064))));
+    on("ubuntu_gnome", () -> waitRightClick(val(0), val(1904), val(1064))),
+    on("xubuntu_xfce", () -> waitRightClick(val(0), val(1904), val(1064))));
   final Action menuShownAgain= action("menuShownAgain",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("xubuntu_xfce", () -> waitAfter(val(4500))));
   final Action quitItem= action("quitItem",
-    on("ubuntu_gnome", () -> click(val(1860), val(1066))),
-    on("xubuntu_xfce", () -> click(val(1850), val(1068))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1860), val(1066))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1850), val(1068))));
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("xubuntu_xfce", () -> waitAfter(val(7000))));

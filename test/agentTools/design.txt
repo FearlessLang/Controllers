@@ -65,6 +65,8 @@ void doubleClick(long x, long y){ pilot.doubleClick(x,y); }
 void drag(long x0, long y0, long x1, long y1){ pilot.drag(x0,y0,x1,y1); }
 void type(String text){ pilot.chord(toCodes(text)); }
 void keys(int... codes){ pilot.chord(codes); }
+void waitClick(Time time, long x, long y){ waitAfter(time); click(x,y); }
+An entry never calls a plain step: every step of the person comes after a wait, as in waitClick, waitDoubleClick, waitRightClick, waitDrag, waitKeys, waitType and waitClickKeys.
 void stabilize(){
   Fs.isLinux implies make the alive VM, if any, flush on the shared folder;
   }
@@ -74,14 +76,14 @@ void checkContent(List<String> path,String expected){
 }
 class ExampleTest extends ManagerTest{
   Action chooseFirst= action("chooseFirst",
-    on("ubuntu_gnome",()->click(val(120),val(80))),
-    on("windows",()->doubleClick(val(60),val(40))));
+    on("ubuntu_gnome",()->waitClick(val(100),val(120),val(80))),
+    on("windows",()->waitDoubleClick(val(100),val(60),val(40))));
   Action settled= action("settled",
     on("ubuntu_gnome",()->waitAfter(val(200))),
     on("windows",()->waitAfter(val(100))));
   Action chooseSecond= action("chooseSecond",
-    on("ubuntu_gnome",()->click(val(300),val(200))),
-    on("windows",()->click(val(150),val(90))));
+    on("ubuntu_gnome",()->waitClick(val(100),val(300),val(200))),
+    on("windows",()->waitClick(val(100),val(150),val(90))));
 
   void walk(){
     writeTestSpecificFiles();

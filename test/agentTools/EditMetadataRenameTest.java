@@ -21,11 +21,11 @@ final class EditMetadataRenameTest extends ManagerTest{
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("xubuntu_xfce", () -> waitAfter(val(7000))));
   final Action nameOld= action("nameOld",
-    on("ubuntu_gnome", () -> doubleClick(val(646), val(342))),
-    on("xubuntu_xfce", () -> doubleClick(val(613), val(339))));
+    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(646), val(342))),
+    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(613), val(339))));
   final Action commit= action("commit",
-    on("ubuntu_gnome", () -> click(val(1278), val(830))),
-    on("xubuntu_xfce", () -> click(val(1245), val(827))));
+    on("ubuntu_gnome", () -> waitClick(val(0), val(1278), val(830))),
+    on("xubuntu_xfce", () -> waitClick(val(0), val(1245), val(827))));
   final Action renamed= action("renamed",
     on("ubuntu_gnome", () -> waitAfter(val(10000))),
     on("xubuntu_xfce", () -> waitAfter(val(12500))));
