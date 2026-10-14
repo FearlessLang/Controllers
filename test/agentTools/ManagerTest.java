@@ -142,7 +142,7 @@ abstract class ManagerTest{
   final Action editMetadata= action("editMetadata",
     on("ubuntu_gnome", () -> waitClick(val(null), val(143), val(124))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(73), val(78))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
