@@ -2,11 +2,13 @@ package agentTools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import tools.Fs;
+
 final class DividerPlaceTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager lists the folder files
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -21,7 +23,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(262), val(254))),//the file manager lists the folder helloWorld
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -36,7 +38,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager adds the project helloWorld and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -51,7 +53,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and shows its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -66,7 +68,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action tilesEnd= action("tilesEnd",
     on("ubuntu_gnome", () -> listEnd(val(200), val(700), val(385))),
     on("kubuntu_plasma", () -> listEnd(val(null), val(null), val(null))),
-    on("windows", () -> listEnd(val(null), val(null), val(null))),
+    on("windows", () -> listEnd(val(133), val(400), val(317))),
     on("opensuse_plasma", () -> listEnd(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> listEnd(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> listEnd(val(null), val(null), val(null))),
@@ -81,7 +83,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action managerHidden= action("managerHidden",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager window closes and the manager keeps running hidden
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -96,7 +98,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action tilesWhole= action("tilesWhole",
     on("ubuntu_gnome", () -> listEnd(val(200), val(700), val(1918))),
     on("kubuntu_plasma", () -> listEnd(val(null), val(null), val(null))),
-    on("windows", () -> listEnd(val(null), val(null), val(null))),
+    on("windows", () -> listEnd(val(133), val(400), val(1280))),
     on("opensuse_plasma", () -> listEnd(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> listEnd(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> listEnd(val(null), val(null), val(null))),
@@ -111,7 +113,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action tilesGone= action("tilesGone",
     on("ubuntu_gnome", () -> listEnd(val(200), val(700), val(200))),
     on("kubuntu_plasma", () -> listEnd(val(null), val(null), val(null))),
-    on("windows", () -> listEnd(val(null), val(null), val(null))),
+    on("windows", () -> listEnd(val(133), val(690), val(133))),
     on("opensuse_plasma", () -> listEnd(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> listEnd(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> listEnd(val(null), val(null), val(null))),
@@ -126,7 +128,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action secondEnded= action("secondEnded",
     on("ubuntu_gnome", () -> waitAfter(val(15500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the second manager instance hands over to the running manager and ends
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -141,7 +143,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action managerBack= action("managerBack",
     on("ubuntu_gnome", () -> waitAfter(val(2500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the running manager shows its window again
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -156,7 +158,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(6500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager saves its state and ends
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -171,7 +173,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action thirdShown= action("thirdShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and shows its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -186,7 +188,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action thirdQuit= action("thirdQuit",
     on("ubuntu_gnome", () -> waitAfter(val(6500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager saves its state and ends
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -201,7 +203,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action fourthShown= action("fourthShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and shows its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -216,7 +218,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action projectShownFourth= action("projectShownFourth",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager adds the project helloWorld and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -231,7 +233,7 @@ final class DividerPlaceTest extends ManagerTest{
   final Action fourthQuit= action("fourthQuit",
     on("ubuntu_gnome", () -> waitAfter(val(6500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager saves its state and ends
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -255,20 +257,20 @@ final class DividerPlaceTest extends ManagerTest{
     closeWindow.go();
     managerHidden.go();
     tilesGone.go();
-    start();
+    startAlone();
     secondEnded.go();
     managerBack.go();
     tilesEnd.go();
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
-    start();
+    startAlone();
     thirdShown.go();
     tilesWhole.go();
     managerMenu.go();
     quitManager.go();
     thirdQuit.go();
-    start();
+    startAlone();
     fourthShown.go();
     toFiles();
     openHelloWorld.go();
@@ -279,6 +281,11 @@ final class DividerPlaceTest extends ManagerTest{
     quitManager.go();
     fourthQuit.go();
     closeFiles();
+  }
+  void startAlone() throws Throwable{
+    fileManagerFront= Fs.isWindows();
+    start();
+    fileManagerFront= false;
   }
   void listEnd(int x, int y, int end){
     var shot= pilot.shot();

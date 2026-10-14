@@ -157,7 +157,7 @@ abstract class ManagerTest{
   final Action connectEclipse= action("connectEclipse",
     on("ubuntu_gnome", () -> waitClick(val(null), val(126), val(145))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(58), val(99))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -202,7 +202,7 @@ abstract class ManagerTest{
   final Action closeWindow= action("closeWindow",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1901), val(49))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(1905), val(14))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(1255), val(11))),
     on("opensuse_plasma", () -> waitClick(val(100), val(1905), val(14))),
     on("debian_cinnamon", () -> waitClick(val(100), val(1901), val(18))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1905), val(15))),
@@ -337,7 +337,7 @@ abstract class ManagerTest{
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(925), val(305))),
-    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(312), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(100), val(934), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(100), val(520), val(305))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(1036), val(395))),
@@ -399,7 +399,7 @@ abstract class ManagerTest{
   final Action fileManagerToFront= action("fileManagerToFront",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(128))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(212), val(1052))),
-    on("windows", () -> waitClick(val(100), val(700), val(696))),
+    on("windows", () -> waitClick(val(100), val(750), val(696))),
     on("opensuse_plasma", () -> waitClick(val(100), val(221), val(1057))),
     on("debian_cinnamon", () -> waitClick(val(100), val(75), val(1057))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(215), val(1064))),
@@ -491,9 +491,12 @@ abstract class ManagerTest{
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   boolean filesOpen;
+  boolean fileManagerFront;
   void toPilotio() throws Throwable{
-    (filesOpen ? showFileManager : showFilesIcon).go();
-    (filesOpen ? fileManagerToFront : filesIcon).go();
+    if (!fileManagerFront){
+      (filesOpen ? showFileManager : showFilesIcon).go();
+      (filesOpen ? fileManagerToFront : filesIcon).go();
+    }
     filesOpen = true;
     pilotioBookmark.go();
   }
