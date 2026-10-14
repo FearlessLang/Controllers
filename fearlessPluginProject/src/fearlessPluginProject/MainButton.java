@@ -149,7 +149,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var refs= refs(folder);
     if (refs.stream().noneMatch(r -> r.name().endsWith(".fear"))){ throw new Invalid(); }
     var pkgs= new LinkedHashMap<String,List<Ref>>();
-    for (var r: refs){
+    for (var r : refs){
       var pkg= pkg(r);
       if (pkg.isEmpty() && r.name().endsWith(".fear")){ throw new Invalid(); }
       pkg.ifPresent(n -> pkgs.computeIfAbsent(n, k -> new ArrayList<>()).add(r));
@@ -184,7 +184,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var name= reserved.getFirst().name();
     if (!name.endsWith(".fear")){ throw new Invalid(); }
     var stem= name.substring(0, name.indexOf('.'));
-    for (int i= 0; i < ranks.size(); i++){
+    for (int i= 0; i < ranks.size(); i += 1){
       var pref= ranks.get(i);
       if (stem.equals(pref)){ return (i+1)*1000+999; }
       if (!stem.startsWith(pref)){ continue; }
@@ -197,7 +197,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   private static List<Ref> refs(Path folder){
     var res= new ArrayList<Ref>();
     try (var all= Files.walk(folder)){
-      for (var p: all.filter(p -> !Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)).toList()){
+      for (var p : all.filter(p -> !Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS)).toList()){
         var segments= StreamSupport.stream(folder.relativize(p).spliterator(), false).map(Path::toString).toList();
         if (invisible(segments) || generatedTests(p)){ continue; }
         if (!Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)){ throw new Invalid(); }

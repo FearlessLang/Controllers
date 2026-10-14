@@ -87,7 +87,7 @@ public final class ManagerLink{
     var text= path.toString();
     if (!System.getProperty("os.name").startsWith("Windows")){ return "Base16:"+HexFormat.of().withUpperCase().formatHex(text.getBytes(Charset.forName(System.getProperty("sun.jnu.encoding")))); }
     var bytes= new byte[text.length()*2];
-    for (int i= 0; i < text.length(); i++){ bytes[2*i] = (byte)text.charAt(i); bytes[2*i+1] = (byte)(text.charAt(i) >> 8); }
+    for (int i= 0; i < text.length(); i += 1){ bytes[2*i] = (byte)text.charAt(i); bytes[2*i+1] = (byte)(text.charAt(i) >> 8); }
     return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes);
   }
   private static Path path(Object text){ return Path.of(Info.tagged(text)); }

@@ -155,7 +155,7 @@ public final class NewSource extends AbstractHandler{
       try{
         var segments= new Path(t).segments();
         IContainer at= src();
-        for (int i= 0; i < (type ? segments.length-1 : segments.length); i++){
+        for (int i= 0; i < (type ? segments.length-1 : segments.length); i += 1){
           var f= at.getFolder(new Path(segments[i]));
           if (!f.exists()){ f.create(true, true, null); }
           at = f;

@@ -89,7 +89,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   }
   static List<String> shortcuts(Stream<Claimant> cs){
     var files= new LinkedHashMap<String,String>();
-    for (var c: cs.filter(Claimant::shortcut).toList()){
+    for (var c : cs.filter(Claimant::shortcut).toList()){
       var file= shortcutFile(c.folder(), c.main(), c.claim().extension());
       var other= files.putIfAbsent(file, c.main());
       if (other != null){ throw Report.shortcutsCollide(other, c.main(), file); }

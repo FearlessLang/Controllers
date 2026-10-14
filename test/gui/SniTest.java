@@ -293,7 +293,7 @@ final class SniTest{
       r.pad(8);
       int width= r.u32(), height= r.u32(), bytes= r.u32();
       sb.append(width).append('x').append(height).append(':');
-      for (int i= 0; i<bytes; i++){ sb.append(i>0 && i%4==0 ? " " : "").append("%02x".formatted(r.b())); }
+      for (int i= 0; i<bytes; i += 1){ sb.append(i>0 && i%4==0 ? " " : "").append("%02x".formatted(r.b())); }
     }
     assertEquals(end, r.pos);
     return sb.append(']').toString();

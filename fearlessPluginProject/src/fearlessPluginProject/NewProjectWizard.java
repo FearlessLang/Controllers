@@ -50,7 +50,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
   }
   private static void becomeCode(Path folder){
     Job.create("Fearless project becomes code", (IProgressMonitor monitor) -> {
-      for (int i= 0; i < 120; i++){
+      for (int i= 0; i < 120; i += 1){
         var alias= ManagerLink.projects().entrySet().stream().filter(e -> e.getValue().folder().equals(folder)).map(Map.Entry::getKey).findFirst();
         if (alias.isPresent()){ ManagerLink.send("Kind", alias.get(), "code"); return Status.OK_STATUS; }
         try{ Thread.sleep(250); }
@@ -74,7 +74,7 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
   }
   private static void png(Path file, boolean app){
     var data= new ImageData(64, 64, 24, new PaletteData(0xFF0000, 0xFF00, 0xFF));
-    for (int y= 0; y < 64; y++){ for (int x= 0; x < 64; x++){ data.setPixel(x, y, app ? appPixel(x, y) : filePixel(x, y)); } }
+    for (int y= 0; y < 64; y += 1){ for (int x= 0; x < 64; x += 1){ data.setPixel(x, y, app ? appPixel(x, y) : filePixel(x, y)); } }
     var loader= new ImageLoader();
     loader.data = new ImageData[]{data};
     loader.save(file.toString(), SWT.IMAGE_PNG);

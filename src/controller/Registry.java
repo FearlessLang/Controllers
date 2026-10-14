@@ -110,7 +110,7 @@ public final class Registry{
     return problemIn(e.reads(), "reads", false, invalid).or(() -> problemIn(e.edits(), "edits", true, invalid));
   }
   private Optional<String> problemIn(Map<String,List<String>> links, String field, boolean needsWrite, Function<Path,Optional<String>> invalid){
-    for (var alias: links.keySet()){
+    for (var alias : links.keySet()){
       var target= named(alias);
       if (target.isEmpty()){ return Optional.of(Report.linkMissing(field, alias)); }
       var kind= target.get().kind();
@@ -132,7 +132,7 @@ public final class Registry{
   public static Content parse(String source, Path file, UnaryOperator<Path> identity, Path managerDir){
     var root= Info.parse(source, file.toUri());
     if (!(root instanceof Obj top)){ throw Info.err(source, root.span(), Report.infoNotObject()); }
-    for (var f: top.fields()){
+    for (var f : top.fields()){
       if (!List.of("projects", "systemExtensions").contains(f.key())){ throw Info.err(source, f.keySpan(), Report.infoUnknownKey(f.key())); }
     }
     var projects= top.field("projects").orElseThrow(() -> Info.err(source, top.span(), Report.infoMissing("projects")));
@@ -142,13 +142,13 @@ public final class Registry{
   private static List<Entry> entries(String source, Info root, UnaryOperator<Path> identity, Path managerDir){
     if (!(root instanceof Obj top)){ throw Info.err(source, root.span(), Report.infoProjectsNotObject()); }
     var entries= new ArrayList<Entry>();
-    for (var field: top.fields()){
+    for (var field : top.fields()){
       if (!Names.isName(field.key())){ throw Info.err(source, field.keySpan(), Report.infoBadName(field.key())); }
       entries.add(entryOf(source, field, identity));
       placed(entries.getLast().path(), managerDir, m -> Info.err(source, pathSpan(top, field.key()), m));
     }
-    for (var a: entries){
-      for (var b: entries.subList(entries.indexOf(a)+1, entries.size())){
+    for (var a : entries){
+      for (var b : entries.subList(entries.indexOf(a)+1, entries.size())){
         if (overlap(a.path(), b.path())){ throw Info.err(source, pathSpan(top, b.alias()), Report.infoOverlap(b.alias(), a.alias())); }
       }
     }
@@ -157,13 +157,13 @@ public final class Registry{
   private static Span pathSpan(Obj top, String alias){ return ((Obj)top.field(alias).orElseThrow().value()).field("path").orElseThrow().value().span(); }
   private static Entry entryOf(String source, Field field, UnaryOperator<Path> identity){
     if (!(field.value() instanceof Obj obj)){ throw Info.err(source, field.value().span(), Report.infoProjectNotObject(field.key())); }
-    for (var f: obj.fields()){
+    for (var f : obj.fields()){
       if (!keys.contains(f.key())){ throw Info.err(source, f.keySpan(), Report.infoUnknownAttribute(f.key(), keys)); }
     }
     var mains= obj.field("mains").map(f -> names(source, f.value(), "\"mains\"", Registry::isMainName, mainShape)).orElse(List.of());
     var reads= aliasMap(source, obj, "reads");
     var edits= aliasMap(source, obj, "edits");
-    for (var link: edits.entrySet()){
+    for (var link : edits.entrySet()){
       var both= link.getValue().stream().filter(reads.getOrDefault(link.getKey(), List.of())::contains).findFirst();
       if (both.isEmpty()){ continue; }
       var names= (Info.Lst)((Obj)obj.field("edits").orElseThrow().value()).field(link.getKey()).orElseThrow().value();
@@ -194,7 +194,7 @@ public final class Registry{
   private static List<String> names(String source, Info value, String label, Predicate<String> ok, String shape){
     if (!(value instanceof Info.Lst l)){ throw Info.err(source, value.span(), Report.infoNotList(label)); }
     var seen= new LinkedHashSet<String>();
-    for (var item: l.items()){
+    for (var item : l.items()){
       var s= str(source, item, "Every entry in "+label);
       if (!ok.test(s)){ throw Info.err(source, item.span(), Report.infoNotShape(s, label, shape)); }
       if (!seen.add(s)){ throw Info.err(source, item.span(), Report.infoRepeated(s, label)); }
@@ -206,7 +206,7 @@ public final class Registry{
     if (field.isEmpty()){ return Map.of(); }
     if (!(field.get().value() instanceof Obj o)){ throw Info.err(source, field.get().value().span(), Report.infoLinksNotObject(key)); }
     var out= new LinkedHashMap<String,List<String>>();
-    for (var f: o.fields()){
+    for (var f : o.fields()){
       if (!Names.isName(f.key())){ throw Info.err(source, f.keySpan(), Report.infoLinkBadName(f.key(), key)); }
       var label= "\""+key+"\".\""+f.key()+"\"";
       var names= names(source, f.value(), label, TName::isTypeName, typeShape);

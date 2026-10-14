@@ -70,7 +70,7 @@ public final class TaggedText{
   private static String strExpr(String s){
     var parts= List.of(s.split("\n", -1));
     var res= new StringBuilder(lineExpr(parts.getFirst()));
-    for (var part: parts.subList(1, parts.size())){
+    for (var part : parts.subList(1, parts.size())){
       if (!part.isEmpty()){ res.append(" | ").append(lineExpr(part)); continue; }
       if (res.charAt(res.length()-1) == '|'){ res.append(' '); }
       res.append('|');
@@ -112,7 +112,7 @@ public final class TaggedText{
     return res.toString();
   }
   private static int run(int[] cps, int i, boolean safe){
-    while (i < cps.length && safe(cps[i]) == safe){ i++; }
+    while (i < cps.length && safe(cps[i]) == safe){ i += 1; }
     return i;
   }
   private static String receiver(String e){

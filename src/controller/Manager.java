@@ -147,7 +147,7 @@ public final class Manager{
     catch (UncheckedIOException e){ throw Violation.couldNotDrainMessageFolder(msgDir, e.getCause()); }
   }
   private void take(Path msgDir) throws IOException{
-    for (var file: Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".msg")).toList()){
+    for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".msg")).toList()){
       Runnable r;
       try{ var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(); r= () -> apply(text); }
       catch (CharacterCodingException e){ r = () -> view.refuse(Report.unreadableMessage(file)); }
@@ -155,7 +155,7 @@ public final class Manager{
       post(r);
     }
     var old= Instant.now().minusSeconds(60);
-    for (var file: Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".tmp")).toList()){
+    for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".tmp")).toList()){
       try{ if (Files.getLastModifiedTime(file).toInstant().isBefore(old)){ Files.deleteIfExists(file); } }
       catch (NoSuchFileException e){}
     }
@@ -433,7 +433,7 @@ public final class Manager{
   }
   private void unclaimedIcons(Path f, MainsInfo claims){
     var kept= Project.claimants(f, alias(f), claims).flatMap(c -> Stream.of(c.icon(".png"), c.icon(Fs.isWindows() ? ".ico" : ".png"))).toList();
-    try (var s= Files.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p: s.filter(p -> !kept.contains(p)).toList()){ Files.delete(p); } }
+    try (var s= Files.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p : s.filter(p -> !kept.contains(p)).toList()){ Files.delete(p); } }
     catch (NoSuchFileException e){}
     catch (IOException e){ output(f, Report.notWritten("icons", e)); }
   }
@@ -486,7 +486,8 @@ public final class Manager{
   }
   private static Map<String,List<String>> with(Map<String,List<String>> map, String key, List<String> names){
     var out= new LinkedHashMap<>(map);
-    if (names.isEmpty()){ out.remove(key); } else{ out.put(key, names); }
+    if (names.isEmpty()){ out.remove(key); }
+    else{ out.put(key, names); }
     return out;
   }
   private static List<String> words(String text){ return Stream.of(text.split(" +")).filter(w -> !w.isEmpty()).toList(); }

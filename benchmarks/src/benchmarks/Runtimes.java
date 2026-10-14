@@ -33,7 +33,7 @@ public final class Runtimes{
   public static List<String> buildAll(){
     var spec= System.getProperty(stlibsKey, "wc="+ResolveResource.stLibPath.getParent());
     var names= new ArrayList<String>();
-    for (var entry: spec.split(";")){
+    for (var entry : spec.split(";")){
       int eq= entry.indexOf('=');
       var name= entry.substring(0, eq);
       build(name, Path.of(entry.substring(eq + 1)));
@@ -112,7 +112,7 @@ public final class Runtimes{
   }
   static String tag(String s){
     var bits= new StringBuilder("1");
-    for (char c: s.toCharArray()){
+    for (char c : s.toCharArray()){
       if ('A' <= c && c <= 'Z'){ bits.append('1'); }
       if ('a' <= c && c <= 'z'){ bits.append('0'); }
     }
@@ -122,7 +122,7 @@ public final class Runtimes{
     var names= buildAll();
     if (args.length == 0){ return; }
     var loaded= load(names.getFirst());
-    for (var main: args){
+    for (var main : args){
       long t0= System.nanoTime();
       loaded.run(main);
       System.out.println(main+" "+(System.nanoTime() - t0) / 1_000_000+" ms");
