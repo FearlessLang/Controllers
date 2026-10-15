@@ -39,12 +39,12 @@ public final class Pilot{
     try{ return new Robot(); }
     catch (AWTException e){ throw Bug.of(e); }
   }
-  /// Glides the pointer from where it was left to (x,y) at about a pixel a millisecond, holding the buttons that are down, and lets it settle there. A pointer never jumps: the first movement of a Pilot starts at the corner (0,0), the one place the pointer is put without gliding.
+  /// Glides the pointer from where it was left to (x,y) a pixel every millisecond or two, about the speed of a person pointing at something, so that every widget on the way sees the pointer enter, move and leave; it holds the buttons that are down and lets the pointer settle at (x,y). A pointer never jumps: the first movement of a Pilot starts at the corner (0,0), the one place the pointer is put without gliding.
   public void glide(int x, int y){
     if (at==null){ robot.mouseMove(0, 0); at = new Point(0, 0); }
     var from= at;
-    int n= Math.max(Math.abs(x-from.x), Math.abs(y-from.y))/4+1;
-    for (int i= 1; i<=n; i += 1){ robot.mouseMove(from.x+(x-from.x)*i/n, from.y+(y-from.y)*i/n); pause(4); }
+    int n= Math.max(Math.abs(x-from.x), Math.abs(y-from.y));
+    for (int i= 1; i<=n; i += 1){ robot.mouseMove(from.x+(x-from.x)*i/n, from.y+(y-from.y)*i/n); pause(1); }
     at = new Point(x, y);
     pause(200);
   }
