@@ -3,6 +3,7 @@ package gui;
 import java.awt.AWTException;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.SystemTray;
 import java.awt.Toolkit;
@@ -44,7 +45,7 @@ public final class Tray{
     var icon= new TrayIcon(Icons.app(), "Fearless Manager");
     icon.setImageAutoSize(true);
     icon.addMouseListener(new MouseAdapter(){
-      @Override public void mouseReleased(MouseEvent e){ open(anchor, menu, e.getPoint()); }
+      @Override public void mouseReleased(MouseEvent e){ open(anchor, menu, MouseInfo.getPointerInfo().getLocation()); }
     });
     var tray= SystemTray.getSystemTray();
     try{ tray.add(icon); }
