@@ -4,6 +4,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action centerArea= action("centerArea",
     on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(359), val(271), val(562), val(121))),
     on("opensuse_plasma", () -> region(val(null), val(null), val(null), val(null))),
     on("debian_cinnamon", () -> region(val(null), val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> region(val(null), val(null), val(null), val(null))),
@@ -33,6 +34,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -47,6 +49,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(300), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -61,6 +64,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -75,6 +79,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -89,6 +94,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action editorShown= action("editorShown",
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager opens the editor window of the metadata
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -103,6 +109,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action kindIdle= action("kindIdle",
     on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(730), val(376))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(100), val(376), val(141))),
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -117,6 +124,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action openHelloStackTraces= action("openHelloStackTraces",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(293), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -131,6 +139,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action openStartMarker= action("openStartMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(265), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -145,6 +154,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action secondHanded= action("secondHanded",
     on("ubuntu_gnome", () -> waitAfter(val(11000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the second project and shows it
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -159,6 +169,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action commit= action("commit",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1278), val(830))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(924), val(619))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -173,6 +184,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action noteShown= action("noteShown",
     on("ubuntu_gnome", () -> waitAfter(val(4000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager shows the note that the metadata changed on disk
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -187,6 +199,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action okButton= action("okButton",
     on("ubuntu_gnome", () -> waitClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(639), val(368))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -201,6 +214,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action close= action("close",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1357), val(830))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(1002), val(619))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -215,6 +229,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action editorClosed= action("editorClosed",
     on("ubuntu_gnome", () -> waitAfter(val(4000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager closes the editor window of the metadata
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -229,6 +244,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action editorShownAgain= action("editorShownAgain",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager opens the editor window of the metadata
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -243,6 +259,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action kindIdleAgain= action("kindIdleAgain",
     on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(730), val(376))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(100), val(376), val(141))),
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -257,6 +274,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action commitAgain= action("commitAgain",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1278), val(830))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(924), val(619))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -271,6 +289,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action codeSaved= action("codeSaved",
     on("ubuntu_gnome", () -> waitAfter(val(8500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8500))),//the manager saves the metadata and reloads both projects
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -285,6 +304,7 @@ final class EditMetadataConflictTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),

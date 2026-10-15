@@ -9,6 +9,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action menuBarArea= action("menuBarArea",
     on("ubuntu_gnome", () -> region(val(67), val(70), val(200), val(20))),
     on("kubuntu_plasma", () -> region(val(1), val(29), val(200), val(20))),
+    on("windows", () -> region(val(0), val(24), val(24), val(16))),
     on("opensuse_plasma", () -> region(val(1), val(29), val(200), val(20))),
     on("debian_cinnamon", () -> region(val(1), val(38), val(200), val(20))),
     on("lubuntu_lxqt", () -> region(val(1), val(31), val(200), val(20))),
@@ -23,6 +24,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action tileArea= action("tileArea",
     on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
     on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("windows", () -> region(val(4), val(50), val(120), val(80))),
     on("opensuse_plasma", () -> region(val(3), val(54), val(128), val(85))),
     on("debian_cinnamon", () -> region(val(3), val(63), val(128), val(85))),
     on("lubuntu_lxqt", () -> region(val(3), val(56), val(128), val(85))),
@@ -37,6 +39,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action iconArea= action("iconArea",
     on("ubuntu_gnome", () -> region(val(880), val(340), val(64), val(64))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(228), val(242), val(24), val(24))),
     on("opensuse_plasma", () -> region(val(null), val(null), val(null), val(null))),
     on("debian_cinnamon", () -> region(val(null), val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> region(val(null), val(null), val(null), val(null))),
@@ -51,6 +54,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action trayArea= action("trayArea",
     on("ubuntu_gnome", () -> region(val(null), val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(1000), val(686), val(20), val(20))),
     on("opensuse_plasma", () -> region(val(null), val(null), val(null), val(null))),
     on("debian_cinnamon", () -> region(val(null), val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> region(val(null), val(null), val(null), val(null))),
@@ -65,6 +69,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -79,6 +84,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -93,6 +99,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action leaveHelloWorld= action("leaveHelloWorld",
     on("ubuntu_gnome", () -> waitClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(1000), val(81), val(107))),//the file manager opens the folder helloWorld and lists it
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -107,6 +114,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action openHelloWorldAgain= action("openHelloWorldAgain",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager goes back and lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -121,6 +129,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action associatedShown= action("associatedShown",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the file manager shows the icon of the association
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -135,6 +144,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action managerMenuBehind= action("managerMenuBehind",
     on("ubuntu_gnome", () -> waitClick(val(0), val(99), val(79))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(1000), val(31), val(33))),//the manager window comes in front
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -149,6 +159,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action resetAsked= action("resetAsked",
     on("ubuntu_gnome", () -> waitAfter(val(5000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the reset dialog opens
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -163,6 +174,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action cancelReset= action("cancelReset",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1026), val(596))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(673), val(369))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -177,6 +189,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action resetCancelled= action("resetCancelled",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(1000))),//the reset dialog closes
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -191,6 +204,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action resetAskedAgain= action("resetAskedAgain",
     on("ubuntu_gnome", () -> waitAfter(val(4000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the reset dialog opens
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -205,6 +219,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action confirmReset= action("confirmReset",
     on("ubuntu_gnome", () -> waitClick(val(0), val(958), val(596))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(605), val(369))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -219,6 +234,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action managerReset= action("managerReset",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager deletes its folder and the associations and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -233,6 +249,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action leaveHelloWorldAgain= action("leaveHelloWorldAgain",
     on("ubuntu_gnome", () -> waitClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(81), val(107))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -247,6 +264,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action openHelloWorldThird= action("openHelloWorldThird",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager goes back and lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -261,6 +279,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action genericShown= action("genericShown",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the file manager shows the generic icon
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -275,6 +294,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action managerShownAgain= action("managerShownAgain",
     on("ubuntu_gnome", () -> waitAfter(val(18000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -289,6 +309,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action openHelloWorldFourth= action("openHelloWorldFourth",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -303,6 +324,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action associatedAgain= action("associatedAgain",
     on("ubuntu_gnome", () -> waitAfter(val(17000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the file manager shows the icon of the association
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -317,6 +339,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(302), val(254))),//the file manager lists the folder helloWorld
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -331,6 +354,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -345,6 +369,7 @@ final class FileAssociationTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -395,7 +420,7 @@ final class FileAssociationTest extends ManagerTest{
     iconArea.go();
     var icon= region;
     changed(associated, icon);
-    start();
+    startAlone();
     managerShownAgain.go();
     var empty= look();
     toFiles();

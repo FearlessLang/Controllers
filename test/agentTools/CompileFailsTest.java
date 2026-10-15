@@ -10,6 +10,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action tileListArea= action("tileListArea",
     on("ubuntu_gnome", () -> region(val(100), val(200), val(200), val(400))),
     on("kubuntu_plasma", () -> region(val(34), val(159), val(200), val(400))),
+    on("windows", () -> region(val(100), val(200), val(200), val(400))),
     on("opensuse_plasma", () -> region(val(34), val(159), val(200), val(400))),
     on("debian_cinnamon", () -> region(val(34), val(168), val(200), val(400))),
     on("lubuntu_lxqt", () -> region(val(34), val(161), val(200), val(400))),
@@ -24,6 +25,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(100), val(990), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(919), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -38,6 +40,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action openBroken= action("openBroken",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(270), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -52,6 +55,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action openBrokenMarker= action("openBrokenMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(262), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -66,6 +70,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -80,6 +85,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -94,6 +100,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager switches the tile to the code view
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -108,6 +115,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action compile= action("compile",
     on("ubuntu_gnome", () -> waitClick(val(100), val(558), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(488), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -122,6 +130,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action compileFailed= action("compileFailed",
     on("ubuntu_gnome", () -> waitAfter(val(2000))),//the compile of broken runs in its own JVM
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(12000))),//the compile of broken runs in its own JVM and fails
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -136,6 +145,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action compileFixed= action("compileFixed",
     on("ubuntu_gnome", () -> waitClick(val(100), val(558), val(112))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(488), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -150,6 +160,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action fixedCompiled= action("fixedCompiled",
     on("ubuntu_gnome", () -> waitAfter(val(2000))),//the compile of broken runs in its own JVM
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(12000))),//the compile of the fixed broken runs in its own JVM
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -164,6 +175,7 @@ final class CompileFailsTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),

@@ -8,6 +8,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action tileArea= action("tileArea",
     on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
     on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
+    on("windows", () -> region(val(2), val(47), val(128), val(85))),
     on("opensuse_plasma", () -> region(val(3), val(54), val(128), val(85))),
     on("debian_cinnamon", () -> region(val(3), val(63), val(128), val(85))),
     on("lubuntu_lxqt", () -> region(val(3), val(56), val(128), val(85))),
@@ -22,6 +23,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action openOld= action("openOld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(260), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -36,6 +38,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action openOldMarker= action("openOldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(252), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -50,6 +53,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -64,6 +68,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -78,6 +83,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action editorShown= action("editorShown",
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager opens the editor window of the metadata
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -92,6 +98,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action nameOld= action("nameOld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(646), val(342))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(100), val(296), val(105))),
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -106,6 +113,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action commit= action("commit",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1278), val(830))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(924), val(619))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -120,6 +128,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action renamed= action("renamed",
     on("ubuntu_gnome", () -> waitAfter(val(10000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager saves the metadata and renames the project
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -134,6 +143,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action markerSeen= action("markerSeen",
     on("ubuntu_gnome", () -> waitAfter(val(10000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager notices the renamed marker file and updates the tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -148,6 +158,7 @@ final class EditMetadataRenameTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),

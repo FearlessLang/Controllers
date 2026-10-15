@@ -10,6 +10,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action listArea= action("listArea",
     on("ubuntu_gnome", () -> region(val(410), val(400), val(1000), val(60))),
     on("kubuntu_plasma", () -> region(val(344), val(359), val(1000), val(60))),
+    on("windows", () -> region(val(340), val(362), val(900), val(40))),
     on("opensuse_plasma", () -> region(val(344), val(359), val(1000), val(60))),
     on("debian_cinnamon", () -> region(val(344), val(368), val(1000), val(60))),
     on("lubuntu_lxqt", () -> region(val(344), val(361), val(1000), val(60))),
@@ -24,6 +25,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action listedArea= action("listedArea",
     on("ubuntu_gnome", () -> region(val(640), val(360), val(600), val(400))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(270), val(140), val(600), val(400))),
     on("opensuse_plasma", () -> region(val(null), val(null), val(null), val(null))),
     on("debian_cinnamon", () -> region(val(null), val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> region(val(null), val(null), val(null), val(null))),
@@ -38,6 +40,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(971), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(901), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -52,6 +55,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -66,6 +70,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action codeShown= action("codeShown",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager switches the tile to the code view
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -80,6 +85,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action compile= action("compile",
     on("ubuntu_gnome", () -> waitClick(val(0), val(524), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(470), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -94,6 +100,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(12000))),//the compile of diary runs in its own JVM
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -108,6 +115,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action openLogs= action("openLogs",
     on("ubuntu_gnome", () -> waitClick(val(0), val(450), val(387))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(380), val(349))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -122,6 +130,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action logsShown= action("logsShown",
     on("ubuntu_gnome", () -> waitAfter(val(3000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(1000))),//the manager opens the Logs section
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -136,6 +145,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action run= action("run",
     on("ubuntu_gnome", () -> waitClick(val(0), val(524), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(457), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -150,6 +160,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action ran= action("ran",
     on("ubuntu_gnome", () -> waitAfter(val(7500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(6000))),//the main of diary runs in its own JVM and writes the log, then the manager lists the log
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -164,6 +175,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action logsButton= action("logsButton",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1880), val(386))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(1241), val(347))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -178,6 +190,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action filesShown= action("filesShown",
     on("ubuntu_gnome", () -> waitAfter(val(5500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(3000))),//a new file manager window opens on the logs folder
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -192,6 +205,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action closeFiles= action("closeFiles",
     on("ubuntu_gnome", () -> waitClick(val(0), val(1414), val(303))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(866), val(15))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -206,6 +220,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action filesClosed= action("filesClosed",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the file manager window of the logs folder closes
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -220,6 +235,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -234,6 +250,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action openDiary= action("openDiary",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(265), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -248,6 +265,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action openDiaryMarker= action("openDiaryMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(258), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -262,6 +280,7 @@ final class LogsSectionTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),

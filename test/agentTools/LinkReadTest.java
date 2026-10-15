@@ -12,6 +12,7 @@ final class LinkReadTest extends ManagerTest{
   final Action outputArea= action("outputArea",
     on("ubuntu_gnome", () -> region(val(410), val(168), val(1000), val(80))),
     on("kubuntu_plasma", () -> region(val(344), val(127), val(1000), val(80))),
+    on("windows", () -> region(val(342), val(122), val(920), val(80))),
     on("opensuse_plasma", () -> region(val(344), val(127), val(1000), val(80))),
     on("debian_cinnamon", () -> region(val(344), val(136), val(1000), val(80))),
     on("lubuntu_lxqt", () -> region(val(344), val(129), val(1000), val(80))),
@@ -26,6 +27,7 @@ final class LinkReadTest extends ManagerTest{
   final Action becomeData= action("becomeData",
     on("ubuntu_gnome", () -> waitClick(val(0), val(714), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(645), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -40,6 +42,7 @@ final class LinkReadTest extends ManagerTest{
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(986), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(914), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -54,6 +57,7 @@ final class LinkReadTest extends ManagerTest{
   final Action backToIdle= action("backToIdle",
     on("ubuntu_gnome", () -> waitClick(val(0), val(726), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(641), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -68,6 +72,7 @@ final class LinkReadTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -82,6 +87,7 @@ final class LinkReadTest extends ManagerTest{
   final Action dataSaved= action("dataSaved",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager saves the kind of store
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -96,6 +102,7 @@ final class LinkReadTest extends ManagerTest{
   final Action readerShown= action("readerShown",
     on("ubuntu_gnome", () -> waitAfter(val(11000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(6000))),//the manager opens the second project reader and shows it
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -110,6 +117,7 @@ final class LinkReadTest extends ManagerTest{
   final Action codeSaved= action("codeSaved",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager saves the kind of reader
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -124,6 +132,7 @@ final class LinkReadTest extends ManagerTest{
   final Action openLinks= action("openLinks",
     on("ubuntu_gnome", () -> waitClick(val(0), val(450), val(356))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(380), val(319))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -138,6 +147,7 @@ final class LinkReadTest extends ManagerTest{
   final Action linksShown= action("linksShown",
     on("ubuntu_gnome", () -> waitAfter(val(3500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(1000))),//the Links section opens
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -152,6 +162,7 @@ final class LinkReadTest extends ManagerTest{
   final Action readField= action("readField",
     on("ubuntu_gnome", () -> waitClick(val(0), val(560), val(398))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(476), val(358))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -166,6 +177,7 @@ final class LinkReadTest extends ManagerTest{
   final Action readsSaved= action("readsSaved",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager saves the links of reader
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -180,6 +192,7 @@ final class LinkReadTest extends ManagerTest{
   final Action storeTile= action("storeTile",
     on("ubuntu_gnome", () -> waitClick(val(0), val(261), val(130))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(193), val(88))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -194,6 +207,7 @@ final class LinkReadTest extends ManagerTest{
   final Action storeShown= action("storeShown",
     on("ubuntu_gnome", () -> waitAfter(val(4000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager shows the tile of store
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -208,6 +222,7 @@ final class LinkReadTest extends ManagerTest{
   final Action idleSaved= action("idleSaved",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager saves the kind of store
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -222,6 +237,7 @@ final class LinkReadTest extends ManagerTest{
   final Action readerTile= action("readerTile",
     on("ubuntu_gnome", () -> waitClick(val(0), val(133), val(130))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(65), val(88))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -236,6 +252,7 @@ final class LinkReadTest extends ManagerTest{
   final Action readerShownAgain= action("readerShownAgain",
     on("ubuntu_gnome", () -> waitAfter(val(4000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(2000))),//the manager shows the tile of reader
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -250,6 +267,7 @@ final class LinkReadTest extends ManagerTest{
   final Action check= action("check",
     on("ubuntu_gnome", () -> waitClick(val(0), val(539), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(476), val(67))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -264,6 +282,7 @@ final class LinkReadTest extends ManagerTest{
   final Action checked= action("checked",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the Check runs and shows its output
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -278,6 +297,7 @@ final class LinkReadTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(8500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -292,6 +312,7 @@ final class LinkReadTest extends ManagerTest{
   final Action openLinksFolder= action("openLinksFolder",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(263), val(225))),//the file manager lists the folder files
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -306,6 +327,7 @@ final class LinkReadTest extends ManagerTest{
   final Action openStore= action("openStore",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(250), val(254))),//the file manager lists the folder links
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -320,6 +342,7 @@ final class LinkReadTest extends ManagerTest{
   final Action openStoreMarker= action("openStoreMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(290), val(254))),//the file manager lists the folder store
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -334,6 +357,7 @@ final class LinkReadTest extends ManagerTest{
   final Action storeListed= action("storeListed",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project store and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -348,6 +372,7 @@ final class LinkReadTest extends ManagerTest{
   final Action openLinksFolderAgain= action("openLinksFolderAgain",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(263), val(225))),//the file manager lists the folder files
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -362,6 +387,7 @@ final class LinkReadTest extends ManagerTest{
   final Action openReader= action("openReader",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(263), val(225))),//the file manager lists the folder links
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -376,6 +402,7 @@ final class LinkReadTest extends ManagerTest{
   final Action openReaderMarker= action("openReaderMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(255), val(254))),//the file manager lists the folder reader
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -390,6 +417,7 @@ final class LinkReadTest extends ManagerTest{
   final Action leaveReadField= action("leaveReadField",
     on("ubuntu_gnome", () -> waitClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(800), val(550))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),

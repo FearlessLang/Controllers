@@ -112,6 +112,7 @@ abstract class ManagerTest{
   final Action managerMenu= action("managerMenu",
     on("ubuntu_gnome", () -> waitClick(val(100), val(99), val(79))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(31), val(33))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -126,6 +127,7 @@ abstract class ManagerTest{
   final Action addFolder= action("addFolder",
     on("ubuntu_gnome", () -> waitClick(val(null), val(110), val(103))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(42), val(57))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -140,6 +142,7 @@ abstract class ManagerTest{
   final Action editMetadata= action("editMetadata",
     on("ubuntu_gnome", () -> waitClick(val(null), val(143), val(124))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(73), val(78))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -154,6 +157,7 @@ abstract class ManagerTest{
   final Action connectEclipse= action("connectEclipse",
     on("ubuntu_gnome", () -> waitClick(val(null), val(126), val(145))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(58), val(99))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -168,6 +172,7 @@ abstract class ManagerTest{
   final Action resetManager= action("resetManager",
     on("ubuntu_gnome", () -> waitClick(val(null), val(90), val(191))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(24), val(145))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -182,6 +187,7 @@ abstract class ManagerTest{
   final Action quitManager= action("quitManager",
     on("ubuntu_gnome", () -> waitClick(val(100), val(88), val(212))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(18), val(166))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -196,6 +202,7 @@ abstract class ManagerTest{
   final Action closeWindow= action("closeWindow",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1901), val(49))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(1905), val(14))),
+    on("windows", () -> waitClick(val(100), val(1255), val(11))),
     on("opensuse_plasma", () -> waitClick(val(100), val(1905), val(14))),
     on("debian_cinnamon", () -> waitClick(val(100), val(1901), val(18))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1905), val(15))),
@@ -210,6 +217,7 @@ abstract class ManagerTest{
   final Action firstTile= action("firstTile",
     on("ubuntu_gnome", () -> waitClick(val(null), val(133), val(130))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -225,6 +233,7 @@ abstract class ManagerTest{
   final Action trayIcon= action("trayIcon",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1736), val(15))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(1640), val(1052))),
+    on("windows", () -> waitClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitClick(val(100), val(1689), val(1057))),
     on("debian_cinnamon", () -> waitClick(val(100), val(1755), val(1058))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1860), val(1064))),
@@ -239,6 +248,7 @@ abstract class ManagerTest{
   final Action trayShow= action("trayShow",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1709), val(62))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(1660), val(973))),
+    on("windows", () -> waitClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitClick(val(100), val(1740), val(981))),
     on("debian_cinnamon", () -> waitClick(val(100), val(1789), val(1002))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1858), val(1042))),
@@ -282,6 +292,7 @@ abstract class ManagerTest{
   final Action filesIcon= action("filesIcon",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(128))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(212), val(1052))),//Dolphin, the file manager icon of the taskbar
+    on("windows", () -> waitClick(val(100), val(796), val(696))),
     on("opensuse_plasma", () -> waitClick(val(100), val(221), val(1057))),//Dolphin, the file manager icon of the taskbar
     on("debian_cinnamon", () -> waitClick(val(100), val(75), val(1057))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(75), val(380))),//the home icon tester on the desktop
@@ -296,6 +307,7 @@ abstract class ManagerTest{
   final Action pilotioBookmark= action("pilotioBookmark",
     on("ubuntu_gnome", () -> waitClick(val(100), val(613), val(743))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(629), val(544))),
+    on("windows", () -> waitClick(val(1500), val(124), val(297))),//the file manager window opens
     on("opensuse_plasma", () -> waitClick(val(100), val(629), val(547))),
     on("debian_cinnamon", () -> waitClick(val(100), val(227), val(546))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(706), val(684))),
@@ -310,6 +322,7 @@ abstract class ManagerTest{
   final Action openApp= action("openApp",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(806), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(788), val(305))),
+    on("windows", () -> waitDoubleClick(val(1000), val(312), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(100), val(797), val(305))),
     on("debian_cinnamon", () -> waitDoubleClick(val(100), val(396), val(305))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(910), val(395))),
@@ -324,6 +337,7 @@ abstract class ManagerTest{
   final Action openAppNextToManagerFolder= action("openAppNextToManagerFolder",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(925), val(305))),
+    on("windows", () -> waitDoubleClick(val(1000), val(312), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(100), val(934), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(100), val(520), val(305))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(1036), val(395))),
@@ -338,6 +352,7 @@ abstract class ManagerTest{
   final Action openBin= action("openBin",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(787), val(305))),
+    on("windows", () -> waitAfter(val(100))),
     on("opensuse_plasma", () -> waitDoubleClick(val(100), val(797), val(305))),
     on("debian_cinnamon", () -> waitDoubleClick(val(100), val(396), val(305))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(910), val(395))),
@@ -353,6 +368,7 @@ abstract class ManagerTest{
   final Action openLauncher= action("openLauncher",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(925), val(305))),
+    on("windows", () -> waitDoubleClick(val(1000), val(326), val(311))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(100), val(934), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(100), val(518), val(305))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(1036), val(395))),
@@ -367,6 +383,7 @@ abstract class ManagerTest{
   final Action openFiles= action("openFiles",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(1024), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(100), val(1063), val(305))),
+    on("windows", () -> waitDoubleClick(val(1000), val(262), val(282))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(100), val(1072), val(310))),
     on("debian_cinnamon", () -> waitDoubleClick(val(100), val(644), val(305))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(100), val(1163), val(395))),
@@ -382,6 +399,7 @@ abstract class ManagerTest{
   final Action fileManagerToFront= action("fileManagerToFront",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(128))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(212), val(1052))),
+    on("windows", () -> waitClick(val(100), val(665), val(696))),
     on("opensuse_plasma", () -> waitClick(val(100), val(221), val(1057))),
     on("debian_cinnamon", () -> waitClick(val(100), val(75), val(1057))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(215), val(1064))),
@@ -397,6 +415,7 @@ abstract class ManagerTest{
   final Action managerToFront= action("managerToFront",
     on("ubuntu_gnome", () -> waitClick(val(100), val(33), val(387))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(878), val(696))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -411,6 +430,7 @@ abstract class ManagerTest{
   final Action closeFileManager= action("closeFileManager",
     on("ubuntu_gnome", () -> waitClick(val(100), val(1414), val(304))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(1326), val(197))),
+    on("windows", () -> waitClick(val(100), val(815), val(57))),
     on("opensuse_plasma", () -> waitClick(val(100), val(1325), val(202))),
     on("debian_cinnamon", () -> waitClick(val(100), val(940), val(168))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(1265), val(282))),
@@ -426,6 +446,7 @@ abstract class ManagerTest{
   final Action showFilesIcon= action("showFilesIcon",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("windows", () -> waitAfter(val(100))),
     on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(100))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
@@ -441,6 +462,7 @@ abstract class ManagerTest{
   final Action showFileManager= action("showFileManager",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(100))),
+    on("windows", () -> waitAfter(val(100))),
     on("opensuse_plasma", () -> waitAfter(val(100))),
     on("debian_cinnamon", () -> waitAfter(val(100))),
     on("lubuntu_lxqt", () -> waitAfter(val(100))),
@@ -456,6 +478,7 @@ abstract class ManagerTest{
   final Action confirmLauncher= action("confirmLauncher",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitClick(val(100), val(975), val(591))),//Launch, in the dialog asking to launch the file
+    on("windows", () -> waitAfter(val(100))),
     on("opensuse_plasma", () -> waitClick(val(100), val(955), val(580))),//Launch, in the dialog asking to launch the file
     on("debian_cinnamon", () -> waitAfter(val(100))),
     on("lubuntu_lxqt", () -> waitClick(val(100), val(797), val(524))),//Execute, in the dialog asking to execute the launcher
@@ -468,9 +491,12 @@ abstract class ManagerTest{
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   boolean filesOpen;
+  boolean fileManagerFront;
   void toPilotio() throws Throwable{
-    (filesOpen ? showFileManager : showFilesIcon).go();
-    (filesOpen ? fileManagerToFront : filesIcon).go();
+    if (!fileManagerFront){
+      (filesOpen ? showFileManager : showFilesIcon).go();
+      (filesOpen ? fileManagerToFront : filesIcon).go();
+    }
     filesOpen = true;
     pilotioBookmark.go();
   }
@@ -487,6 +513,14 @@ abstract class ManagerTest{
     openBin.go();
     openLauncher.go();
     confirmLauncher.go();
+  }
+  void managerToFrontUnlessSelf() throws Throwable{
+    if (!Fs.isWindows()){ managerToFront.go(); }
+  }
+  void startAlone() throws Throwable{
+    fileManagerFront= Fs.isWindows();
+    start();
+    fileManagerFront= false;
   }
   void toFiles() throws Throwable{
     toPilotio();

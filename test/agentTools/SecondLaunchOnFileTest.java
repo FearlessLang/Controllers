@@ -4,6 +4,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
   final Action tileListArea= action("tileListArea",
     on("ubuntu_gnome", () -> region(val(100), val(200), val(200), val(400))),
     on("kubuntu_plasma", () -> region(val(34), val(159), val(200), val(400))),
+    on("windows", () -> region(val(null), val(null), val(null), val(null))),
     on("opensuse_plasma", () -> region(val(34), val(159), val(200), val(400))),
     on("debian_cinnamon", () -> region(val(34), val(168), val(200), val(400))),
     on("lubuntu_lxqt", () -> region(val(34), val(161), val(200), val(400))),
@@ -18,6 +19,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -33,6 +35,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -47,6 +50,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(null))),
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -61,6 +65,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
   final Action openHelloStackTraces= action("openHelloStackTraces",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(798), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -76,6 +81,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
   final Action openStartMarker= action("openStartMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(100), val(911), val(380))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -90,6 +96,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
   final Action secondShown= action("secondShown",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(null))),
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -104,6 +111,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(null))),
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -124,11 +132,11 @@ final class SecondLaunchOnFileTest extends ManagerTest{
     toFiles();
     openHelloWorld.go();
     openHelloWorldMarker.go();
-    managerToFront.go();
+    managerToFrontUnlessSelf();
     toFiles();
     openHelloStackTraces.go();
     openStartMarker.go();
-    managerToFront.go();
+    managerToFrontUnlessSelf();
     secondShown.go();
     stabilize();
     checkContent(info, """

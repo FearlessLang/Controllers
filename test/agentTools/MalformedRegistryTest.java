@@ -11,6 +11,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action centerArea= action("centerArea",
     on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
     on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
+    on("windows", () -> region(val(440), val(340), val(400), val(180))),
     on("opensuse_plasma", () -> region(val(null), val(null), val(null), val(null))),
     on("debian_cinnamon", () -> region(val(null), val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> region(val(null), val(null), val(null), val(null))),
@@ -25,6 +26,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action managerShown= action("managerShown",
     on("ubuntu_gnome", () -> waitAfter(val(17500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -39,6 +41,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action managerQuit= action("managerQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -53,6 +56,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action errorShown= action("errorShown",
     on("ubuntu_gnome", () -> waitAfter(val(19000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//the manager starts, finds the malformed registry and shows its error dialog
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -67,6 +71,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action errorDismissed= action("errorDismissed",
     on("ubuntu_gnome", () -> waitAfter(val(4500))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager deletes its data folder and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -81,6 +86,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action freshShown= action("freshShown",
     on("ubuntu_gnome", () -> waitAfter(val(18000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(8000))),//a fresh manager starts and opens its window
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -95,6 +101,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action freshQuit= action("freshQuit",
     on("ubuntu_gnome", () -> waitAfter(val(7000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager closes its window and exits
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -109,6 +116,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(280), val(225))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -123,6 +131,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action openHelloWorldMarker= action("openHelloWorldMarker",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
+    on("windows", () -> waitDoubleClick(val(1000), val(262), val(254))),//the file manager lists the folder
     on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
@@ -137,6 +146,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action projectShown= action("projectShown",
     on("ubuntu_gnome", () -> waitAfter(val(null))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
+    on("windows", () -> waitAfter(val(4000))),//the manager opens the project and shows its tile
     on("opensuse_plasma", () -> waitAfter(val(null))),
     on("debian_cinnamon", () -> waitAfter(val(null))),
     on("lubuntu_lxqt", () -> waitAfter(val(null))),
@@ -151,6 +161,7 @@ final class MalformedRegistryTest extends ManagerTest{
   final Action okButton= action("okButton",
     on("ubuntu_gnome", () -> waitClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
+    on("windows", () -> waitClick(val(100), val(638), val(506))),
     on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
     on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
     on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
@@ -190,7 +201,7 @@ final class MalformedRegistryTest extends ManagerTest{
     Fs.writeUtf8(info, remembered.substring(0, remembered.length()-2));
     stabilize();
     var before= look();
-    start();
+    startAlone();
     errorShown.go();
     centerArea.go();
     var center= region;
@@ -202,7 +213,7 @@ final class MalformedRegistryTest extends ManagerTest{
     same(before, center);
     stabilize();
     assertFalse(Files.exists(filesIOFolder.resolve(data)));
-    start();
+    startAlone();
     freshShown.go();
     stabilize();
     checkContent(info, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
