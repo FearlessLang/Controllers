@@ -4,6 +4,7 @@ import java.awt.AWTException;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.MouseInfo;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
@@ -29,21 +30,23 @@ public final class Pilot{
     final int mask;
     Button(int mask){ this.mask= mask; }
   }
-  public static final Set<Button> none= Set.of();
-  public static final Set<Button> left= Set.of(Button.left);
+  private static final Set<Button> none= Set.of();
+  private static final Set<Button> left= Set.of(Button.left);
   private final Robot robot= robot();
   private Set<Button> down= none;
+  private Point at;
   private static Robot robot(){
     try{ return new Robot(); }
     catch (AWTException e){ throw Bug.of(e); }
   }
-  /// Puts the pointer at (x0,y0) holding exactly the buttons in held, glides it to (x1,y1) at about a pixel a millisecond, then holds exactly the buttons in then.
-  public void glide(int x0, int y0, Set<Button> held, int x1, int y1, Set<Button> then){
-    robot.mouseMove(x0, y0);
-    hold(held);
-    int n= Math.max(Math.abs(x1-x0), Math.abs(y1-y0))/4+1;
-    for (int i= 1; i<=n; i += 1){ robot.mouseMove(x0+(x1-x0)*i/n, y0+(y1-y0)*i/n); pause(4); }
-    hold(then);
+  /// Glides the pointer from where it was left to (x,y) at about a pixel a millisecond, holding the buttons that are down, and lets it settle there. A pointer never jumps: the first movement of a Pilot starts at the corner (0,0), the one place the pointer is put without gliding.
+  public void glide(int x, int y){
+    if (at==null){ robot.mouseMove(0, 0); at = new Point(0, 0); }
+    var from= at;
+    int n= Math.max(Math.abs(x-from.x), Math.abs(y-from.y))/4+1;
+    for (int i= 1; i<=n; i += 1){ robot.mouseMove(from.x+(x-from.x)*i/n, from.y+(y-from.y)*i/n); pause(4); }
+    at = new Point(x, y);
+    pause(200);
   }
   private void hold(Set<Button> want){
     for (var b : Button.values()){ if (down.contains(b)!=want.contains(b)){ button(b, want.contains(b)); } }
@@ -56,7 +59,7 @@ public final class Pilot{
   }
   /// A press and release as short as a person's: a desk reads a button held longer, from about 400 milliseconds, as a long press, which is not a click.
   public void click(Button b, int x, int y){
-    glide(x, y, none, x, y, none);
+    glide(x, y);
     button(b, true);
     pause(100);
     button(b, false);
@@ -64,12 +67,12 @@ public final class Pilot{
   }
   /// Two clicks close enough together to be read as one gesture, which is what opens an icon on every desk. Calling click twice does not make one: a desk counts the time from the first press to the second, about 400 milliseconds, and a click leaves the pointer settled for longer than that.
   public void doubleClick(int x, int y){
-    glide(x, y, none, x, y, none);
+    glide(x, y);
     for (int i= 0; i<2; i += 1){ button(Button.left, true); pause(50); button(Button.left, false); pause(50); }
     pause(200);
   }
   /// Takes hold at x0,y0, carries to x1,y1, and waits there before letting go: what is dropped lands on whatever is under the pointer, and that has to be given its moment to see the pointer arrive.
-  public void drag(int x0, int y0, int x1, int y1){ glide(x0, y0, none, x0, y0, left); glide(x0, y0, left, x1, y1, left); glide(x1, y1, left, x1, y1, none); }
+  public void drag(int x0, int y0, int x1, int y1){ glide(x0, y0); hold(left); glide(x1, y1); hold(none); }
   /// Presses the java.awt.event.KeyEvent codes in order and releases them in reverse.
   public void chord(int... codes){
     for (int c : codes){ robot.keyPress(c); }
