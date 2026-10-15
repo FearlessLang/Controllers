@@ -262,7 +262,7 @@ abstract class ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(100), val(1760), val(55))));
   void park(){
     var s= Toolkit.getDefaultToolkit().getScreenSize();
-    pilot.glide(s.width/2-40, s.height/2-40, Pilot.none, s.width/2, s.height/2, Pilot.none);
+    pilot.glide(s.width/2, s.height/2);
   }
   BufferedImage look(){ park(); return pilot.shot(); }
   Rectangle region;
