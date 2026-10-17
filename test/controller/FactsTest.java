@@ -49,6 +49,7 @@ final class FactsTest{
     at(project.resolve(".fearless_out").resolve(pkg+".json"), "{}\n", stamp);
     at(project.resolve(".fearless_out").resolve(pkg+".mains.info"), mainsInfo, stamp);
     at(project.resolve(".fearless_out").resolve("mains.info"), mainsInfo, stamp);
+    at(project.resolve(".fearless_out").resolve("_map.json"), "{}", 0);
   }
   private static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file, content);
