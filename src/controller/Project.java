@@ -29,7 +29,8 @@ import userMessages.UserError;
 public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mains, MainsInfo claims, Optional<String> linkProblem, String job){
   public static final String compiling= "compiling";
   public static final MainsInfo noClaims= new MainsInfo(Map.of());
-  public record Claimant(Path folder, String alias, String main, boolean shortcut, MainsInfo.Claim claim){
+  public record Claimant(Path folder, String alias, String main, String kind, MainsInfo.Claim claim){
+    public boolean shortcut(){ return kind.equals("Shortcut"); }
     public String label(){ return alias+"::"+main; }
     public Path icon(String suffix){ return folder.resolve(Facts.outDir).resolve("icons").resolve(claim.icon()+suffix); }
     public Path shortcutFile(){ return folder.resolve(Project.shortcutFile(folder, main, claim.extension())); }
@@ -53,9 +54,12 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   }
   static Stream<Claimant> claimants(Path folder, String alias, MainsInfo info){
     return info.mains().entrySet().stream()
-      .flatMap(e -> Stream.concat(claimants(folder, alias, e.getKey(), e.getValue().shortcuts(), true), claimants(folder, alias, e.getKey(), e.getValue().openWiths(), false)));
+      .flatMap(e -> Stream.concat(claimants(folder, alias, e.getKey(), e.getValue().shortcuts(), "Shortcut"), claimants(folder, alias, e.getKey(), e.getValue().openWiths(), "OpenWith")));
   }
-  private static Stream<Claimant> claimants(Path folder, String alias, String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c -> new Claimant(folder, alias, main, shortcut, c)); }
+  static Stream<Claimant> preloads(Path folder, String alias, MainsInfo info){
+    return info.mains().entrySet().stream().flatMap(e -> claimants(folder, alias, e.getKey(), e.getValue().icons(), "PreLoadIcon"));
+  }
+  private static Stream<Claimant> claimants(Path folder, String alias, String main, List<MainsInfo.Claim> cs, String kind){ return cs.stream().map(c -> new Claimant(folder, alias, main, kind, c)); }
   public static Map<String,List<Claimant>> claimed(List<Project> projects){
     return projects.stream().flatMap(p -> claimants(p.folder(), p.alias(), p.claims))
       .sorted(Comparator.comparing(Claimant::label))
@@ -71,7 +75,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
       .map(MainsInfo.Claim::extension).collect(Collectors.toCollection(HashSet::new));
   }
   private record Fill(MainsInfo previous, String alias, HashSet<String> used, Set<String> explicit){
-    MainsInfo.Main main(String main, MainsInfo.Main m){ return new MainsInfo.Main(m.file(), claims(main, m.shortcuts(), true), claims(main, m.openWiths(), false)); }
+    MainsInfo.Main main(String main, MainsInfo.Main m){ return new MainsInfo.Main(m.file(), claims(main, m.shortcuts(), true), claims(main, m.openWiths(), false), m.icons()); }
     List<MainsInfo.Claim> claims(String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c -> claim(main, c, shortcut)).toList(); }
     MainsInfo.Claim claim(String main, MainsInfo.Claim c, boolean shortcut){
       if (!c.extension().isEmpty()){ return c; }

@@ -77,12 +77,12 @@ final class ManagerTest{
     Fs.runTool("javac", List.of("-d", classes.toString(), src.toString()));
     FactsTest.baseCache(classes);
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked, List<String> others, List<Path> connected) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> locked, List<String> others, List<Path> connected) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       if (infos.getOrDefault(folder.getFileName().toString(), "").equals("fail")){ return jvm(out, "broken source", "1", "0"); }
       FactsTest.cache(folder, folder.getFileName().toString(), FactsTest.after(folder), infos.getOrDefault(folder.getFileName().toString(), "{}\n"));
-      MainsInfo.read(folder).orElseThrow().mains().values().stream().flatMap(m -> Stream.concat(m.shortcuts().stream(), m.openWiths().stream()))
+      MainsInfo.read(folder).orElseThrow().mains().values().stream().flatMap(m -> Stream.of(m.shortcuts(), m.openWiths(), m.icons()).flatMap(List::stream))
         .filter(c -> !c.icon().startsWith("base.")).map(c -> folder.resolve(c.diskPath())).filter(p -> !Files.exists(p)).forEach(p -> image(p, 64, 64, "png"));
       return jvm(out, "compiled", "0", "0");
     }
@@ -90,9 +90,11 @@ final class ManagerTest{
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     @Override public Path baseCache(){ return classes.resolve("baseCache"); }
-    @Override public void associate(List<Icon> captured, Function<String,String> claimedBy){
+    @Override public void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy){
       captured.forEach(i -> Fs.of(() -> Files.readAllBytes(i.png())));
+      preloads.forEach(c -> Fs.of(() -> Files.readAllBytes(c.icon(".png"))));
       associated.add(captured);
+      windows.add(preloads.stream().map(c -> c.label()+" "+c.claim().icon()).toList());
       var all= Stream.concat(Stream.of(new Icon(".fearless", null, null)), captured.stream()).toList();
       var userLocked= all.stream().map(Icon::extension).filter(locked::contains).toList();
       if (!userLocked.isEmpty()){ throw Violation.associationUserLocked(userLocked, claimedBy); }
@@ -135,6 +137,7 @@ final class ManagerTest{
   private final View view= new View();
   private final Map<String,String> infos= new HashMap<>();
   private final List<List<Icon>> associated= Collections.synchronizedList(new ArrayList<>());
+  private final List<List<String>> windows= Collections.synchronizedList(new ArrayList<>());
   private final Map<String,List<String>> held= new HashMap<>();
   private final List<String> locked= new ArrayList<>();
   private final List<String> others= new ArrayList<>();
@@ -153,7 +156,7 @@ final class ManagerTest{
       @Override public void fail(Throwable problem){ failures.add(problem); }
     };
     Fs.ensureDir(dir.resolve("manager"));
-    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, held, locked, others, connected), view, exit);
+    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, locked, others, connected), view, exit);
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -870,7 +873,7 @@ final class ManagerTest{
   private static String claiming(String main, String shortcut, String openWith){
     return info(main, claim("base.IconsConflict", "icons/conflict.png", "", "", shortcut), claim("hello.IconsFoo", "art/foo.png", "", "", openWith));
   }
-  private static String info(String main, String shortcuts, String openWiths){ return "{\""+main+"\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], ["+openWiths+"]]}\n"; }
+  private static String info(String main, String shortcuts, String openWiths){ return "{\""+main+"\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], ["+openWiths+"], []]}\n"; }
   private static String claim(String icon, String diskPath, String zipSteps, String zipEntry, String ext){
     return Stream.of(icon, diskPath, zipSteps, zipEntry, ext).map(t -> "\""+t+"\"").collect(Collectors.joining(", ", "[", "]"));
   }
@@ -1013,7 +1016,7 @@ final class ManagerTest{
     code(m, dir, "other");
     allow(m, dir, "foo");
     var all= IntStream.range(0, 1000).mapToObj(i -> "[\"other.IconsO\", \"art/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
-    infos.put("other", "{\"other.Other\": [\"_other/_rank_app.fear\", ["+all+"], []]}\n");
+    infos.put("other", "{\"other.Other\": [\"_other/_rank_app.fear\", ["+all+"], [], []]}\n");
     compiled(m, "other");
     infos.put("hello", claiming("hello.Hello", "", "foo"));
     compiled(m, "hello");
@@ -1093,6 +1096,20 @@ final class ManagerTest{
     compiled(m, "hello");
     same(iconError("base.Shortcut[hello.IconsFoo]", "is not a PNG image", "art/foo.jpg"), compileError(hello));
     assertFalse(Files.exists(icons(hello)));
+  }
+  @Test void thePreloadedIconsOfAMainAreCheckedInstalledAndShownByItsWindows(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    image(hello.resolve("art").resolve("foo.png"), 32, 32, "png");
+    var pre= claim("hello.IconsFoo", "art/foo.png", "", "", "")+", "+claim("base.IconsFearless", "icons/fearless.png", "", "", "");
+    infos.put("hello", "{\"hello.Hello\": [\"_hello/_rank_app.fear\", [], [], ["+pre+"]]}\n");
+    compiled(m, "hello");
+    same(iconError("base.PreLoadIcon[hello.IconsFoo]", "is 32x32 pixels", "art/foo.png"), compileError(hello));
+    image(hello.resolve("art").resolve("foo.png"), 64, 64, "png");
+    touch(hello);
+    compiled(m, "hello");
+    assertEquals(iconNames("base.IconsFearless", "hello.IconsFoo"), iconFiles(hello));
+    assertEquals(List.of("hello::hello.Hello hello.IconsFoo", "hello::hello.Hello base.IconsFearless"), windows.getLast());
   }
   @Test void iconsAreCopiedOutOfZipsAndTheStdLibOnceAndRewrittenOnlyWhenChanged(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -1339,7 +1356,7 @@ final class ManagerTest{
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
     var shortcuts= claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010")+", "+claim("base.IconsConflict", "icons/conflict.png", "", "", "");
-    infos.put("hello", "{\"hello.FooBar\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], []], \"hello.Foo'\": [\"_hello/_rank_app.fear\", [], ["+claim("base.IconsConflict", "icons/conflict.png", "", "", "foo")+"]]}\n");
+    infos.put("hello", "{\"hello.FooBar\": [\"_hello/_rank_app.fear\", ["+shortcuts+"], [], []], \"hello.Foo'\": [\"_hello/_rank_app.fear\", [], ["+claim("base.IconsConflict", "icons/conflict.png", "", "", "foo")+"], []]}\n");
     compiled(m, "hello");
     var auto= "foo_bar."+fapp("hello", "hello.FooBar", "base.IconsConflict");
     assertEquals(List.of(".fearless_out", "_hello", "foo_bar.fapp010", auto, "hello.fearless"), top(hello));
@@ -1370,7 +1387,7 @@ final class ManagerTest{
     compiled(m, "hello");
     var accepted= project(m, hello).claims();
     var before= top(hello);
-    var main= "[\"_hello/_rank_app.fear\", ["+bar+"], []]";
+    var main= "[\"_hello/_rank_app.fear\", ["+bar+"], [], []]";
     for (var c : List.of(
       Map.entry("{\"hello.Foo'\": "+main+"}\n", "Main \"hello.Foo'\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
       Map.entry("{\"hello.Foo_bar\": "+main+"}\n", "Main \"hello.Foo_bar\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),

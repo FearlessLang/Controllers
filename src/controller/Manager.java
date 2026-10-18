@@ -70,7 +70,7 @@ public final class Manager{
     Optional<Map<String,String>> mains(Path folder);
     Path stdLibBase();
     Path baseCache();
-    void associate(List<Icon> captured, Function<String,String> claimedBy);
+    void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy);
     List<String> others();
     void connect(Path eclipse, Path managerDir);
   }
@@ -201,15 +201,17 @@ public final class Manager{
   private boolean allowed(Project.Claimant c){ return !Registry.isSystem(c.claim().extension()) || registry.extensions().contains(c.claim().extension()); }
   private void associate(List<String> extensions){
     if (taken){ return; }
-    Project.claimed(projects()).values().stream().flatMap(List::stream).filter(c -> !Files.isRegularFile(c.icon(".png")))
+    Stream.concat(Project.claimed(projects()).values().stream().flatMap(List::stream), preloads()).filter(c -> !Files.isRegularFile(c.icon(".png")))
       .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(this::iconGone);
     var claimed= Project.claimed(projects());
     var next= captured(claimed, extensions);
-    List<?> known= List.of(next, next.stream().map(i -> Fs.lastModified(i.png())).toList());
+    var preloads= preloads().toList();
+    List<?> known= List.of(next, preloads, Stream.concat(next.stream().map(Icon::png), preloads.stream().map(c -> c.icon(".png"))).map(Fs::lastModified).toList());
     if (wanted.equals(known)){ return; }
-    tools.associate(next, e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of())));
+    tools.associate(next, preloads, e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of())));
     wanted = known;
   }
+  private Stream<Project.Claimant> preloads(){ return projects().stream().flatMap(p -> Project.preloads(p.folder(), p.alias(), p.claims())); }
   private void iconGone(Project.Claimant c){
     live.get(c.folder()).claims = Project.noClaims;
     output(c.folder(), Report.iconGone(c.icon(".png")));
@@ -395,7 +397,7 @@ public final class Manager{
   private MainsInfo accepted(Path f){
     var read= read(f);
     try{
-      var icons= ClaimIcons.read(tools.stdLibBase(), Project.claimants(f, alias(f), read));
+      var icons= ClaimIcons.read(tools.stdLibBase(), Stream.concat(Project.claimants(f, alias(f), read), Project.preloads(f, alias(f), read)));
       var others= live.entrySet().stream().filter(e -> !e.getKey().equals(f)).map(e -> e.getValue().claims);
       var filled= Project.filled(read, live.get(f).claims, alias(f), others);
       Project.shortcuts(Project.claimants(f, alias(f), filled));
@@ -436,7 +438,7 @@ public final class Manager{
     catch (IOException e){ output(f, Report.notWritten(file.getFileName().toString(), e)); }
   }
   private void unclaimedIcons(Path f, MainsInfo claims){
-    var kept= Project.claimants(f, alias(f), claims).flatMap(c -> Stream.of(c.icon(".png"), c.icon(Fs.isWindows() ? ".ico" : ".png"))).toList();
+    var kept= Stream.concat(Project.claimants(f, alias(f), claims), Project.preloads(f, alias(f), claims)).flatMap(c -> Stream.of(c.icon(".png"), c.icon(Fs.isWindows() ? ".ico" : ".png"))).toList();
     try (var s= Files.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p : s.filter(p -> !kept.contains(p)).toList()){ Files.delete(p); } }
     catch (NoSuchFileException e){}
     catch (IOException e){ output(f, Report.notWritten("icons", e)); }

@@ -17,7 +17,7 @@ import coordinator.MainsInfo.Main;
 
 final class AutoselectTest{
   private static Claim claim(String icon, String ext){ return new Claim(icon, "_hello/icons/x.png", "", "", ext); }
-  private static MainsInfo info(String main, List<Claim> shortcuts, List<Claim> openWiths){ return new MainsInfo(Map.of(main, new Main("_hello/bar.fear", shortcuts, openWiths))); }
+  private static MainsInfo info(String main, List<Claim> shortcuts, List<Claim> openWiths){ return new MainsInfo(Map.of(main, new Main("_hello/bar.fear", shortcuts, openWiths, List.of()))); }
   private static MainsInfo shortcut(String main, String icon, String ext){ return info(main, List.of(claim(icon, ext)), List.of()); }
   private static MainsInfo others(String... exts){ return info("other.Other", Stream.of(exts).map(e -> claim("other.IconsO", e)).toList(), List.of()); }
   static int start(String alias, String main, String icon){ return Math.floorMod((alias+"::"+main+"::"+icon).hashCode(), 1000); }
