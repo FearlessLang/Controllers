@@ -118,9 +118,32 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     use base.Consumer as Consumer;
     use base.Frame as Frame;
     use base.Color as Color;
+    use base.Block as Block;
+    use base.Void as Void;
+    use base.Var as Var;
+    use base.Pane as Pane;
+    use base.Slot as Slot;
+    use base.Slots as Slots;
+    use base.WidthNat as WidthNat;
+    use base.HeightNat as HeightNat;
+    use base.InputCursor as InputCursor;
+    use base.BadStrUnitRecover as BadStrUnitRecover;
 
     ByShortcut: Main, Shortcut[IconsApp] { sys -> sys.gui.run ShortcutFrame }
-    ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.run OpenWithFrame }
+    ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.run{f -> Block#
+      .let[mut Slot[mut Pane]] lines= {Slots#[mut Pane]}
+      .var[mut InputCursor] at= {sys.inputCursor}
+      .return{f
+        .title "OpenWith: drop more files here"
+        .resizable(WidthNat#600, HeightNat#400)
+        .modelFps(10, {:: .action{ShowFiles#(at, lines!)}})
+        .content{::
+          .background (Color.rubberDuck)
+          .vertical .chunk 1000 .heightGap 0
+          .save lines
+          }
+        }
+      }}
     ShortcutFrame: Consumer[mut Frame]{::
       .title "Shortcut"
       .content{::
@@ -128,13 +151,14 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
         .label{:: .text "Started from the shortcut file by_shortcut.fapp... in the project folder." }
         }
       }
-    OpenWithFrame: Consumer[mut Frame]{::
-      .title "OpenWith"
-      .content{::
-        .background (Color.rubberDuck)
-        .label{:: .text "Started by opening a file with the file icon." }
-        }
-      }
+    ShowFiles: {#(at: mut Var[mut InputCursor], lines: mut Pane): Void -> at.get#.match{
+      .empty -> Void;
+      .some file -> Block#
+        .do{(file.readStrUtf8 NoCr).split("" | "").flow.for{l -> Block#(lines.label{:: .text l .topInset 0 .bottomInset 0}, Void)}}
+        .do{at.set(at.get.next)}
+        .return{this#(at, lines)}
+      }}
+    NoCr: BadStrUnitRecover{reason, byteOffset, byteLength, rejectedValue -> (rejectedValue == 13).if{.then -> ""; .else -> "?"}}
     """;
   private static final class Page extends WizardPage{
     private Text folder;

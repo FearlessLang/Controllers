@@ -44,8 +44,8 @@ public final class Deployed implements Manager.Tools{
       "-m", "Controller/controller.ChildMain",
       folder.toString()), out);
   }
-  @Override public ChildJvm run(Path folder, String main, Consumer<String> out){
-    return Coordinator.startMain(folder, stdLib("base"), main, coordinator(folder).sharedClasspath(), out);
+  @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Consumer<String> out){
+    return Coordinator.startMain(folder, stdLib("base"), main, input, coordinator(folder).sharedClasspath(), out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Path baseCache(){ return stdLib("baseCache"); }

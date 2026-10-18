@@ -151,7 +151,7 @@ public final class Window implements Manager.View{
   @Override public void refuse(String text){ SwingUtilities.invokeLater(() -> { showNow(); say(text); }); }
   @Override public void tell(String text){ refuse(text); }
   private void say(String text){ JOptionPane.showMessageDialog(frame, text, "Fearless", JOptionPane.PLAIN_MESSAGE); }
-  @Override public void choose(List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(choices)); }
+  @Override public void choose(Path file, List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(file, choices)); }
   @Override public void allow(String question, String content){
     SwingUtilities.invokeLater(() -> { if (JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ commit(content); } });
   }
@@ -170,10 +170,10 @@ public final class Window implements Manager.View{
     Main.command("EditMetadata", Main.path(file));
     return file;
   }
-  private void chooser(List<Project.Claimant> choices){
+  private void chooser(Path file, List<Project.Claimant> choices){
     var list= choices(choices);
     var dialog= new JDialog(frame, "Open with", false);
-    Runnable pick= () -> pick(dialog, list);
+    Runnable pick= () -> pick(dialog, list, file);
     var run= small("Run", pick);
     doubleClicked(list, pick);
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -187,10 +187,10 @@ public final class Window implements Manager.View{
     dialog.setVisible(true);
     list.requestFocusInWindow();
   }
-  private static void pick(JDialog dialog, JList<Project.Claimant> list){
+  private static void pick(JDialog dialog, JList<Project.Claimant> list, Path file){
     if (list.isSelectionEmpty()){ return; }
     dialog.dispose();
-    Main.command("Run", list.getSelectedValue().alias(), list.getSelectedValue().main());
+    Main.command("OpenWithOrShortcut", Main.path(file), list.getSelectedValue().alias(), list.getSelectedValue().main());
   }
   static JList<Project.Claimant> choices(List<Project.Claimant> choices){
     var icons= choices.stream().map(c -> new ImageIcon(Icons.of(c, 32))).toList();

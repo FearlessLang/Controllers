@@ -86,7 +86,7 @@ final class ManagerTest{
         .filter(c -> !c.icon().startsWith("base.")).map(c -> folder.resolve(c.diskPath())).filter(p -> !Files.exists(p)).forEach(p -> image(p, 64, 64, "png"));
       return jvm(out, "compiled", "0", "0");
     }
-    @Override public ChildJvm run(Path folder, String main, Consumer<String> out){ return jvm(out, "ran "+main, "0", main.endsWith("Slow") ? "60000" : "0"); }
+    @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Consumer<String> out){ return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse(""), "0", main.endsWith("Slow") ? "60000" : "0"); }
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     @Override public Path baseCache(){ return classes.resolve("baseCache"); }
@@ -124,7 +124,7 @@ final class ManagerTest{
     @Override public void refuse(String text){ shown += 1; refused.add(text); }
     @Override public void tell(String text){ shown += 1; told.add(text); }
     @Override public boolean visible(){ return visible; }
-    @Override public void choose(List<Project.Claimant> cs){ choices.add(cs.stream().map(Project.Claimant::label).toList()); }
+    @Override public void choose(Path file, List<Project.Claimant> cs){ choices.add(Stream.concat(Stream.of(file.getFileName().toString()), cs.stream().map(Project.Claimant::label)).toList()); }
     @Override public void allow(String question, String content){ asked.add(question); offered.add(content); }
     @Override public void edited(Path file){ edited.add(file); }
     @Override public void taken(List<String> programs){ taken.add(programs); }
@@ -1422,7 +1422,8 @@ final class ManagerTest{
     Fs.writeUtf8(res, "text\n");
     return res;
   }
-  private static String running(String main){ return "--- running "+main+" ---\nran "+main+"\n--- "+main+" exited with 0 after [###]s ---\n"; }
+  private static String running(String main){ return running(main, ""); }
+  private static String running(String main, String on){ return "--- running "+main+" ---\nran "+main+on+"\n--- "+main+" exited with 0 after [###]s ---\n"; }
   private static void open(Manager m, Path file){ send(m, "OpenWithOrShortcut", TaggedText.of(file.toString())); }
   @Test void aFileWhoseExtensionOneMainClaimsRunsThatMainAndOneNotCompiledIsRefused(@TempDir Path dir){
     var m= opening(dir);
@@ -1434,7 +1435,7 @@ final class ManagerTest{
     send(m, "Show", "other");
     open(m, doc(dir, "a.foo"));
     idle(m);
-    same(running("hello.Hello"), view.out(hello));
+    same(running("hello.Hello", " on a.foo"), view.out(hello));
     assertEquals(Optional.of(hello), m.state().selected());
     touch(hello);
     open(m, doc(dir, "b.fapp001"));
@@ -1452,10 +1453,24 @@ final class ManagerTest{
     compiled(m, "other", "hello");
     var shown= view.shown;
     open(m, doc(dir, "a.foo"));
-    assertEquals(List.of(List.of("hello::hello.Hello", "other::other.Hello")), view.choices);
+    assertEquals(List.of(List.of("a.foo", "hello::hello.Hello", "other::other.Hello")), view.choices);
     assertEquals(shown+1, view.shown);
     idle(m);
     assertEquals(List.of(other, hello), view.cleared);
+    send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "other", "other.Hello");
+    idle(m);
+    same(running("other.Hello", " on a.foo"), view.out(other));
+    assertEquals(Optional.of(other), m.state().selected());
+    send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "hello", "hello.Other");
+    same("""
+      The manager was asked to open
+      [###]a.foo
+      with "hello.Other" of "hello", but that main does not open files with the extension "foo".
+      The mains opening them are:
+        hello::hello.Hello
+        other::other.Hello""", view.refused.getLast());
+    send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "hello");
+    same("[###]\"OpenWithOrShortcut\"[###]", view.refused.getLast());
   }
   @Test void anExtensionMatchesInAnyCaseAsTheDesktopMatchesIt(@TempDir Path dir){
     var m= opening(dir);
@@ -1465,7 +1480,7 @@ final class ManagerTest{
     compiled(m, "hello");
     open(m, doc(dir, "Report.Old.FOO"));
     idle(m);
-    same(running("hello.Hello"), view.out(hello));
+    same(running("hello.Hello", " on Report.Old.FOO"), view.out(hello));
   }
   @Test void aFileOpenedWhileItsMainRunsIsRefused(@TempDir Path dir){
     var m= opening(dir);
