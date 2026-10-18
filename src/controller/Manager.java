@@ -59,14 +59,14 @@ public final class Manager{
     void refuse(String text);
     void tell(String text);
     boolean visible();
-    void choose(List<Project.Claimant> choices);
+    void choose(Path file, List<Project.Claimant> choices);
     void allow(String question, String content);
     void edited(Path file);
     void taken(List<String> programs);
   }
   public interface Tools{
     ChildJvm compile(Path folder, Consumer<String> out);
-    ChildJvm run(Path folder, String main, Consumer<String> out);
+    ChildJvm run(Path folder, String main, Optional<Path> input, Consumer<String> out);
     Optional<Map<String,String>> mains(Path folder);
     Path stdLibBase();
     Path baseCache();
@@ -95,6 +95,7 @@ public final class Manager{
     ChildJvm child;
     boolean terminated;
     List<String> todo= List.of();
+    Optional<Path> input= Optional.empty();
     Optional<Follow> follow= Optional.empty();
   }
   private static final String conflict= "base.IconsConflict";
@@ -104,6 +105,7 @@ public final class Manager{
     res.put("Show", List.of(0, 1));
     Stream.of("Quit", "Reset").forEach(v -> res.put(v, List.of(0)));
     Stream.of("Register", "ConnectEclipse", "EditMetadata", "OpenWithOrShortcut", "Check", "Terminate", "DeleteCache", "Forget").forEach(v -> res.put(v, List.of(1)));
+    res.put("OpenWithOrShortcut", List.of(1, 3));
     res.put("Run", List.of(1, 2, 3));
     res.put("Compile", List.of(1, 2));
     res.put("Kind", List.of(2));
@@ -246,7 +248,7 @@ public final class Manager{
       case "Register" -> register(path(verb, args.getFirst()));
       case "ConnectEclipse" -> connect(path(verb, args.getFirst()));
       case "EditMetadata" -> editMetadata(path(verb, args.getFirst()));
-      case "OpenWithOrShortcut" -> openWith(path(verb, args.getFirst()));
+      case "OpenWithOrShortcut" -> openWith(path(verb, args.getFirst()), args.subList(1, args.size()));
       default -> project(verb, args);
     }
   }
@@ -262,7 +264,7 @@ public final class Manager{
     scan(f);
     switch (verb){
       case "Show" -> { selected = Optional.of(f); view.show(); }
-      case "Run" -> followed(args.size() > 2 ? args.get(2) : "", fl -> run(f, args.size() > 1 ? args.get(1) : "", fl));
+      case "Run" -> followed(args.size() > 2 ? args.get(2) : "", fl -> run(f, args.size() > 1 ? args.get(1) : "", fl, Optional.empty()));
       case "Compile" -> followed(args.size() > 1 ? args.get(1) : "", fl -> compile(f, fl));
       case "Check" -> check(f);
       case "Terminate" -> terminate(f);
@@ -288,7 +290,7 @@ public final class Manager{
     if (p.kind() != Kind.code){ throw new Refused(Report.notCode(verb, p.alias(), p.kind().text)); }
     p.problem().ifPresent(why -> { throw new Refused(Report.invalidContent(verb, p.alias(), why)); });
   }
-  private void run(Path f, String named, Optional<Follow> follow){
+  private void run(Path f, String named, Optional<Follow> follow, Optional<Path> input){
     runnable(f, "Run");
     var p= project(f);
     if (p.needsCompiling()){ throw new Refused(Report.notCompiled(p.alias(), p.state().text)); }
@@ -302,6 +304,7 @@ public final class Manager{
     var l= live.get(f);
     l.terminated = false;
     l.todo = mains;
+    l.input = input;
     l.follow = follow;
     view.clear(f);
     next(f);
@@ -331,7 +334,7 @@ public final class Manager{
     var main= l.todo.getFirst();
     l.todo = l.todo.subList(1, l.todo.size());
     output(f, "--- running "+main+" ---\n");
-    start(f, main, () -> tools.run(f, main, out(f)));
+    start(f, main, () -> tools.run(f, main, l.input, out(f)));
   }
   private void ended(Path f){
     var l= live.get(f);
@@ -547,7 +550,7 @@ public final class Manager{
     registry.all().forEach(e -> scan(e.path()));
     view.edited(file);
   }
-  private void openWith(Path file){
+  private void openWith(Path file, List<String> chosen){
     if (!Files.isRegularFile(file)){ throw new Refused(Report.openNoFile(file)); }
     if (Fs.of(() -> Files.size(file)) == 0){ throw new Refused(Report.emptyFile(file)); }
     var name= file.getFileName().toString();
@@ -555,9 +558,12 @@ public final class Manager{
     var ext= dot < 0 ? "" : name.substring(dot+1).toLowerCase(Locale.ROOT);
     var cs= Project.claimed(projects()).getOrDefault(ext, List.of());
     if (cs.isEmpty()){ throw new Refused(Report.noMainOpens(file, ext)); }
-    if (cs.size() == 1){ project("Run", List.of(cs.getFirst().alias(), cs.getFirst().main())); return; }
-    view.show();
-    view.choose(cs);
+    var picked= chosen.isEmpty() ? cs : cs.stream().filter(c -> c.label().equals(chosen.get(0)+"::"+chosen.get(1))).toList();
+    if (picked.isEmpty()){ throw new Refused(Report.notOpening(file, chosen.get(0), chosen.get(1), ext, cs.stream().map(Project.Claimant::label).toList())); }
+    if (picked.size() > 1){ view.show(); view.choose(file, cs); return; }
+    var c= picked.getFirst();
+    scan(c.folder());
+    run(c.folder(), c.main(), Optional.empty(), Optional.of(file));
   }
   private void drop(Path f){
     var l= live.remove(f);

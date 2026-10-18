@@ -195,6 +195,7 @@ public final class Report{
   public static String openNoFile(Path file){ return "The manager was asked to open\n"+path(file.toString())+"\nbut that path names no file."; }
   public static String emptyFile(Path file){ return "The manager was asked to open\n"+path(file.toString())+"\nbut that file is empty: no main runs on an empty file."; }
   public static String noMainOpens(Path file, String ext){ return "The manager was asked to open\n"+path(file.toString())+"\nbut no main opens files with the extension "+disp(ext)+"."; }
+  public static String notOpening(Path file, String name, String main, String ext, List<String> opening){ return "The manager was asked to open\n"+path(file.toString())+"\nwith "+disp(main)+" of "+disp(name)+", but that main does not open files with the extension "+disp(ext)+"."+Join.of(opening.stream().map(m -> "\n  "+m), "\nThe mains opening them are:", "", ""); }
 
   //-- the claims of the mains of a project
   public static UserError noFreeExtension(String main, boolean shortcut, String icon){
