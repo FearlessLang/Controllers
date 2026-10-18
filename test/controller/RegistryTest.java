@@ -28,7 +28,7 @@ final class RegistryTest{
   private static final String root= Path.of("").toAbsolutePath().getRoot().toString().replace('\\', '/');
   private static Content content(String text){ return Registry.parse(text, file, Registry::real, Path.of(root+"manager")); }
   private static List<Entry> parse(String projects){ return content("{\"projects\":"+projects+",\"systemExtensions\":[]}").projects(); }
-  private static Registry registry(Path dir){ return new Registry(folder(dir, "manager")); }
+  private static Registry registry(Path dir){ return new Registry(folder(dir, "manager"), _ -> {}); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -242,8 +242,24 @@ final class RegistryTest{
   @Test void aTypeNameIsInReadsOrInEditsNotInBoth(){
     err("""
       [###]"edits":{"pub":["Data2","Data1"]}[###]
-      [###]"Data1" is in both "reads"."pub" and "edits"."pub": a type name in "edits" also reads, so it is not repeated in "reads"; a type name in "reads" only reads.[###]""",
+      [###]"Data1" is in both "reads"."pub" and "edits"."pub": a type name is in one link only, since the code reaches one data project through it; a type name in "edits" also reads.[###]""",
       () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"]},\"edits\":{\"pub\":[\"Data2\",\"Data1\"]}}}"));
+  }
+  @Test void aTypeNameNamesOneDataProject(){
+    err("""
+      [###]"reads":{"pub":["Data1"],"notes":["Data1"]}[###]
+      [###]"Data1" is in both "reads"."pub" and "reads"."notes": a type name is in one link only[###]""",
+      () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"],\"notes\":[\"Data1\"]}}}"));
+    err("[###]\"Data1\" is in both \"reads\".\"pub\" and \"edits\".\"notes\"[###]",
+      () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"]},\"edits\":{\"notes\":[\"Data1\"]}}}"));
+  }
+  @Test void aCodeProjectIsGrantedTheFoldersOfTheDataProjectsItsLinksAccept(){
+    var pub= link("pub", Path.of(root+"pub"), Kind.dataReadOnly, Map.of(), Map.of());
+    var notes= link("notes", Path.of(root+"notes"), Kind.dataReadWrite, Map.of(), Map.of());
+    var code= link("code", Path.of(root+"code"), Kind.code, Map.of("pub", List.of("Pub"), "notes", List.of("Old"), "gone", List.of("Gone")), Map.of("notes", List.of("Notes", "Diary"), "pub", List.of("Pub2")));
+    var grants= Registry.grants(new Content(List.of(pub, notes, code), List.of()), code);
+    assertEquals(Map.of("Pub", pub.path(), "Old", notes.path()), grants.reads());
+    assertEquals(Map.of("Notes", notes.path(), "Diary", notes.path()), grants.edits());
   }
   @Test void aLinkNamesAType(){
     err("[###]\"reads\".\"pub\" names no type: a link names the one or more type names the code uses for \"pub\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[]}}}"));

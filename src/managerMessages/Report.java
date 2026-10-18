@@ -74,6 +74,7 @@ public final class Report{
     return "\""+field+"\" refers to \""+name+"\", but the kind of \""+name+"\" is \""+kind+"\"; \""+field+"\" accepts only "+needed+".";
   }
   public static String linkInvalid(String field, String name, String why){ return "\""+field+"\" refers to \""+name+"\", which is itself invalid:\n"+why; }
+  public static String grantsWhileRunning(String name, String job){ return "The manager refused a change of the data projects that "+disp(name)+" reads or writes: "+disp(name)+" runs "+disp(job)+", and the data projects of a main stay the same while it runs. Terminate it first."; }
 
   //-- registering a folder
   public static String registerNothing(Path path){ return "The manager was asked to register\n"+path(path.toString())+"\nbut nothing exists there: register an existing folder, or a file inside one."; }
@@ -165,7 +166,7 @@ public final class Report{
   public static String infoOverlap(String name, String other){ return "\""+name+"\" has the same path as \""+other+"\", or one is inside the other; every file belongs to exactly one project."; }
   public static String infoProjectNotObject(String name){ return "The metadata of \""+name+"\" must be an object {...}."; }
   public static String infoUnknownAttribute(String key, List<String> keys){ return "Unknown project attribute \""+key+"\": the attributes of a project are "+quoted(keys)+"."; }
-  public static String infoReadAndEdit(String type, String name){ return "\""+type+"\" is in both \"reads\".\""+name+"\" and \"edits\".\""+name+"\": a type name in \"edits\" also reads, so it is not repeated in \"reads\"; a type name in \"reads\" only reads."; }
+  public static String infoTypeTwice(String type, String first, String second){ return "\""+type+"\" is in both "+first+" and "+second+": a type name is in one link only, since the code reaches one data project through it; a type name in \"edits\" also reads."; }
   public static String infoMissingPath(String name){ return "Project \""+name+"\" is missing its \"path\": the absolute path of the project folder."; }
   public static String infoEmptyPath(){ return "\"path\" cannot be empty: it is the absolute path of the project folder."; }
   public static String infoNotAPath(String why){ return "\"path\" is not a path this system accepts: "+why; }
