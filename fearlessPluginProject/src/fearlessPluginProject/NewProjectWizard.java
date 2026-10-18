@@ -97,9 +97,8 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     use base.Color as Color;
     use base.Debug as Debug;
 
-    Window: Main { sys -> sys.gui.run HelloFrame }
+    Window: Main { sys -> sys.gui.name "Hello Fearless" .run HelloFrame }
     HelloFrame: Consumer[mut Frame]{::
-      .title "Hello Fearless"
       .content{::
         .background (Color.ghostWhite)
         .label{:: .text "Hello from a Fearless window" }
@@ -129,13 +128,13 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     use base.InputCursor as InputCursor;
     use base.BadStrUnitRecover as BadStrUnitRecover;
 
-    ByShortcut: Main, Shortcut[IconsApp] { sys -> sys.gui.run ShortcutFrame }
-    ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.run{f -> Block#
+    ByShortcut: Main, Shortcut[IconsApp] { sys -> sys.gui.name "Shortcut" .run ShortcutFrame }
+    ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.name "OpenWith" .icon IconsFile .run{f -> Block#
       .let[mut Slot[mut Pane]] lines= {Slots#[mut Pane]}
       .var[mut InputCursor] at= {sys.inputCursor}
       .return{f
-        .title "OpenWith: drop more files here"
-        .resizable(WidthNat#600, HeightNat#400)
+        .title "drop more files here"
+        .virtualPixelSpace(WidthNat#600, HeightNat#400)
         .modelFps(10, {:: .action{ShowFiles#(at, lines!)}})
         .content{::
           .background (Color.rubberDuck)
@@ -145,7 +144,6 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
         }
       }}
     ShortcutFrame: Consumer[mut Frame]{::
-      .title "Shortcut"
       .content{::
         .background (Color.ghostWhite)
         .label{:: .text "Started from the shortcut file by_shortcut.fapp... in the project folder." }
