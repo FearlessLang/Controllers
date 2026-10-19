@@ -66,7 +66,7 @@ public final class Manager{
   }
   public interface Tools{
     ChildJvm compile(Path folder, Consumer<String> out);
-    ChildJvm run(Path folder, String main, Optional<Path> input, Consumer<String> out);
+    ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, Consumer<String> out);
     Optional<Map<String,String>> mains(Path folder);
     Path stdLibBase();
     Path baseCache();
@@ -96,6 +96,7 @@ public final class Manager{
     boolean terminated;
     List<String> todo= List.of();
     Optional<Path> input= Optional.empty();
+    Registry.Grants grants;
     Optional<Follow> follow= Optional.empty();
   }
   private static final String conflict= "base.IconsConflict";
@@ -129,7 +130,7 @@ public final class Manager{
     this.tools= tools;
     this.view= view;
     this.exit= exit;
-    registry= new Registry(dir);
+    registry= new Registry(dir, this::granted);
     post(this::load);
   }
   public State state(){ return state; }
@@ -305,6 +306,7 @@ public final class Manager{
     l.terminated = false;
     l.todo = mains;
     l.input = input;
+    l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow());
     l.follow = follow;
     view.clear(f);
     next(f);
@@ -334,7 +336,7 @@ public final class Manager{
     var main= l.todo.getFirst();
     l.todo = l.todo.subList(1, l.todo.size());
     output(f, "--- running "+main+" ---\n");
-    start(f, main, () -> tools.run(f, main, l.input, out(f)));
+    start(f, main, () -> tools.run(f, main, l.input, l.grants, out(f)));
   }
   private void ended(Path f){
     var l= live.get(f);
@@ -475,8 +477,8 @@ public final class Manager{
   }
   private void forget(Path f){
     idle(f, "Forget");
-    drop(f);
     registry.remove(f);
+    drop(f);
   }
   private void link(Path f, String text){
     var e= registry.of(f).orElseThrow();
@@ -541,8 +543,8 @@ public final class Manager{
       catch (UserError e){ throw new Refused(e.getMessage()); }
     }
     var old= registry.content();
-    live.keySet().stream().filter(f -> next.projects().stream().noneMatch(e -> e.path().equals(f))).toList().forEach(this::drop);
     registry.replace(next);
+    live.keySet().stream().filter(f -> registry.of(f).isEmpty()).toList().forEach(this::drop);
     registry.all().stream().filter(e -> !live.containsKey(e.path())).forEach(this::open);
     var dropped= old.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();
     old.projects().stream().filter(o -> registry.of(o.path()).filter(e -> e.kind() != o.kind()).isPresent()).forEach(o -> claim(o.path()));
@@ -595,6 +597,14 @@ public final class Manager{
     if (all.isEmpty()){ return; }
     turn += 1;
     scan(all.get(turn % all.size()).path());
+  }
+  private void granted(Content next){
+    for (var e : live.entrySet()){
+      var job= e.getValue().job;
+      if (job.isEmpty() || job.equals(Project.compiling)){ continue; }
+      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey()))).filter(p -> !Registry.grants(next, p).equals(e.getValue().grants));
+      changed.ifPresent(p -> { throw new Refused(Report.grantsWhileRunning(p.alias(), job)); });
+    }
   }
   private Project project(Entry e){
     var l= live.get(e.path());

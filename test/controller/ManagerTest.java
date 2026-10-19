@@ -77,7 +77,7 @@ final class ManagerTest{
     Fs.runTool("javac", List.of("-d", classes.toString(), src.toString()));
     FactsTest.baseCache(classes);
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked, List<String> others, List<Path> connected) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, Map<String,List<String>> held, List<String> locked, List<String> others, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       if (infos.getOrDefault(folder.getFileName().toString(), "").equals("fail")){ return jvm(out, "broken source", "1", "0"); }
@@ -86,7 +86,7 @@ final class ManagerTest{
         .filter(c -> !c.icon().startsWith("base.")).map(c -> folder.resolve(c.diskPath())).filter(p -> !Files.exists(p)).forEach(p -> image(p, 64, 64, "png"));
       return jvm(out, "compiled", "0", "0");
     }
-    @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Consumer<String> out){ return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse(""), "0", main.endsWith("Slow") ? "60000" : "0"); }
+    @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, Consumer<String> out){ granted.add(grants); return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse(""), "0", main.endsWith("Slow") ? "60000" : "0"); }
     @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     @Override public Path baseCache(){ return classes.resolve("baseCache"); }
@@ -139,6 +139,7 @@ final class ManagerTest{
   private final List<String> locked= new ArrayList<>();
   private final List<String> others= new ArrayList<>();
   private final List<Path> connected= new ArrayList<>();
+  private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
   @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); }
   private Manager manager(Path dir, String... mains){
     var map= new LinkedHashMap<String,String>();
@@ -153,7 +154,7 @@ final class ManagerTest{
       @Override public void fail(Throwable problem){ failures.add(problem); }
     };
     Fs.ensureDir(dir.resolve("manager"));
-    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, held, locked, others, connected), view, exit);
+    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, held, locked, others, connected, granted), view, exit);
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -559,6 +560,34 @@ final class ManagerTest{
     send(m, "Link", "hello", "data write");
     assertEquals(List.of(Map.of(), Map.of()), List.of(project(m, hello).entry().reads(), project(m, hello).entry().edits()));
     assertEquals(Project.State.codeNoCache, project(m, hello).state());
+  }
+  @Test void aRunningMainKeepsTheDataProjectsOfItsLinksUntilItEnds(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "data:readWrite");
+    send(m, "Link", "hello", "data write Notes Diary");
+    send(m, "Link", "hello", "data read Pub");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    var folder= project(m, data).folder();
+    assertEquals(List.of(new Registry.Grants(Map.of("Pub", folder), Map.of("Notes", folder, "Diary", folder))), granted);
+    var before= info(dir);
+    send(m, "Link", "hello", "data read Old");
+    send(m, "Kind", "data", "idle");
+    send(m, "Forget", "data");
+    edit(m, dir, before.replace("\"Diary\"", "\"Journal\""));
+    assertEquals(before, info(dir));
+    assertEquals(Collections.nCopies(4, "The manager refused a change of the data projects that \"hello\" reads or writes: \"hello\" runs \"hello.Slow\", and the data projects of a main stay the same while it runs. Terminate it first."), view.refused);
+    send(m, "Link", "hello", "data write Notes Diary");
+    send(m, "Check", "data");
+    assertEquals(4, view.refused.size());
+    send(m, "Terminate", "hello");
+    idle(m);
+    send(m, "Link", "hello", "data read Old");
+    assertEquals(Map.of("data", List.of("Old")), project(m, hello).entry().reads());
   }
   @Test void theMetadataIsEditedWholeOrNotAtAll(@TempDir Path dir){
     var m= manager(dir);
