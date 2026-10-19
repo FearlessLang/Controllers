@@ -12,7 +12,6 @@ import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -206,17 +205,16 @@ final class FactsTest{
     same("[###]Path: \"_hello/_rank_app.fear\"\n\nThis file is dated 19[###]", facts(project, "someproject", Kind.code).problem().orElseThrow());
   }
   @Test void anUnreadableFolderIsAProblemNotACrash(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isLinux());
     var project= project(dir, "someProject");
     var hidden= project.resolve("_hello");
-    Fs.ofV(() -> Files.setPosixFilePermissions(hidden, PosixFilePermissions.fromString("---------")));
+    Disk.noRead(hidden);
     Assumptions.assumeFalse(Files.isReadable(hidden));
     same("""
       The folder of this project can not be read:
       [###]someProject
       access denied: [###]_hello
       Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
-    Fs.ofV(() -> Files.setPosixFilePermissions(hidden, PosixFilePermissions.fromString("rwxr-xr-x")));
+    Disk.allow(hidden);
   }
   @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
     var project= project(dir, "someProject");
