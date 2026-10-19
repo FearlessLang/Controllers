@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -53,15 +54,18 @@ public final class Registry{
   public record Content(List<Entry> projects, List<String> extensions){
     public Content{ projects = List.copyOf(projects); extensions = List.copyOf(extensions); }
   }
+  public record Grants(Map<String,Path> reads, Map<String,Path> edits){}
   private static final List<String> keys= List.of("path", "kind", "mains", "reads", "edits");
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
   private static final String typeShape= "a Fearless type name: after any leading underscores, it starts with an uppercase letter";
   public static final String systemShape= "a system extension: 1 to "+Fs.maxExtSeg+" lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\"";
   private final Path dir;
+  private final Consumer<Content> check;
   private Content content= new Content(List.of(), List.of());
-  public Registry(Path dir){
+  public Registry(Path dir, Consumer<Content> check){
     this.dir= dir;
+    this.check= check;
     if (!Files.exists(infoFile())){ save(content); return; }
     var text= StringFiles.read(infoFile(), UserError.onFileError());
     content = parse(text, infoFile(), Registry::real, dir);
@@ -102,6 +106,15 @@ public final class Registry{
     save(next);
   }
   public void replace(Content next){ save(next); }
+  public static Grants grants(Content c, Entry e){ return new Grants(granted(c, e.reads(), Kind::isData), granted(c, e.edits(), k -> k == Kind.dataReadWrite)); }
+  private static Map<String,Path> granted(Content c, Map<String,List<String>> links, Predicate<Kind> ok){
+    var res= new LinkedHashMap<String,Path>();
+    for (var link : links.entrySet()){
+      var target= OneOr.opt("project "+link.getKey(), c.projects().stream().filter(t -> t.alias().equals(link.getKey()))).filter(t -> ok.test(t.kind()));
+      target.ifPresent(t -> link.getValue().forEach(type -> res.put(type, t.path())));
+    }
+    return Collections.unmodifiableMap(res);
+  }
   public static String text(Content c){ return Info.print(toInfo(c)); }
   public String text(){ return text(content); }
   /// Why the links of a code project are broken, if they are; invalid says why a project is invalid.
@@ -122,6 +135,7 @@ public final class Registry{
     return Optional.empty();
   }
   private void save(Content c){
+    check.accept(c);
     var text= text(c);
     assert parse(text, infoFile(), p -> p, dir).equals(c);
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
@@ -163,12 +177,18 @@ public final class Registry{
     var mains= obj.field("mains").map(f -> names(source, f.value(), "\"mains\"", Registry::isMainName, mainShape)).orElse(List.of());
     var reads= aliasMap(source, obj, "reads");
     var edits= aliasMap(source, obj, "edits");
-    for (var link : edits.entrySet()){
-      var both= link.getValue().stream().filter(reads.getOrDefault(link.getKey(), List.of())::contains).findFirst();
-      if (both.isEmpty()){ continue; }
-      var names= (Info.Lst)((Obj)obj.field("edits").orElseThrow().value()).field(link.getKey()).orElseThrow().value();
-      var span= OneOr.of("type name "+both.get(), names.items().stream().filter(i -> ((Info.Str)i).value().equals(both.get()))).span();
-      throw Info.err(source, span, Report.infoReadAndEdit(both.get(), link.getKey()));
+    var seen= new LinkedHashMap<String,String>();
+    for (var key : List.of("reads", "edits")){
+      for (var link : (key.equals("reads") ? reads : edits).entrySet()){
+        for (var type : link.getValue()){
+          var label= "\""+key+"\".\""+link.getKey()+"\"";
+          var first= seen.putIfAbsent(type, label);
+          if (first == null){ continue; }
+          var names= (Info.Lst)((Obj)obj.field(key).orElseThrow().value()).field(link.getKey()).orElseThrow().value();
+          var span= OneOr.of("type name "+type, names.items().stream().filter(i -> ((Info.Str)i).value().equals(type))).span();
+          throw Info.err(source, span, Report.infoTypeTwice(type, first, label));
+        }
+      }
     }
     return new Entry(field.key(), identity.apply(pathOf(source, field.key(), obj)), kindOf(source, field.key(), obj), mains, reads, edits);
   }
