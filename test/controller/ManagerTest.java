@@ -241,7 +241,7 @@ final class ManagerTest{
     var odd= folder(dir, Fs.isWindows() ? "a\ud800b" : "a\nb");
     send(m, "Register", TaggedText.line(odd.toString()));
     assertEquals(List.of("a_b "+odd), listed(m));
-    same(Fs.isWindows() ? "[###]\"path\": \"Base16:[###]610000D86200\",[###]" : "[###]\"path\": \"UStr:[###]", info(dir));
+    same(Fs.isWindows() ? "[###]\"path\": \"Base16:[###]610000D86200\",[###]" : "[###]\"path\": \"Str:[###]/a\\nb\",[###]", info(dir));
     var again= manager(dir);
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
