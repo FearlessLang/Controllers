@@ -44,8 +44,7 @@ final class TaggedTextTest{
     assertEquals("abc", read("UStr:\"abc\".u"));
     assertEquals("abc", read("UStr:\"a\" + `b` + (\"c\")"));
     assertEquals("\u00e9x", read("UStr:\"\".u \"E9\"+\"x\".u"));
-    Assumptions.assumeTrue(Fs.isWindows());
-    assertEquals("ab", read("Base16:61006200"));
+    assertEquals("ab", read(Fs.isWindows() ? "Base16:61006200" : "Base16:6162"));
   }
   @Test void aTaggedTextIsAStringWithItsQuotesEscaped(){
     var s= new Info.Str(TaggedText.of("C:/caf\u00e9"), Info.noSpan);
@@ -72,7 +71,7 @@ final class TaggedTextTest{
   @Test void aMalformedBase16IsRejected(){
     err("\"Base16:4\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.", () -> read("Base16:4"));
     err("[###]each as 2 uppercase hex digits.", () -> read("Base16:4a00"));
-    Assumptions.assumeTrue(Fs.isWindows());
-    err("\"Base16:430000\" is malformed: a Windows name is 16 bit units, so its bytes are an even number.", () -> read("Base16:430000"));
+    if (Fs.isWindows()){ err("\"Base16:430000\" is malformed: a Windows name is 16 bit units, so its bytes are an even number.", () -> read("Base16:430000")); return; }
+    err("\"Base16:FF\" names a path this system can not give to Java: its bytes are not valid in "+System.getProperty("sun.jnu.encoding")+".", () -> read("Base16:FF"));
   }
 }

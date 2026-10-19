@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -237,12 +236,15 @@ final class ManagerTest{
     same("A Fearless process reported a failure the manager can not recover from:\n\nthe disk is gone", failures.getFirst().getMessage());
     failures.clear();
   }
-  @Test void aFolderNamedWithANewlineIsRegisteredByItsMessage(@TempDir Path dir){
-    Assumptions.assumeFalse(Fs.isWindows());
+  @Test void aFolderNamedWithANewlineOrNotUnicodeIsRegisteredByItsMessageAndRemembered(@TempDir Path dir){
     var m= manager(dir);
-    var odd= folder(dir, "a\nb");
+    var odd= folder(dir, Fs.isWindows() ? "a\ud800b" : "a\nb");
     send(m, "Register", TaggedText.line(odd.toString()));
     assertEquals(List.of("a_b "+odd), listed(m));
+    same(Fs.isWindows() ? "[###]\"path\": \"Base16:[###]610000D86200\",[###]" : "[###]\"path\": \"UStr:[###]", info(dir));
+    var again= manager(dir);
+    again.settle();
+    assertEquals(Kind.idle, project(again, odd).kind());
   }
   @Test void registeringAFolderMakesItAnIdleProjectNamedByItsMarker(@TempDir Path dir){
     var m= manager(dir);
@@ -481,12 +483,11 @@ final class ManagerTest{
     assertEquals(List.of("hello "+hello), listed(m));
   }
   @Test void aLinkToARegisteredFolderOnlySelectsItAndALinkIntoOneIsRefused(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     var other= registered(m, dir, "other");
-    var link= Fs.of(() -> Files.createSymbolicLink(dir.resolve("link"), hello));
-    var inner= Fs.of(() -> Files.createSymbolicLink(dir.resolve("inner"), folder(hello, "inner")));
+    var link= Disk.link(dir.resolve("link"), hello);
+    var inner= Disk.link(dir.resolve("inner"), folder(hello, "inner"));
     send(m, "Register", TaggedText.of(link.toString()));
     assertEquals(Optional.of(hello), m.state().selected());
     send(m, "Register", TaggedText.of(inner.toString()));
@@ -636,9 +637,7 @@ final class ManagerTest{
       assertEquals(valid ? Project.State.dataInvalid : Project.State.idle, project(m, data).state());
     }
   }
-  private static void mode(Path p, String mode){ Fs.ofV(() -> Files.setPosixFilePermissions(p, PosixFilePermissions.fromString(mode))); }
   @Test void foldersTheManagerCanNotReadOrChangeAreRefusedOrInvalidNeverFatal(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
     var closed= folder(dir, "closed");
     var readOnly= folder(dir, "readOnly");
@@ -647,11 +646,11 @@ final class ManagerTest{
     var hidden= folder(partly, "hidden");
     var cache= folder(cached, Facts.outDir);
     Fs.writeUtf8(cache.resolve("a.built"), "");
-    mode(closed, "---------");
+    Disk.noRead(closed);
     Assumptions.assumeFalse(Files.isReadable(closed));
-    mode(readOnly, "r-xr-xr-x");
-    mode(cache, "r-xr-xr-x");
-    mode(hidden, "---------");
+    Disk.noWrite(readOnly);
+    Disk.noWrite(cache);
+    Disk.noRead(hidden);
     send(m, "Register", TaggedText.of(closed.toString()));
     send(m, "Register", TaggedText.of(readOnly.toString()));
     send(m, "Register", TaggedText.of(cached.toString()));
@@ -674,17 +673,16 @@ final class ManagerTest{
     var again= manager(dir);
     again.settle();
     assertEquals(Project.State.dataInvalid, project(again, partly).state());
-    mode(cache, "rwxr-xr-x");
+    Disk.allow(cache);
     send(again, "Register", TaggedText.of(cached.toString()));
     send(again, "Kind", "data", "code");
     Fs.writeUtf8(cache.resolve("a.built"), "");
-    mode(cache, "r-xr-xr-x");
+    Disk.noWrite(cache);
     send(again, "DeleteCache", "data");
     same("--- the compiled cache is not deleted: access denied: [###]a.built ---\n", view.out(cached));
-    List.of(closed, readOnly, cache, hidden).forEach(p -> mode(p, "rwxr-xr-x"));
+    List.of(closed, readOnly, cache, hidden).forEach(Disk::allow);
   }
   @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
     var hello= code(m, dir, "hello");
     var managerDir= dir.resolve("manager");
@@ -692,12 +690,12 @@ final class ManagerTest{
     send(m, "Link", "hello", "data read lower");
     same("[###]\"lower\" in \"reads\".\"data\" is not a Fearless type name[###]", view.refused.getLast());
     assertEquals(before, info(dir));
-    mode(managerDir, "r-xr-xr-x");
+    Disk.noWrite(managerDir);
     Assumptions.assumeFalse(Files.isWritable(managerDir));
     send(m, "Link", "hello", "data read Data");
     send(m, "Kind", "hello", "idle");
     edit(m, dir, "{\"projects\": {}, \"systemExtensions\": []}");
-    mode(managerDir, "rwxr-xr-x");
+    Disk.allow(managerDir);
     assertEquals(3, failures.size());
     failures.forEach(f -> same("Fearless could not save the file \"projects.info\" of its manager folder.[###]", f.getMessage()));
     failures.clear();
@@ -705,14 +703,13 @@ final class ManagerTest{
     assertEquals(before, info(dir));
   }
   @Test void aMessageFileTheManagerCanNotReadIsFatal(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
     var msg= folder(dir.resolve("manager"), "messages").resolve("1.msg");
     Fs.writeUtf8(msg, "");
-    mode(msg, "---------");
+    Disk.noRead(msg);
     Assumptions.assumeFalse(Files.isReadable(msg));
     Errs.err("Fearless could not list its manager folder, or could not read or\nremove a message file in it.[###]1.msg[###]", m::drain);
-    mode(msg, "rw-r--r--");
+    Disk.allow(msg);
   }
   @Test void aRequestNamingNoProjectOrPathIsRefused(@TempDir Path dir){
     var m= manager(dir);
@@ -725,13 +722,12 @@ final class ManagerTest{
       "The manager was asked \"Register\", but its path is empty."), view.refused);
   }
   @Test void aRegisterWhosePathIsNotATaggedTextOrNotAPathIsRefused(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir);
     send(m, "Register", dir.toString());
     send(m, "Register", TaggedText.of("a\u0000b"));
-    assertEquals(List.of(
-      "The manager was asked \"Register\", but its path is not a tagged text: \""+dir+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
-      "The manager was asked \"Register\" on \"a\" [Null 0x00] \"b\", but that is not a path this system accepts: Nul character not allowed."), view.refused);
+    assertEquals(2, view.refused.size());
+    assertEquals("The manager was asked \"Register\", but its path is not a tagged text: \""+dir+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.", view.refused.get(0));
+    same("The manager was asked \"Register\" on \"a\" [Null 0x00] \"b\", but that is not a path this system accepts: "+(Fs.isWindows() ? "[###]" : "Nul character not allowed."), view.refused.get(1));
     assertEquals(List.of(), listed(m));
   }
   @Test void aProjectsInfoThatIsNotValidIsFatal(@TempDir Path dir){
@@ -810,17 +806,6 @@ final class ManagerTest{
     var again= manager(dir, "hello.Hello");
     again.settle();
     assertEquals(Project.State.codeCompiled, project(again, hello).state());
-  }
-  @Test void aWindowsFolderWhoseNameIsNotUnicodeIsRegisteredAndRememberedAsBase16(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isWindows());
-    var m= manager(dir, "hello.Hello");
-    var hello= folder(folder(dir, "a\ud800"), "hello");
-    send(m, "Register", TaggedText.line(hello.toString()));
-    assertEquals(List.of("hello "+hello), listed(m));
-    same("[###]\"path\": \"Base16:[###]0000D82F00680065006C006C006F00\",[###]", info(dir));
-    var again= manager(dir, "hello.Hello");
-    again.settle();
-    assertEquals(Kind.idle, project(again, hello).kind());
   }
   @Test void aFolderUnderAPathOutsideTheCharacterSetIsRegisteredRunAndRemembered(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -1365,16 +1350,15 @@ final class ManagerTest{
     assertEquals(List.of(), view.refused);
   }
   @Test void aShortcutFileTheManagerCanNotCreateIsToldAndTheCompileIsDone(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isLinux());
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     infos.put("hello", info("hello.Hello", claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010"), ""));
-    mode(hello, "r-xr-xr-x");
+    Disk.noWrite(hello);
     Assumptions.assumeFalse(Files.isWritable(hello));
     touch(hello);
     compiled(m, "hello");
-    mode(hello, "rwxr-xr-x");
+    Disk.allow(hello);
     assertEquals("--- compiling hello ---\ncompiled\n--- hello.fapp010 is not written: access denied: "+hello.resolve("hello.fapp010")+" ---\n--- compile done ---\n", view.out(hello));
     assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"), wanted(dir));
     assertEquals(Project.State.codeCompiled, project(m, hello).state());

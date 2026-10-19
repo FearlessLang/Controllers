@@ -7,13 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -103,9 +101,8 @@ final class RegistryTest{
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"parent\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"parent/child\",\"kind\":\"idle\"}}"));
   }
   @Test void aLinkNamesTheFolderItLinksTo(@TempDir Path dir){
-    Assumptions.assumeFalse(Fs.isWindows());
     var real= Registry.real(folder(dir, "real"));
-    var link= Fs.of(() -> Files.createSymbolicLink(dir.resolve("link"), real));
+    var link= Disk.link(dir.resolve("link"), real);
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+unix(real)+"\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}"));
     assertEquals(real, parse("{\"a\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}").getFirst().path());
   }
@@ -165,11 +162,10 @@ final class RegistryTest{
     registry(dir).add("spacey", project);
     assertEquals(project.toAbsolutePath().normalize(), registry(dir).all().getFirst().path());
   }
-  @Test void aFolderNamedWithABackslashOrANewlineSurvivesAReRead(@TempDir Path dir){
-    Assumptions.assumeFalse(Fs.isWindows());
+  @Test void aFolderNamedWithABackslashANewlineOrNotUnicodeSurvivesAReRead(@TempDir Path dir){
     var r= registry(dir);
-    r.add("slash", folder(dir, "a\\b"));
-    r.add("line", folder(dir, "c\nd"));
+    r.add("slash", folder(dir, Fs.isWindows() ? "aéb" : "a\\b"));
+    r.add("line", folder(dir, Fs.isWindows() ? "c\ud800d" : "c\nd"));
     assertEquals(r.all(), registry(dir).all());
   }
   @Test void changingTheLinksKeepsTheirOrderInTheFile(@TempDir Path dir){
