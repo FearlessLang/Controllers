@@ -208,8 +208,9 @@ public final class Report{
     return new UserError(used+" Claim a system extension instead, for example "+claim(false, icon, Registry.isSystem(cut) ? cut : "ext")+".");
   }
   private static String kind(boolean shortcut){ return shortcut ? "Shortcut" : "OpenWith"; }
-  private static String claim(boolean shortcut, String icon, String ext){ return "\"base."+kind(shortcut)+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
-  private static String claim(Project.Claimant c){ return claim(c.shortcut(), c.claim().icon(), c.claim().extension()); }
+  private static String claim(boolean shortcut, String icon, String ext){ return claim(kind(shortcut), icon, ext); }
+  private static String claim(String kind, String icon, String ext){ return "\"base."+kind+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
+  private static String claim(Project.Claimant c){ return claim(c.kind(), c.claim().icon(), c.claim().extension()); }
   public static UserError shortcutNoFileName(String main){
     return new UserError("Main "+disp(main)+" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\".");
   }

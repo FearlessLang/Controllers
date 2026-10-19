@@ -13,6 +13,7 @@ import coordinator.Coordinator;
 import core.E.Literal;
 import core.OtherPackages;
 import fileAssociations.Icon;
+import fileAssociations.WindowIcon;
 import naiveBackend.BackendTools;
 import tools.ChildJvm;
 import tools.Fs;
@@ -45,14 +46,18 @@ public final class Deployed implements Manager.Tools{
       folder.toString()), out);
   }
   @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, Consumer<String> out){
-    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.reads(), grants.edits(), coordinator(folder).sharedClasspath(), out);
+    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.reads(), grants.edits(), Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Path baseCache(){ return stdLib("baseCache"); }
-  @Override public void associate(List<Icon> captured, Function<String,String> claimedBy){
+  @Override public void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy){
     if (Fs.isMac()){ return; }
     var launcher= Association.launcher();
-    Association.reconcile(launcher, Stream.concat(Stream.of(new Icon(".fearless", launcher, Association.iconFile())), captured.stream()).toList(), claimedBy);
+    var windows= preloads.stream().map(Deployed::window).toList();
+    Association.reconcile(launcher, Stream.concat(Stream.of(new Icon(".fearless", launcher, Association.iconFile())), captured.stream()).toList(), windows, claimedBy);
+  }
+  private static WindowIcon window(Project.Claimant c){
+    return new WindowIcon(Association.deskId(c.folder(), c.main())+"-"+c.claim().icon(), c.main().substring(c.main().lastIndexOf('.')+1), c.folder(), c.icon(".png"));
   }
   @Override public List<String> others(){ return Fs.isMac() ? List.of() : Association.others(); }
   @Override public void connect(Path eclipse, Path managerDir){
