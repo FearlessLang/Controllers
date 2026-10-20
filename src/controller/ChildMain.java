@@ -4,7 +4,9 @@ import java.nio.file.Path;
 
 import fileSupport.NativeLocaleForcer;
 import tools.ChildJvm;
+import tools.Fs;
 import managerMessages.Violation;
+import userMessages.Report;
 import userMessages.UserError;
 
 /// The child JVM the manager starts to compile one project: the arg is the project folder.
@@ -24,6 +26,7 @@ public final class ChildMain{
   }
   private static void compile(Path project){
     UserError.root = project;
+    Fs.onSymbolicLink= Report::symlinkForbidden;
     var c= Deployed.coordinator(project);
     c.compile(project, c.sourceOracle(Deployed.stdLib("base")));
   }
