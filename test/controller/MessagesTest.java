@@ -101,7 +101,7 @@ coordination information into files.
 While a manager process runs, it keeps this file reserved, so that any
 new Fearless process can tell that a manager already exists. This
 feature is called file locking. Fearless tried to open and reserve:
-  C:\\Users\\caf?\\AppData\\Local\\Fearless\\manager\\lock
+  C:\\Users\\caf{U+00E9}\\AppData\\Local\\Fearless\\manager\\lock
 
 Reported reason:
 The process cannot access the file because it is being used by another process
