@@ -6,10 +6,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
@@ -153,14 +152,14 @@ public final class Manager{
   private void take(Path msgDir) throws IOException{
     for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".msg")).toList()){
       Runnable r;
-      try{ var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(); r= () -> apply(text); }
+      try{ var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Fs.readAllBytes(file))).toString(); r= () -> apply(text); }
       catch (CharacterCodingException e){ r = () -> view.refuse(Report.unreadableMessage(file)); }
-      Files.deleteIfExists(file);
+      Fs.deleteIfExists(file);
       post(r);
     }
     var old= Instant.now().minusSeconds(60);
     for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".tmp")).toList()){
-      try{ if (Files.getLastModifiedTime(file).toInstant().isBefore(old)){ Files.deleteIfExists(file); } }
+      try{ if (Fs.getLastModifiedTime(file).toInstant().isBefore(old)){ Fs.deleteIfExists(file); } }
       catch (NoSuchFileException e){}
     }
   }
@@ -177,7 +176,7 @@ public final class Manager{
     registry.all().forEach(e -> live.put(e.path(), new Live()));
     registry.all().forEach(e -> live.get(e.path()).claims = read(e.path()));
     registry.all().forEach(e -> { claim(e.path()); scan(e.path()); });
-    ClaimIcons.materialise(dir.resolve("icons"), conflict, Fs.of(() -> Files.readAllBytes(tools.stdLibBase().resolve("icons").resolve("conflict.png"))));
+    ClaimIcons.materialise(dir.resolve("icons"), conflict, Fs.of(() -> Fs.readAllBytes(tools.stdLibBase().resolve("icons").resolve("conflict.png"))));
   }
   private void open(Entry e){
     live.put(e.path(), new Live());
@@ -202,7 +201,7 @@ public final class Manager{
   private boolean allowed(Project.Claimant c){ return !Registry.isSystem(c.claim().extension()) || registry.extensions().contains(c.claim().extension()); }
   private void associate(List<String> extensions){
     if (taken){ return; }
-    Stream.concat(Project.claimed(projects()).values().stream().flatMap(List::stream), preloads()).filter(c -> !Files.isRegularFile(c.icon(".png")))
+    Stream.concat(Project.claimed(projects()).values().stream().flatMap(List::stream), preloads()).filter(c -> !Fs.isRegularFile(c.icon(".png")))
       .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(this::iconGone);
     var claimed= Project.claimed(projects());
     var next= captured(claimed, extensions);
@@ -330,7 +329,7 @@ public final class Manager{
     var p= project(f);
     view.clear(f);
     output(f, p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias())).stripTrailing()+"\n");
-    if (Files.isDirectory(f)){ errorFile(f, "check_error.txt", p.problem()); }
+    if (Fs.isDirectory(f)){ errorFile(f, "check_error.txt", p.problem()); }
   }
   private void next(Path f){
     var l= live.get(f);
@@ -411,22 +410,22 @@ public final class Manager{
     catch (UncheckedIOException e){ throw new Refused(Report.claimsNotSaved(e.getCause())); }
   }
   private void succeeded(Path f, Live l){
-    Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Files.notExists(p, LinkOption.NOFOLLOW_LINKS)).forEach(p -> shortcut(f, p));
+    Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).forEach(p -> shortcut(f, p));
     unclaimedIcons(f, l.claims);
     errorFile(f, "compile_error.txt", Optional.empty());
   }
   private void failed(Path f, int ec, String why){
     if (ec == 0){ output(f, why.stripTrailing()+"\n"); }
-    try{ Files.deleteIfExists(f.resolve(Facts.outDir).resolve("mains.info")); }
+    try{ Fs.deleteIfExists(f.resolve(Facts.outDir).resolve("mains.info")); }
     catch (IOException e){ output(f, Report.notWritten("mains.info", e)); }
     errorFile(f, "compile_error.txt", Optional.of(why));
   }
   private void errorFile(Path f, String name, Optional<String> why){
     var file= f.resolve(Facts.outDir).resolve(name);
     try{
-      if (why.isEmpty()){ Files.deleteIfExists(file); return; }
-      Files.createDirectories(file.getParent());
-      Files.writeString(file, why.get());
+      if (why.isEmpty()){ Fs.deleteIfExists(file); return; }
+      Fs.createDirectories(file.getParent());
+      Fs.writeString(file, why.get());
     }
     catch (IOException e){ output(f, Report.notWritten(name, e)); }
   }
@@ -436,12 +435,12 @@ public final class Manager{
     view.allow(Report.allowExtensions(refused), Registry.text(new Content(registry.all(), List.copyOf(extensions))));
   }
   private void shortcut(Path f, Path file){
-    try{ Files.writeString(file, MakeDemo.markerContent, StandardOpenOption.CREATE_NEW); }
+    try{ Fs.writeString(file, MakeDemo.markerContent, StandardOpenOption.CREATE_NEW); }
     catch (IOException e){ output(f, Report.notWritten(file.getFileName().toString(), e)); }
   }
   private void unclaimedIcons(Path f, MainsInfo claims){
     var kept= Stream.concat(Project.claimants(f, alias(f), claims), Project.preloads(f, alias(f), claims)).flatMap(c -> Stream.of(c.icon(".png"), c.icon(Fs.isWindows() ? ".ico" : ".png"))).toList();
-    try (var s= Files.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p : s.filter(p -> !kept.contains(p)).toList()){ Files.delete(p); } }
+    try (var s= Fs.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p : s.filter(p -> !kept.contains(p)).toList()){ Fs.delete(p); } }
     catch (NoSuchFileException e){}
     catch (IOException e){ output(f, Report.notWritten("icons", e)); }
   }

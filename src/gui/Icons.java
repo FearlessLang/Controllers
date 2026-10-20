@@ -1,5 +1,6 @@
 package gui;
 
+import java.io.ByteArrayInputStream;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
@@ -22,6 +23,7 @@ import controller.Project;
 import managerMessages.Violation;
 import userMessages.UserError;
 import utils.Range;
+import tools.Fs;
 
 public final class Icons{
   private static Image app;
@@ -37,7 +39,7 @@ public final class Icons{
   }
   static Image read(Path file){
     try{
-      var res= ImageIO.read(file.toFile());
+      var res= ImageIO.read(new ByteArrayInputStream(Fs.readAllBytes(file)));
       if (res == null){ throw Violation.couldNotDecodeIcon(file); }
       return res;
     }

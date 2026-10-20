@@ -77,6 +77,7 @@ public final class Report{
   public static String grantsWhileRunning(String name, String job){ return "The manager refused a change of the data projects that "+disp(name)+" reads or writes: "+disp(name)+" runs "+disp(job)+", and the data projects of a main stay the same while it runs. Terminate it first."; }
 
   //-- registering a folder
+  public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link, and Fearless does not follow symbolic links:\n"+path(p.toString())); }
   public static String registerNothing(Path path){ return "The manager was asked to register\n"+path(path.toString())+"\nbut nothing exists there: register an existing folder, or a file inside one."; }
   public static String folderNestedWithRegistered(Path folder, Path registered){
     return """

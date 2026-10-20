@@ -1,6 +1,5 @@
 package controller;
 
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -63,16 +62,16 @@ public final class Names{
     var all= markers(folder);
     if (!all.isEmpty() && !all.getFirst().getFileName().toString().equals(name+ext)){
       var tmp= folder.resolve(UUID.randomUUID()+".tmp");
-      Fs.ofV(() -> { Files.move(all.getFirst(), tmp); Files.move(tmp, target); });
+      Fs.ofV(() -> { Fs.move(all.getFirst(), tmp); Fs.move(tmp, target); });
     }
-    if (all.isEmpty() || Fs.of(() -> Files.size(target)) == 0){ Fs.writeUtf8(target, MakeDemo.markerContent); }
+    if (all.isEmpty() || Fs.of(() -> Fs.size(target)) == 0){ Fs.writeUtf8(target, MakeDemo.markerContent); }
   }
-  static List<Path> list(Path dir){ return Fs.of(() -> { try (var s= Files.list(dir)){ return s.sorted(Comparator.comparing(p -> p.getFileName().toString())).toList(); } }); }
+  static List<Path> list(Path dir){ return Fs.of(() -> { try (var s= Fs.list(dir)){ return s.sorted(Comparator.comparing(p -> p.getFileName().toString())).toList(); } }); }
   static Optional<Path> child(Path dir, String name){ return OneOr.opt(name, list(dir).stream().filter(p -> p.getFileName().toString().equals(name))); }
-  static Optional<Path> folder(Path dir, String name){ return child(dir, name).filter(Files::isDirectory); }
+  static Optional<Path> folder(Path dir, String name){ return child(dir, name).filter(Fs::isDirectory); }
   private static List<Path> markers(Path folder){
-    if (!Files.isDirectory(folder)){ return List.of(); }
-    return list(folder).stream().filter(p -> p.getFileName().toString().endsWith(ext) && Files.isRegularFile(p)).toList();
+    if (!Fs.isDirectory(folder)){ return List.of(); }
+    return list(folder).stream().filter(p -> p.getFileName().toString().endsWith(ext) && Fs.isRegularFile(p)).toList();
   }
   private static String stem(Path file){
     var name= file.getFileName().toString();

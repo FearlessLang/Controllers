@@ -4,8 +4,8 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,7 +66,7 @@ public final class Registry{
   public Registry(Path dir, Consumer<Content> check){
     this.dir= dir;
     this.check= check;
-    if (!Files.exists(infoFile())){ save(content); return; }
+    if (!Fs.exists(infoFile())){ save(content); return; }
     var text= StringFiles.read(infoFile(), UserError.onFileError());
     content = parse(text, infoFile(), Registry::real, dir);
   }
@@ -139,7 +139,7 @@ public final class Registry{
     var text= text(c);
     assert parse(text, infoFile(), p -> p, dir).equals(c);
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
-    try{ Files.writeString(tmp, text, CREATE_NEW); Files.move(tmp, infoFile(), ATOMIC_MOVE); }
+    try{ Fs.writeString(tmp, text, CREATE_NEW); Fs.move(tmp, infoFile(), ATOMIC_MOVE); }
     catch (IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(), e); }
     content = c;
   }
