@@ -18,6 +18,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -156,14 +157,14 @@ public final class Window implements Manager.View{
   }
   @Override public void edited(Path file){
     SwingUtilities.invokeLater(() -> { var editor= editors.remove(file); if (editor != null){ editor.dispose(); } });
-    Fs.ofV(() -> Fs.deleteIfExists(file));
+    Fs.ofV(() -> Files.deleteIfExists(file));
   }
   @Override public void taken(List<String> programs){
     SwingUtilities.invokeLater(() -> { say(Violation.fearlessTaken(programs)); main.quit(); });
   }
   @Override public boolean visible(){ return onScreen; }
   private Path commit(String content){
-    var file= Fs.of(() -> Fs.createTempFile("projects", ".info"));
+    var file= Fs.of(() -> Files.createTempFile("projects", ".info"));
     file.toFile().deleteOnExit();
     Fs.writeUtf8(file, content);
     Main.command("EditMetadata", Main.path(file));
@@ -328,7 +329,7 @@ public final class Window implements Manager.View{
     }
   }
   static void open(Consumer<String> refuse, Path path){
-    if (!Fs.exists(path)){ refuse.accept(Report.nothingToOpen(path)); return; }
+    if (!Files.exists(path)){ refuse.accept(Report.nothingToOpen(path)); return; }
     try{ OpenPath.open(path); }
     catch (UncheckedIOException e){ refuse.accept(Report.notOpened(path, e.getCause())); }
   }

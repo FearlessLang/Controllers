@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
@@ -498,9 +499,8 @@ public final class Manager{
   }
   private static List<String> words(String text){ return Stream.of(text.split(" +")).filter(w -> !w.isEmpty()).toList(); }
   static Path projectFolder(Path path, Path managerDir){
-    if (!Fs.exists(path)){ throw new Refused(Report.registerNothing(path)); }
-    try{ return Registry.placed(Fs.realPath(Fs.isDirectory(path) ? path : path.getParent()), managerDir, Refused::new); }
-    catch (UserError e){ throw new Refused(e.getMessage()); }
+    if (!Files.exists(path)){ throw new Refused(Report.registerNothing(path)); }
+    return Registry.placed(Registry.real(Files.isDirectory(path) ? path : path.getParent()), managerDir, Refused::new);
   }
   private void register(Path path){
     var folder= projectFolder(path, dir);
@@ -530,11 +530,11 @@ public final class Manager{
     view.tell(Report.eclipseConnected(eclipse));
   }
   private void editMetadata(Path file){
-    if (!Fs.isRegularFile(file)){ throw new Refused(Report.metadataNoFile(file)); }
+    if (!Files.isRegularFile(file)){ throw new Refused(Report.metadataNoFile(file)); }
     Content next;
     try{
-      var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Fs.readAllBytes(file))).toString();
-      next= Registry.parse(text, file, Fs::realPath, dir);
+      var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString();
+      next= Registry.parse(text, file, Registry::real, dir);
     }
     catch (CharacterCodingException e){ throw new Refused(Report.metadataNotUtf8(file)); }
     catch (IOException e){ throw new Refused(Report.metadataUnreadable(file, e)); }
@@ -554,8 +554,8 @@ public final class Manager{
     view.edited(file);
   }
   private void openWith(Path file, List<String> chosen){
-    if (!Fs.isRegularFile(file)){ throw new Refused(Report.openNoFile(file)); }
-    if (Fs.of(() -> Fs.size(file)) == 0){ throw new Refused(Report.emptyFile(file)); }
+    if (!Files.isRegularFile(file)){ throw new Refused(Report.openNoFile(file)); }
+    if (Fs.of(() -> Files.size(file)) == 0){ throw new Refused(Report.emptyFile(file)); }
     var name= file.getFileName().toString();
     var dot= name.lastIndexOf('.');
     var ext= dot < 0 ? "" : name.substring(dot+1).toLowerCase(Locale.ROOT);

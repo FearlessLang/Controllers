@@ -24,7 +24,7 @@ import userMessages.UserError;
 final class RegistryTest{
   private static final Path file= Path.of("projects.info").toAbsolutePath();
   private static final String root= Path.of("").toAbsolutePath().getRoot().toString().replace('\\', '/');
-  private static Content content(String text){ return Registry.parse(text, file, Fs::realPath, Path.of(root+"manager")); }
+  private static Content content(String text){ return Registry.parse(text, file, Registry::real, Path.of(root+"manager")); }
   private static List<Entry> parse(String projects){ return content("{\"projects\":"+projects+",\"systemExtensions\":[]}").projects(); }
   private static Registry registry(Path dir){ return new Registry(folder(dir, "manager"), _ -> {}); }
   private static Path folder(Path dir, String name){
@@ -99,6 +99,12 @@ final class RegistryTest{
   @Test void identicalOrNestedPathsAreRejected(){
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"same\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"same\",\"kind\":\"idle\"}}"));
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"parent\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"parent/child\",\"kind\":\"idle\"}}"));
+  }
+  @Test void aLinkNamesTheFolderItLinksTo(@TempDir Path dir){
+    var real= Registry.real(folder(dir, "real"));
+    var link= Disk.link(dir.resolve("link"), real);
+    err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+unix(real)+"\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}"));
+    assertEquals(real, parse("{\"a\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}").getFirst().path());
   }
   @Test void printingThenParsingRoundTripsTheContent(){
     var c= new Content(List.of(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code, List.of("some.Main1"), Map.of("publicfiles", List.of("Data1")), Map.of())), List.of("htm"));
@@ -214,20 +220,20 @@ final class RegistryTest{
   }
   private static void placedAt(Path manager, Path folder, String expected){
     var text= "{\"projects\": {\n  \"x\": {\"path\": \"Str:"+unix(folder)+"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n";
-    err(expected, () -> Registry.parse(text, file, Fs::realPath, manager));
+    err(expected, () -> Registry.parse(text, file, Registry::real, manager));
   }
   @Test void anEditPlacingAProjectAtARootOrInOrAroundTheManagerFolderIsRefusedAtThePath(@TempDir Path dir){
     registry(dir);
-    var manager= Fs.realPath(dir.resolve("manager"));
+    var manager= Registry.real(dir.resolve("manager"));
     placedAt(manager, Path.of(root), "[###]\"path\": \"Str:"+root+"\"[###]^^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]");
     placedAt(manager, manager, inManager(manager, manager));
     placedAt(manager, folder(manager, "inside"), inManager(manager.resolve("inside"), manager));
-    placedAt(manager, Fs.realPath(dir), inManager(Fs.realPath(dir), manager));
+    placedAt(manager, Registry.real(dir), inManager(Registry.real(dir), manager));
   }
   @Test void aProjectsInfoPlacingAProjectInTheManagerFolderIsAFatalErrorAtThePath(@TempDir Path dir){
     var manager= folder(dir, "manager");
     Fs.writeUtf8(manager.resolve("projects.info"), "{\"projects\": {\n  \"x\": {\"path\": \"Str:"+unix(manager)+"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n");
-    err(inManager(Fs.realPath(manager), Fs.realPath(manager)), () -> registry(dir));
+    err(inManager(Registry.real(manager), Registry.real(manager)), () -> registry(dir));
   }
   @Test void aTypeNameIsInReadsOrInEditsNotInBoth(){
     err("""

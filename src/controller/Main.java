@@ -12,6 +12,7 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.FileSystems;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
@@ -87,7 +88,7 @@ public final class Main implements Manager.Exit{
     try{ path= Path.of(args[0]).toAbsolutePath().normalize(); }
     catch (InvalidPathException e){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
     if (args[0].isBlank() || path.getFileName() == null){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
-    var project= Fs.isDirectory(path) || path.getFileName().toString().endsWith(Names.ext);
+    var project= Files.isDirectory(path) || path.getFileName().toString().endsWith(Names.ext);
     var verb= project ? "Register" : "OpenWithOrShortcut";
     return verb+"\n"+TaggedText.line(path.toString());
   }

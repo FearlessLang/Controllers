@@ -12,6 +12,7 @@ import java.net.URLDecoder;
 import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +24,6 @@ import java.util.stream.IntStream;
 
 import managerMessages.Violation;
 import utils.Bug;
-import tools.Fs;
 
 /// The manager's icon on a Linux desktop: a StatusNotifierItem served on the session bus.
 /// The desktop's watcher (org.kde.StatusNotifierWatcher) reads the item's properties and
@@ -85,7 +85,7 @@ final class Sni{
     try{
       channel= SocketChannel.open(StandardProtocolFamily.UNIX);
       channel.connect(UnixDomainSocketAddress.of(socket));
-      var uid= Fs.getAttribute(Path.of("/proc", ""+ProcessHandle.current().pid()), "unix:uid").toString();
+      var uid= Files.getAttribute(Path.of("/proc/self"), "unix:uid").toString();
       write(channel, ("\0AUTH EXTERNAL "+HexFormat.of().formatHex(uid.getBytes(UTF_8))+"\r\n").getBytes(UTF_8));
       var answer= line(channel);
       if (!answer.startsWith("OK ")){ throw new IOException("the session bus refused the connection: "+answer); }

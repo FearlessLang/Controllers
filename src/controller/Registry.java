@@ -5,6 +5,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,10 +68,14 @@ public final class Registry{
     this.check= check;
     if (!Fs.exists(infoFile())){ save(content); return; }
     var text= StringFiles.read(infoFile(), UserError.onFileError());
-    content = parse(text, infoFile(), Fs::realPath, dir);
+    content = parse(text, infoFile(), Registry::real, dir);
+  }
+  public static Path real(Path folder){
+    try{ return folder.toRealPath(); }
+    catch (IOException e){ return folder; }
   }
   static Path placed(Path folder, Path managerDir, Function<String,RuntimeException> err){
-    var manager= Fs.realPath(managerDir);
+    var manager= real(managerDir);
     if (folder.getFileName() == null){ throw err.apply(Report.projectFolderIsRoot(folder)); }
     if (overlap(folder, manager)){ throw err.apply(Report.managerFolderNotAProject(folder, manager)); }
     return folder;
@@ -87,7 +92,7 @@ public final class Registry{
     return all().stream().map(Entry::path).filter(o -> !o.equals(folder) && overlap(folder, o)).findFirst();
   }
   public void add(String alias, Path folder){
-    assert folder.isAbsolute() && folder.equals(Fs.realPath(folder));
+    assert folder.isAbsolute() && folder.equals(real(folder));
     assert all().stream().noneMatch(e -> e.path().equals(folder) || e.alias().equals(alias));
     assert overlapping(folder).isEmpty();
     save(new Content(Push.of(all(), new Entry(alias, folder, Kind.idle, List.of(), Map.of(), Map.of())), extensions()));
