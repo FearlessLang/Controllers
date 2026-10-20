@@ -47,7 +47,6 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
   private static Facts read(Path folder, String alias, Kind kind, Path baseCache){
     if (!Files.isDirectory(folder)){ return invalid(Report.folderMissing(folder)); }
     UserError.root = folder;
-    Fs.onSymbolicLink= userMessages.Report::symlinkForbidden;
     Map<String,Boolean> built= Map.of();
     Optional<String> problem;
     try{

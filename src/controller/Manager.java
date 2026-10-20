@@ -501,7 +501,8 @@ public final class Manager{
   private static List<String> words(String text){ return Stream.of(text.split(" +")).filter(w -> !w.isEmpty()).toList(); }
   static Path projectFolder(Path path, Path managerDir){
     if (!Files.exists(path)){ throw new Refused(Report.registerNothing(path)); }
-    return Registry.placed(Registry.real(Files.isDirectory(path) ? path : path.getParent()), managerDir, Refused::new);
+    try{ return Registry.placed(Fs.realPath(Files.isDirectory(path) ? path : path.getParent()), managerDir, Refused::new); }
+    catch (UserError e){ throw new Refused(e.getMessage()); }
   }
   private void register(Path path){
     var folder= projectFolder(path, dir);
@@ -535,7 +536,7 @@ public final class Manager{
     Content next;
     try{
       var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString();
-      next= Registry.parse(text, file, Registry::real, dir);
+      next= Registry.parse(text, file, Fs::realPath, dir);
     }
     catch (CharacterCodingException e){ throw new Refused(Report.metadataNotUtf8(file)); }
     catch (IOException e){ throw new Refused(Report.metadataUnreadable(file, e)); }

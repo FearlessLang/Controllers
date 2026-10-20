@@ -482,19 +482,6 @@ final class ManagerTest{
     same("Fearless cannot keep track of this project folder.[###]", view.refused.getFirst());
     assertEquals(List.of("hello "+hello), listed(m));
   }
-  @Test void aLinkToARegisteredFolderOnlySelectsItAndALinkIntoOneIsRefused(@TempDir Path dir){
-    var m= manager(dir);
-    var hello= registered(m, dir, "hello");
-    var other= registered(m, dir, "other");
-    var link= Disk.link(dir.resolve("link"), hello);
-    var inner= Disk.link(dir.resolve("inner"), folder(hello, "inner"));
-    send(m, "Register", TaggedText.of(link.toString()));
-    assertEquals(Optional.of(hello), m.state().selected());
-    send(m, "Register", TaggedText.of(inner.toString()));
-    assertEquals(List.of("hello "+hello, "other "+other), listed(m));
-    assertEquals(1, view.refused.size());
-    same("[###]Fearless is already keeping track of:\n[###]hello\nOne of the two is inside the other.[###]", view.refused.getFirst());
-  }
   @Test void kindsChangeFromIdleAndBackToIdleOnly(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);

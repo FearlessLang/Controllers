@@ -6,8 +6,6 @@ import static java.nio.file.attribute.AclEntryPermission.DELETE_CHILD;
 import static java.nio.file.attribute.AclEntryPermission.READ_DATA;
 import static java.nio.file.attribute.AclEntryPermission.WRITE_DATA;
 
-import java.io.UncheckedIOException;
-import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.AclEntry;
@@ -19,19 +17,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.jupiter.api.Assumptions;
 
 import tools.Fs;
 
 final class Disk{
-  static Path link(Path link, Path target){
-    try{ return Fs.of(() -> Files.createSymbolicLink(link, target)); }
-    catch (UncheckedIOException e){
-      var refused= Fs.isWindows() && e.getCause() instanceof FileSystemException;
-      if (!refused){ throw e; }
-      return Assumptions.abort("Windows does not give this process the privilege to create symbolic links");
-    }
-  }
   static void noRead(Path p){
     if (!Fs.isWindows()){ posix(p, "---------"); return; }
     deny(p, Set.of(READ_DATA));

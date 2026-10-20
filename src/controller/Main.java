@@ -59,6 +59,7 @@ public final class Main implements Manager.Exit{
   private Path msgDir(){ return managerDir.resolve("messages"); }
   public static void main(String[] args){
     NativeLocaleForcer.forceEnglish();
+    Fs.onSymbolicLink= Report::symbolicLink;
     var exitCode= 0;
     try{ run(message(args)); }
     catch (UserError e){ exitCode = 1; fatal(e); }

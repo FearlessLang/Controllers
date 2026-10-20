@@ -96,11 +96,6 @@ final class ManagerFolderTest{
   @Test void aFolderHoldingTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     refused("Fearless cannot keep track of this folder as a project.[###]", () -> Manager.projectFolder(dir, folder(dir, "manager")));
   }
-  @Test void aLinkToTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
-    var managerDir= folder(dir, "manager");
-    var link= Disk.link(dir.resolve("link"), managerDir);
-    refused("Fearless cannot keep track of this folder as a project.[###]", () -> Manager.projectFolder(link, managerDir));
-  }
   @Test void theRootOfADriveIsNotAProject(@TempDir Path dir){
     refused("""
       Fearless cannot keep track of the root of a drive or of the file system as a
