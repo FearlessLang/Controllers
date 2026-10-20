@@ -51,6 +51,7 @@ public final class Report{
   public static String notTagged(String verb, String why){ return "The manager was asked "+disp(verb)+", but its path is not a tagged text: "+why; }
   public static String blankPath(String verb){ return "The manager was asked "+disp(verb)+", but its path is empty."; }
   public static String notAPath(String verb, String given, String why){ return "The manager was asked "+disp(verb)+" on "+disp(given)+", but that is not a path this system accepts: "+why+"."; }
+  public static String relativePath(String verb, String given){ return "The manager was asked "+disp(verb)+" on "+disp(given)+", but that path is relative: a message names a path in full, from the root of its drive or file system."; }
   public static String unknownProject(String verb, String name, List<String> names){
     return "The manager was asked "+disp(verb)+" on the project "+disp(name)+", but no project is named "+disp(name)+"."+Join.of(names.stream().map(n -> "\n  "+n), "\nThe projects are:", "", "", "\nNo project is registered.");
   }

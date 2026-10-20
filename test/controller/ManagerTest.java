@@ -113,7 +113,7 @@ final class ManagerTest{
     final List<Path> cleared= new ArrayList<>();
     final List<List<String>> choices= new ArrayList<>();
     final List<String> asked= new ArrayList<>();
-    final List<String> offered= new ArrayList<>();
+    final List<List<String>> offered= new ArrayList<>();
     final List<Path> edited= new ArrayList<>();
     final List<List<String>> taken= new ArrayList<>();
     int shown;
@@ -126,7 +126,7 @@ final class ManagerTest{
     @Override public void tell(String text){ shown += 1; told.add(text); }
     @Override public boolean visible(){ return visible; }
     @Override public void choose(Path file, List<Project.Claimant> cs){ choices.add(Stream.concat(Stream.of(file.getFileName().toString()), cs.stream().map(Project.Claimant::label)).toList()); }
-    @Override public void allow(String question, String content){ asked.add(question); offered.add(content); }
+    @Override public void allow(String question, List<String> extensions){ asked.add(question); offered.add(extensions); }
     @Override public void edited(Path file){ edited.add(file); }
     @Override public void taken(List<String> programs){ taken.add(programs); }
     synchronized String out(Path folder){ return outputs.getOrDefault(folder, new StringBuilder()).toString(); }
@@ -720,6 +720,15 @@ final class ManagerTest{
       "The manager was asked \"Run\" on the project \"\", but no project is named \"\".\nNo project is registered.",
       "The manager was asked \"Register\", but its path is not a tagged text: \"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
       "The manager was asked \"Register\", but its path is empty."), view.refused);
+  }
+  @Test void aRequestWhosePathIsRelativeIsRefused(@TempDir Path dir){
+    var m= manager(dir);
+    send(m, "Register", "Str:hello");
+    send(m, "OpenWithOrShortcut", "Str:notes.htm");
+    assertEquals(List.of(
+      "The manager was asked \"Register\" on \"hello\", but that path is relative: a message names a path in full, from the root of its drive or file system.",
+      "The manager was asked \"OpenWithOrShortcut\" on \"notes.htm\", but that path is relative: a message names a path in full, from the root of its drive or file system."), view.refused);
+    assertEquals(List.of(), listed(m));
   }
   @Test void aRegisterWhosePathIsNotATaggedTextOrNotAPathIsRefused(@TempDir Path dir){
     var m= manager(dir);
@@ -1565,11 +1574,22 @@ final class ManagerTest{
       in place of the program opening them now. The project then needs compiling again.""", String.join("\n", view.asked));
     assertEquals(Map.of(), claimed(m));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
-    edit(m, dir, view.offered.getLast());
+    assertEquals(List.of(List.of("htm")), view.offered);
+    allow(m, dir, view.offered.getLast().toArray(String[]::new));
     assertEquals(List.of("htm"), m.state().extensions());
     compiled(m, "hello");
     assertEquals(List.of("fapp001", "htm"), claimed(m).keySet().stream().sorted().toList());
     assertEquals(1, view.asked.size());
+  }
+  @Test void anOfferToCaptureAnExtensionAcceptedAfterARegisterKeepsThatProject(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    infos.put("hello", claiming("hello.Hello", "fapp001", "htm"));
+    compiled(m, "hello");
+    var other= registered(m, dir, "other");
+    allow(m, dir, view.offered.getLast().toArray(String[]::new));
+    assertEquals(List.of("htm"), m.state().extensions());
+    assertEquals(List.of("hello "+hello, "other "+other), listed(m));
   }
   @Test void removingASystemExtensionDeletesTheCompiledCacheOfTheProjectsOpeningIt(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");

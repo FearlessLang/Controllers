@@ -46,6 +46,7 @@ import utils.Bug;
 /// System.exit, and the operating system reclaims them on process death.
 public final class Main implements Manager.Exit{
   private static final String prefix= "FearlessCommand";
+  private static final List<String> pathVerbs= List.of("Register", "ConnectEclipse", "EditMetadata", "OpenWithOrShortcut");
   private static FileLock lock;
   private static Optional<Main> started= Optional.empty();
   private final Path managerDir;
@@ -76,11 +77,20 @@ public final class Main implements Manager.Exit{
     if (List.of("InvalidCall", "FatalError").contains(verb)){ return "InvalidCall\n"+Report.reservedVerb(args[0]); }
     if (Stream.of(args).anyMatch(a -> a.indexOf('\n') >= 0)){ return "InvalidCall\n"+Report.argumentWithNewline(List.of(args)); }
     var rest= List.of(args).subList(1, args.length);
+    if (pathVerbs.contains(verb) && !rest.isEmpty()){ rest = Stream.concat(Stream.of(absolute(rest.getFirst())), rest.stream().skip(1)).toList(); }
     if (!List.of("Run", "Link").contains(verb) || rest.size() < 2){ return String.join("\n", Stream.concat(Stream.of(verb), rest.stream()).toList()); }
     var words= rest.subList(1, rest.size());
     var port= verb.equals("Run") && !words.isEmpty() && words.getLast().startsWith("Port:");
     var named= String.join(" ", port ? words.subList(0, words.size()-1) : words);
     return verb+"\n"+rest.getFirst()+"\n"+named+(port ? "\n"+words.getLast() : "");
+  }
+  private static String absolute(String tagged){
+    try{
+      var given= TaggedText.read(tagged, Refused::new);
+      if (given.isBlank() || Path.of(given).isAbsolute()){ return tagged; }
+      return TaggedText.line(Path.of(given).toAbsolutePath().toString());
+    }
+    catch (Refused|InvalidPathException e){ return tagged; }
   }
   private static String file(String[] args){
     if (args.length > 1){ return "InvalidCall\n"+Report.tooManyArguments(List.of(args)); }

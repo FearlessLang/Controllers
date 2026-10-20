@@ -59,7 +59,7 @@ public final class Manager{
     void tell(String text);
     boolean visible();
     void choose(Path file, List<Project.Claimant> choices);
-    void allow(String question, String content);
+    void allow(String question, List<String> extensions);
     void edited(Path file);
     void taken(List<String> programs);
   }
@@ -257,8 +257,11 @@ public final class Manager{
   private static Path path(String verb, String text){
     var given= TaggedText.read(text, m -> new Refused(Report.notTagged(verb, m)));
     if (given.isBlank()){ throw new Refused(Report.blankPath(verb)); }
-    try{ return Path.of(given).toAbsolutePath().normalize(); }
+    Path res;
+    try{ res= Path.of(given); }
     catch (InvalidPathException e){ throw new Refused(Report.notAPath(verb, given, e.getReason())); }
+    if (!res.isAbsolute()){ throw new Refused(Report.relativePath(verb, given)); }
+    return res.normalize();
   }
   private void project(String verb, List<String> args){
     var name= args.getFirst();
@@ -430,9 +433,7 @@ public final class Manager{
     catch (IOException e){ output(f, Report.notWritten(name, e)); }
   }
   private void allow(List<Project.Claimant> refused){
-    var extensions= new TreeSet<>(registry.extensions());
-    refused.forEach(c -> extensions.add(c.claim().extension()));
-    view.allow(Report.allowExtensions(refused), Registry.text(new Content(registry.all(), List.copyOf(extensions))));
+    view.allow(Report.allowExtensions(refused), refused.stream().map(c -> c.claim().extension()).distinct().toList());
   }
   private void shortcut(Path f, Path file){
     try{ Fs.writeString(file, MakeDemo.markerContent, StandardOpenOption.CREATE_NEW); }

@@ -39,6 +39,11 @@ final class ManagerFolderTest{
     assertEquals("Register\nBase16:2F646174612F68656C6C6F", Main.message("FearlessCommandRegister", "Base16:2F646174612F68656C6C6F"));
     assertEquals("Frobnicate\na", Main.message("FearlessCommandFrobnicate", "a"));
   }
+  @Test void aRelativePathOfAFearlessCommandNamesThePathFromWhereTheCommandStarted(){
+    var here= Path.of("").toAbsolutePath();
+    assertEquals("Register\nStr:"+here.resolve("myProject"), Main.message("FearlessCommandRegister", "Str:myProject"));
+    assertEquals("OpenWithOrShortcut\nStr:"+here.resolve("notes.htm"), Main.message("FearlessCommandOpenWithOrShortcut", "Str:notes.htm"));
+  }
   @Test void aStartWithTwoArgumentsIsAnInvalidCallNamingBoth(){
     same("""
       InvalidCall
