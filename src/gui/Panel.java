@@ -20,7 +20,6 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -130,7 +129,7 @@ final class Panel{
   private void openDocs(){ openDocs(refuse, project.folder()); }
   static void openDocs(Consumer<String> refuse, Path folder){
     var gen= folder.resolve(Facts.outDir).resolve("gen_java");
-    var docs= Files.isDirectory(gen) ? Fs.walk(gen, s -> s.filter(p -> p.toString().endsWith(".html")).toList()) : List.<Path>of();
+    var docs= Fs.isDirectory(gen) ? Fs.walk(gen, s -> s.filter(p -> p.toString().endsWith(".html")).toList()) : List.<Path>of();
     if (docs.isEmpty()){ refuse.accept(Report.noDocs(gen)); return; }
     docs.forEach(OpenPath::open);
   }

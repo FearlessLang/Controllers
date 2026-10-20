@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -32,7 +31,7 @@ final class ClaimIcons{
     var file= (c.icon().startsWith("base.") ? base : claimant.folder()).resolve(c.diskPath());
     var steps= c.zipSteps().isEmpty() ? List.<String>of() : List.of(c.zipSteps().split(";"));
     byte[] bytes;
-    try{ bytes= c.zipEntry().isEmpty() ? Fs.of(() -> Files.readAllBytes(file)) : ZipLocator.entryBytes(file, steps, c.zipEntry()); }
+    try{ bytes= c.zipEntry().isEmpty() ? Fs.of(() -> Fs.readAllBytes(file)) : ZipLocator.entryBytes(file, steps, c.zipEntry()); }
     catch (UncheckedIOException e){ throw Report.iconUnreadable(claimant, Report.fileFailure(e.getCause())); }
     catch (UserError e){ throw Report.iconUnreadable(claimant, e.getMessage().stripTrailing()); }
     if (bytes.length < 24 || !Arrays.equals(bytes, 0, 16, pngHead, 0, 16)){ throw Report.iconRefused(claimant, "is not a PNG image"); }
@@ -49,10 +48,10 @@ final class ClaimIcons{
   static void materialise(Path dir, String icon, byte[] bytes){
     var png= dir.resolve(icon+".png");
     var ico= dir.resolve(icon+".ico");
-    var same= Files.exists(png) && (!Fs.isWindows() || Files.exists(ico)) && Arrays.equals(Fs.of(() -> Files.readAllBytes(png)), bytes);
+    var same= Fs.exists(png) && (!Fs.isWindows() || Fs.exists(ico)) && Arrays.equals(Fs.of(() -> Fs.readAllBytes(png)), bytes);
     if (same){ return; }
     Fs.ensureDir(dir);
-    Fs.ofV(() -> Files.write(png, bytes));
+    Fs.ofV(() -> Fs.write(png, bytes));
     if (Fs.isWindows()){ Ico.fromPng(png, ico); }
   }
 }

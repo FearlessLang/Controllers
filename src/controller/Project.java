@@ -1,7 +1,5 @@
 package controller;
 
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -23,6 +21,7 @@ import realSourceOracle.BuildWithZip;
 import realSourceOracle.PathEntry;
 import managerMessages.Report;
 import userMessages.UserError;
+import tools.Fs;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
 /// folder holds, its mains once known, why its links are broken, and its job, if any.
@@ -105,7 +104,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
     var file= name+"."+ext;
     try{ BuildWithZip.checkIndividualVisibleSegment(new PathEntry(project, Path.of(file))); }
     catch (UserError e){ throw Report.shortcutBadFileName(main, file); }
-    var masks= userMessages.Report.allowedNoExtFiles.contains(name) && Files.isRegularFile(project.resolve(name), LinkOption.NOFOLLOW_LINKS);
+    var masks= userMessages.Report.allowedNoExtFiles.contains(name) && Fs.isRegularFile(project.resolve(name));
     if (masks){ throw Report.shortcutMasksFile(main, file, name); }
     return file;
   }

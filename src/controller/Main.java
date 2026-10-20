@@ -8,11 +8,9 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ProcessBuilder.Redirect;
-import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
@@ -89,7 +87,7 @@ public final class Main implements Manager.Exit{
     try{ path= Path.of(args[0]).toAbsolutePath().normalize(); }
     catch (InvalidPathException e){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
     if (args[0].isBlank() || path.getFileName() == null){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
-    var project= Files.isDirectory(path) || path.getFileName().toString().endsWith(Names.ext);
+    var project= Fs.isDirectory(path) || path.getFileName().toString().endsWith(Names.ext);
     var verb= project ? "Register" : "OpenWithOrShortcut";
     return verb+"\n"+TaggedText.line(path.toString());
   }
@@ -127,11 +125,11 @@ public final class Main implements Manager.Exit{
   private static void run(String message) throws Throwable{
     var main= new Main(programDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
     started = Optional.of(main);
-    try{ Files.createDirectories(main.msgDir()); }
+    try{ Fs.createDirectories(main.msgDir()); }
     catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir, e); }
     leave(main.msgDir(), message);
     var lockFile= main.managerDir.resolve("instance.lock");
-    try{ lock = FileChannel.open(lockFile, CREATE, WRITE).tryLock(); }
+    try{ lock = Fs.openChannel(lockFile, CREATE, WRITE).tryLock(); }
     catch (OverlappingFileLockException e){ throw Bug.unreachable(); }
     catch (IOException e){ throw Violation.couldNotUseInstanceLock(lockFile, e); }
     if (lock == null){ return; }
@@ -153,11 +151,11 @@ public final class Main implements Manager.Exit{
     var name= "%020d-%s".formatted(System.currentTimeMillis(), UUID.randomUUID());
     var tmp= msgDir.resolve(name+".tmp");
     StringFiles.writeNew(tmp, message, UserError.onFileError());
-    try{ Files.move(tmp, msgDir.resolve(name+".msg"), ATOMIC_MOVE); }
+    try{ Fs.move(tmp, msgDir.resolve(name+".msg"), ATOMIC_MOVE); }
     catch (IOException e){ throw Violation.couldNotLeaveStartMessage(msgDir, e); }
   }
   private void own() throws Throwable{
-    try{ watcher = FileSystems.getDefault().newWatchService(); msgDir().register(watcher, ENTRY_CREATE); }
+    try{ watcher = FileSystems.getDefault().newWatchService(); Fs.watch(msgDir(), watcher, ENTRY_CREATE); }
     catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(), e); }
     probe(watcher);
     Thread.setDefaultUncaughtExceptionHandler((_,t) -> fail(t));
