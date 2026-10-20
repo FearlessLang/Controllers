@@ -1571,6 +1571,27 @@ final class ManagerTest{
     assertEquals(List.of("fapp001", "htm"), claimed(m).keySet().stream().sorted().toList());
     assertEquals(1, view.asked.size());
   }
+  @Test void aYesToTheOfferToCaptureAnExtensionKeepsTheProjectsRegisteredAfterTheOffer(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    infos.put("hello", claiming("hello.Hello", "fapp001", "htm"));
+    compiled(m, "hello");
+    var other= registered(m, dir, "other");
+    edit(m, dir, view.offered.getLast());
+    assertEquals(List.of("htm"), m.state().extensions());
+    assertEquals(List.of("hello "+hello, "other "+other), listed(m));
+  }
+  @Test void anEditOfTheMetadataCheckedBeforeARunKeepsTheMainsThatRunSelected(@TempDir Path dir){
+    var m= manager(dir, "hello.One", "hello.Two", "hello.Three");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    var checked= info(dir);
+    send(m, "Run", "hello", "hello.Three hello.One");
+    idle(m);
+    assertEquals(List.of("hello.One", "hello.Three"), project(m, hello).selectedMains());
+    edit(m, dir, checked.replace("\"systemExtensions\": []", "\"systemExtensions\": [\"htm\"]"));
+    assertEquals(List.of("hello.One", "hello.Three"), project(m, hello).selectedMains());
+  }
   @Test void removingASystemExtensionDeletesTheCompiledCacheOfTheProjectsOpeningIt(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
