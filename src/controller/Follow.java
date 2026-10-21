@@ -29,6 +29,7 @@ final class Follow{
   }
   void send(String text){ queue.add(Optional.of(text)); }
   void end(){ queue.add(Optional.empty()); }
+  void refuse(String why){ send("Refused\n"+why); end(); }
   private void pump(Socket socket){
     try (socket; var out= socket.getOutputStream()){
       for (var next= queue.take(); next.isPresent(); next = queue.take()){ out.write(next.get().getBytes(UTF_8)); out.flush(); }

@@ -442,7 +442,7 @@ final class ManagerTest{
     assertEquals("The manager was asked to change the kind of \"hello\" to \"library\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".", view.refused.get(1));
     assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link.", view.refused.get(2));
     assertEquals("The manager was asked \"Forget\" with 2 arguments, but \"Forget\" takes 1.\nThe arguments are:\n  \"hello\"\n  \"now\"", view.refused.get(3));
-    assertEquals("The manager was asked \"Run\" with 0 arguments, but \"Run\" takes 1 or 2 or 3.\nThe arguments are:\n  <none>", view.refused.get(4));
+    assertEquals("The manager was asked \"Run\" with 0 arguments, but \"Run\" takes 1 or 2.\nThe arguments are:\n  <none>", view.refused.get(4));
     assertEquals(Kind.idle, m.state().projects().getFirst().kind());
   }
   @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
@@ -835,10 +835,16 @@ final class ManagerTest{
   }
   private static CompletableFuture<String> follower(ServerSocket server){ return CompletableFuture.supplyAsync(() -> listen(server)); }
   private static ServerSocket port(){ return Fs.of(() -> new ServerSocket(0, 1, InetAddress.getLoopbackAddress())); }
-  @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEnd(@TempDir Path dir){
+  @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEndAndAnyOtherRequestUntilItIsApplied(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     try (var server= port()){
+      var show= follower(server);
+      send(m, "Show", "Port:"+server.getLocalPort());
+      assertEquals("", show.join());
+      var unknown= follower(server);
+      send(m, "Check", "nope", "Port:"+server.getLocalPort());
+      assertEquals("Refused\n"+view.refused.get(0), unknown.join());
       var compile= follower(server);
       send(m, "Compile", "hello", "Port:"+server.getLocalPort());
       same("--- compiling hello ---\ncompiled\n--- compile done ---\n", compile.join());
@@ -850,10 +856,10 @@ final class ManagerTest{
       same("--- running hello.Hello ---\nran hello.Hello\n--- hello.Hello exited with 0 after [###]s ---\n", run.join());
       var refused= follower(server);
       send(m, "Run", "hello", "hello.Nope", "Port:"+server.getLocalPort());
-      assertEquals("", refused.join());
+      assertEquals("Refused\n"+view.refused.get(1), refused.join());
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
-    assertEquals(1, view.refused.size());
+    assertEquals(2, view.refused.size());
     idle(m);
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
   }
@@ -865,10 +871,10 @@ final class ManagerTest{
     catch (IOException e){ throw new UncheckedIOException(e); }
     send(m, "Compile", "hello", "Port:"+closed);
     send(m, "Compile", "hello", "Port:0");
-    send(m, "Compile", "hello", "51234");
+    send(m, "Kind", "hello", "code", "Port:65536");
     same("The manager was given the port "+closed+", but no program of this machine accepts a connection there: connect: [###]", view.refused.get(0));
     assertEquals("The manager was given the port \"Port:0\", but a port is \"Port:\" then a number from 1 to 65535.", view.refused.get(1));
-    assertEquals("The manager was given the port \"51234\", but a port is \"Port:\" then a number from 1 to 65535.", view.refused.get(2));
+    assertEquals("The manager was given the port \"Port:65536\", but a port is \"Port:\" then a number from 1 to 65535.", view.refused.get(2));
     assertEquals(Project.State.codeNoCache, project(m, hello).state());
   }
   @Test void connectingEclipseNeedsAnEclipseFolder(@TempDir Path dir){
