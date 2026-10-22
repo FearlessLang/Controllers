@@ -321,9 +321,9 @@ final class LogsSectionTest extends ManagerTest{
     var list= region;
     changed(empty, list);
     stabilize();
-    var logs= "diary/.out/logs/diary";
+    var logs= "diary/.out/logs/_diary";
     var log= Fs.walk(files.resolve(logs), s -> OneOr.of("one log", s.filter(Files::isRegularFile)));
-    Err.strCmp("Diary$[###].log", log.getFileName().toString());
+    Err.strCmp("diary$[###].log", log.getFileName().toString());
     checkContent(log, "[###] dear diary\n");
     var listed= look();
     logsButton.go();
