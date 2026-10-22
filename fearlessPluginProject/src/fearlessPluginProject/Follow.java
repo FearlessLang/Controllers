@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 final class Follow{
   private static volatile Optional<Follow> followed= Optional.empty();
+  private static final String applied= "Applied\n";
   final String alias;
   final boolean compile;
   final Instant since= Instant.now();
@@ -35,7 +36,10 @@ final class Follow{
     ManagerLink.send(verb, Stream.concat(Stream.of(args), Stream.of("Port:"+server.getLocalPort())).toArray(String[]::new));
   }
   private void follow(ServerSocket server){
-    try (server; var out= Output.start(alias); var s= server.accept(); var in= new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8)){
+    try (server; var out= Output.start(alias); var s= server.accept(); var raw= s.getInputStream(); var in= new InputStreamReader(raw, StandardCharsets.UTF_8)){
+      var status= new String(raw.readNBytes(applied.length()), StandardCharsets.UTF_8);
+      if (status.equals("Refused\n")){ return; }
+      assert status.equals(applied);
       var buf= new char[8192];
       for (int n; (n = in.read(buf)) != -1; ){ out.print(new String(buf, 0, n)); }
     }
