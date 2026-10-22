@@ -16,7 +16,6 @@ import java.util.stream.Stream;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
 import coordinator.MainsInfo;
-import realSourceOracle.AutoloadHandler;
 import realSourceOracle.BuildWithZip;
 import realSourceOracle.PathEntry;
 import managerMessages.Report;
@@ -100,7 +99,7 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
     return List.copyOf(files.keySet());
   }
   private static String shortcutFile(Path project, String main, String ext){
-    var name= AutoloadHandler.fileName(main.substring(main.lastIndexOf('.')+1)).orElseThrow(() -> Report.shortcutNoFileName(main));
+    var name= Fs.fileNameOfType(main.substring(main.lastIndexOf('.')+1)).orElseThrow(() -> Report.shortcutNoFileName(main));
     var file= name+"."+ext;
     try{ BuildWithZip.checkIndividualVisibleSegment(new PathEntry(project, Path.of(file))); }
     catch (UserError e){ throw Report.shortcutBadFileName(main, file); }
