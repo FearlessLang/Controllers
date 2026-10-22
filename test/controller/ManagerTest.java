@@ -841,19 +841,19 @@ final class ManagerTest{
     try (var server= port()){
       var show= follower(server);
       send(m, "Show", "Port:"+server.getLocalPort());
-      assertEquals("", show.join());
+      assertEquals("Applied\n", show.join());
       var unknown= follower(server);
       send(m, "Check", "nope", "Port:"+server.getLocalPort());
       assertEquals("Refused\n"+view.refused.get(0), unknown.join());
       var compile= follower(server);
       send(m, "Compile", "hello", "Port:"+server.getLocalPort());
-      same("--- compiling hello ---\ncompiled\n--- compile done ---\n", compile.join());
+      same("Applied\n--- compiling hello ---\ncompiled\n--- compile done ---\n", compile.join());
       var nothing= follower(server);
       send(m, "Compile", "hello", "Port:"+server.getLocalPort());
-      assertEquals("", nothing.join());
+      assertEquals("Applied\n", nothing.join());
       var run= follower(server);
       send(m, "Run", "hello", "hello.Hello", "Port:"+server.getLocalPort());
-      same("--- running hello.Hello ---\nran hello.Hello\n--- hello.Hello exited with 0 after [###]s ---\n", run.join());
+      same("Applied\n--- running hello.Hello ---\nran hello.Hello\n--- hello.Hello exited with 0 after [###]s ---\n", run.join());
       var refused= follower(server);
       send(m, "Run", "hello", "hello.Nope", "Port:"+server.getLocalPort());
       assertEquals("Refused\n"+view.refused.get(1), refused.join());

@@ -241,6 +241,7 @@ public final class Manager{
     try{
       follow = port ? Optional.of(Follow.to(args.getLast())) : follow;
       request(verb, port ? args.subList(0, args.size()-1) : args, follow);
+      follow.ifPresent(Follow::applied);
       if (!List.of("Run", "Compile").contains(verb)){ follow.ifPresent(Follow::end); }
     }
     catch (Refused r){ follow.ifPresent(fl -> fl.refuse(r.getMessage())); view.refuse(r.getMessage()); }
