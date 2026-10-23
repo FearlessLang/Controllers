@@ -28,9 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -143,20 +145,22 @@ final class ManagerTest{
   private final List<Path> connected= new ArrayList<>();
   private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
   @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); }
-  private Manager manager(Path dir, String... mains){
+  private Manager manager(Path dir, String... mains){ return manager(dir, view, known(mains)); }
+  private static Function<Path,Optional<Map<String,String>>> known(String... mains){
     var map= new LinkedHashMap<String,String>();
     for (var m : mains){ map.put(m, "_hello/_rank_app.fear"); }
     var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
-    return manager(dir, _ -> known);
+    return _ -> known;
   }
-  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){
+  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return manager(dir, view, read); }
+  private Manager manager(Path dir, View v, Function<Path,Optional<Map<String,String>>> read){
     var exit= new Manager.Exit(){
       @Override public void quit(){ exits.add("quit"); }
       @Override public void reset(){ exits.add("reset"); }
       @Override public void fail(Throwable problem){ failures.add(problem); }
     };
     Fs.ensureDir(dir.resolve("manager"));
-    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, locked, others, connected, granted), view, exit);
+    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, locked, others, connected, granted), v, exit);
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -607,6 +611,84 @@ final class ManagerTest{
     assertEquals(List.of(), listed(m));
     send(m, "EditMetadata", TaggedText.of(dir.resolve("none.info").toString()));
     same("The manager was asked to replace projects.info with the content of\n[###]none.info\nbut no file is there.", view.refused.getLast());
+  }
+  /// Forget, Kind and Link are EditMetadata with projects.info changed in one place: the same outcome, down to the refusal.
+  private record Twin(Manager m, View view, Path dir){}
+  private Twin twin(Path dir, String name, String... mains){
+    var v= new View();
+    return new Twin(manager(dir.resolve(name), v, known(mains)), v, dir.resolve(name));
+  }
+  private static List<String> outcome(Twin t){
+    var projects= t.m.state().projects().stream().map(p -> p.alias()+" "+p.kind()+" "+p.state()+" "+p.problem()+" "+p.job());
+    var all= Stream.of(Stream.of(info(t.dir), t.m.state().selected().toString()), projects, t.view.refused.stream()).flatMap(s -> s);
+    return all.map(s -> masked(s, t.dir.toString())).toList();
+  }
+  private static String masked(String s, String dir){ return s.replace(dir.replace("\\", "\\\\"), "DIR").replace(dir.replace("\\", "/"), "DIR").replace(dir, "DIR"); }
+  private void sameAsEditMetadata(Path dir, String[] mains, BiConsumer<Manager,Path> setup, Function<Registry.Content,String> edited, String... verb){
+    var a= twin(dir, "a", mains);
+    var b= twin(dir, "b", mains);
+    setup.accept(a.m, a.dir);
+    setup.accept(b.m, b.dir);
+    a.view.refused.clear();
+    b.view.refused.clear();
+    send(a.m, verb);
+    var managerDir= b.dir.resolve("manager");
+    edit(b.m, b.dir, edited.apply(Registry.parse(info(b.dir), managerDir.resolve("projects.info"), p -> p, managerDir)));
+    var outcomes= List.of(outcome(a), outcome(b));
+    for (var t : List.of(a, b)){
+      t.m.state().projects().stream().filter(Project::busy).forEach(p -> send(t.m, "Terminate", p.alias()));
+      idle(t.m);
+    }
+    assertEquals(outcomes.get(0), outcomes.get(1));
+  }
+  private static String without(Registry.Content c, String name){ return Registry.text(new Registry.Content(c.projects().stream().filter(e -> !e.alias().equals(name)).toList(), c.extensions())); }
+  private static String with(Registry.Content c, String name, UnaryOperator<Registry.Entry> op){ return Registry.text(new Registry.Content(c.projects().stream().map(e -> e.alias().equals(name) ? op.apply(e) : e).toList(), c.extensions())); }
+  private static void linked(Manager m, Path dir){
+    code(m, dir, "hello");
+    send(m, "Register", TaggedText.of(data(dir).toString()));
+    send(m, "Kind", "data", "data:readWrite");
+  }
+  private static void running(Manager m, Path dir){
+    linked(m, dir);
+    send(m, "Link", "hello", "data read Pub");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, s -> s.running().equals(List.of("hello - hello.Slow")));
+  }
+  private static final String[] none= {};
+  private static final String[] slow= {"hello.Slow"};
+  @Test void forgetIsEditMetadataWithTheProjectRemoved(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "hello"), c -> without(c, "hello"), "Forget", "hello");
+  }
+  @Test void forgetOfABusyProjectIsEditMetadataWithTheProjectRemoved(@TempDir Path dir){
+    sameAsEditMetadata(dir, slow, ManagerTest::running, c -> without(c, "hello"), "Forget", "hello");
+  }
+  @Test void kindFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "data"), c -> with(c, "data", e -> e.withKind(Kind.dataReadOnly)), "Kind", "data", "data:readOnly");
+  }
+  @Test void kindNotFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> { registered(m, d, "data"); send(m, "Kind", "data", "data:readOnly"); }, c -> with(c, "data", e -> e.withKind(Kind.code)), "Kind", "data", "code");
+  }
+  @Test void kindThatIsNotAKindIsEditMetadataWithThatText(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "data"), c -> Registry.text(c).replace("\"idle\"", "\"library\""), "Kind", "data", "library");
+  }
+  @Test void kindOfABusyProjectIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
+    sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withKind(Kind.idle)), "Kind", "hello", "idle");
+  }
+  @Test void linkIsEditMetadataWithTheLinkReplaced(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "hello", e -> e.withLinks(e.reads(), Map.of("data", List.of("Data")))), "Link", "hello", "data write Data");
+  }
+  @Test void linkWithNoTypeNamesIsEditMetadataWithTheLinkRemoved(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> { linked(m, d); send(m, "Link", "hello", "data read Pub"); }, c -> with(c, "hello", e -> e.withLinks(Map.of(), e.edits())), "Link", "hello", "data read");
+  }
+  @Test void linkWithABadTypeNameIsEditMetadataWithThatLink(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "hello", e -> e.withLinks(Map.of("data", List.of("lower")), e.edits())), "Link", "hello", "data read lower");
+  }
+  @Test void linkOfADataProjectIsEditMetadataWithThatLink(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "data", e -> e.withLinks(Map.of("hello", List.of("Hello")), e.edits())), "Link", "data", "hello read Hello");
+  }
+  @Test void linkWhileAMainRunsIsEditMetadataWithThatLink(@TempDir Path dir){
+    sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withLinks(Map.of("data", List.of("Old")), e.edits())), "Link", "hello", "data read Old");
   }
   @Test void aProjectWhoseFolderIsGoneIsInvalidAndCanBeForgotten(@TempDir Path dir){
     var m= manager(dir);
