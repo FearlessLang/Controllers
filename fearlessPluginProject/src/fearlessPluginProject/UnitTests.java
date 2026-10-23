@@ -19,7 +19,7 @@ final class UnitTests{
     var logs= folder.resolve(".out").resolve("logs");
     if (!Files.isDirectory(logs)){ return Optional.empty(); }
     try (var all= Files.walk(logs)){
-      var newest= all.filter(p -> p.getFileName().toString().startsWith("unit_test_log") && p.toString().endsWith(".log")).max(Comparator.comparing(p -> p.getFileName().toString()));
+      var newest= all.filter(p -> p.getParent().equals(logs.resolve("_base")) && p.getFileName().toString().matches("unit_test_log(\\$.*)?\\.log")).max(Comparator.comparing(p -> p.getFileName().toString()));
       return newest.map(log -> document(name, complete(log)));
     }
     catch (NoSuchFileException e){ return Optional.empty(); }
