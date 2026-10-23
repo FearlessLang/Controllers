@@ -46,10 +46,10 @@ final class FactsTest{
   static void cache(Path project, String pkg, long stamp, String mainsInfo, String below){
     at(project.resolve(".fearless_out").resolve(pkg+".built"), "fear:/_"+pkg+"/_rank_app.fear\n---\n"+below, stamp);
     at(project.resolve(".fearless_out").resolve(pkg+".json"), "{}\n", stamp);
-    at(project.resolve(".fearless_out").resolve(pkg+".mains.info"), mainsInfo, stamp);
-    at(project.resolve(".fearless_out").resolve("mains.info"), mainsInfo, stamp);
+    at(project.resolve(".fearless_out").resolve(pkg+"_manifest.info"), manifest(mainsInfo), stamp);
     at(project.resolve(".fearless_out").resolve("_map.json"), "{}", 0);
   }
+  static String manifest(String mains){ return "{\n  \"mains\": "+mains.strip()+",\n  \"attenuators\": []\n}\n"; }
   private static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file, content);
     Fs.ofV(() -> Files.setLastModifiedTime(file, FileTime.fromMillis(stamp)));
@@ -133,7 +133,7 @@ final class FactsTest{
     cache(project, "hello", 2000, "{}\n", "base\nlib");
     at(project.resolve(".fearless_out").resolve("lib.built"), "fear:/_lib/_rank_core.fear\n---\nbase", 3000);
     at(project.resolve(".fearless_out").resolve("lib.json"), "{}\n", 3000);
-    at(project.resolve(".fearless_out").resolve("lib.mains.info"), "{}\n", 3000);
+    at(project.resolve(".fearless_out").resolve("lib_manifest.info"), manifest("{}\n"), 3000);
     assertFalse(upToDate(facts(project, "someproject", Kind.code)));
     cache(project, "hello", 4000, "{}\n", "base\nlib");
     assertTrue(upToDate(facts(project, "someproject", Kind.code)));

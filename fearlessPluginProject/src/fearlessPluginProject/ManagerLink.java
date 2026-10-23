@@ -48,10 +48,15 @@ public final class ManagerLink{
   }
   static Path out(Path folder){ return folder.resolve(".fearless_out"); }
   static Map<String,String> mains(Path folder){
-    var file= out(folder).resolve("mains.info");
     var res= new LinkedHashMap<String,String>();
-    if (Files.exists(file)){ Info.parse(file).forEach((main,m) -> res.put(main, (String)Info.lst(m).getFirst())); }
+    for (var file : manifests(folder)){ Info.obj(Info.parse(file).get("mains")).forEach((main,m) -> res.put(main, (String)Info.lst(m).getFirst())); }
     return res;
+  }
+  static List<Path> manifests(Path folder){
+    var out= out(folder);
+    if (!Files.isDirectory(out)){ return List.of(); }
+    try (var s= Files.list(out)){ return s.filter(p -> p.getFileName().toString().endsWith("_manifest.info")).sorted().toList(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   static Optional<String> error(Path folder, String name){
     var file= out(folder).resolve(name);

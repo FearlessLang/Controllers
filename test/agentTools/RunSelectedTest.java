@@ -256,7 +256,7 @@ final class RunSelectedTest extends ManagerTest{
     compile.go();
     compiled.go();
     stabilize();
-    checkContent(files.resolve("helloWorld/.fearless_out/mains.info"), "[###]\"hello.Hello1\": [###]");
+    checkContent(files.resolve("helloWorld/.fearless_out/hello_manifest.info"), "[###]\"hello.Hello1\": [###]");
     var before= look();
     runV.go();
     mainsShown.go();

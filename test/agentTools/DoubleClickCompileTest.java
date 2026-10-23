@@ -191,7 +191,7 @@ final class DoubleClickCompileTest extends ManagerTest{
     var center= region;
     same(before, center);
     stabilize();
-    checkContent(files.resolve("hasty/.fearless_out/mains.info"), "[###]\"hasty.Go\"[###]");
+    checkContent(files.resolve("hasty/.fearless_out/hasty_manifest.info"), "[###]\"hasty.Go\"[###]");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

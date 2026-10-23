@@ -408,7 +408,7 @@ public final class Manager{
       var filled= Project.filled(read, live.get(f).claims, alias(f), others);
       Project.shortcuts(Project.claimants(f, alias(f), filled));
       icons.forEach((icon,bytes) -> ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"), icon, bytes));
-      if (!filled.equals(read)){ Fs.writeUtf8(f.resolve(Facts.outDir).resolve("mains.info"), filled.print()); }
+      if (!filled.equals(read)){ MainsInfo.write(f, filled); }
       return filled;
     }
     catch (UserError e){ throw new Refused(e.getMessage()); }
@@ -421,8 +421,10 @@ public final class Manager{
   }
   private void failed(Path f, int ec, String why){
     if (ec == 0){ output(f, why.stripTrailing()+"\n"); }
-    try{ Fs.deleteIfExists(f.resolve(Facts.outDir).resolve("mains.info")); }
-    catch (IOException e){ output(f, Report.notWritten("mains.info", e)); }
+    for (var p : MainsInfo.files(f)){
+      try{ Fs.deleteIfExists(p); }
+      catch (IOException e){ output(f, Report.notWritten(p.getFileName().toString(), e)); }
+    }
     errorFile(f, "compile_error.txt", Optional.of(why));
   }
   private void errorFile(Path f, String name, Optional<String> why){
