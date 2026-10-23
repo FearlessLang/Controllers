@@ -221,7 +221,7 @@ final class CompileFailsTest extends ManagerTest{
     fixedCompiled.go();
     stabilize();
     assertFalse(Files.exists(broken.resolve(".fearless_out").resolve("compile_error.txt")));
-    checkContent(files.resolve("broken/.fearless_out/mains.info"), "[###]\"broken.Hello\"[###]");
+    checkContent(files.resolve("broken/.fearless_out/broken_manifest.info"), "[###]\"broken.Hello\"[###]");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

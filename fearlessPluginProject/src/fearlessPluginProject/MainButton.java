@@ -158,12 +158,10 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     pkgs.forEach((pkg, rs) -> rank.put(pkg, rank(rs)));
     var out= ManagerLink.out(folder);
     if (!Files.isDirectory(out)){ return true; }
-    var top= rank.values().stream().mapToInt(i -> i).max().getAsInt();
-    var listed= Files.exists(out.resolve("mains.info"));
     var map= stamp(out.resolve("_map.json"));
-    return pkgs.keySet().stream().anyMatch(pkg -> !built(out, pkg, pkgs.get(pkg), rank, map, listed || rank.get(pkg) != top));
+    return pkgs.keySet().stream().anyMatch(pkg -> !built(out, pkg, pkgs.get(pkg), rank, map));
   }
-  private static boolean built(Path out, String pkg, List<Ref> files, Map<String,Integer> rank, long map, boolean listed){
+  private static boolean built(Path out, String pkg, List<Ref> files, Map<String,Integer> rank, long map){
     var lower= rank.entrySet().stream().filter(e -> e.getValue() < rank.get(pkg)).map(Map.Entry::getKey).toList();
     var below= lower.stream().mapToLong(n -> stamp(out.resolve(n+".json")));
     var own= files.stream().mapToLong(Ref::stamp);
@@ -171,7 +169,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var built= out.resolve(pkg+".built");
     var list= files.stream().map(Ref::fearPath).sorted().collect(Collectors.joining("\n"))
       +Stream.concat(lower.stream(), Stream.of("base")).sorted().map(n -> "\n"+n).collect(Collectors.joining("", "\n---", ""));
-    return stamp(built) >= maxIn && ManagerLink.read(built).equals(list) && Files.exists(out.resolve(pkg+".mains.info")) && listed;
+    return stamp(built) >= maxIn && ManagerLink.read(built).equals(list) && Files.exists(out.resolve(pkg+"_manifest.info"));
   }
   private static Optional<String> pkg(Ref r){
     var candidates= r.segments().stream().filter(s -> s.startsWith("_") && !s.contains(".")).toList();

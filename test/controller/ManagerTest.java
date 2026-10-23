@@ -910,7 +910,7 @@ final class ManagerTest{
     return Project.claimed(m.state().projects()).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream().map(c -> c.label()+(c.shortcut() ? " shortcut " : " openWith ")+c.claim().icon()).toList()));
   }
   private static String fapp(String alias, String main, String icon){ return AutoselectTest.fapp(AutoselectTest.start(alias, main, icon)); }
-  private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve("mains.info"); }
+  private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve(project.getFileName()+"_manifest.info"); }
   private static String compileError(Path project){ return Fs.readUtf8(project.resolve(Facts.outDir).resolve("compile_error.txt")); }
   private static void touch(Path project){
     var src= project.resolve("_"+project.getFileName()).resolve("_rank_app.fear");
@@ -966,7 +966,7 @@ final class ManagerTest{
     compiled(m, "hello", "other");
     assertEquals(List.of("bar", "fapp001", "fapp002", "foo"), claimed(m).keySet().stream().sorted().toList());
     Fs.ofV(() -> Files.delete(mainsInfo(hello)));
-    Fs.writeUtf8(mainsInfo(other), "{\"other.Other\": []}\n");
+    Fs.writeUtf8(mainsInfo(other), FactsTest.manifest("{\"other.Other\": []}\n"));
     var again= manager(dir, "hello.Hello");
     again.settle();
     assertEquals(Map.of(), claimed(again));
@@ -983,7 +983,7 @@ final class ManagerTest{
     send(m, "Kind", "hello", "code");
     assertEquals(Map.of("foo", List.of("hello::hello.Hello openWith hello.IconsFoo"), "fapp001", List.of("hello::hello.Hello shortcut base.IconsConflict")), claimed(m));
     send(m, "Kind", "hello", "idle");
-    Fs.writeUtf8(mainsInfo(hello), claiming("hello.Hello", "fapp001", "bar"));
+    Fs.writeUtf8(mainsInfo(hello), FactsTest.manifest(claiming("hello.Hello", "fapp001", "bar")));
     send(m, "Kind", "hello", "code");
     assertEquals(Map.of(), claimed(m));
     assertFalse(Files.exists(hello.resolve(Facts.outDir)));
@@ -1013,7 +1013,7 @@ final class ManagerTest{
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     image(hello.resolve("art").resolve("foo.png"), 64, 64, "png");
-    Fs.writeUtf8(mainsInfo(hello), claiming("hello.Hello", "", "foo"));
+    Fs.writeUtf8(mainsInfo(hello), FactsTest.manifest(claiming("hello.Hello", "", "foo")));
     allow(m, dir, "foo");
     var again= manager(dir, "hello.Hello");
     again.settle();
@@ -1030,8 +1030,8 @@ final class ManagerTest{
     var auto= fapp("hello", "hello.Hello", "base.IconsConflict");
     image(hello.resolve("art").resolve("foo.png"), 64, 64, "png");
     image(other.resolve("art").resolve("foo.png"), 64, 64, "png");
-    Fs.writeUtf8(mainsInfo(hello), claiming("hello.Hello", "", "foo"));
-    Fs.writeUtf8(mainsInfo(other), claiming("other.Other", auto, "bar"));
+    Fs.writeUtf8(mainsInfo(hello), FactsTest.manifest(claiming("hello.Hello", "", "foo")));
+    Fs.writeUtf8(mainsInfo(other), FactsTest.manifest(claiming("other.Other", auto, "bar")));
     allow(m, dir, "foo", "bar");
     var again= manager(dir, "hello.Hello");
     again.settle();
