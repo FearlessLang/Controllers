@@ -327,7 +327,7 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
       use base.Frame as Frame;
       Show: Main{sys -> sys.gui.run Note}
       Tell: Main{sys -> sys.out.println("told")}
-      Note: Consumer[mut Frame]{:: .title "chain" .content{:: .label{:: .text "terminate this program" } } }
+      Note: Consumer[mut Frame]{:: .title "chain" .content.pane{:: .label{:: .text "terminate this program" } } }
       """);
     var bare= look();
     start();

@@ -238,7 +238,7 @@ final class CloseProgramWindowTest extends ManagerTest{
       use base.Frame as Frame;
 
       Show: Main{sys -> sys.gui.run Note}
-      Note: Consumer[mut Frame]{:: .title "shut" .content{:: .label{:: .text "close this window" } } }
+      Note: Consumer[mut Frame]{:: .title "shut" .content.pane{:: .label{:: .text "close this window" } } }
       """);
     var bare= look();
     start();
