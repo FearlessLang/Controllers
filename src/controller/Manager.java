@@ -61,7 +61,6 @@ public final class Manager{
     void choose(Path file, List<Project.Claimant> choices);
     void allow(String question, List<String> extensions);
     void edited(Path file);
-    void taken(List<String> programs);
   }
   public interface Tools{
     ChildJvm compile(Path folder, Consumer<String> out);
@@ -70,7 +69,6 @@ public final class Manager{
     Path stdLibBase();
     Path baseCache();
     void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy);
-    List<String> others();
     void connect(Path eclipse, Path managerDir);
   }
   public interface Exit{
@@ -123,7 +121,6 @@ public final class Manager{
   private final Map<Path,Live> live= new HashMap<>();
   private Optional<Path> selected= Optional.empty();
   private List<?> wanted= List.of();
-  private boolean taken;
   private int turn;
   private volatile State state= new State(List.of(), Optional.empty(), List.of());
   public Manager(Path dir, Tools tools, View view, Exit exit){
@@ -137,7 +134,6 @@ public final class Manager{
   public State state(){ return state; }
   public void start(){
     core.scheduleWithFixedDelay(() -> step(this::rotate), 3, 3, TimeUnit.SECONDS);
-    core.scheduleWithFixedDelay(() -> step(this::watchAssociations), 10, 10, TimeUnit.SECONDS);
   }
   public void message(String text){ post(() -> apply(text)); }
   void stop(){
@@ -202,7 +198,6 @@ public final class Manager{
   }
   private boolean allowed(Project.Claimant c){ return !Registry.isSystem(c.claim().extension()) || registry.extensions().contains(c.claim().extension()); }
   private void associate(List<String> extensions){
-    if (taken){ return; }
     Stream.concat(Project.claimed(projects()).values().stream().flatMap(List::stream), preloads()).filter(c -> !Fs.isRegularFile(c.icon(".png")))
       .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(this::iconGone);
     var claimed= Project.claimed(projects());
@@ -225,13 +220,6 @@ public final class Manager{
     return all.stream().map(e -> new Icon("."+e, icon(claimed.getOrDefault(e, List.of()), suffix), icon(claimed.getOrDefault(e, List.of()), ".png"))).toList();
   }
   private Path icon(List<Project.Claimant> cs, String suffix){ return cs.size() == 1 ? cs.getFirst().icon(suffix) : dir.resolve("icons").resolve(conflict+suffix); }
-  private void watchAssociations(){
-    if (taken){ return; }
-    var others= tools.others();
-    if (!others.isEmpty()){ taken = true; view.taken(others); return; }
-    wanted = List.of();
-    associate(registry.extensions());
-  }
   private void apply(String message){
     var lines= List.of(message.split("\n", -1));
     var verb= lines.getFirst();

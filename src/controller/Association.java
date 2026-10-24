@@ -35,15 +35,12 @@ public final class Association{
   }
   static void reconcile(Path launcher, List<Icon> extensions, List<WindowIcon> windows, Function<String,String> claimedBy){
     FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, windows, launcher, iconFile(),
+      c -> JavacTool.managerFolderOf(c).ifPresent(Fs::rmTree),
       reported -> Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations", Association::eradicateAll),
       locked -> Fs.isWindows() ? Violation.associationUserLocked(locked, claimedBy) : Violation.associationChosenDefault(locked, claimedBy),
       held -> Violation.associationNotOurs(held, claimedBy),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
-  }
-  static List<String> others(){
-    var mine= identity(launcher());
-    return FileAssociations.identities(belongsToFamily).stream().filter(i -> !i.equals(mine)).toList();
   }
   static void eradicateAll(){ FileAssociations.eradicateAll(belongsToFamily, Violation::associationLeftHalfDone); }
 }

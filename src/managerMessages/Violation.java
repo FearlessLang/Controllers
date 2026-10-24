@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import userMessages.UserError;
-import utils.Join;
 
 /// Violation: what the manager can no longer do: the system does not offer what it needs,
 /// or its own manager folder changed under it.
@@ -28,15 +27,6 @@ public final class Violation{
     """;
   }
   public static UserError fatalFromRun(String details){ return new UserError("A Fearless process reported a failure the manager can not recover from:\n\n"+details); }
-  public static String fearlessTaken(List<String> programs){
-    return """
-      Another Fearless program now opens Fearless projects:
-      %s
-
-      Only one Fearless program at a time opens them, so this manager ends now.
-      Starting this manager again makes it the program opening them, with every
-      kind of file its projects open.""".formatted(Join.of(programs.stream().map(p -> "  "+p), "", "\n", "", ""));
-  }
   public static UserError programFolderNotFound(Path startedFrom, String expectedDirName){
     return new UserError("""
       This copy of Fearless appears to have been moved, renamed, or damaged:

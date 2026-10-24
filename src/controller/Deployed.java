@@ -59,7 +59,6 @@ public final class Deployed implements Manager.Tools{
   private static WindowIcon window(Project.Claimant c){
     return new WindowIcon(Association.deskId(c.folder(), c.main())+"-"+c.claim().icon(), c.main().substring(c.main().lastIndexOf('.')+1), c.folder(), c.icon(".png"));
   }
-  @Override public List<String> others(){ return Fs.isMac() ? List.of() : Association.others(); }
   @Override public void connect(Path eclipse, Path managerDir){
     Eclipse.connect(eclipse, appDir().resolve("eclipsePlugin"), Main.programDir(), Association.launcher(), managerDir, stdLib("baseCache"));
   }
