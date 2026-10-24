@@ -24,7 +24,7 @@ import tools.Fs;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
 /// folder holds, its mains once known, why its links are broken, and its job, if any.
-public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mains, MainsInfo claims, Optional<String> linkProblem, String job){
+public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, Optional<String> linkProblem, String job){
   public static final String compiling= "compiling";
   public static final MainsInfo noClaims= new MainsInfo(Map.of());
   public record Claimant(Path folder, String alias, String main, String kind, MainsInfo.Claim claim){
@@ -45,7 +45,8 @@ public record Project(Entry entry, Facts facts, Optional<Map<String,String>> mai
   public boolean busy(){ return !job.isEmpty(); }
   public boolean needsCompiling(){ return kind() == Kind.code && facts.stale().isPresent(); }
   public Optional<String> problem(){ return facts.problem().or(() -> linkProblem); }
-  public List<String> knownMains(){ return mains.map(m -> List.copyOf(m.keySet())).orElse(List.of()); }
+  public List<String> knownMains(){ return mains.map(m -> List.copyOf(m.mains().keySet())).orElse(List.of()); }
+  public List<String> knownAttenuators(){ return mains.map(MainsInfo::attenuators).orElse(List.of()); }
   public List<String> selectedMains(){
     var known= knownMains();
     return known.size() == 1 ? known : known.stream().filter(entry.mains()::contains).toList();

@@ -78,7 +78,7 @@ final class ManagerTest{
     Fs.runTool("javac", List.of("-d", classes.toString(), src.toString()));
     FactsTest.baseCache(classes);
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> locked, List<String> others, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
+  record Fake(Function<Path,Optional<MainsInfo>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> locked, List<String> others, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       if (infos.getOrDefault(folder.getFileName().toString(), "").equals("fail")){ return jvm(out, "broken source", "1", "0"); }
@@ -87,8 +87,11 @@ final class ManagerTest{
         .filter(c -> !c.icon().startsWith("base.")).map(c -> folder.resolve(c.diskPath())).filter(p -> !Files.exists(p)).forEach(p -> image(p, 64, 64, "png"));
       return jvm(out, "compiled", "0", "0");
     }
-    @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, Consumer<String> out){ granted.add(grants); return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse(""), "0", main.endsWith("Slow") ? "60000" : "0"); }
-    @Override public Optional<Map<String,String>> mains(Path folder){ return read.apply(folder); }
+    @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
+      granted.add(grants);
+      return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse("")+(attenuators.isEmpty() ? "" : " under "+String.join(" ", attenuators)), "0", main.endsWith("Slow") ? "60000" : "0");
+    }
+    @Override public Optional<MainsInfo> mains(Path folder){ return read.apply(folder); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     @Override public Path baseCache(){ return classes.resolve("baseCache"); }
     @Override public void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy){
@@ -146,14 +149,14 @@ final class ManagerTest{
   private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
   @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); }
   private Manager manager(Path dir, String... mains){ return manager(dir, view, known(mains)); }
-  private static Function<Path,Optional<Map<String,String>>> known(String... mains){
-    var map= new LinkedHashMap<String,String>();
-    for (var m : mains){ map.put(m, "_hello/_rank_app.fear"); }
-    var known= Optional.<Map<String,String>>of(Collections.unmodifiableMap(map));
+  private static Function<Path,Optional<MainsInfo>> known(String... mains){ return known(List.of(), mains); }
+  private static Function<Path,Optional<MainsInfo>> known(List<String> attenuators, String... mains){
+    var main= new MainsInfo.Main("_hello/_rank_app.fear", List.of(), List.of(), List.of());
+    var known= Optional.of(new MainsInfo(Stream.of(mains).collect(Collectors.toMap(m -> m, _ -> main)), attenuators));
     return _ -> known;
   }
-  private Manager manager(Path dir, Function<Path,Optional<Map<String,String>>> read){ return manager(dir, view, read); }
-  private Manager manager(Path dir, View v, Function<Path,Optional<Map<String,String>>> read){
+  private Manager manager(Path dir, Function<Path,Optional<MainsInfo>> read){ return manager(dir, view, read); }
+  private Manager manager(Path dir, View v, Function<Path,Optional<MainsInfo>> read){
     var exit= new Manager.Exit(){
       @Override public void quit(){ exits.add("quit"); }
       @Override public void reset(){ exits.add("reset"); }
@@ -338,7 +341,7 @@ final class ManagerTest{
     compiled(m, "hello");
     compiled(m, "hello");
     assertEquals(List.of(hello), view.cleared);
-    assertEquals(Optional.of(Map.of("hello.Hello", "_hello/_rank_app.fear")), project(m, hello).mains());
+    assertEquals(known("hello.Hello").apply(hello), project(m, hello).mains());
   }
   @Test void aBusyProjectRefusesJobsDeleteCacheKindAndForgetThenTerminateEndsTheJob(@TempDir Path dir){
     var m= manager(dir, "hello.Slow");
@@ -442,7 +445,7 @@ final class ManagerTest{
     send(m, "Forget", "hello", "now");
     send(m, "Run");
     assertEquals(5, view.refused.size());
-    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\".", view.refused.get(0));
+    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\", \"Attenuate\".", view.refused.get(0));
     assertEquals("The manager was asked to change the kind of \"hello\" to \"library\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".", view.refused.get(1));
     assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link.", view.refused.get(2));
     assertEquals("The manager was asked \"Forget\" with 2 arguments, but \"Forget\" takes 1.\nThe arguments are:\n  \"hello\"\n  \"now\"", view.refused.get(3));
@@ -569,6 +572,64 @@ final class ManagerTest{
     assertEquals(List.of(Map.of(), Map.of()), List.of(project(m, hello).entry().reads(), project(m, hello).entry().edits()));
     assertEquals(Project.State.codeNoCache, project(m, hello).state());
   }
+  @Test void attenuatorsAreSetByRequestAndARunStartsEachMainUnderItsOwn(@TempDir Path dir){
+    var m= manager(dir, known(List.of("hello.NoGui", "hello.NoNet"), "hello.One", "hello.Two"));
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Attenuate", "hello", "hello.One hello.NoNet hello.NoGui");
+    send(m, "Attenuate", "hello", "hello.Two hello.NoGui");
+    assertEquals(Map.of("hello.One", List.of("hello.NoNet", "hello.NoGui"), "hello.Two", List.of("hello.NoGui")), project(m, hello).entry().attenuators());
+    send(m, "Attenuate", "hello", "hello.Two");
+    assertEquals(Map.of("hello.One", List.of("hello.NoNet", "hello.NoGui")), project(m, hello).entry().attenuators());
+    send(m, "Run", "hello", "hello.One hello.Two");
+    idle(m);
+    same("""
+      --- running hello.One ---
+      ran hello.One under hello.NoNet hello.NoGui
+      --- hello.One exited with 0 after [###]s ---
+      --- running hello.Two ---
+      ran hello.Two
+      --- hello.Two exited with 0 after [###]s ---
+      """, view.out(hello));
+    send(m, "Attenuate", "hello", "hello.One hello.NoGui hello.NoGui");
+    assertEquals(Map.of("hello.One", List.of("hello.NoGui", "hello.NoGui")), project(m, hello).entry().attenuators());
+    send(m, "Attenuate", "hello", "hello.One hello.NoNet hello.NoGui");
+    send(m, "Attenuate", "hello", "hello.One NoGui");
+    same("[###]\"NoGui\" in \"attenuators\".\"hello.One\" is not a Fearless attenuator name[###]", view.refused.getLast());
+    send(m, "Attenuate", "hello", "");
+    assertEquals("The manager was asked to attenuate a main of \"hello\", but the request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all.", view.refused.getLast());
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Attenuate", "data", "hello.One hello.NoGui");
+    assertEquals("The manager was asked \"Attenuate\" on \"data\", but \"data\" is \"idle\": only a \"code\" project can \"Attenuate\".", view.refused.getLast());
+    assertEquals(3, view.refused.size());
+    assertEquals(Map.of("hello.One", List.of("hello.NoNet", "hello.NoGui")), project(m, hello).entry().attenuators());
+  }
+  @Test void aRunIsRefusedWhileAnAttenuatedMainOrAnAppliedAttenuatorIsNotOfTheProject(@TempDir Path dir){
+    var m= manager(dir, known(List.of("hello.NoGui"), "hello.One", "hello.Two"));
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Attenuate", "hello", "hello.Old hello.NoGui");
+    send(m, "Run", "hello", "hello.One");
+    assertEquals("""
+      The manager was asked "Run" on "hello", but "hello.Old" has attenuators, and "hello.Old" is not a main of "hello".
+      The mains are:
+        hello.One
+        hello.Two""", view.refused.getLast());
+    send(m, "Attenuate", "hello", "hello.Old");
+    send(m, "Attenuate", "hello", "hello.Two hello.NoGui hello.NoNet");
+    send(m, "Run", "hello", "hello.One");
+    assertEquals("""
+      The manager was asked "Run" on "hello", but "hello.Two" is attenuated by "hello.NoNet", and "hello.NoNet" is not an attenuator of "hello".
+      The attenuators are:
+        hello.NoGui""", view.refused.getLast());
+    assertEquals(2, view.refused.size());
+    same("--- compiling hello ---\ncompiled\n--- compile done ---\n", view.out(hello));
+    send(m, "Attenuate", "hello", "hello.Two hello.NoGui");
+    send(m, "Run", "hello", "hello.One");
+    idle(m);
+    same("--- running hello.One ---\nran hello.One\n--- hello.One exited with 0 after [###]s ---\n", view.out(hello));
+  }
   @Test void aRunningMainKeepsTheDataProjectsOfItsLinksUntilItEnds(@TempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
@@ -686,6 +747,12 @@ final class ManagerTest{
   }
   @Test void linkOfADataProjectIsEditMetadataWithThatLink(@TempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "data", e -> e.withLinks(Map.of("hello", List.of("Hello")), e.edits())), "Link", "data", "hello read Hello");
+  }
+  @Test void attenuateIsEditMetadataWithTheAttenuatorsReplaced(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "hello", e -> e.withAttenuators(Map.of("hello.Hello", List.of("hello.NoGui", "base.NoManager")))), "Attenuate", "hello", "hello.Hello hello.NoGui base.NoManager");
+  }
+  @Test void attenuateWithNoAttenuatorIsEditMetadataWithTheMainRemoved(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> { linked(m, d); send(m, "Attenuate", "hello", "hello.Hello hello.NoGui"); }, c -> with(c, "hello", e -> e.withAttenuators(Map.of())), "Attenuate", "hello", "hello.Hello");
   }
   @Test void linkWhileAMainRunsIsEditMetadataWithThatLink(@TempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withLinks(Map.of("data", List.of("Old")), e.edits())), "Link", "hello", "data read Old");
@@ -830,12 +897,12 @@ final class ManagerTest{
   }
   @Test void compilingForgetsSelectedMainsThatAreGone(@TempDir Path dir){
     var mains= new ArrayList<>(List.of("hello.One", "hello.Two", "hello.Old"));
-    var m= manager(dir, _ -> Optional.of(mains.stream().collect(Collectors.toMap(k -> k, _ -> "_hello/_rank_app.fear"))));
+    var m= manager(dir, f -> known(mains.toArray(String[]::new)).apply(f));
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     send(m, "Run", "hello", "hello.Old hello.Two");
     idle(m);
-    assertEquals(List.of("hello.Two", "hello.Old"), project(m, hello).entry().mains());
+    assertEquals(List.of("hello.Old", "hello.Two"), project(m, hello).entry().mains());
     mains.remove("hello.Old");
     FactsTest.cache(hello, "hello", 1000);
     compiled(m, "hello");
@@ -880,7 +947,7 @@ final class ManagerTest{
       var src= f.resolve("_hello").resolve("_rank_app.fear");
       Fs.writeUtf8(src, Fs.readUtf8(src)+"//saved\n");
       Fs.ofV(() -> Files.setLastModifiedTime(src, FileTime.fromMillis(FactsTest.after(f))));
-      return Optional.of(Map.of("hello.Hello", "_hello/_rank_app.fear"));
+      return known("hello.Hello").apply(f);
     });
     var hello= code(m, dir, "hello");
     view.visible = false;
@@ -1542,7 +1609,7 @@ final class ManagerTest{
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
   }
   private Manager opening(Path dir){
-    return manager(dir, f -> Optional.of(Map.of(f.getFileName()+"."+(f.getFileName().toString().equals("slow") ? "Slow" : "Hello"), "_hello/_rank_app.fear")));
+    return manager(dir, f -> known(f.getFileName()+"."+(f.getFileName().toString().equals("slow") ? "Slow" : "Hello")).apply(f));
   }
   private static Path doc(Path dir, String name){
     var res= dir.resolve("desk").resolve(name);

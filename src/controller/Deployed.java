@@ -2,7 +2,6 @@ package controller;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -10,6 +9,7 @@ import java.util.stream.Stream;
 
 import coordinator.CapabilityEnvironment;
 import coordinator.Coordinator;
+import coordinator.MainsInfo;
 import core.E.Literal;
 import core.OtherPackages;
 import fileAssociations.Icon;
@@ -45,8 +45,8 @@ public final class Deployed implements Manager.Tools{
       "-m", "Controller/controller.ChildMain",
       folder.toString()), out);
   }
-  @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, Consumer<String> out){
-    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.reads(), grants.edits(), Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
+  @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
+    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.reads(), grants.edits(), attenuators, Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Path baseCache(){ return stdLib("baseCache"); }
@@ -63,7 +63,7 @@ public final class Deployed implements Manager.Tools{
   @Override public void connect(Path eclipse, Path managerDir){
     Eclipse.connect(eclipse, appDir().resolve("eclipsePlugin"), Main.programDir(), Association.launcher(), managerDir, stdLib("baseCache"));
   }
-  @Override public Optional<Map<String,String>> mains(Path folder){
+  @Override public Optional<MainsInfo> mains(Path folder){
     var c= coordinator(folder);
     return c.mains(folder, c.sourceOracle(stdLib("base")));
   }

@@ -45,20 +45,22 @@ public final class Registry{
     public boolean isData(){ return this == dataReadOnly || this == dataReadWrite; }
     public static Optional<Kind> of(String text){ return OneOr.opt("kind "+text, Stream.of(values()).filter(k -> k.text.equals(text))); }
   }
-  public record Entry(String alias, Path path, Kind kind, List<String> mains, Map<String,List<String>> reads, Map<String,List<String>> edits){
-    public Entry{ mains = List.copyOf(mains); reads = Collections.unmodifiableMap(new LinkedHashMap<>(reads)); edits = Collections.unmodifiableMap(new LinkedHashMap<>(edits)); }
-    public Entry withKind(Kind k){ return new Entry(alias, path, k, mains, reads, edits); }
-    public Entry withMains(List<String> m){ return new Entry(alias, path, kind, m, reads, edits); }
-    public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias, path, kind, mains, r, e); }
+  public record Entry(String alias, Path path, Kind kind, List<String> mains, Map<String,List<String>> reads, Map<String,List<String>> edits, Map<String,List<String>> attenuators){
+    public Entry{ mains = List.copyOf(mains); reads = Collections.unmodifiableMap(new LinkedHashMap<>(reads)); edits = Collections.unmodifiableMap(new LinkedHashMap<>(edits)); attenuators = Collections.unmodifiableMap(new LinkedHashMap<>(attenuators)); }
+    public Entry withKind(Kind k){ return new Entry(alias, path, k, mains, reads, edits, attenuators); }
+    public Entry withMains(List<String> m){ return new Entry(alias, path, kind, m, reads, edits, attenuators); }
+    public Entry withLinks(Map<String,List<String>> r, Map<String,List<String>> e){ return new Entry(alias, path, kind, mains, r, e, attenuators); }
+    public Entry withAttenuators(Map<String,List<String>> a){ return new Entry(alias, path, kind, mains, reads, edits, a); }
   }
   public record Content(List<Entry> projects, List<String> extensions){
     public Content{ projects = List.copyOf(projects); extensions = List.copyOf(extensions); }
   }
   public record Grants(Map<String,Path> reads, Map<String,Path> edits){}
-  private static final List<String> keys= List.of("path", "kind", "mains", "reads", "edits");
+  private static final List<String> keys= List.of("path", "kind", "mains", "reads", "edits", "attenuators");
   private static final String kinds= "\"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
   private static final String typeShape= "a Fearless type name: after any leading underscores, it starts with an uppercase letter";
+  private static final String attenuatorShape= "a Fearless attenuator name: a package name, a dot, then a type name, like \"hello.NoGui\"";
   public static final String systemShape= "a system extension: 1 to "+Fs.maxExtSeg+" lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\"";
   private final Path dir;
   private final Consumer<Content> check;
@@ -95,7 +97,7 @@ public final class Registry{
     assert folder.isAbsolute() && folder.equals(real(folder));
     assert all().stream().noneMatch(e -> e.path().equals(folder) || e.alias().equals(alias));
     assert overlapping(folder).isEmpty();
-    save(new Content(Push.of(all(), new Entry(alias, folder, Kind.idle, List.of(), Map.of(), Map.of())), extensions()));
+    save(new Content(Push.of(all(), new Entry(alias, folder, Kind.idle, List.of(), Map.of(), Map.of(), Map.of())), extensions()));
   }
   public void remove(Path folder){ save(new Content(all().stream().filter(e -> !e.path().equals(folder)).toList(), extensions())); }
   public void update(Path folder, UnaryOperator<Entry> op){
@@ -190,7 +192,7 @@ public final class Registry{
         }
       }
     }
-    return new Entry(field.key(), identity.apply(pathOf(source, field.key(), obj)), kindOf(source, field.key(), obj), mains, reads, edits);
+    return new Entry(field.key(), identity.apply(pathOf(source, field.key(), obj)), kindOf(source, field.key(), obj), mains, reads, edits, attenuators(source, obj));
   }
   private static Path pathOf(String source, String alias, Obj obj){
     var field= obj.field("path").orElseThrow(() -> Info.err(source, obj.span(), Report.infoMissingPath(alias)));
@@ -235,6 +237,24 @@ public final class Registry{
     }
     return out;
   }
+  private static Map<String,List<String>> attenuators(String source, Obj obj){
+    var field= obj.field("attenuators");
+    if (field.isEmpty()){ return Map.of(); }
+    if (!(field.get().value() instanceof Obj o)){ throw Info.err(source, field.get().value().span(), Report.infoAttenuatorsNotObject()); }
+    var out= new LinkedHashMap<String,List<String>>();
+    for (var f : o.fields()){
+      if (!isMainName(f.key())){ throw Info.err(source, f.keySpan(), Report.infoNotShape(f.key(), "\"attenuators\"", mainShape)); }
+      var label= "\"attenuators\".\""+f.key()+"\"";
+      if (!(f.value() instanceof Info.Lst l)){ throw Info.err(source, f.value().span(), Report.infoNotList(label)); }
+      for (var item : l.items()){
+        var a= str(source, item, "Every entry in "+label);
+        if (!isMainName(a)){ throw Info.err(source, item.span(), Report.infoNotShape(a, label, attenuatorShape)); }
+      }
+      if (l.items().isEmpty()){ throw Info.err(source, f.value().span(), Report.infoAttenuatorsEmpty(label)); }
+      out.put(f.key(), l.items().stream().map(i -> ((Info.Str)i).value()).toList());
+    }
+    return out;
+  }
   private static boolean isMainName(String s){
     var dot= s.indexOf('.');
     return dot > 0 && TName.isPkgName(s.substring(0, dot)) && TName.isTypeName(s.substring(dot+1));
@@ -250,6 +270,7 @@ public final class Registry{
     if (!e.mains().isEmpty()){ fields.add(new Field("mains", Info.noSpan, strList(e.mains()))); }
     if (!e.reads().isEmpty()){ fields.add(new Field("reads", Info.noSpan, aliasMap(e.reads()))); }
     if (!e.edits().isEmpty()){ fields.add(new Field("edits", Info.noSpan, aliasMap(e.edits()))); }
+    if (!e.attenuators().isEmpty()){ fields.add(new Field("attenuators", Info.noSpan, aliasMap(e.attenuators()))); }
     return new Obj(fields, Info.noSpan);
   }
   private static Info strList(List<String> xs){ return new Info.Lst(xs.stream().<Info>map(x -> new Info.Str(x, Info.noSpan)).toList(), Info.noSpan); }
