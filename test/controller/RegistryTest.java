@@ -38,7 +38,7 @@ final class RegistryTest{
   @Test void anEmptyFileIsNoProjects(){ assertEquals(List.of(), parse("{}")); }
   @Test void aMinimalProjectHasAPathAndAKindWithNoMainsReadsOrEdits(){
     var e= parse("{\"someproject\":{\"path\":\"Str:"+root+"abs/someproject\",\"kind\":\"idle\"}}").getFirst();
-    assertEquals(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.idle, List.of(), Map.of(), Map.of()), e);
+    assertEquals(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.idle, List.of(), Map.of(), Map.of(), Map.of()), e);
   }
   @Test void aFullCodeProjectParsesEveryField(){
     var e= parse("""
@@ -47,10 +47,11 @@ final class RegistryTest{
         "kind":"code",
         "mains":["some.Main1","some.Main2"],
         "reads":{"publicfiles":["Data1"]},
-        "edits":{"publicdata":["Data2","Data3"]}
+        "edits":{"publicdata":["Data2","Data3"]},
+        "attenuators":{"some.Main1":["some.NoGui","base.NoManager"]}
       }}""".formatted(root)).getFirst();
     assertEquals(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code,
-      List.of("some.Main1", "some.Main2"), Map.of("publicfiles", List.of("Data1")), Map.of("publicdata", List.of("Data2", "Data3"))), e);
+      List.of("some.Main1", "some.Main2"), Map.of("publicfiles", List.of("Data1")), Map.of("publicdata", List.of("Data2", "Data3")), Map.of("some.Main1", List.of("some.NoGui", "base.NoManager"))), e);
   }
   @Test void allFourKindsParse(){
     assertEquals(Kind.idle, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"idle\"}}").getFirst().kind());
@@ -68,7 +69,7 @@ final class RegistryTest{
     err("[###]\"Not Valid\" is not a valid project name[###]", () -> parse("{\"Not Valid\":{\"path\":\"Str:"+root+"a\"}}"));
   }
   @Test void anUnknownAttributeIsRejected(){
-    err("[###]Unknown project attribute \"bogus\": the attributes of a project are \"path\", \"kind\", \"mains\", \"reads\", \"edits\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"bogus\":\"1\"}}"));
+    err("[###]Unknown project attribute \"bogus\": the attributes of a project are \"path\", \"kind\", \"mains\", \"reads\", \"edits\", \"attenuators\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"bogus\":\"1\"}}"));
   }
   @Test void aMissingPathIsRejected(){
     err("[###]Project \"a\" is missing its \"path\"[###]", () -> parse("{\"a\":{\"kind\":\"idle\"}}"));
@@ -96,6 +97,15 @@ final class RegistryTest{
   @Test void aReadsTargetTakesTypeNamesNotPackageQualifiedNames(){
     err("[###]is not a Fearless type name[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"reads\":{\"b\":[\"hello.Data1\"]}}}"));
   }
+  @Test void attenuatorsMapEachMainToTheAttenuatorNamesAppliedToIt(){
+    var a= "{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"attenuators\":";
+    err("[###]\"attenuators\" must be an object {...} mapping a main name to a list of attenuator names.[###]", () -> parse(a+"[\"hello.NoGui\"]}}"));
+    err("[###]\"Hello1\" in \"attenuators\" is not a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\".[###]", () -> parse(a+"{\"Hello1\":[\"hello.NoGui\"]}}}"));
+    err("[###]\"NoGui\" in \"attenuators\".\"hello.Hello1\" is not a Fearless attenuator name: a package name, a dot, then a type name, like \"hello.NoGui\".[###]", () -> parse(a+"{\"hello.Hello1\":[\"NoGui\"]}}}"));
+    err("[###]\"attenuators\".\"hello.Hello1\" must be a list [...] of strings.[###]", () -> parse(a+"{\"hello.Hello1\":\"hello.NoGui\"}}}"));
+    err("[###]\"attenuators\".\"hello.Hello1\" names no attenuator: a main with no attenuator is left out of \"attenuators\".[###]", () -> parse(a+"{\"hello.Hello1\":[]}}}"));
+    assertEquals(Map.of("hello.Old", List.of("other.NoGui", "hello.NoGui", "other.NoGui")), parse(a+"{\"hello.Old\":[\"other.NoGui\",\"hello.NoGui\",\"other.NoGui\"]}}}").getFirst().attenuators());
+  }
   @Test void identicalOrNestedPathsAreRejected(){
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"same\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"same\",\"kind\":\"idle\"}}"));
     err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"parent\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"parent/child\",\"kind\":\"idle\"}}"));
@@ -107,7 +117,7 @@ final class RegistryTest{
     assertEquals(real, parse("{\"a\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}").getFirst().path());
   }
   @Test void printingThenParsingRoundTripsTheContent(){
-    var c= new Content(List.of(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code, List.of("some.Main1"), Map.of("publicfiles", List.of("Data1")), Map.of())), List.of("htm"));
+    var c= new Content(List.of(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code, List.of("some.Main1"), Map.of("publicfiles", List.of("Data1")), Map.of(), Map.of("some.Main1", List.of("some.NoGui")))), List.of("htm"));
     assertEquals(c, content(Registry.text(c)));
   }
 
@@ -116,7 +126,7 @@ final class RegistryTest{
   @Test void addedFolderIsIdleWithNoLinks(@TempDir Path dir){
     var project= folder(dir, "someproject");
     registry(dir).add("someproject", project);
-    assertEquals(List.of(new Entry("someproject", project.toAbsolutePath().normalize(), Kind.idle, List.of(), Map.of(), Map.of())), registry(dir).all());
+    assertEquals(List.of(new Entry("someproject", project.toAbsolutePath().normalize(), Kind.idle, List.of(), Map.of(), Map.of(), Map.of())), registry(dir).all());
   }
   @Test void addingARegisteredFolderOrNameAgainIsABug(@TempDir Path dir){
     var project= folder(dir, "someproject");
@@ -276,7 +286,7 @@ final class RegistryTest{
 
   //-- link checks
   private static Entry link(String alias, Path path, Kind kind, Map<String,List<String>> reads, Map<String,List<String>> edits){
-    return new Entry(alias, path, kind, List.of(), reads, edits);
+    return new Entry(alias, path, kind, List.of(), reads, edits, Map.of());
   }
   private static Path readme(Path dir, String name){
     var res= dir.resolve(name);

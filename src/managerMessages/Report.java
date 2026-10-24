@@ -66,6 +66,11 @@ public final class Report{
   public static String noMainNamed(String name, List<String> mains){ return "The manager was asked \"Run\" on "+disp(name)+", but the request names no main."+mains(mains); }
   public static String notAMain(String name, String main, List<String> mains){ return "The manager was asked \"Run\" on "+disp(name)+" for "+disp(main)+", but "+disp(main)+" is not a main of "+disp(name)+"."+mains(mains); }
   private static String mains(List<String> mains){ return Join.of(mains.stream().map(m -> "\n  "+m), "\nThe mains are:", "", "", "\n"+"The project has no main."); }
+  public static String attenuatedNotAMain(String name, String main, List<String> mains){ return "The manager was asked \"Run\" on "+disp(name)+", but "+disp(main)+" has attenuators, and "+disp(main)+" is not a main of "+disp(name)+"."+mains(mains); }
+  public static String notAnAttenuator(String name, String main, String attenuator, List<String> attenuators){
+    return "The manager was asked \"Run\" on "+disp(name)+", but "+disp(main)+" is attenuated by "+disp(attenuator)+", and "+disp(attenuator)+" is not an attenuator of "+disp(name)+"."+Join.of(attenuators.stream().map(a -> "\n  "+a), "\nThe attenuators are:", "", "", "\nThe project has no attenuator.");
+  }
+  public static String noMainAttenuated(String name){ return "The manager was asked to attenuate a main of "+disp(name)+", but the request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all."; }
   public static String unknownKind(String name, String text){ return "The manager was asked to change the kind of "+disp(name)+" to "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."; }
   public static String kindChange(String name, String from, String to){ return "The manager was asked to change the kind of "+disp(name)+" from "+disp(from)+" to "+disp(to)+", but a kind changes only from \"idle\", or back to \"idle\"."; }
   public static String malformedLink(String name, String link){ return "The manager was asked to link "+disp(name)+" with "+disp(link)+", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link."; }
@@ -182,6 +187,8 @@ public final class Report{
   public static String infoLinksNotObject(String key){ return "\""+key+"\" must be an object {...} mapping a project name to a list of type names."; }
   public static String infoLinkBadName(String name, String key){ return "\""+name+"\" in \""+key+"\" is not a valid project name."; }
   public static String infoLinkEmpty(String label, String name){ return label+" names no type: a link names the one or more type names the code uses for \""+name+"\"."; }
+  public static String infoAttenuatorsNotObject(){ return "\"attenuators\" must be an object {...} mapping a main name to a list of attenuator names."; }
+  public static String infoAttenuatorsEmpty(String label){ return label+" names no attenuator: a main with no attenuator is left out of \"attenuators\"."; }
   public static String metadataNoFile(Path file){ return "The manager was asked to replace projects.info with the content of\n"+path(file.toString())+"\nbut no file is there."; }
   public static String metadataNotUtf8(Path file){ return "The manager was asked to replace projects.info with the content of\n"+path(file.toString())+"\nbut its bytes do not form valid UTF-8 text."; }
   public static String metadataUnreadable(Path file, IOException e){ return "The manager was asked to replace projects.info with the content of\n"+path(file.toString())+"\nbut could not read it: "+fileFailure(e); }
