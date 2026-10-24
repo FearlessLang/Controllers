@@ -251,7 +251,7 @@ final class Panel{
   }
   private void fillAttenuators(Project p){
     attenuatorsBox.removeAll();
-    attenuators.setVisible(p.kind() == Kind.code);
+    attenuators.setVisible(p.kind() == Kind.code || !p.entry().attenuators().isEmpty());
     if (!attenuators.isVisible()){ return; }
     Stream.concat(p.knownMains().stream(), p.entry().attenuators().keySet().stream()).distinct().sorted().forEach(m -> fillAttenuators(p, m));
   }
@@ -285,10 +285,10 @@ final class Panel{
   }
   private void fillKinds(Project p){
     kinds.removeAll();
-    if (p.kind() != Kind.idle){ kinds.add(kindButton(p, "Back to idle", Kind.idle)); return; }
-    kinds.add(kindButton(p, "Become data", Kind.dataReadOnly));
-    kinds.add(kindButton(p, "Become editable data", Kind.dataReadWrite));
-    kinds.add(kindButton(p, "Become code", Kind.code));
+    if (p.kind() != Kind.idle){ kinds.add(kindButton(p, "Back to idle", Kind.idle)); }
+    if (p.kind() != Kind.dataReadOnly){ kinds.add(kindButton(p, "Become data", Kind.dataReadOnly)); }
+    if (p.kind() != Kind.dataReadWrite){ kinds.add(kindButton(p, "Become editable data", Kind.dataReadWrite)); }
+    if (p.kind() != Kind.code){ kinds.add(kindButton(p, "Become code", Kind.code)); }
   }
   private JButton kindButton(Project p, String text, Kind target){
     var res= named(small(text, () -> Main.command("Kind", p.alias(), target.text)), target.text);
@@ -301,15 +301,16 @@ final class Panel{
     var owner= KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
     linkFields = new HashMap<>();
     linksBox.removeAll();
-    links.setVisible(iAmCode || p.kind().isData());
+    var linked= Stream.concat(p.entry().reads().keySet().stream(), p.entry().edits().keySet().stream());
+    var own= Stream.concat(iAmCode ? all.stream().filter(o -> o.kind().isData()).map(Project::alias) : Stream.<String>empty(), linked).distinct().sorted().toList();
+    links.setVisible(iAmCode || p.kind().isData() || !own.isEmpty());
     if (!links.isVisible()){ return; }
-    linksBox.add(new JLabel(iAmCode ? "Data projects this code project reads or edits:" : "Code projects that may read or edit this:"));
-    if (!iAmCode){ all.stream().filter(o -> o.kind() == Kind.code).sorted(Comparator.comparing(Project::alias)).forEach(o -> linksBox.add(linkRow(o, p.alias(), p.kind() == Kind.dataReadWrite, o.alias()))); }
-    if (iAmCode){
-      var linked= Stream.concat(p.entry().reads().keySet().stream(), p.entry().edits().keySet().stream());
-      Stream.concat(all.stream().filter(o -> o.kind().isData()).map(Project::alias), linked).distinct().sorted()
-        .forEach(a -> linksBox.add(linkRow(p, a, all.stream().anyMatch(o -> o.alias().equals(a) && o.kind() == Kind.dataReadWrite), a)));
+    if (p.kind().isData()){
+      linksBox.add(new JLabel("Code projects that may read or edit this:"));
+      all.stream().filter(o -> o.kind() == Kind.code).sorted(Comparator.comparing(Project::alias)).forEach(o -> linksBox.add(linkRow(o, p.alias(), p.kind() == Kind.dataReadWrite, o.alias())));
     }
+    if (iAmCode || !own.isEmpty()){ linksBox.add(new JLabel(iAmCode ? "Data projects this code project reads or edits:" : "Data projects this project reads or edits when it is code:")); }
+    own.forEach(a -> linksBox.add(linkRow(p, a, all.stream().anyMatch(o -> o.alias().equals(a) && o.kind() == Kind.dataReadWrite), a)));
     old.values().forEach(l -> carry(l, owner));
   }
   private void carry(Link from, Component owner){
