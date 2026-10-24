@@ -21,6 +21,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
@@ -36,6 +38,7 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -53,6 +56,7 @@ import fileSupport.LogFiles;
 import managerMessages.Report;
 import tools.Fs;
 import tools.OpenPath;
+import utils.Push;
 
 /// The right half of the window: everything about one registered project, and the
 /// buttons that act on it. One Panel per project, kept while the project stays registered:
@@ -72,6 +76,8 @@ final class Panel{
   final JTextArea output= mono(named(new JTextArea(10, 60), "output"));
   private final JPanel kinds= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
   private final JPanel shortcuts= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+  private final JPanel attenuatorsBox= new JPanel();
+  private final Collapsible attenuators= new Collapsible("Attenuators", half(attenuatorsBox), false);
   private final JPanel claimsBox= new JPanel();
   private final Collapsible claims= new Collapsible("Extensions", half(claimsBox), true);
   private final JPanel linksBox= new JPanel();
@@ -92,6 +98,7 @@ final class Panel{
     output.setEditable(false);
     linksBox.setLayout(new BoxLayout(linksBox, BoxLayout.Y_AXIS));
     claimsBox.setLayout(new BoxLayout(claimsBox, BoxLayout.Y_AXIS));
+    attenuatorsBox.setLayout(new BoxLayout(attenuatorsBox, BoxLayout.Y_AXIS));
     root.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
     root.setMinimumSize(new Dimension(0, 0));//let the split divider shrink this panel past its natural content width
     var header= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -109,7 +116,7 @@ final class Panel{
     Stream.of(header, shortcuts).forEach(top::add);
     var areas= new JPanel();
     areas.setLayout(new BoxLayout(areas, BoxLayout.Y_AXIS));
-    Stream.of(new Collapsible("Output", half(output), true, small("Clear", () -> output.setText(""))), claims, links, logs).forEach(areas::add);
+    Stream.of(new Collapsible("Output", half(output), true, small("Clear", () -> output.setText(""))), attenuators, claims, links, logs).forEach(areas::add);
     areas.add(new JPanel());
     root.add(top, BorderLayout.NORTH);
     root.add(areas, BorderLayout.CENTER);
@@ -191,6 +198,7 @@ final class Panel{
     forget.setEnabled(!p.busy());
     fillKinds(p);
     fillShortcuts(p, claimed);
+    fillAttenuators(p);
     fillClaims(p, claimed);
     fillLinks(p, all);
     logs.setVisible(p.kind() == Kind.code);
@@ -240,6 +248,40 @@ final class Panel{
     var res= row(16, new JLabel("."+c.claim().extension()+" is also opened by"));
     others.forEach(o -> res.add(label(o.label(), o)));
     return res;
+  }
+  private void fillAttenuators(Project p){
+    attenuatorsBox.removeAll();
+    attenuators.setVisible(p.kind() == Kind.code);
+    if (!attenuators.isVisible()){ return; }
+    Stream.concat(p.knownMains().stream(), p.entry().attenuators().keySet().stream()).distinct().sorted().forEach(m -> fillAttenuators(p, m));
+  }
+  private void fillAttenuators(Project p, String main){
+    var applied= p.entry().attenuators().getOrDefault(main, List.of());
+    var known= p.mains().isPresent();
+    attenuatorsBox.add(row(0, new JLabel(main+(!known || p.knownMains().contains(main) ? "" : " is not a main of this project"))));
+    IntStream.range(0, applied.size()).forEach(i -> attenuatorsBox.add(attenuator(p, main, applied, i)));
+    var choices= p.knownAttenuators().toArray(String[]::new);
+    if (choices.length == 0){ return; }
+    var combo= new JComboBox<>(choices);
+    attenuatorsBox.add(row(16, combo, small("Add", () -> attenuate(p, main, Push.of(applied, (String)combo.getSelectedItem())))));
+  }
+  private static JPanel attenuator(Project p, String main, List<String> applied, int i){
+    var a= applied.get(i);
+    var known= p.mains().isEmpty() || p.knownAttenuators().contains(a);
+    var up= small("Up", () -> attenuate(p, main, moved(applied, i, i-1)));
+    up.setEnabled(i > 0);
+    var down= small("Down", () -> attenuate(p, main, moved(applied, i, i+1)));
+    down.setEnabled(i < applied.size()-1);
+    return row(16, new JLabel(a+(known ? "" : " is not an attenuator of this project")), small("Remove", () -> attenuate(p, main, moved(applied, i, -1))), up, down);
+  }
+  private static List<String> moved(List<String> applied, int from, int to){
+    var res= new ArrayList<>(applied);
+    res.remove(from);
+    if (to >= 0){ res.add(to, applied.get(from)); }
+    return res;
+  }
+  private static void attenuate(Project p, String main, List<String> applied){
+    Main.command("Attenuate", Stream.concat(Stream.of(p.alias(), main), applied.stream()).toArray(String[]::new));
   }
   private void fillKinds(Project p){
     kinds.removeAll();

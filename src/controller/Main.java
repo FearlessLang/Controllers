@@ -78,7 +78,7 @@ public final class Main implements Manager.Exit{
     if (Stream.of(args).anyMatch(a -> a.indexOf('\n') >= 0)){ return "InvalidCall\n"+Report.argumentWithNewline(List.of(args)); }
     var rest= List.of(args).subList(1, args.length);
     if (pathVerbs.contains(verb) && !rest.isEmpty()){ rest = Stream.concat(Stream.of(absolute(rest.getFirst())), rest.stream().skip(1)).toList(); }
-    if (!List.of("Run", "Link").contains(verb) || rest.size() < 2){ return String.join("\n", Stream.concat(Stream.of(verb), rest.stream()).toList()); }
+    if (!List.of("Run", "Link", "Attenuate").contains(verb) || rest.size() < 2){ return String.join("\n", Stream.concat(Stream.of(verb), rest.stream()).toList()); }
     var words= rest.subList(1, rest.size());
     var port= words.getLast().startsWith("Port:");
     var named= String.join(" ", port ? words.subList(0, words.size()-1) : words);

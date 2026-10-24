@@ -64,8 +64,8 @@ public final class Manager{
   }
   public interface Tools{
     ChildJvm compile(Path folder, Consumer<String> out);
-    ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, Consumer<String> out);
-    Optional<Map<String,String>> mains(Path folder);
+    ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out);
+    Optional<MainsInfo> mains(Path folder);
     Path stdLibBase();
     Path baseCache();
     void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy);
@@ -84,7 +84,7 @@ public final class Manager{
   private static final class Live{
     Facts scanned;
     Facts facts;
-    Optional<Map<String,String>> mains= Optional.empty();
+    Optional<MainsInfo> mains= Optional.empty();
     MainsInfo claims= Project.noClaims;
     String job= "";
     Instant since= Instant.EPOCH;
@@ -94,6 +94,7 @@ public final class Manager{
     List<String> todo= List.of();
     Optional<Path> input= Optional.empty();
     Registry.Grants grants;
+    Map<String,List<String>> attenuators= Map.of();
     Optional<Follow> follow= Optional.empty();
   }
   private static final String conflict= "base.IconsConflict";
@@ -108,6 +109,7 @@ public final class Manager{
     res.put("Compile", List.of(1));
     res.put("Kind", List.of(2));
     res.put("Link", List.of(2));
+    res.put("Attenuate", List.of(2));
     return res;
   }
   private final ScheduledExecutorService core= Executors.newSingleThreadScheduledExecutor();
@@ -272,6 +274,7 @@ public final class Manager{
       case "Kind" -> kind(f, args.get(1));
       case "Forget" -> forget(f);
       case "Link" -> link(f, args.get(1));
+      case "Attenuate" -> attenuate(f, args.get(1));
       default -> throw Bug.unreachable();
     }
   }
@@ -294,6 +297,10 @@ public final class Manager{
     if (words.isEmpty()){ throw new Refused(Report.noMainNamed(p.alias(), all)); }
     words.stream().filter(w -> !all.contains(w)).findFirst().ifPresent(w -> { throw new Refused(Report.notAMain(p.alias(), w, all)); });
     var mains= all.stream().filter(words::contains).toList();
+    var attenuated= p.entry().attenuators();
+    attenuated.keySet().stream().filter(m -> !all.contains(m)).findFirst().ifPresent(m -> { throw new Refused(Report.attenuatedNotAMain(p.alias(), m, all)); });
+    var attenuators= p.knownAttenuators();
+    attenuated.forEach((m, as) -> as.stream().filter(a -> !attenuators.contains(a)).findFirst().ifPresent(a -> { throw new Refused(Report.notAnAttenuator(p.alias(), m, a, attenuators)); }));
     selected = Optional.of(f);
     if (all.size() > 1){ registry.update(f, e -> e.withMains(mains)); }
     var l= live.get(f);
@@ -301,6 +308,7 @@ public final class Manager{
     l.todo = mains;
     l.input = input;
     l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow());
+    l.attenuators = attenuated;
     l.follow = follow;
     view.clear(f);
     next(f);
@@ -330,7 +338,7 @@ public final class Manager{
     var main= l.todo.getFirst();
     l.todo = l.todo.subList(1, l.todo.size());
     output(f, "--- running "+main+" ---\n");
-    start(f, main, () -> tools.run(f, main, l.input, l.grants, out(f)));
+    start(f, main, () -> tools.run(f, main, l.input, l.grants, l.attenuators.getOrDefault(main, List.of()), out(f)));
   }
   private void ended(Path f){
     var l= live.get(f);
@@ -483,6 +491,13 @@ public final class Manager{
     var data= words.get(0);
     var names= words.subList(2, words.size());
     registry.update(f, o -> words.get(1).equals("write") ? o.withLinks(o.reads(), with(o.edits(), data, names)) : o.withLinks(with(o.reads(), data, names), o.edits()));
+  }
+  private void attenuate(Path f, String text){
+    var e= registry.of(f).orElseThrow();
+    var words= words(text);
+    if (words.isEmpty()){ throw new Refused(Report.noMainAttenuated(e.alias())); }
+    if (e.kind() != Kind.code){ throw new Refused(Report.notCode("Attenuate", e.alias(), e.kind().text)); }
+    registry.update(f, o -> o.withAttenuators(with(o.attenuators(), words.getFirst(), words.subList(1, words.size()))));
   }
   private static Map<String,List<String>> with(Map<String,List<String>> map, String key, List<String> names){
     var out= new LinkedHashMap<>(map);
