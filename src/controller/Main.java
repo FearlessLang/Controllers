@@ -149,7 +149,7 @@ public final class Main implements Manager.Exit{
   }
   private static String versionId(){ return JavacTool.reqVersionId(userMessages.Violation::mustUseLauncher); }
   static Path programDir(){
-    var expected= "fearlessManaged"+versionId()+(Fs.isMac() ? ".app" : "");
+    var expected= JavacTool.managedName+versionId()+(Fs.isMac() ? ".app" : "");
     var startedFrom= JavacTool.reqAppDir(userMessages.Violation::mustUseLauncher).toAbsolutePath().normalize();
     for (var dir= startedFrom; dir != null && dir.getFileName() != null; dir = dir.getParent()){
       if (dir.getFileName().toString().equals(expected)){ return dir; }
@@ -197,7 +197,11 @@ public final class Main implements Manager.Exit{
   }
   @Override public void quit(){ done.countDown(); }
   @Override public void reset(){ reset = true; done.countDown(); }
-  @Override public void fail(Throwable problem){ failure.compareAndSet(null, problem); done.countDown(); }
+  @Override public void fail(Throwable problem){
+    if (!Files.isDirectory(managerDir)){ quit(); return; }
+    failure.compareAndSet(null, problem);
+    done.countDown();
+  }
   private void watch(WatchService watcher){
     while (true){
       WatchKey key;

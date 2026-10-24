@@ -78,7 +78,7 @@ final class ManagerTest{
     Fs.runTool("javac", List.of("-d", classes.toString(), src.toString()));
     FactsTest.baseCache(classes);
   }
-  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> locked, List<String> others, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
+  record Fake(Function<Path,Optional<Map<String,String>>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> locked, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       if (infos.getOrDefault(folder.getFileName().toString(), "").equals("fail")){ return jvm(out, "broken source", "1", "0"); }
@@ -102,7 +102,6 @@ final class ManagerTest{
       var blocked= all.stream().map(Icon::extension).filter(e -> !Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw Violation.associationNotOurs(blocked, claimedBy); }
     }
-    @Override public List<String> others(){ return others; }
     @Override public void connect(Path eclipse, Path managerDir){ connected.add(eclipse); }
     private static ChildJvm jvm(Consumer<String> out, String... args){
       return ChildJvm.start(Stream.concat(Stream.of("-cp", classes.toString(), "Child"), Stream.of(args)).toList(), out);
@@ -117,7 +116,6 @@ final class ManagerTest{
     final List<String> asked= new ArrayList<>();
     final List<List<String>> offered= new ArrayList<>();
     final List<Path> edited= new ArrayList<>();
-    final List<List<String>> taken= new ArrayList<>();
     int shown;
     boolean visible= true;
     @Override public void show(){ shown += 1; }
@@ -130,7 +128,6 @@ final class ManagerTest{
     @Override public void choose(Path file, List<Project.Claimant> cs){ choices.add(Stream.concat(Stream.of(file.getFileName().toString()), cs.stream().map(Project.Claimant::label)).toList()); }
     @Override public void allow(String question, List<String> extensions){ asked.add(question); offered.add(extensions); }
     @Override public void edited(Path file){ edited.add(file); }
-    @Override public void taken(List<String> programs){ taken.add(programs); }
     synchronized String out(Path folder){ return outputs.getOrDefault(folder, new StringBuilder()).toString(); }
   }
   private final List<Throwable> failures= Collections.synchronizedList(new ArrayList<>());
@@ -141,7 +138,6 @@ final class ManagerTest{
   private final List<List<String>> windows= Collections.synchronizedList(new ArrayList<>());
   private final Map<String,List<String>> held= new HashMap<>();
   private final List<String> locked= new ArrayList<>();
-  private final List<String> others= new ArrayList<>();
   private final List<Path> connected= new ArrayList<>();
   private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
   @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); }
@@ -160,7 +156,7 @@ final class ManagerTest{
       @Override public void fail(Throwable problem){ failures.add(problem); }
     };
     Fs.ensureDir(dir.resolve("manager"));
-    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, locked, others, connected, granted), v, exit);
+    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, locked, connected, granted), v, exit);
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -969,17 +965,6 @@ final class ManagerTest{
     same("Eclipse is connected:\n[###]eclipse\nRestart Eclipse if it is running: Eclipse loads the Fearless plugin when it starts.\nThen open the Fearless perspective: Window > Perspective > Open Perspective > Other... > Fearless.", view.told.getFirst());
     assertEquals(1, view.told.size());
     same("Eclipse is not connected: no Eclipse folder, a folder holding the file \".eclipseproduct\", is found from\n[###]\nSelect the Eclipse folder, a file in it, a file in a folder of it, or a folder holding only the Eclipse folder.", view.refused.getFirst());
-  }
-  @Test void anotherFearlessTakingTheFearlessFilesIsShownOnceAndNothingIsTakenBack(@TempDir Path dir){
-    var m= manager(dir);
-    m.settle();
-    m.start();
-    others.add("fearlessBin0_003");
-    var calls= associated.size();
-    until(m, _ -> !view.taken.isEmpty());
-    assertEquals(List.of(List.of("fearlessBin0_003")), view.taken);
-    assertEquals(calls, associated.size());
-    m.stop();
   }
   private static String claiming(String main, String shortcut, String openWith){
     return info(main, claim("base.IconsConflict", "icons/conflict.png", "", "", shortcut), claim("hello.IconsFoo", "art/foo.png", "", "", openWith));

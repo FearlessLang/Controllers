@@ -169,9 +169,6 @@ public final class Window implements Manager.View{
     SwingUtilities.invokeLater(() -> { var editor= editors.remove(file); if (editor != null){ editor.dispose(); } });
     Fs.ofV(() -> Files.deleteIfExists(file));
   }
-  @Override public void taken(List<String> programs){
-    SwingUtilities.invokeLater(() -> { say(Violation.fearlessTaken(programs)); main.quit(); });
-  }
   @Override public boolean visible(){ return onScreen; }
   private Path commit(String content){
     var file= Fs.of(() -> Files.createTempFile("projects", ".info"));
