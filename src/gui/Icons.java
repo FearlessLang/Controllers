@@ -74,7 +74,7 @@ public final class Icons{
     @Override public void paintIcon(Component c, Graphics g, int x, int y){
       var g2= (Graphics2D)g.create();
       g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-      g2.drawImage(image, x, y, size, size, c);
+      if (image != null){ g2.drawImage(image, x, y, size, size, c); }
       switch (state){
         case idle -> dot(g2, x, y, new Color(0x757575), "");
         case dataReadOnly -> dot(g2, x, y, new Color(0x1565C0), "R");
