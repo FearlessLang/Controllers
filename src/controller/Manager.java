@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -470,35 +471,30 @@ public final class Manager{
   }
   private void kind(Path f, String text){
     var kind= Kind.of(text).orElseThrow(() -> new Refused(Report.unknownKind(alias(f), text)));
-    idle(f, "Kind");
-    var from= registry.of(f).orElseThrow().kind();
-    if (from != Kind.idle && kind != Kind.idle){ throw new Refused(Report.kindChange(alias(f), from.text, kind.text)); }
-    registry.update(f, e -> e.withKind(kind));
-    claim(f);
-    scan(f);
+    edit(f, e -> e.withKind(kind));
   }
   private void forget(Path f){
-    idle(f, "Forget");
-    registry.remove(f);
-    drop(f);
+    var c= registry.content();
+    edit(new Content(c.projects().stream().filter(e -> !e.path().equals(f)).toList(), c.extensions()));
   }
   private void link(Path f, String text){
-    var e= registry.of(f).orElseThrow();
     var words= words(text);
     var wellFormed= words.size() >= 2 && List.of("read", "write").contains(words.get(1));
-    if (!wellFormed){ throw new Refused(Report.malformedLink(e.alias(), text)); }
-    if (e.kind() != Kind.code){ throw new Refused(Report.notCode("Link", e.alias(), e.kind().text)); }
+    if (!wellFormed){ throw new Refused(Report.malformedLink(alias(f), text)); }
     var data= words.get(0);
     var names= words.subList(2, words.size());
-    registry.update(f, o -> words.get(1).equals("write") ? o.withLinks(o.reads(), with(o.edits(), data, names)) : o.withLinks(with(o.reads(), data, names), o.edits()));
+    edit(f, o -> words.get(1).equals("write") ? o.withLinks(o.reads(), with(o.edits(), data, names)) : o.withLinks(with(o.reads(), data, names), o.edits()));
   }
   private void attenuate(Path f, String text){
-    var e= registry.of(f).orElseThrow();
     var words= words(text);
-    if (words.isEmpty()){ throw new Refused(Report.noMainAttenuated(e.alias())); }
-    if (e.kind() != Kind.code){ throw new Refused(Report.notCode("Attenuate", e.alias(), e.kind().text)); }
-    registry.update(f, o -> o.withAttenuators(with(o.attenuators(), words.getFirst(), words.subList(1, words.size()))));
+    if (words.isEmpty()){ throw new Refused(Report.noMainAttenuated(alias(f))); }
+    edit(f, o -> o.withAttenuators(with(o.attenuators(), words.getFirst(), words.subList(1, words.size()))));
   }
+  private void edit(Path f, UnaryOperator<Entry> op){
+    var c= registry.content();
+    edit(new Content(c.projects().stream().map(e -> e.path().equals(f) ? op.apply(e) : e).toList(), c.extensions()));
+  }
+  private void edit(Content next){ edit(Registry.text(next), registry.infoFile()); }
   private static Map<String,List<String>> with(Map<String,List<String>> map, String key, List<String> names){
     var out= new LinkedHashMap<>(map);
     if (names.isEmpty()){ out.remove(key); }
@@ -539,14 +535,16 @@ public final class Manager{
   }
   private void editMetadata(Path file){
     if (!Files.isRegularFile(file)){ throw new Refused(Report.metadataNoFile(file)); }
-    Content next;
-    try{
-      var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString();
-      next= Registry.parse(text, file, Registry::real, dir);
-    }
+    try{ edit(UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(), file); }
     catch (CharacterCodingException e){ throw new Refused(Report.metadataNotUtf8(file)); }
     catch (IOException e){ throw new Refused(Report.metadataUnreadable(file, e)); }
+    view.edited(file);
+  }
+  private void edit(String text, Path file){
+    Content next;
+    try{ next= Registry.parse(text, file, Registry::real, dir); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
+    registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
     if (!registry.extensions().containsAll(next.extensions())){
       try{ associate(next.extensions()); }
       catch (UserError e){ throw new Refused(e.getMessage()); }
@@ -559,7 +557,12 @@ public final class Manager{
     old.projects().stream().filter(o -> registry.of(o.path()).filter(e -> e.kind() != o.kind()).isPresent()).forEach(o -> claim(o.path()));
     live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList().forEach(this::claim);
     registry.all().forEach(e -> scan(e.path()));
-    view.edited(file);
+  }
+  private void kept(Entry o, Content next){
+    var job= live.get(o.path()).job;
+    var e= OneOr.opt("project "+o.alias(), next.projects().stream().filter(n -> n.path().equals(o.path())));
+    if (e.isEmpty()){ throw new Refused(Report.removedWhileBusy(o.alias(), job)); }
+    if (e.get().kind() != o.kind()){ throw new Refused(Report.kindWhileBusy(o.alias(), e.get().kind().text, job)); }
   }
   private void openWith(Path file, List<String> chosen){
     if (!Files.isRegularFile(file)){ throw new Refused(Report.openNoFile(file)); }

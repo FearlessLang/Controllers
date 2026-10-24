@@ -360,7 +360,12 @@ final class ManagerTest{
       --- terminating hello.Slow ---
       --- hello.Slow exited with [###] after [###]s ---
       """, view.out(hello));
-    assertEquals(Stream.of("Run", "Compile", "DeleteCache", "Kind", "Forget").map(v -> "The manager was asked \""+v+"\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.").toList(), view.refused);
+    assertEquals(List.of(
+      "The manager was asked \"Run\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.",
+      "The manager was asked \"Compile\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.",
+      "The manager was asked \"DeleteCache\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.",
+      "The manager was asked to make \"hello\" \"idle\", but \"hello\" is busy with \"hello.Slow\".",
+      "The manager was asked to remove \"hello\", but \"hello\" is busy with \"hello.Slow\"."), view.refused);
     assertEquals(Kind.code, project(m, hello).kind());
   }
   @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
@@ -498,20 +503,20 @@ final class ManagerTest{
     assertEquals(1, view.refused.size());
     same("[###]Fearless is already keeping track of:\n[###]hello\nOne of the two is inside the other.[###]", view.refused.getFirst());
   }
-  @Test void kindsChangeFromIdleAndBackToIdleOnly(@TempDir Path dir){
+  @Test void kindsChangeToAnyKind(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     assertEquals(Kind.idle, project(m, data).kind());
     send(m, "Kind", "data", "data:readOnly");
     send(m, "Kind", "data", "code");
-    send(m, "Kind", "data", "data:readOnly");
-    assertEquals(Kind.dataReadOnly, project(m, data).kind());
-    assertEquals(List.of(
-      "The manager was asked to change the kind of \"data\" from \"data:readOnly\" to \"code\", but a kind changes only from \"idle\", or back to \"idle\".",
-      "The manager was asked to change the kind of \"data\" from \"data:readOnly\" to \"data:readOnly\", but a kind changes only from \"idle\", or back to \"idle\"."), view.refused);
+    assertEquals(Kind.code, project(m, data).kind());
+    send(m, "Kind", "data", "data:readWrite");
+    send(m, "Kind", "data", "data:readWrite");
+    assertEquals(Kind.dataReadWrite, project(m, data).kind());
     send(m, "Kind", "data", "idle");
     assertEquals(Kind.idle, project(m, data).kind());
+    assertEquals(List.of(), view.refused);
     assertEquals(List.of(), view.cleared);
   }
   @Test void onlyACodeProjectCompilesAndRunsAndAnyProjectIsChecked(@TempDir Path dir){
@@ -558,7 +563,8 @@ final class ManagerTest{
     same("[###]\"Data\" is in both \"reads\".\"data\" and \"edits\".\"data\"[###]", view.refused.getLast());
     assertEquals(entry, project(m, hello).entry());
     send(m, "Link", "data", "hello read Hello");
-    assertEquals("The manager was asked \"Link\" on \"data\", but \"data\" is \"data:readWrite\": only a \"code\" project can \"Link\".", view.refused.getLast());
+    assertEquals(Map.of("hello", List.of("Hello")), project(m, data).entry().reads());
+    assertEquals(Project.State.dataReadWrite, project(m, data).state());
     send(m, "Kind", "data", "idle");
     assertEquals(Project.State.codeInvalid, project(m, hello).state());
     send(m, "Compile", "hello");
@@ -597,8 +603,8 @@ final class ManagerTest{
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     send(m, "Attenuate", "data", "hello.One hello.NoGui");
-    assertEquals("The manager was asked \"Attenuate\" on \"data\", but \"data\" is \"idle\": only a \"code\" project can \"Attenuate\".", view.refused.getLast());
-    assertEquals(3, view.refused.size());
+    assertEquals(Map.of("hello.One", List.of("hello.NoGui")), project(m, data).entry().attenuators());
+    assertEquals(2, view.refused.size());
     assertEquals(Map.of("hello.One", List.of("hello.NoNet", "hello.NoGui")), project(m, hello).entry().attenuators());
   }
   @Test void aRunIsRefusedWhileAnAttenuatedMainOrAnAppliedAttenuatorIsNotOfTheProject(@TempDir Path dir){
@@ -696,7 +702,7 @@ final class ManagerTest{
       t.m.state().projects().stream().filter(Project::busy).forEach(p -> send(t.m, "Terminate", p.alias()));
       idle(t.m);
     }
-    assertEquals(outcomes.get(0), outcomes.get(1));
+    assertEquals(outcomes.get(0), outcomes.get(1).stream().map(s -> s.replace("DIR/edited.info", "DIR/manager/projects.info")).toList());
   }
   private static String without(Registry.Content c, String name){ return Registry.text(new Registry.Content(c.projects().stream().filter(e -> !e.alias().equals(name)).toList(), c.extensions())); }
   private static String with(Registry.Content c, String name, UnaryOperator<Registry.Entry> op){ return Registry.text(new Registry.Content(c.projects().stream().map(e -> e.alias().equals(name) ? op.apply(e) : e).toList(), c.extensions())); }
@@ -726,9 +732,6 @@ final class ManagerTest{
   @Test void kindNotFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> { registered(m, d, "data"); send(m, "Kind", "data", "data:readOnly"); }, c -> with(c, "data", e -> e.withKind(Kind.code)), "Kind", "data", "code");
   }
-  @Test void kindThatIsNotAKindIsEditMetadataWithThatText(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "data"), c -> Registry.text(c).replace("\"idle\"", "\"library\""), "Kind", "data", "library");
-  }
   @Test void kindOfABusyProjectIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withKind(Kind.idle)), "Kind", "hello", "idle");
   }
@@ -743,6 +746,9 @@ final class ManagerTest{
   }
   @Test void linkOfADataProjectIsEditMetadataWithThatLink(@TempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "data", e -> e.withLinks(Map.of("hello", List.of("Hello")), e.edits())), "Link", "data", "hello read Hello");
+  }
+  @Test void attenuateOfADataProjectIsEditMetadataWithTheAttenuatorsReplaced(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "data", e -> e.withAttenuators(Map.of("hello.Hello", List.of("base.NoManager")))), "Attenuate", "data", "hello.Hello base.NoManager");
   }
   @Test void attenuateIsEditMetadataWithTheAttenuatorsReplaced(@TempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "hello", e -> e.withAttenuators(Map.of("hello.Hello", List.of("hello.NoGui", "base.NoManager")))), "Attenuate", "hello", "hello.Hello hello.NoGui base.NoManager");

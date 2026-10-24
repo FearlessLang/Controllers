@@ -99,7 +99,6 @@ public final class Registry{
     assert overlapping(folder).isEmpty();
     save(new Content(Push.of(all(), new Entry(alias, folder, Kind.idle, List.of(), Map.of(), Map.of(), Map.of())), extensions()));
   }
-  public void remove(Path folder){ save(new Content(all().stream().filter(e -> !e.path().equals(folder)).toList(), extensions())); }
   public void update(Path folder, UnaryOperator<Entry> op){
     assert of(folder).isPresent();
     var next= new Content(all().stream().map(e -> e.path().equals(folder) ? op.apply(e) : e).toList(), extensions());

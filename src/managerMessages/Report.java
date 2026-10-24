@@ -72,7 +72,8 @@ public final class Report{
   }
   public static String noMainAttenuated(String name){ return "The manager was asked to attenuate a main of "+disp(name)+", but the request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all."; }
   public static String unknownKind(String name, String text){ return "The manager was asked to change the kind of "+disp(name)+" to "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."; }
-  public static String kindChange(String name, String from, String to){ return "The manager was asked to change the kind of "+disp(name)+" from "+disp(from)+" to "+disp(to)+", but a kind changes only from \"idle\", or back to \"idle\"."; }
+  public static String kindWhileBusy(String name, String kind, String job){ return "The manager was asked to make "+disp(name)+" "+disp(kind)+", but "+disp(name)+" is busy with "+disp(job)+"."; }
+  public static String removedWhileBusy(String name, String job){ return "The manager was asked to remove "+disp(name)+", but "+disp(name)+" is busy with "+disp(job)+"."; }
   public static String malformedLink(String name, String link){ return "The manager was asked to link "+disp(name)+" with "+disp(link)+", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link."; }
   public static String linkMissing(String field, String name){ return "\""+field+"\" refers to \""+name+"\", but no project called \""+name+"\" is registered."; }
   public static String linkWrongKind(String field, String name, String kind, boolean needsWrite){

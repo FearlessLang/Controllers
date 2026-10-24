@@ -143,16 +143,6 @@ final class RegistryTest{
     r.update(project, e -> e.withMains(List.of("hello.Hello1")));
     assertEquals(List.of("hello.Hello1"), registry(dir).all().getFirst().mains());
   }
-  @Test void forgettingAFolderRemovesOnlyThatOne(@TempDir Path dir){
-    var kept= folder(dir, "kept");
-    var gone= folder(dir, "gone");
-    var r= registry(dir);
-    r.add("kept", kept);
-    r.add("gone", gone);
-    r.remove(gone);
-    assertEquals(List.of(kept.toAbsolutePath().normalize()), r.all().stream().map(Entry::path).toList());
-    assertEquals(Optional.empty(), r.of(gone));
-  }
   @Test void aFolderInsideOrAroundARegisteredOneIsFound(@TempDir Path dir){
     var project= folder(dir, "someproject");
     var r= registry(dir);
