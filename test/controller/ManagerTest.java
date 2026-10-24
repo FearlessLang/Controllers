@@ -60,7 +60,7 @@ import userMessages.UserError;
 import userMessages.Violation;
 
 /// The whole manager without a window: messages in, View calls and files out.
-/// Compiling writes a fresh cache and every job is a real child JVM running Child.
+/// Compiling writes a fresh cache and every run and compilation is a real child JVM running Child.
 final class ManagerTest{
   @TempDir static Path classes;
   @BeforeAll static void child(){
@@ -361,11 +361,11 @@ final class ManagerTest{
       --- hello.Slow exited with [###] after [###]s ---
       """, view.out(hello));
     assertEquals(List.of(
-      "The manager was asked \"Run\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.",
-      "The manager was asked \"Compile\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.",
-      "The manager was asked \"DeleteCache\" on \"hello\", but \"hello\" has a job: \"hello.Slow\". Terminate it first.",
-      "The manager was asked to make \"hello\" \"idle\", but \"hello\" is busy with \"hello.Slow\".",
-      "The manager was asked to remove \"hello\", but \"hello\" is busy with \"hello.Slow\"."), view.refused);
+      "Refused request \"Run\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
+      "Refused request \"Compile\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
+      "Refused request \"DeleteCache\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
+      "Refused request to change the kind of project \"hello\" to \"idle\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
+      "Refused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\"."), view.refused);
     assertEquals(Kind.code, project(m, hello).kind());
   }
   @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
@@ -651,7 +651,7 @@ final class ManagerTest{
     send(m, "Forget", "data");
     edit(m, dir, before.replace("\"Diary\"", "\"Journal\""));
     assertEquals(before, info(dir));
-    assertEquals(Collections.nCopies(4, "The manager refused a change of the data projects that \"hello\" reads or writes: \"hello\" runs \"hello.Slow\", and the data projects of a main stay the same while it runs. Terminate it first."), view.refused);
+    assertEquals(Collections.nCopies(4, "Refused request to change the data projects that project \"hello\" reads or writes.\nMain \"hello.Slow\" is currently running inside project \"hello\".\nThe data projects of a main stay the same while the main runs."), view.refused);
     send(m, "Link", "hello", "data write Notes Diary");
     send(m, "Check", "data");
     assertEquals(4, view.refused.size());
@@ -1676,7 +1676,7 @@ final class ManagerTest{
     open(m, doc(dir, "a.foo"));
     until(m, _ -> view.out(slow).contains("ran slow.Slow"));
     open(m, doc(dir, "b.fapp003"));
-    assertEquals(List.of("The manager was asked \"Run\" on \"slow\", but \"slow\" has a job: \"slow.Slow\". Terminate it first."), view.refused);
+    assertEquals(List.of("Refused request \"Run\" on project \"slow\".\nMain \"slow.Slow\" is currently running inside project \"slow\"."), view.refused);
     send(m, "Terminate", "slow");
     idle(m);
   }

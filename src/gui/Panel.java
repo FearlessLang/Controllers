@@ -258,7 +258,7 @@ final class Panel{
   private void fillAttenuators(Project p, String main){
     var applied= p.entry().attenuators().getOrDefault(main, List.of());
     var known= p.mains().isPresent();
-    attenuatorsBox.add(row(0, new JLabel(main+(!known || p.knownMains().contains(main) ? "" : " is not a main of this project"))));
+    attenuatorsBox.add(row(0, label(main, !known || p.knownMains().contains(main))));
     IntStream.range(0, applied.size()).forEach(i -> attenuatorsBox.add(attenuator(p, main, applied, i)));
     var choices= p.knownAttenuators().toArray(String[]::new);
     if (choices.length == 0){ return; }
@@ -272,8 +272,9 @@ final class Panel{
     up.setEnabled(i > 0);
     var down= small("Down", () -> attenuate(p, main, moved(applied, i, i+1)));
     down.setEnabled(i < applied.size()-1);
-    return row(16, new JLabel(a+(known ? "" : " is not an attenuator of this project")), small("Remove", () -> attenuate(p, main, moved(applied, i, -1))), up, down);
+    return row(16, label(a, known), small("Remove", () -> attenuate(p, main, moved(applied, i, -1))), up, down);
   }
+  private static JLabel label(String text, boolean known){ return known ? new JLabel(text) : new JLabel(text, new Icons.Badge(null, 16, Project.State.codeInvalid), JLabel.LEADING); }
   private static List<String> moved(List<String> applied, int from, int to){
     var res= new ArrayList<>(applied);
     res.remove(from);

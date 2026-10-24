@@ -59,7 +59,8 @@ public final class Report{
   public static String portClosed(int port, IOException e){ return "The manager was given the port "+port+", but no program of this machine accepts a connection there: "+fileFailure(e); }
 
   //-- requests the state of the project refuses
-  public static String busy(String verb, String name, String job){ return "The manager was asked "+disp(verb)+" on "+disp(name)+", but "+disp(name)+" has a job: "+disp(job)+". Terminate it first."; }
+  private static String running(String name, String job){ return job.equals(Project.compiling) ? "A compilation of project "+disp(name)+" is currently running." : "Main "+disp(job)+" is currently running inside project "+disp(name)+"."; }
+  public static String busy(String verb, String name, String job){ return "Refused request "+disp(verb)+" on project "+disp(name)+".\n"+running(name, job); }
   public static String notCode(String verb, String name, String kind){ return "The manager was asked "+disp(verb)+" on "+disp(name)+", but "+disp(name)+" is "+disp(kind)+": only a \"code\" project can "+disp(verb)+"."; }
   public static String invalidContent(String verb, String name, String why){ return "The manager was asked "+disp(verb)+" on "+disp(name)+", but its content is invalid:\n"+why.stripTrailing(); }
   public static String notCompiled(String name, String state){ return "The manager was asked \"Run\" on "+disp(name)+", but "+disp(name)+" is "+disp(state)+": compile it first."; }
@@ -72,8 +73,8 @@ public final class Report{
   }
   public static String noMainAttenuated(String name){ return "The manager was asked to attenuate a main of "+disp(name)+", but the request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all."; }
   public static String unknownKind(String name, String text){ return "The manager was asked to change the kind of "+disp(name)+" to "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."; }
-  public static String kindWhileBusy(String name, String kind, String job){ return "The manager was asked to make "+disp(name)+" "+disp(kind)+", but "+disp(name)+" is busy with "+disp(job)+"."; }
-  public static String removedWhileBusy(String name, String job){ return "The manager was asked to remove "+disp(name)+", but "+disp(name)+" is busy with "+disp(job)+"."; }
+  public static String kindWhileBusy(String name, String kind, String job){ return "Refused request to change the kind of project "+disp(name)+" to "+disp(kind)+".\n"+running(name, job); }
+  public static String removedWhileBusy(String name, String job){ return "Refused request to remove project "+disp(name)+".\n"+running(name, job); }
   public static String malformedLink(String name, String link){ return "The manager was asked to link "+disp(name)+" with "+disp(link)+", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link."; }
   public static String linkMissing(String field, String name){ return "\""+field+"\" refers to \""+name+"\", but no project called \""+name+"\" is registered."; }
   public static String linkWrongKind(String field, String name, String kind, boolean needsWrite){
@@ -81,7 +82,7 @@ public final class Report{
     return "\""+field+"\" refers to \""+name+"\", but the kind of \""+name+"\" is \""+kind+"\"; \""+field+"\" accepts only "+needed+".";
   }
   public static String linkInvalid(String field, String name, String why){ return "\""+field+"\" refers to \""+name+"\", which is itself invalid:\n"+why; }
-  public static String grantsWhileRunning(String name, String job){ return "The manager refused a change of the data projects that "+disp(name)+" reads or writes: "+disp(name)+" runs "+disp(job)+", and the data projects of a main stay the same while it runs. Terminate it first."; }
+  public static String grantsWhileRunning(String name, String job){ return "Refused request to change the data projects that project "+disp(name)+" reads or writes.\n"+running(name, job)+"\nThe data projects of a main stay the same while the main runs."; }
 
   //-- registering a folder
   public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link, and Fearless does not follow symbolic links:\n"+path(p.toString())); }
@@ -160,7 +161,7 @@ public final class Report{
   public static String noCache(){ return "This project has no compiled cache: compiling it makes one."; }
   public static String stalePackages(List<String> pkgs){ return "The compiled cache does not match the files of the package"+(pkgs.size() == 1 ? " " : "s ")+quoted(pkgs)+": compiling the project compiles "+(pkgs.size() == 1 ? "it" : "them")+"."; }
   public static String packagesToCompile(){ return "The mains of this project are not known: compiling the project makes them known."; }
-  public static String resetQuestion(){ return "Reset ends the manager and every job it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
+  public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
   public static String cacheNotDeleted(String why){ return "--- the compiled cache is not deleted: "+why+" ---\n"; }
   public static String notWritten(String file, IOException e){ return "--- "+file+" is not written: "+fileFailure(e)+" ---\n"; }
