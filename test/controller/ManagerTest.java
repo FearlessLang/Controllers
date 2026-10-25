@@ -547,7 +547,7 @@ final class ManagerTest{
     assertFalse(Files.exists(checkError));
     var hello= code(m, dir, "hello");
     send(m, "Check", "hello");
-    assertEquals("This project has no compiled cache: compiling it makes one.\n", view.out(hello));
+    assertEquals("This project has no compilation cache.\n", view.out(hello));
   }
   @Test void linksAreEditedByRequestAndBrokenLinksStopTheCompile(@TempDir Path dir){
     var m= manager(dir);
@@ -834,7 +834,7 @@ final class ManagerTest{
     Fs.writeUtf8(cache.resolve("a.built"), "");
     Disk.noWrite(cache);
     send(again, "DeleteCache", "data");
-    same("--- the compiled cache is not deleted: access denied: [###]a.built ---\n", view.out(cached));
+    same("--- the compilation cache is not deleted: access denied: [###]a.built ---\n", view.out(cached));
     List.of(closed, readOnly, cache, hidden).forEach(Disk::allow);
   }
   @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@TempDir Path dir){
@@ -944,7 +944,7 @@ final class ManagerTest{
     assertEquals(Project.State.codeOutdated, p.state());
     assertEquals(Project.Action.compile, p.action());
     send(m, "Check", "hello");
-    assertEquals("The mains of this project are not known: compiling the project makes them known.\n", view.out(hello));
+    assertEquals("The compilation cache does not contain the mains of this project.\n", view.out(hello));
   }
   @Test void aProjectChangedWhileItsMainsAreReadSuccessfullyIsCheckedAgainWhileTheWindowIsHidden(@TempDir Path dir){
     var reads= new ArrayList<Path>();

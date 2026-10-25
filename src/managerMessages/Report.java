@@ -151,12 +151,12 @@ public final class Report{
       replace that file with a PNG image, or remove it.
       """.formatted(path(icon.toString())));
   }
-  public static String noCache(){ return "This project has no compiled cache: compiling it makes one."; }
-  public static String stalePackages(List<String> pkgs){ return "The compiled cache does not match the files of the package"+(pkgs.size() == 1 ? " " : "s ")+quoted(pkgs)+": compiling the project compiles "+(pkgs.size() == 1 ? "it" : "them")+"."; }
-  public static String packagesToCompile(){ return "The mains of this project are not known: compiling the project makes them known."; }
+  public static String noCache(){ return "This project has no compilation cache."; }
+  public static String stalePackages(List<String> pkgs){ return "The compilation cache of the package"+(pkgs.size() == 1 ? " " : "s ")+quoted(pkgs)+" is out of date."; }
+  public static String packagesToCompile(){ return "The compilation cache does not contain the mains of this project."; }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
-  public static String cacheNotDeleted(String why){ return "--- the compiled cache is not deleted: "+why+" ---\n"; }
+  public static String cacheNotDeleted(String why){ return "--- the compilation cache is not deleted: "+why+" ---\n"; }
   public static String notWritten(String file, IOException e){ return "--- "+file+" is not written: "+fileFailure(e)+" ---\n"; }
 
   //-- projects.info
@@ -228,7 +228,7 @@ public final class Report{
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" can not both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
   public static String iconGone(Path file){ return "--- the icon file of a claim of this project is gone: "+file+"; the project claims no extension until it is compiled again ---\n"; }
-  public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project can not be saved in its compiled cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
+  public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project can not be saved in its compilation cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
   public static String extensionsNotAllowed(List<Project.Claimant> cs){
     return Join.of(cs.stream().map(c -> "The system extension "+disp(c.claim().extension())+" of "+claim(c)+" of main "+disp(c.main())+" is not in \"systemExtensions\" of projects.info."), "", "\n", "");
   }
