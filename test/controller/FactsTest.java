@@ -77,7 +77,7 @@ final class FactsTest{
     cache(project, "hello", after(project));
     assertTrue(upToDate(facts(project, "someproject", Kind.code)));
     at(dir.resolve("baseCache").resolve("base.json"), "{}\n", after(project)+1000);
-    assertEquals(Optional.of("The compiled cache does not match the files of the package \"hello\": compiling the project compiles it."), Facts.of(project, "someproject", Kind.code, dir.resolve("baseCache")).stale());
+    assertEquals(Optional.of("The compilation cache of the package \"hello\" is out of date."), Facts.of(project, "someproject", Kind.code, dir.resolve("baseCache")).stale());
   }
   @Test void recognisesThePackagesOfTheProject(@TempDir Path dir){
     var project= project(dir, "someProject");
@@ -94,14 +94,14 @@ final class FactsTest{
   @Test void withNoCacheThereIsSomethingToCompileAndNothingToRun(@TempDir Path dir){
     var facts= facts(project(dir, "someProject"), "someproject", Kind.code);
     assertFalse(facts.hasCache());
-    assertEquals(Optional.of("This project has no compiled cache: compiling it makes one."), facts.stale());
+    assertEquals(Optional.of("This project has no compilation cache."), facts.stale());
   }
   @Test void anOutFolderHoldingNoPackageIsNoCache(@TempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve(Facts.outDir).resolve("check_error.txt"), "broken");
     var facts= facts(project, "someproject", Kind.code);
     assertFalse(facts.hasCache());
-    assertEquals(Optional.of("This project has no compiled cache: compiling it makes one."), facts.stale());
+    assertEquals(Optional.of("This project has no compilation cache."), facts.stale());
   }
   @Test void aCacheNewerThanEverySourceIsUpToDate(@TempDir Path dir){
     var project= project(dir, "someProject");
@@ -115,7 +115,7 @@ final class FactsTest{
     Fs.writeUtf8(project.resolve("_other").resolve("_rank_app.fear"), "");
     cache(project, "hello", after(project));
     cache(project, "other", 1000);
-    assertEquals(Optional.of("The compiled cache does not match the files of the package \"other\": compiling the project compiles it."), facts(project, "someproject", Kind.code).stale());
+    assertEquals(Optional.of("The compilation cache of the package \"other\" is out of date."), facts(project, "someproject", Kind.code).stale());
   }
   @Test void eachPackageIsComparedWithItsOwnFilesOnly(@TempDir Path dir){
     var project= project(dir, "someProject");

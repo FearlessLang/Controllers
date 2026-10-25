@@ -7,7 +7,7 @@ import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 /// Project > Build asks the manager to compile a code project with valid content, following the compile, and to
-/// check any other project; Project > Clean asks it to delete the compiled cache. An automatic
+/// check any other project; Project > Clean asks it to delete the compilation cache. An automatic
 /// build asks nothing: saving a file compiles through Save.
 public final class Builder extends IncrementalProjectBuilder{
   public static final String id= "fearlessPluginProject.builder";
