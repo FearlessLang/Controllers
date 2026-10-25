@@ -49,7 +49,7 @@ final class FactsTest{
     at(project.resolve(".fearless_out").resolve(pkg+"_manifest.info"), manifest(mainsInfo), stamp);
     at(project.resolve(".fearless_out").resolve("_map.json"), "{}", 0);
   }
-  static String manifest(String mains){ return "{\n  \"mains\": "+mains.strip()+",\n  \"attenuators\": []\n}\n"; }
+  static String manifest(String mains){ return "{\n  \"mains\": "+mains.strip()+",\n  \"attenuators\": [],\n  \"dataRead\": [],\n  \"dataEdit\": []\n}\n"; }
   private static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file, content);
     Fs.ofV(() -> Files.setLastModifiedTime(file, FileTime.fromMillis(stamp)));
