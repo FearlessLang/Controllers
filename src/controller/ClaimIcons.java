@@ -2,13 +2,13 @@ package controller;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -17,23 +17,21 @@ import fileAssociations.Ico;
 import realSourceOracle.ZipLocator;
 import tools.Fs;
 import managerMessages.Report;
-import userMessages.UserError;
 
 final class ClaimIcons{
   private static final byte[] pngHead= {(byte)0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0, 0, 13, 'I', 'H', 'D', 'R'};
-  static Map<String,byte[]> read(Path base, Stream<Project.Claimant> cs){
+  static Map<String,byte[]> read(Path base, Stream<Project.Claimant> cs, Function<RuntimeException,RuntimeException> unreadable){
     var res= new LinkedHashMap<String,byte[]>();
-    cs.forEach(c -> res.computeIfAbsent(c.claim().icon(), _ -> icon(base, c)));
+    cs.forEach(c -> res.computeIfAbsent(c.claim().icon(), _ -> icon(base, c, unreadable)));
     return res;
   }
-  private static byte[] icon(Path base, Project.Claimant claimant){
+  private static byte[] icon(Path base, Project.Claimant claimant, Function<RuntimeException,RuntimeException> unreadable){
     var c= claimant.claim();
     var file= (c.icon().startsWith("base.") ? base : claimant.folder()).resolve(c.diskPath());
     var steps= c.zipSteps().isEmpty() ? List.<String>of() : List.of(c.zipSteps().split(";"));
     byte[] bytes;
     try{ bytes= c.zipEntry().isEmpty() ? Fs.of(() -> Fs.readAllBytes(file)) : ZipLocator.entryBytes(file, steps, c.zipEntry()); }
-    catch (UncheckedIOException e){ throw Report.iconUnreadable(claimant, Report.fileFailure(e.getCause())); }
-    catch (UserError e){ throw Report.iconUnreadable(claimant, e.getMessage().stripTrailing()); }
+    catch (RuntimeException e){ throw unreadable.apply(e); }
     if (bytes.length < 24 || !Arrays.equals(bytes, 0, 16, pngHead, 0, 16)){ throw Report.iconRefused(claimant, "is not a PNG image"); }
     var w= ByteBuffer.wrap(bytes).getInt(16);
     var h= ByteBuffer.wrap(bytes).getInt(20);
