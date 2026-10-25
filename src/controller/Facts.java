@@ -23,7 +23,7 @@ import tools.Fs;
 import managerMessages.Report;
 import userMessages.UserError;
 
-/// What the file system says about a project folder: its compiled cache under
+/// What the file system says about a project folder: its compilation cache under
 /// `.fearless_out` and why it is out of date, its icon, its logs, and why it is invalid if it is.
 public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
   public static final String outDir= Coordinator.outDir;
