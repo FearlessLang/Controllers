@@ -20,11 +20,12 @@ import realSourceOracle.BuildWithZip;
 import realSourceOracle.PathEntry;
 import managerMessages.Report;
 import userMessages.UserError;
+import utils.OneOr;
 import tools.Fs;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
-/// folder holds, its mains once known, why its links are broken, and its job, if any.
-public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, Optional<String> linkProblem, String job){
+/// folder holds, its mains once known, and its job, if any.
+public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, String job){
   public static final String compiling= "compiling";
   public static final MainsInfo noClaims= new MainsInfo(Map.of());
   public record Claimant(Path folder, String alias, String main, String kind, MainsInfo.Claim claim){
@@ -34,7 +35,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
     public Path shortcutFile(){ return folder.resolve(Project.shortcutFile(folder, main, claim.extension())); }
   }
   public enum State{
-    codeInvalid("code: invalid content"), dataInvalid("data: invalid content"), idle("idle"), dataReadOnly("data: read only"), dataReadWrite("data: read write"),
+    codeInvalid("code: invalid content"), dataReadInvalid("dataRead: invalid content"), dataEditInvalid("dataEdit: invalid content"), idle("idle"), dataRead("dataRead"), dataEdit("dataEdit"),
     codeNoCache("code: not compiled (no cache)"), codeOutdated("code: not compiled (cache out of date)"), codeCompiled("code: compiled"), busy("code: busy");
     public final String text;
     State(String text){ this.text= text; }
@@ -44,9 +45,25 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public Kind kind(){ return entry.kind(); }
   public boolean busy(){ return !job.isEmpty(); }
   public boolean needsCompiling(){ return kind() == Kind.code && facts.stale().isPresent(); }
-  public Optional<String> problem(){ return facts.problem().or(() -> linkProblem); }
+  public Optional<String> problem(){ return facts.problem(); }
   public List<String> knownMains(){ return mains.map(m -> List.copyOf(m.mains().keySet())).orElse(List.of()); }
   public List<String> knownAttenuators(){ return mains.map(MainsInfo::attenuators).orElse(List.of()); }
+  public List<String> knownDataRead(){ return mains.map(m -> Stream.concat(m.dataRead().stream(), m.dataEdit().stream()).sorted().toList()).orElse(List.of()); }
+  public Optional<String> brokenMount(String type, List<Entry> all){
+    var data= entry.mounts().get(type);
+    if (!knownDataRead().contains(type)){ return Optional.of(Report.mountNotDataRead(type, alias())); }
+    var target= OneOr.opt("project "+data, all.stream().filter(e -> e.alias().equals(data)));
+    if (target.isEmpty()){ return Optional.of(Report.mountNotRegistered(data)); }
+    var kind= target.get().kind();
+    if (!kind.isData()){ return Optional.of(Report.mountNotData(data, kind.text)); }
+    if (kind == Kind.dataRead && mains.orElseThrow().dataEdit().contains(type)){ return Optional.of(Report.mountNotEditable(data, type)); }
+    return Optional.empty();
+  }
+  public List<String> mountProblems(List<Entry> all){
+    var unmounted= knownDataRead().stream().filter(t -> !entry.mounts().containsKey(t)).map(Report::notMounted);
+    var broken= entry.mounts().keySet().stream().flatMap(t -> brokenMount(t, all).map(why -> Report.brokenMount(t, entry.mounts().get(t), why)).stream());
+    return Stream.concat(unmounted, broken).toList();
+  }
   public List<String> selectedMains(){
     var known= knownMains();
     return known.size() == 1 ? known : known.stream().filter(entry.mains()::contains).toList();
@@ -110,11 +127,11 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   }
   public State state(){
     if (busy()){ return State.busy; }
-    if (problem().isPresent()){ return kind() == Kind.code ? State.codeInvalid : State.dataInvalid; }
+    if (problem().isPresent() && kind() != Kind.idle){ return kind() == Kind.code ? State.codeInvalid : kind() == Kind.dataRead ? State.dataReadInvalid : State.dataEditInvalid; }
     return switch (kind()){
       case idle -> State.idle;
-      case dataReadOnly -> State.dataReadOnly;
-      case dataReadWrite -> State.dataReadWrite;
+      case dataRead -> State.dataRead;
+      case dataEdit -> State.dataEdit;
       case code -> !facts.hasCache() ? State.codeNoCache : needsCompiling() ? State.codeOutdated : State.codeCompiled;
     };
   }

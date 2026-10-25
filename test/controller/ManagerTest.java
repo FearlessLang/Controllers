@@ -147,9 +147,10 @@ public class Child{
   @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); }
   private Manager manager(Path dir, String... mains){ return manager(dir, view, known(mains)); }
   private static Function<Path,Optional<MainsInfo>> known(String... mains){ return known(List.of(), mains); }
-  private static Function<Path,Optional<MainsInfo>> known(List<String> attenuators, String... mains){
+  private static Function<Path,Optional<MainsInfo>> known(List<String> attenuators, String... mains){ return known(attenuators, List.of(), List.of(), mains); }
+  private static Function<Path,Optional<MainsInfo>> known(List<String> attenuators, List<String> dataRead, List<String> dataEdit, String... mains){
     var main= new MainsInfo.Main("_hello/_rank_app.fear", List.of(), List.of(), List.of());
-    var known= Optional.of(new MainsInfo(Stream.of(mains).collect(Collectors.toMap(m -> m, _ -> main)), attenuators, List.of(), List.of()));
+    var known= Optional.of(new MainsInfo(Stream.of(mains).collect(Collectors.toMap(m -> m, _ -> main)), attenuators, dataRead, dataEdit));
     return _ -> known;
   }
   private Manager manager(Path dir, Function<Path,Optional<MainsInfo>> read){ return manager(dir, view, read); }
@@ -446,27 +447,29 @@ The projects are:
     registered(m, dir, "hello");
     send(m, "build", "hello");
     send(m, "Kind", "hello", "library");
-    send(m, "Link", "hello", "data sometimes");
+    send(m, "Mount", "hello", "hello.Pub data sometimes");
+    send(m, "Mount", "hello", "");
     send(m, "Forget", "hello", "now");
     send(m, "Run");
-    assertEquals(5, view.refused.size());
-    assertEquals("Refused request \"build\".\n\"build\" is not a request of the manager: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\", \"Attenuate\".", view.refused.get(0));
-    assertEquals("Refused request \"Kind\" on project \"hello\".\n\"library\" is not a kind: the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".", view.refused.get(1));
-    assertEquals("Refused request \"Link\" on project \"hello\".\n\"data sometimes\" is not a link: a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link.", view.refused.get(2));
-    assertEquals("Refused request \"Forget\" with 2 arguments.\nRequest \"Forget\" takes 1 argument.\nThe arguments are:\n  \"hello\"\n  \"now\"", view.refused.get(3));
-    assertEquals("Refused request \"Run\" with 0 arguments.\nRequest \"Run\" takes 1 or 2 arguments.\nThe arguments are:\n  <none>", view.refused.get(4));
+    assertEquals(6, view.refused.size());
+    assertEquals("Refused request \"build\".\n\"build\" is not a request of the manager: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Mount\", \"Attenuate\".", view.refused.get(0));
+    assertEquals("Refused request \"Kind\" on project \"hello\".\n\"library\" is not a kind: the kinds are \"idle\", \"code\", \"dataRead\" and \"dataEdit\".", view.refused.get(1));
+    assertEquals("Refused request \"Mount\" on project \"hello\".\n\"hello.Pub data sometimes\" is not a mount: a mount is the qualified name of a DataRead type, then the name of a data project, none to remove the mount of that DataRead type.", view.refused.get(2));
+    assertEquals("Refused request \"Mount\" on project \"hello\".\n\"\" is not a mount: a mount is the qualified name of a DataRead type, then the name of a data project, none to remove the mount of that DataRead type.", view.refused.get(3));
+    assertEquals("Refused request \"Forget\" with 2 arguments.\nRequest \"Forget\" takes 1 argument.\nThe arguments are:\n  \"hello\"\n  \"now\"", view.refused.get(4));
+    assertEquals("Refused request \"Run\" with 0 arguments.\nRequest \"Run\" takes 1 or 2 arguments.\nThe arguments are:\n  <none>", view.refused.get(5));
     assertEquals(Kind.idle, m.state().projects().getFirst().kind());
   }
   @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
     var m= manager(dir);
     var hello= code(m, dir, "hello");
     send(m, "Register", TaggedText.of(data(dir).toString()));
-    send(m, "Kind", "data", "data:readOnly");
+    send(m, "Kind", "data", "dataRead");
     var before= info(dir);
-    send(m, "Link", "hello", "data read One\tTwo");
-    send(m, "Link", "hello", "data read Ärger");
+    send(m, "Mount", "hello", "hello.One\tTwo data");
+    send(m, "Mount", "hello", "hello.Ärger data");
     assertEquals(before, info(dir));
-    assertEquals(Map.of(), project(m, hello).entry().reads());
+    assertEquals(Map.of(), project(m, hello).entry().mounts());
     assertEquals(2, view.refused.size());
     same("In file: [###]projects.info\n\n[###]The character [Tab 0x09] is outside the safe character set of Fearless[###]", view.refused.get(0));
     same("[###]The character [U+00C4] is outside the safe character set of Fearless[###]", view.refused.get(1));
@@ -512,12 +515,12 @@ The projects are:
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     assertEquals(Kind.idle, project(m, data).kind());
-    send(m, "Kind", "data", "data:readOnly");
+    send(m, "Kind", "data", "dataRead");
     send(m, "Kind", "data", "code");
     assertEquals(Kind.code, project(m, data).kind());
-    send(m, "Kind", "data", "data:readWrite");
-    send(m, "Kind", "data", "data:readWrite");
-    assertEquals(Kind.dataReadWrite, project(m, data).kind());
+    send(m, "Kind", "data", "dataEdit");
+    send(m, "Kind", "data", "dataEdit");
+    assertEquals(Kind.dataEdit, project(m, data).kind());
     send(m, "Kind", "data", "idle");
     assertEquals(Kind.idle, project(m, data).kind());
     assertEquals(List.of(), view.refused);
@@ -540,7 +543,11 @@ The projects are:
     same("[###]Bad Name.txt[###]", view.out(data));
     var checkError= data.resolve(Facts.outDir).resolve("check_error.txt");
     same("[###]Bad Name.txt[###]", Fs.readUtf8(checkError));
-    assertEquals(Project.State.dataInvalid, project(m, data).state());
+    assertEquals(Project.State.idle, project(m, data).state());
+    send(m, "Kind", "data", "dataRead");
+    assertEquals(Project.State.dataReadInvalid, project(m, data).state());
+    send(m, "Kind", "data", "dataEdit");
+    assertEquals(Project.State.dataEditInvalid, project(m, data).state());
     assertEquals(Project.Action.check, project(m, data).action());
     Fs.ofV(() -> Files.delete(data.resolve("Bad Name.txt")));
     send(m, "Check", "data");
@@ -550,33 +557,43 @@ The projects are:
     send(m, "Check", "hello");
     assertEquals("This project has no compilation cache.\n", view.out(hello));
   }
-  @Test void linksAreEditedByRequestAndBrokenLinksStopTheCompile(@TempDir Path dir){
-    var m= manager(dir);
+  @Test void mountsAreEditedByRequestAndABrokenMountOrADataReadTypeWithNoMountStopsTheRun(@TempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Diary"), "hello.Hello"));
     var hello= code(m, dir, "hello");
+    compiled(m, "hello");
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
-    send(m, "Kind", "data", "data:readWrite");
-    send(m, "Link", "hello", "data write Data");
-    send(m, "Link", "hello", "data read Pub");
-    var entry= project(m, hello).entry();
-    assertEquals(List.of(Map.of("data", List.of("Pub")), Map.of("data", List.of("Data"))), List.of(entry.reads(), entry.edits()));
-    assertEquals(Optional.empty(), project(m, hello).problem());
-    send(m, "Link", "hello", "data read lower");
-    same("[###]\"lower\" in \"reads\".\"data\" is not a Fearless type name[###]", view.refused.getLast());
-    send(m, "Link", "hello", "data read Data");
-    same("[###]\"Data\" is in both \"reads\".\"data\" and \"edits\".\"data\"[###]", view.refused.getLast());
-    assertEquals(entry, project(m, hello).entry());
-    send(m, "Link", "data", "hello read Hello");
-    assertEquals(Map.of("hello", List.of("Hello")), project(m, data).entry().reads());
-    assertEquals(Project.State.dataReadWrite, project(m, data).state());
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Mount", "hello", "hello.Diary data");
+    send(m, "Mount", "hello", "hello.Old data");
+    assertEquals(Map.of("hello.Diary", "data", "hello.Old", "data"), project(m, hello).entry().mounts());
+    send(m, "Mount", "hello", "Lower data");
+    same("[###]\"Lower\" in \"mounts\" is not a Fearless DataRead type name[###]", view.refused.getLast());
+    assertEquals(Project.State.codeCompiled, project(m, hello).state());
+    send(m, "Run", "hello", "hello.Hello");
+    assertEquals("""
+Refused request "Run" on project "hello".
+Project "hello" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:
+  No data project is mounted on "hello.Pub".
+  The mount of "data" on "hello.Diary" is broken: the kind of project "data" is "dataRead", and "hello.Diary" is a DataEdit type: only a project of kind "dataEdit" is mounted on a DataEdit type.
+  The mount of "data" on "hello.Old" is broken: "hello.Old" is not a DataRead type of project "hello".""", view.refused.getLast());
     send(m, "Kind", "data", "idle");
-    assertEquals(Project.State.codeInvalid, project(m, hello).state());
-    send(m, "Compile", "hello");
-    assertEquals("Refused request \"Compile\" on project \"hello\".\nThe content of project \"hello\" is invalid:\n\"reads\" refers to \"data\", but the kind of \"data\" is \"idle\"; \"reads\" accepts only \"data:readOnly\" or \"data:readWrite\".", view.refused.getLast());
-    send(m, "Link", "hello", "data read");
-    send(m, "Link", "hello", "data write");
-    assertEquals(List.of(Map.of(), Map.of()), List.of(project(m, hello).entry().reads(), project(m, hello).entry().edits()));
-    assertEquals(Project.State.codeNoCache, project(m, hello).state());
+    send(m, "Mount", "hello", "hello.Old");
+    send(m, "Mount", "hello", "hello.Pub nope");
+    send(m, "Run", "hello", "hello.Hello");
+    assertEquals("""
+Refused request "Run" on project "hello".
+Project "hello" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:
+  The mount of "data" on "hello.Diary" is broken: the kind of project "data" is "idle", and only a project of kind "dataRead" or "dataEdit" is a data project.
+  The mount of "nope" on "hello.Pub" is broken: no project "nope" is registered.""", view.refused.getLast());
+    assertEquals(3, view.refused.size());
+    send(m, "Kind", "data", "dataEdit");
+    send(m, "Mount", "hello", "hello.Pub data");
+    send(m, "Run", "hello", "hello.Hello");
+    idle(m);
+    assertEquals(3, view.refused.size());
+    var folder= project(m, data).folder();
+    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder), Map.of("hello.Diary", folder))), granted);
   }
   @Test void attenuatorsAreSetByRequestAndARunStartsEachMainUnderItsOwn(@TempDir Path dir){
     var m= manager(dir, known(List.of("hello.NoGui", "hello.NoNet"), "hello.One", "hello.Two"));
@@ -638,33 +655,36 @@ The attenuators are:
     idle(m);
     same("--- running hello.One ---\nran hello.One\n--- hello.One exited with 0 after [###]s ---\n", view.out(hello));
   }
-  @Test void aRunningMainKeepsTheDataProjectsOfItsLinksUntilItEnds(@TempDir Path dir){
-    var m= manager(dir, "hello.Slow");
+  @Test void aRunningMainKeepsTheDataProjectsOfItsMountsUntilItEnds(@TempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Notes"), "hello.Slow"));
     var hello= code(m, dir, "hello");
     var data= data(dir);
+    var other= registered(m, dir, "other");
     send(m, "Register", TaggedText.of(data.toString()));
-    send(m, "Kind", "data", "data:readWrite");
-    send(m, "Link", "hello", "data write Notes Diary");
-    send(m, "Link", "hello", "data read Pub");
+    send(m, "Kind", "data", "dataEdit");
+    send(m, "Mount", "hello", "hello.Notes data");
+    send(m, "Mount", "hello", "hello.Pub data");
     compiled(m, "hello");
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     var folder= project(m, data).folder();
-    assertEquals(List.of(new Registry.Grants(Map.of("Pub", folder), Map.of("Notes", folder, "Diary", folder))), granted);
+    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder), Map.of("hello.Notes", folder))), granted);
     var before= info(dir);
-    send(m, "Link", "hello", "data read Old");
-    send(m, "Kind", "data", "idle");
+    send(m, "Mount", "hello", "hello.Old other");
+    send(m, "Kind", "data", "dataRead");
     send(m, "Forget", "data");
-    edit(m, dir, before.replace("\"Diary\"", "\"Journal\""));
+    edit(m, dir, before.replace("\"hello.Pub\"", "\"hello.Journal\""));
     assertEquals(before, info(dir));
-    assertEquals(Collections.nCopies(4, "Refused request to change the data projects that project \"hello\" reads or writes.\nMain \"hello.Slow\" is currently running inside project \"hello\".\nThe data projects of a main stay the same while the main runs."), view.refused);
-    send(m, "Link", "hello", "data write Notes Diary");
+    assertEquals(Collections.nCopies(4, "Refused request to change the data projects mounted on the DataRead types of project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".\nThe data projects of a main stay the same while the main runs."), view.refused);
+    send(m, "Mount", "hello", "hello.Notes data");
+    send(m, "Kind", "other", "dataRead");
     send(m, "Check", "data");
     assertEquals(4, view.refused.size());
     send(m, "Terminate", "hello");
     idle(m);
-    send(m, "Link", "hello", "data read Old");
-    assertEquals(Map.of("data", List.of("Old")), project(m, hello).entry().reads());
+    send(m, "Mount", "hello", "hello.Old other");
+    assertEquals(Map.of("hello.Notes", "data", "hello.Pub", "data", "hello.Old", "other"), project(m, hello).entry().mounts());
+    assertEquals(Kind.dataRead, project(m, other).kind());
   }
   @Test void theMetadataIsEditedWholeOrNotAtAll(@TempDir Path dir){
     var m= manager(dir);
@@ -673,15 +693,15 @@ The attenuators are:
     edit(m, dir, "{\"projects\": {\"data\": {\"path\": \"Str:nowhere\"}}, \"systemExtensions\": []}");
     same("In file: [###]edited.info[###]\"path\" must be an absolute path[###]", view.refused.getLast());
     assertEquals(List.of(), view.edited);
-    var good= edit(m, dir, Registry.text(new Registry.Content(List.of(project(m, data).entry().withKind(Kind.dataReadWrite)), List.of())));
+    var good= edit(m, dir, Registry.text(new Registry.Content(List.of(project(m, data).entry().withKind(Kind.dataEdit)), List.of())));
     assertEquals(List.of(good), view.edited);
-    assertEquals(Kind.dataReadWrite, project(m, data).kind());
+    assertEquals(Kind.dataEdit, project(m, data).kind());
     edit(m, dir, "{\"projects\": {}, \"systemExtensions\": []}");
     assertEquals(List.of(), listed(m));
     send(m, "EditMetadata", TaggedText.of(dir.resolve("none.info").toString()));
     same("Refused request \"EditMetadata\" on path\n[###]none.info\nNo file is at that path.", view.refused.getLast());
   }
-  /// Forget, Kind and Link are EditMetadata with projects.info changed in one place: the same outcome, down to the refusal.
+  /// Forget, Kind, Mount and Attenuate are EditMetadata with projects.info changed in one place: the same outcome, down to the refusal.
   private record Twin(Manager m, View view, Path dir){}
   private Twin twin(Path dir, String name, String... mains){
     var v= new View();
@@ -712,14 +732,13 @@ The attenuators are:
   }
   private static String without(Registry.Content c, String name){ return Registry.text(new Registry.Content(c.projects().stream().filter(e -> !e.alias().equals(name)).toList(), c.extensions())); }
   private static String with(Registry.Content c, String name, UnaryOperator<Registry.Entry> op){ return Registry.text(new Registry.Content(c.projects().stream().map(e -> e.alias().equals(name) ? op.apply(e) : e).toList(), c.extensions())); }
-  private static void linked(Manager m, Path dir){
+  private static void withData(Manager m, Path dir){
     code(m, dir, "hello");
     send(m, "Register", TaggedText.of(data(dir).toString()));
-    send(m, "Kind", "data", "data:readWrite");
+    send(m, "Kind", "data", "dataEdit");
   }
   private static void running(Manager m, Path dir){
-    linked(m, dir);
-    send(m, "Link", "hello", "data read Pub");
+    withData(m, dir);
     compiled(m, "hello");
     send(m, "Run", "hello", "hello.Slow");
     until(m, s -> s.running().equals(List.of("hello - hello.Slow")));
@@ -733,37 +752,37 @@ The attenuators are:
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> without(c, "hello"), "Forget", "hello");
   }
   @Test void kindFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "data"), c -> with(c, "data", e -> e.withKind(Kind.dataReadOnly)), "Kind", "data", "data:readOnly");
+    sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "data"), c -> with(c, "data", e -> e.withKind(Kind.dataRead)), "Kind", "data", "dataRead");
   }
   @Test void kindNotFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, (m, d) -> { registered(m, d, "data"); send(m, "Kind", "data", "data:readOnly"); }, c -> with(c, "data", e -> e.withKind(Kind.code)), "Kind", "data", "code");
+    sameAsEditMetadata(dir, none, (m, d) -> { registered(m, d, "data"); send(m, "Kind", "data", "dataRead"); }, c -> with(c, "data", e -> e.withKind(Kind.code)), "Kind", "data", "code");
   }
   @Test void kindOfABusyProjectIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withKind(Kind.idle)), "Kind", "hello", "idle");
   }
-  @Test void linkIsEditMetadataWithTheLinkReplaced(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "hello", e -> e.withLinks(e.reads(), Map.of("data", List.of("Data")))), "Link", "hello", "data write Data");
+  @Test void mountIsEditMetadataWithTheMountReplaced(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "hello", e -> e.withMounts(Map.of("hello.Diary", "data"))), "Mount", "hello", "hello.Diary data");
   }
-  @Test void linkWithNoTypeNamesIsEditMetadataWithTheLinkRemoved(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, (m, d) -> { linked(m, d); send(m, "Link", "hello", "data read Pub"); }, c -> with(c, "hello", e -> e.withLinks(Map.of(), e.edits())), "Link", "hello", "data read");
+  @Test void mountWithNoDataProjectIsEditMetadataWithTheMountRemoved(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> { withData(m, d); send(m, "Mount", "hello", "hello.Pub data"); }, c -> with(c, "hello", e -> e.withMounts(Map.of())), "Mount", "hello", "hello.Pub");
   }
-  @Test void linkWithABadTypeNameIsEditMetadataWithThatLink(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "hello", e -> e.withLinks(Map.of("data", List.of("lower")), e.edits())), "Link", "hello", "data read lower");
+  @Test void mountWithABadTypeNameIsEditMetadataWithThatMount(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "hello", e -> e.withMounts(Map.of("Lower", "data"))), "Mount", "hello", "Lower data");
   }
-  @Test void linkOfADataProjectIsEditMetadataWithThatLink(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "data", e -> e.withLinks(Map.of("hello", List.of("Hello")), e.edits())), "Link", "data", "hello read Hello");
+  @Test void mountOnADataProjectIsEditMetadataWithThatMount(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "data", e -> e.withMounts(Map.of("hello.Hello", "hello"))), "Mount", "data", "hello.Hello hello");
   }
   @Test void attenuateOfADataProjectIsEditMetadataWithTheAttenuatorsReplaced(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "data", e -> e.withAttenuators(Map.of("hello.Hello", List.of("base.NoManager")))), "Attenuate", "data", "hello.Hello base.NoManager");
+    sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "data", e -> e.withAttenuators(Map.of("hello.Hello", List.of("base.NoManager")))), "Attenuate", "data", "hello.Hello base.NoManager");
   }
   @Test void attenuateIsEditMetadataWithTheAttenuatorsReplaced(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, ManagerTest::linked, c -> with(c, "hello", e -> e.withAttenuators(Map.of("hello.Hello", List.of("hello.NoGui", "base.NoManager")))), "Attenuate", "hello", "hello.Hello hello.NoGui base.NoManager");
+    sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "hello", e -> e.withAttenuators(Map.of("hello.Hello", List.of("hello.NoGui", "base.NoManager")))), "Attenuate", "hello", "hello.Hello hello.NoGui base.NoManager");
   }
   @Test void attenuateWithNoAttenuatorIsEditMetadataWithTheMainRemoved(@TempDir Path dir){
-    sameAsEditMetadata(dir, none, (m, d) -> { linked(m, d); send(m, "Attenuate", "hello", "hello.Hello hello.NoGui"); }, c -> with(c, "hello", e -> e.withAttenuators(Map.of())), "Attenuate", "hello", "hello.Hello");
+    sameAsEditMetadata(dir, none, (m, d) -> { withData(m, d); send(m, "Attenuate", "hello", "hello.Hello hello.NoGui"); }, c -> with(c, "hello", e -> e.withAttenuators(Map.of())), "Attenuate", "hello", "hello.Hello");
   }
-  @Test void linkWhileAMainRunsIsEditMetadataWithThatLink(@TempDir Path dir){
-    sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withLinks(Map.of("data", List.of("Old")), e.edits())), "Link", "hello", "data read Old");
+  @Test void mountWhileAMainRunsIsEditMetadataWithThatMount(@TempDir Path dir){
+    sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withMounts(Map.of("hello.Old", "data"))), "Mount", "hello", "hello.Old data");
   }
   @Test void aProjectWhoseFolderIsGoneIsInvalidAndCanBeForgotten(@TempDir Path dir){
     var m= manager(dir);
@@ -786,12 +805,12 @@ The attenuators are:
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     view.visible = false;
-    for (var request : List.of(List.of("Link", "data", "other read Other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Kind", "data", "library"))){
+    for (var request : List.of(List.of("Mount", "data", "other.Other other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Kind", "data", "library"))){
       var valid= Files.exists(data);
       if (valid){ Fs.rmTree(data); }
       else{ data(dir); Fs.writeUtf8(data.resolve("data.fearless"), ""); }
       send(m, request.toArray(String[]::new));
-      assertEquals(valid ? Project.State.dataInvalid : Project.State.idle, project(m, data).state());
+      assertEquals(valid, project(m, data).problem().isPresent());
     }
   }
   @Test void foldersTheManagerCanNotReadOrChangeAreRefusedOrInvalidNeverFatal(@TempDir Path dir){
@@ -828,7 +847,7 @@ access denied: [###]hidden
 Give Fearless access to it, or forget this project.""", project(m, partly).problem().orElseThrow());
     var again= manager(dir);
     again.settle();
-    assertEquals(Project.State.dataInvalid, project(again, partly).state());
+    assertTrue(project(again, partly).problem().isPresent());
     Disk.allow(cache);
     send(again, "Register", TaggedText.of(cached.toString()));
     send(again, "Kind", "data", "code");
@@ -843,12 +862,12 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     var hello= code(m, dir, "hello");
     var managerDir= dir.resolve("manager");
     var before= info(dir);
-    send(m, "Link", "hello", "data read lower");
-    same("[###]\"lower\" in \"reads\".\"data\" is not a Fearless type name[###]", view.refused.getLast());
+    send(m, "Mount", "hello", "Lower data");
+    same("[###]\"Lower\" in \"mounts\" is not a Fearless DataRead type name[###]", view.refused.getLast());
     assertEquals(before, info(dir));
     Disk.noWrite(managerDir);
     Assumptions.assumeFalse(Files.isWritable(managerDir));
-    send(m, "Link", "hello", "data read Data");
+    send(m, "Mount", "hello", "hello.Data data");
     send(m, "Kind", "hello", "idle");
     edit(m, dir, "{\"projects\": {}, \"systemExtensions\": []}");
     Disk.allow(managerDir);
@@ -900,7 +919,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     registered(m, dir, "hello");
     var file= dir.resolve("manager").resolve("projects.info");
     Fs.writeUtf8(file, info(dir).replace("\"kind\": \"idle\"", "\"kind\": \"library\""));
-    Errs.err("In file: [###]projects.info[###]\"kind\" must be one of \"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\", not \"library\".[###]", () -> manager(dir));
+    Errs.err("In file: [###]projects.info[###]\"kind\" must be one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\", not \"library\".[###]", () -> manager(dir));
   }
   @Test void compilingForgetsSelectedMainsThatAreGone(@TempDir Path dir){
     var mains= new ArrayList<>(List.of("hello.One", "hello.Two", "hello.Old"));

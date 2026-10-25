@@ -3,11 +3,10 @@ package controller;
 import static controller.Errs.err;
 import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,7 +37,7 @@ final class RegistryTest{
   @Test void anEmptyFileIsNoProjects(){ assertEquals(List.of(), parse("{}")); }
   @Test void aMinimalProjectHasAPathAndAKindWithNoMainsReadsOrEdits(){
     var e= parse("{\"someproject\":{\"path\":\"Str:"+root+"abs/someproject\",\"kind\":\"idle\"}}").getFirst();
-    assertEquals(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.idle, List.of(), Map.of(), Map.of(), Map.of()), e);
+    assertEquals(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.idle, List.of(), Map.of(), Map.of()), e);
   }
   @Test void aFullCodeProjectParsesEveryField(){
     var e= parse("""
@@ -46,18 +45,17 @@ final class RegistryTest{
   "path":"Str:%sabs/someproject",
   "kind":"code",
   "mains":["some.Main1","some.Main2"],
-  "reads":{"publicfiles":["Data1"]},
-  "edits":{"publicdata":["Data2","Data3"]},
+  "mounts":{"some.Pub":"publicfiles","some.Diary":"publicdata"},
   "attenuators":{"some.Main1":["some.NoGui","base.NoManager"]}
 }}""".formatted(root)).getFirst();
     assertEquals(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code,
-      List.of("some.Main1", "some.Main2"), Map.of("publicfiles", List.of("Data1")), Map.of("publicdata", List.of("Data2", "Data3")), Map.of("some.Main1", List.of("some.NoGui", "base.NoManager"))), e);
+      List.of("some.Main1", "some.Main2"), Map.of("some.Pub", "publicfiles", "some.Diary", "publicdata"), Map.of("some.Main1", List.of("some.NoGui", "base.NoManager"))), e);
   }
   @Test void allFourKindsParse(){
     assertEquals(Kind.idle, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"idle\"}}").getFirst().kind());
     assertEquals(Kind.code, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\"}}").getFirst().kind());
-    assertEquals(Kind.dataReadOnly, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"data:readOnly\"}}").getFirst().kind());
-    assertEquals(Kind.dataReadWrite, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"data:readWrite\"}}").getFirst().kind());
+    assertEquals(Kind.dataRead, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"dataRead\"}}").getFirst().kind());
+    assertEquals(Kind.dataEdit, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"dataEdit\"}}").getFirst().kind());
   }
   @Test void theWholeFileMustBeAnObjectWithProjectsAndSystemExtensions(){
     err("[###]The whole file must be an object {...} with \"projects\" and \"systemExtensions\".[###]", () -> content("\"not an object\""));
@@ -69,7 +67,7 @@ final class RegistryTest{
     err("[###]\"Not Valid\" is not a valid project name[###]", () -> parse("{\"Not Valid\":{\"path\":\"Str:"+root+"a\"}}"));
   }
   @Test void anUnknownAttributeIsRejected(){
-    err("[###]Unknown project attribute \"bogus\": the attributes of a project are \"path\", \"kind\", \"mains\", \"reads\", \"edits\", \"attenuators\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"bogus\":\"1\"}}"));
+    err("[###]Unknown project attribute \"bogus\": the attributes of a project are \"path\", \"kind\", \"mains\", \"mounts\", \"attenuators\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"bogus\":\"1\"}}"));
   }
   @Test void aMissingPathIsRejected(){
     err("[###]Project \"a\" is missing its \"path\"[###]", () -> parse("{\"a\":{\"kind\":\"idle\"}}"));
@@ -78,10 +76,10 @@ final class RegistryTest{
     err("[###]\"path\" must be an absolute path[###]", () -> parse("{\"a\":{\"path\":\"Str:relative/path\"}}"));
   }
   @Test void aMissingKindIsRejected(){
-    err("[###]Project \"a\" is missing its \"kind\": one of \"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\"}}"));
+    err("[###]Project \"a\" is missing its \"kind\": one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\"}}"));
   }
   @Test void anUnknownKindIsRejectedWithTheFourValidOptionsListed(){
-    err("[###]\"kind\" must be one of \"idle\", \"code\", \"data:readOnly\" or \"data:readWrite\", not \"nonsense\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"nonsense\"}}"));
+    err("[###]\"kind\" must be one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\", not \"nonsense\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"nonsense\"}}"));
   }
   @Test void repeatedMainsAreRejected(){
     err("[###]\"a.Main1\" is repeated in \"mains\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"mains\":[\"a.Main1\",\"a.Main1\"]}}"));
@@ -94,8 +92,12 @@ final class RegistryTest{
   @Test void mainsAreThePackageQualifiedNamesTheCompilerReports(){
     assertEquals(List.of("hello.Hello1", "hello.Hello3"), parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"mains\":[\"hello.Hello1\",\"hello.Hello3\"]}}").getFirst().mains());
   }
-  @Test void aReadsTargetTakesTypeNamesNotPackageQualifiedNames(){
-    err("[###]is not a Fearless type name[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"reads\":{\"b\":[\"hello.Data1\"]}}}"));
+  @Test void mountsMapEachQualifiedDataReadTypeToAProjectName(){
+    var a= "{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"mounts\":";
+    err("[###]\"mounts\" must be an object {...} mapping the name of a DataRead type to the name of a data project.[###]", () -> parse(a+"[\"hello.Pub\"]}}"));
+    err("[###]\"Pub\" in \"mounts\" is not a Fearless DataRead type name: a package name, a dot, then a type name, like \"hello.Diary\".[###]", () -> parse(a+"{\"Pub\":\"pub\"}}}"));
+    err("[###]\"mounts\".\"hello.Pub\" must be a string \"...\".[###]", () -> parse(a+"{\"hello.Pub\":[\"pub\"]}}}"));
+    err("[###]\"Not Valid\" in \"mounts\".\"hello.Pub\" is not a valid project name.[###]", () -> parse(a+"{\"hello.Pub\":\"Not Valid\"}}}"));
   }
   @Test void attenuatorsMapEachMainToTheAttenuatorNamesAppliedToIt(){
     var a= "{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"attenuators\":";
@@ -117,16 +119,16 @@ final class RegistryTest{
     assertEquals(real, parse("{\"a\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}").getFirst().path());
   }
   @Test void printingThenParsingRoundTripsTheContent(){
-    var c= new Content(List.of(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code, List.of("some.Main1"), Map.of("publicfiles", List.of("Data1")), Map.of(), Map.of("some.Main1", List.of("some.NoGui")))), List.of("htm"));
+    var c= new Content(List.of(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code, List.of("some.Main1"), Map.of("some.Pub", "publicfiles"), Map.of("some.Main1", List.of("some.NoGui")))), List.of("htm"));
     assertEquals(c, content(Registry.text(c)));
   }
 
   //-- persistence
   @Test void noFileYetIsNoRegisteredFolder(@TempDir Path dir){ assertEquals(List.of(), registry(dir).all()); }
-  @Test void addedFolderIsIdleWithNoLinks(@TempDir Path dir){
+  @Test void addedFolderIsIdleWithNoMounts(@TempDir Path dir){
     var project= folder(dir, "someproject");
     registry(dir).add("someproject", project);
-    assertEquals(List.of(new Entry("someproject", project.toAbsolutePath().normalize(), Kind.idle, List.of(), Map.of(), Map.of(), Map.of())), registry(dir).all());
+    assertEquals(List.of(new Entry("someproject", project.toAbsolutePath().normalize(), Kind.idle, List.of(), Map.of(), Map.of())), registry(dir).all());
   }
   @Test void addingARegisteredFolderOrNameAgainIsABug(@TempDir Path dir){
     var project= folder(dir, "someproject");
@@ -168,25 +170,28 @@ final class RegistryTest{
     r.add("line", folder(dir, Fs.isWindows() ? "c\ud800d" : "c\nd"));
     assertEquals(r.all(), registry(dir).all());
   }
-  @Test void changingTheLinksKeepsTheirOrderInTheFile(@TempDir Path dir){
+  private static Map<String,String> remounted(Map<String,String> mounts){
+    var res= new LinkedHashMap<>(mounts);
+    res.put("code.Alpha", "other");
+    res.put("code.Beta", "beta");
+    return res;
+  }
+  @Test void changingTheMountsKeepsTheirOrderInTheFile(@TempDir Path dir){
     var code= folder(dir, "code");
     var r= registry(dir);
-    r.replace(content("{\"projects\": {\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"reads\": {\"zeta\": [\"Z\"], \"alpha\": [\"A\"], \"mid\": [\"M\"], \"beta\": [\"B\"]}}}, \"systemExtensions\": []}"));
-    r.update(code, e -> e.withLinks(e.reads(), Map.of("zeta", List.of("W"))));
+    r.replace(content("{\"projects\": {\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}}, \"systemExtensions\": []}"));
+    r.update(code, e -> e.withMounts(remounted(e.mounts())));
     assertEquals("""
 {
   "projects": {
     "code": {
       "path": "Str:%s",
       "kind": "code",
-      "reads": {
-        "zeta": ["Z"],
-        "alpha": ["A"],
-        "mid": ["M"],
-        "beta": ["B"]
-      },
-      "edits": {
-        "zeta": ["W"]
+      "mounts": {
+        "code.Zeta": "zeta",
+        "code.Alpha": "other",
+        "code.Mid": "mid",
+        "code.Beta": "beta"
       }
     }
   },
@@ -235,89 +240,22 @@ final class RegistryTest{
     Fs.writeUtf8(manager.resolve("projects.info"), "{\"projects\": {\n  \"x\": {\"path\": \"Str:"+unix(manager)+"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n");
     err(inManager(Registry.real(manager), Registry.real(manager)), () -> registry(dir));
   }
-  @Test void aTypeNameIsInReadsOrInEditsNotInBoth(){
-    err("""
-[###]"edits":{"pub":["Data2","Data1"]}[###]
-[###]"Data1" is in both "reads"."pub" and "edits"."pub": a type name is in one link only, since the code reaches one data project through it; a type name in "edits" also reads.[###]""",
-      () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"]},\"edits\":{\"pub\":[\"Data2\",\"Data1\"]}}}"));
+  private static Entry entry(String alias, Kind kind, Map<String,String> mounts){ return new Entry(alias, Path.of(root+alias), kind, List.of(), mounts, Map.of()); }
+  @Test void onlyAMountOfADataEditProjectOnADataEditTypeIsGrantedForEditing(){
+    var pub= entry("pub", Kind.dataRead, Map.of());
+    var notes= entry("notes", Kind.dataEdit, Map.of());
+    var other= entry("other", Kind.code, Map.of());
+    var code= entry("code", Kind.code, Map.of("code.Pub", "pub", "code.Old", "notes", "code.Diary", "notes", "code.Ledger", "pub", "code.Gone", "gone", "code.Other", "other"));
+    var grants= Registry.grants(new Content(List.of(pub, notes, other, code), List.of()), code, List.of("code.Diary", "code.Ledger"));
+    assertEquals(Map.of("code.Pub", pub.path(), "code.Old", notes.path()), grants.reads());
+    assertEquals(Map.of("code.Diary", notes.path()), grants.edits());
   }
-  @Test void aTypeNameNamesOneDataProject(){
-    err("""
-[###]"reads":{"pub":["Data1"],"notes":["Data1"]}[###]
-[###]"Data1" is in both "reads"."pub" and "reads"."notes": a type name is in one link only[###]""",
-      () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"],\"notes\":[\"Data1\"]}}}"));
-    err("[###]\"Data1\" is in both \"reads\".\"pub\" and \"edits\".\"notes\"[###]",
-      () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"]},\"edits\":{\"notes\":[\"Data1\"]}}}"));
-  }
-  @Test void aCodeProjectIsGrantedTheFoldersOfTheDataProjectsItsLinksAccept(){
-    var pub= link("pub", Path.of(root+"pub"), Kind.dataReadOnly, Map.of(), Map.of());
-    var notes= link("notes", Path.of(root+"notes"), Kind.dataReadWrite, Map.of(), Map.of());
-    var code= link("code", Path.of(root+"code"), Kind.code, Map.of("pub", List.of("Pub"), "notes", List.of("Old"), "gone", List.of("Gone")), Map.of("notes", List.of("Notes", "Diary"), "pub", List.of("Pub2")));
-    var grants= Registry.grants(new Content(List.of(pub, notes, code), List.of()), code);
-    assertEquals(Map.of("Pub", pub.path(), "Old", notes.path()), grants.reads());
-    assertEquals(Map.of("Notes", notes.path(), "Diary", notes.path()), grants.edits());
-  }
-  @Test void aLinkNamesAType(){
-    err("[###]\"reads\".\"pub\" names no type: a link names the one or more type names the code uses for \"pub\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[]}}}"));
-  }
-  @Test void readsAndEditsSurviveAReRead(@TempDir Path dir){
+  @Test void mountsSurviveAReRead(@TempDir Path dir){
     var code= folder(dir, "mycode");
-    var pub= folder(dir, "pub");
     var r= registry(dir);
     r.add("mycode", code);
-    r.add("pub", pub);
-    r.update(code, e -> e.withKind(Kind.code));
-    r.update(pub, e -> e.withKind(Kind.dataReadWrite));
-    r.update(code, e -> e.withLinks(Map.of("pub", List.of("Data2", "Data3")), Map.of("pub", List.of("Data1"))));
-    var reread= registry(dir).of(code).orElseThrow();
-    assertEquals(Map.of("pub", List.of("Data2", "Data3")), reread.reads());
-    assertEquals(Map.of("pub", List.of("Data1")), reread.edits());
-  }
-
-  //-- link checks
-  private static Entry link(String alias, Path path, Kind kind, Map<String,List<String>> reads, Map<String,List<String>> edits){
-    return new Entry(alias, path, kind, List.of(), reads, edits, Map.of());
-  }
-  private static Path readme(Path dir, String name){
-    var res= dir.resolve(name);
-    Fs.writeUtf8(res.resolve("readme"), "hi\n");
-    return res;
-  }
-  private Optional<String> linkProblem(Path dir, Entry e, Entry... others){
-    var r= registry(dir);
-    for (var o : others){ r.add(o.alias(), o.path()); r.update(o.path(), _ -> o); }
-    r.add(e.alias(), e.path());
-    r.update(e.path(), _ -> e);
-    return r.linkProblem(e, _ -> Optional.empty());
-  }
-  @Test void aNonCodeEntryNeverHasALinkProblem(@TempDir Path dir){
-    var e= link("a", readme(dir, "a"), Kind.idle, Map.of("missing", List.of("X")), Map.of());
-    assertEquals(Optional.empty(), linkProblem(dir, e));
-  }
-  @Test void readingARegisteredReadOnlyAndEditingAReadWriteAreFine(@TempDir Path dir){
-    var pub= link("pub", readme(dir, "pub"), Kind.dataReadWrite, Map.of(), Map.of());
-    var code= link("code", readme(dir, "code"), Kind.code, Map.of("pub", List.of("Data1")), Map.of("pub", List.of("Data2")));
-    assertEquals(Optional.empty(), linkProblem(dir, code, pub));
-  }
-  @Test void readingFromAMissingAliasIsADeadLink(@TempDir Path dir){
-    var code= link("code", readme(dir, "code"), Kind.code, Map.of("nosuchproject", List.of("Data1")), Map.of());
-    assertTrue(linkProblem(dir, code).orElseThrow().contains("no project called \"nosuchproject\" is registered"));
-  }
-  @Test void editingAReadOnlyDataProjectIsRejected(@TempDir Path dir){
-    var pub= link("pub", readme(dir, "pub"), Kind.dataReadOnly, Map.of(), Map.of());
-    var code= link("code", readme(dir, "code"), Kind.code, Map.of(), Map.of("pub", List.of("Data1")));
-    assertTrue(linkProblem(dir, code, pub).orElseThrow().contains("accepts only \"data:readWrite\""));
-  }
-  @Test void readingFromACodeProjectIsRejected(@TempDir Path dir){
-    var other= link("other", readme(dir, "other"), Kind.code, Map.of(), Map.of());
-    var code= link("code", readme(dir, "code"), Kind.code, Map.of("other", List.of("Data1")), Map.of());
-    assertTrue(linkProblem(dir, code, other).orElseThrow().contains("accepts only \"data:readOnly\" or \"data:readWrite\""));
-  }
-  @Test void readingFromAnInvalidDataProjectIsADeadLink(@TempDir Path dir){
-    var pub= link("pub", readme(dir, "pub"), Kind.dataReadOnly, Map.of(), Map.of());
-    var code= link("code", readme(dir, "code"), Kind.code, Map.of("pub", List.of("Data1")), Map.of());
-    linkProblem(dir, code, pub);
-    assertEquals(Optional.of("\"reads\" refers to \"pub\", which is itself invalid:\nbroken"), registry(dir).linkProblem(code, p -> Optional.of("broken").filter(_ -> p.equals(pub.path()))));
+    r.update(code, e -> e.withKind(Kind.code).withMounts(Map.of("mycode.Pub", "pub", "mycode.Diary", "notes")));
+    assertEquals(Map.of("mycode.Pub", "pub", "mycode.Diary", "notes"), registry(dir).of(code).orElseThrow().mounts());
   }
   @Test void anEditThatWouldWriteAnInvalidFileIsRefusedAndChangesNothing(@TempDir Path dir){
     var project= folder(dir, "someproject");

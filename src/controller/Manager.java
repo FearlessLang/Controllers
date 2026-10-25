@@ -109,7 +109,7 @@ public final class Manager{
     res.put("Run", List.of(1, 2));
     res.put("Compile", List.of(1));
     res.put("Kind", List.of(2));
-    res.put("Link", List.of(2));
+    res.put("Mount", List.of(2));
     res.put("Attenuate", List.of(2));
     return res;
   }
@@ -274,7 +274,7 @@ public final class Manager{
       case "DeleteCache" -> deleteCache(f);
       case "Kind" -> kind(f, args.get(1));
       case "Forget" -> forget(f);
-      case "Link" -> link(f, args.get(1));
+      case "Mount" -> mount(f, args.get(1));
       case "Attenuate" -> attenuate(f, args.get(1));
       default -> throw Bug.unreachable();
     }
@@ -302,13 +302,15 @@ public final class Manager{
     attenuated.keySet().stream().filter(m -> !all.contains(m)).findFirst().ifPresent(m -> { throw new Refused(Report.attenuatedNotAMain(p.alias(), m, all)); });
     var attenuators= p.knownAttenuators();
     attenuated.forEach((m, as) -> as.stream().filter(a -> !attenuators.contains(a)).findFirst().ifPresent(a -> { throw new Refused(Report.notAnAttenuator(p.alias(), m, a, attenuators)); }));
+    var mountProblems= p.mountProblems(registry.all());
+    if (!mountProblems.isEmpty()){ throw new Refused(Report.mountsRefused(p.alias(), mountProblems)); }
     selected = Optional.of(f);
     if (all.size() > 1){ registry.update(f, e -> e.withMains(mains)); }
     var l= live.get(f);
     l.terminated = false;
     l.todo = mains;
     l.input = input;
-    l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow());
+    l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow(), l.mains.orElseThrow().dataEdit());
     l.attenuators = attenuated;
     l.follow = follow;
     view.clear(f);
@@ -492,28 +494,24 @@ public final class Manager{
     var c= registry.content();
     edit(new Content(c.projects().stream().filter(e -> !e.path().equals(f)).toList(), c.extensions()));
   }
-  private void link(Path f, String text){
+  private void mount(Path f, String text){
     var words= words(text);
-    var wellFormed= words.size() >= 2 && List.of("read", "write").contains(words.get(1));
-    if (!wellFormed){ throw new Refused(Report.malformedLink(alias(f), text)); }
-    var data= words.get(0);
-    var names= words.subList(2, words.size());
-    edit(f, o -> words.get(1).equals("write") ? o.withLinks(o.reads(), with(o.edits(), data, names)) : o.withLinks(with(o.reads(), data, names), o.edits()));
+    if (words.isEmpty() || words.size() > 2){ throw new Refused(Report.malformedMount(alias(f), text)); }
+    edit(f, o -> o.withMounts(with(o.mounts(), words.getFirst(), words.stream().skip(1).findFirst())));
   }
   private void attenuate(Path f, String text){
     var words= words(text);
     if (words.isEmpty()){ throw new Refused(Report.noMainAttenuated(alias(f))); }
-    edit(f, o -> o.withAttenuators(with(o.attenuators(), words.getFirst(), words.subList(1, words.size()))));
+    edit(f, o -> o.withAttenuators(with(o.attenuators(), words.getFirst(), Optional.of(words.subList(1, words.size())).filter(as -> !as.isEmpty()))));
   }
   private void edit(Path f, UnaryOperator<Entry> op){
     var c= registry.content();
     edit(new Content(c.projects().stream().map(e -> e.path().equals(f) ? op.apply(e) : e).toList(), c.extensions()));
   }
   private void edit(Content next){ edit(Registry.text(next), registry.infoFile()); }
-  private static Map<String,List<String>> with(Map<String,List<String>> map, String key, List<String> names){
+  private static <T> Map<String,T> with(Map<String,T> map, String key, Optional<T> value){
     var out= new LinkedHashMap<>(map);
-    if (names.isEmpty()){ out.remove(key); }
-    else{ out.put(key, names); }
+    value.ifPresentOrElse(v -> out.put(key, v), () -> out.remove(key));
     return out;
   }
   private static List<String> words(String text){ return Stream.of(text.split(" +")).filter(w -> !w.isEmpty()).toList(); }
@@ -635,13 +633,14 @@ public final class Manager{
     for (var e : live.entrySet()){
       var job= e.getValue().job;
       if (job.isEmpty() || job.equals(Project.compiling)){ continue; }
-      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey()))).filter(p -> !Registry.grants(next, p).equals(e.getValue().grants));
+      var mounts= registry.of(e.getKey()).orElseThrow().mounts();
+      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey()))).filter(p -> !p.mounts().equals(mounts) || !Registry.grants(next, p, e.getValue().mains.orElseThrow().dataEdit()).equals(e.getValue().grants));
       changed.ifPresent(p -> { throw new Refused(Report.grantsWhileRunning(p.alias(), job)); });
     }
   }
   private Project project(Entry e){
     var l= live.get(e.path());
-    return new Project(e, l.facts, l.mains, l.claims, registry.linkProblem(e, f -> live.get(f).facts.problem()), l.job);
+    return new Project(e, l.facts, l.mains, l.claims, l.job);
   }
   private Project project(Path f){ return project(registry.of(f).orElseThrow()); }
   private List<Project> projects(){ return registry.all().stream().map(this::project).toList(); }
