@@ -87,8 +87,9 @@ final class Chain{
   record Param(String x, List<Item> type){}
   /// a method of a literal: [RC] [name] [Xs] params [: result] -> body, where params are (..) or
   /// written without parenthesis, and then a colon types the last parameter, not the result;
-  /// a lambda has no name; start and end are the offsets of the bracket or ; before and after it
-  record Meth(Optional<String> name, List<String> xs, List<Param> params, List<Item> result, List<Item> body, int start, int end){}
+  /// a lambda has no name; start and end are the offsets of the bracket or ; before and after it;
+  /// the body starts after the arrow, at start for a lambda without arrow, never for an abstract method
+  record Meth(Optional<String> name, List<String> xs, List<Param> params, List<Item> result, List<Item> body, int start, int end, int bodyStart){}
   static List<Meth> methodsOf(Group g){
     var res= new ArrayList<Meth>();
     var cur= new ArrayList<Item>();
@@ -118,7 +119,8 @@ final class Chain{
     var params= new ArrayList<>(split(ps, Kind.Comma).stream().map(Chain::param).toList());
     if (hasImplicit(body)){ params.add(new Param("::", List.of())); }
     var result= typed ? head.subList(colon+1, head.size()) : List.<Item>of();
-    return new Meth(name, xs, List.copyOf(params), List.copyOf(result), List.copyOf(body), start, end);
+    var bodyStart= arrow.map(a -> ((Tok)cur.get(a)).end()).orElse(sig ? Integer.MAX_VALUE : start);
+    return new Meth(name, xs, List.copyOf(params), List.copyOf(result), List.copyOf(body), start, end, bodyStart);
   }
   /// the names of the generics declared in a [..] group
   private static List<String> generics(Item square){
