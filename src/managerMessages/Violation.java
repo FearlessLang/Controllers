@@ -26,7 +26,7 @@ Programs that may use or block this folder include security software
 sync tools, and file preview tools.
 """;
   }
-  public static UserError fatalFromRun(String details){ return new UserError("A Fearless process reported a failure the manager can not recover from:\n\n"+details); }
+  public static UserError fatalFromRun(String details){ return new UserError("A Fearless process reported a failure the manager cannot recover from:\n\n"+details); }
   public static UserError programFolderNotFound(Path startedFrom, String expectedDirName){
     return new UserError("""
 This copy of Fearless appears to have been moved, renamed, or damaged:

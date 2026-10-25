@@ -123,12 +123,12 @@ folder.
 """.formatted(path(root.toString()));
   }
   public static String registerRefused(Path folder, IOException e){
-    return refusedPath("Register", folder)+"\nThe folder can not be read or changed: "+fileFailure(e);
+    return refusedPath("Register", folder)+"\nThe folder cannot be read or changed: "+fileFailure(e);
   }
 
   //-- the content of a project folder
   public static String folderMissing(Path folder){ return "The folder of this project does not exist:\n"+path(folder.toString())+"\nRestore it, or forget this project."; }
-  public static String folderUnreadable(Path folder, IOException e){ return "The folder of this project can not be read:\n"+path(folder.toString())+"\n"+fileFailure(e)+"\nGive Fearless access to it, or forget this project."; }
+  public static String folderUnreadable(Path folder, IOException e){ return "The folder of this project cannot be read:\n"+path(folder.toString())+"\n"+fileFailure(e)+"\nGive Fearless access to it, or forget this project."; }
   public static String markersMany(Path folder, String marker){ return "More than one .fearless marker file was found in\n"+path(folder.toString())+"\nA project folder holds exactly one, and its name is the project name: keep only \""+marker+"\"."; }
   public static String markerMissing(Path folder, String marker){ return "The marker file \""+marker+"\" is missing from\n"+path(folder.toString())+"\nRestore it, or forget and register this project folder again."; }
   public static UserError projectIconsMany(Path dir, List<Path> found){
@@ -189,7 +189,7 @@ replace that file with a PNG image, or remove it.
   public static String infoAttenuatorsEmpty(String label){ return label+" names no attenuator: a main with no attenuator is left out of \"attenuators\"."; }
   public static String metadataNoFile(Path file){ return refusedPath("EditMetadata", file)+"\nNo file is at that path."; }
   public static String metadataNotUtf8(Path file){ return refusedPath("EditMetadata", file)+"\nThe bytes of the file do not form valid UTF-8 text."; }
-  public static String metadataUnreadable(Path file, IOException e){ return refusedPath("EditMetadata", file)+"\nThe file can not be read: "+fileFailure(e); }
+  public static String metadataUnreadable(Path file, IOException e){ return refusedPath("EditMetadata", file)+"\nThe file cannot be read: "+fileFailure(e); }
   public static String metadataChanged(){ return "The project metadata is not committed: projects.info changed while it was edited.\nClose the editor, and choose Edit project metadata again to edit what projects.info holds now."; }
 
   //-- Eclipse
@@ -219,19 +219,19 @@ replace that file with a PNG image, or remove it.
   private static String claim(String kind, String icon, String ext){ return "\"base."+kind+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
   private static String claim(Project.Claimant c){ return claim(c.kind(), c.claim().icon(), c.claim().extension()); }
   public static UserError shortcutNoFileName(String main){
-    return new UserError("Main "+disp(main)+" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\".");
+    return new UserError("Main "+disp(main)+" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\".");
   }
   public static UserError shortcutBadFileName(String main, String file){
-    return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
+    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
   }
   public static UserError shortcutMasksFile(String main, String file, String name){
-    return new UserError("Main "+disp(main)+" can not have the shortcut file "+disp(file)+": the project has the file "+disp(name)+", and a file without extension can not share its name with a file with an extension. Rename the main, or rename the file "+disp(name)+".");
+    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": the project has the file "+disp(name)+", and a file without extension cannot share its name with a file with an extension. Rename the main, or rename the file "+disp(name)+".");
   }
   public static UserError shortcutsCollide(String main1, String main2, String file){
-    return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" can not both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
+    return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" cannot both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
   public static String iconGone(Path file){ return "--- the icon file of a claim of this project is gone: "+file+"; the project claims no extension until it is compiled again ---\n"; }
-  public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project can not be saved in its compilation cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
+  public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project cannot be saved in its compilation cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
   public static String extensionsNotAllowed(List<Project.Claimant> cs){
     return Join.of(cs.stream().map(c -> "The system extension "+disp(c.claim().extension())+" of "+claim(c)+" of main "+disp(c.main())+" is not in \"systemExtensions\" of projects.info."), "", "\n", "");
   }
