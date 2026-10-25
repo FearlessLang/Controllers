@@ -153,6 +153,7 @@ public final class Report{
   }
   public static String noCache(){ return "This project has no compilation cache."; }
   public static String stalePackages(List<String> pkgs){ return "The compilation cache of the package"+(pkgs.size() == 1 ? " " : "s ")+quoted(pkgs)+" is out of date."; }
+  public static String filesUpdated(String name, String job){ return "Some files inside the project "+disp(name)+" were updated while "+(job.equals(Project.compiling) ? "the project was compiling." : "main "+disp(job)+" was running."); }
   public static String packagesToCompile(){ return "The compilation cache does not contain the mains of this project."; }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
@@ -239,9 +240,6 @@ public final class Report{
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c -> disp(c.main())+" of project "+disp(c.alias())), " claimed by ", " and ", "", ""); }
   public static UserError iconRefused(Project.Claimant c, String problem){
     return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
-  }
-  public static UserError iconUnreadable(Project.Claimant c, String why){
-    return new UserError(icon(c)+" can not be read from "+from(c.claim())+": "+why+"\nCompile the project again.");
   }
   private static String icon(Project.Claimant c){ return "The icon "+disp(c.claim().icon())+" in "+claim(c)+" of main "+disp(c.main()); }
   private static String from(MainsInfo.Claim c){ return disp(Join.of(Stream.of(c.diskPath(), c.zipSteps().replace(';', '/'), c.zipEntry()).filter(s -> !s.isEmpty()), "", "/", "")); }

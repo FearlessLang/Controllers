@@ -85,6 +85,7 @@ final class ManagerTest{
       FactsTest.cache(folder, folder.getFileName().toString(), FactsTest.after(folder), infos.getOrDefault(folder.getFileName().toString(), "{}\n"));
       MainsInfo.read(folder).orElseThrow().mains().values().stream().flatMap(m -> Stream.of(m.shortcuts(), m.openWiths(), m.icons()).flatMap(List::stream))
         .filter(c -> !c.icon().startsWith("base.")).map(c -> folder.resolve(c.diskPath())).filter(p -> !Files.exists(p)).forEach(p -> image(p, 64, 64, "png"));
+      if (folder.getFileName().toString().equals("edited")){ touch(folder); }
       return jvm(out, "compiled", "0", "0");
     }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
@@ -1328,7 +1329,7 @@ final class ManagerTest{
     assertEquals(iconNames("hello.IconsFoo"), iconFiles(hello));
     assertTrue(Files.exists(mainsInfo(hello)));
   }
-  @Test void anIconEntryRemovedFromItsZipBeforeStartUpLeavesThatProjectOutOfDate(@TempDir Path dir){
+  @Test void anIconEntryRemovedFromItsZipBeforeStartUpIsACorruptedCache(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -1340,10 +1341,11 @@ final class ManagerTest{
     Fs.ofV(() -> Files.write(hello.resolve("art").resolve("pics.zip"), zip("inner.zip", zip("bar.png", png))));
     var again= manager(dir, "hello.Hello");
     again.settle();
-    same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/pics.zip/inner.zip/foo.png\": Cannot find entry in zip (that was found before).[###]\"foo.png\"\nCompile the project again.", compileError(hello));
+    same(corrupted, compileError(hello));
     assertEquals(Project.noClaims, project(again, hello).claims());
-    assertEquals(Project.State.codeOutdated, project(again, hello).state());
+    assertEquals(Project.State.codeNoCache, project(again, hello).state());
   }
+  private static final String corrupted= "Error: Fearless crashed: either this project's compilation cache was corrupted, or this is a Fearless bug.[###]";
   @Test void anIconRemovedBeforeStartUpFailsThatProjectOnly(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
@@ -1357,8 +1359,51 @@ final class ManagerTest{
     again.settle();
     assertEquals(MainsInfo.read(other).orElseThrow(), project(again, other).claims());
     assertEquals(List.of("other::other.Other openWith hello.IconsFoo"), claimed(again).get("qux"));
-    same("The icon \"hello.IconsFoo\" in \"base.OpenWith[hello.IconsFoo,\\\"foo\\\"]\" of main \"hello.Hello\" can not be read from \"art/foo.png\": no such file: [###]foo.png\nCompile the project again.", compileError(hello));
+    same(corrupted, compileError(hello));
     assertEquals(Project.noClaims, project(again, hello).claims());
+  }
+  @Test void anIconRemovedFromAnOutOfDateProjectBeforeStartUpLeavesThatProjectOutOfDate(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    allow(m, dir, "foo");
+    infos.put("hello", claiming("hello.Hello", "fapp010", "foo"));
+    compiled(m, "hello");
+    Fs.rmTree(hello.resolve("art"));
+    touch(hello);
+    var again= manager(dir, "hello.Hello");
+    again.settle();
+    assertEquals("The compilation cache of the package \"hello\" is out of date.", compileError(hello));
+    assertEquals(Project.noClaims, project(again, hello).claims());
+    assertEquals(Project.State.codeOutdated, project(again, hello).state());
+  }
+  @Test void aSourceUpdatedWhileAMainRunsTerminatesTheMainAndDeletesTheCache(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    touch(hello);
+    var shown= view.shown;
+    send(m, "Show", "hello");
+    idle(m);
+    same("""
+      --- running hello.Slow ---
+      ran hello.Slow
+      --- hello.Slow exited with [###] after [###]s ---
+      Some files inside the project "hello" were updated while main "hello.Slow" was running.
+      """, view.out(hello));
+    assertEquals(shown+2, view.shown);
+    assertFalse(Files.exists(hello.resolve(Facts.outDir)));
+    assertEquals(Project.State.codeNoCache, project(m, hello).state());
+  }
+  @Test void aSourceUpdatedDuringACompileFailsTheCompileAndDeletesTheCache(@TempDir Path dir){
+    var m= manager(dir, "edited.Hello");
+    var edited= code(m, dir, "edited");
+    compiled(m, "edited");
+    var error= "Some files inside the project \"edited\" were updated while the project was compiling.";
+    same("[###]"+error+"\n--- compile failed ---\n", view.out(edited));
+    assertEquals(error, compileError(edited));
+    assertEquals(Project.State.codeNoCache, project(m, edited).state());
   }
   private List<String> wanted(Path dir){ return associated.getLast().stream().map(i -> i.extension()+" "+shown(dir, i)).toList(); }
   private static String shown(Path dir, Icon i){

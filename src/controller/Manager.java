@@ -372,6 +372,7 @@ public final class Manager{
     l.child = null;
     if (l.job.equals(Project.compiling)){ compiled(f, l, ec); return; }
     output(f, "--- "+l.job+" exited with "+ec+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
+    if (stale(f).isPresent()){ l.terminated = true; output(f, uncached(f, Report.filesUpdated(alias(f), l.job))+"\n"); }
     next(f);
   }
   private void compiled(Path f, Live l, int ec){
@@ -381,6 +382,7 @@ public final class Manager{
     try{
       if (ec != 0){ throw new Refused(l.compiled.toString()); }
       var claims= accepted(f);
+      if (stale(f).isPresent()){ throw new Refused(uncached(f, Report.filesUpdated(alias(f), l.job))); }
       refused = Project.claimants(f, alias(f), claims).filter(c -> !allowed(c)).toList();
       if (!refused.isEmpty()){ throw new Refused(Report.extensionsNotAllowed(refused)); }
       l.claims = claims;
@@ -400,7 +402,7 @@ public final class Manager{
   private MainsInfo accepted(Path f){
     var read= read(f);
     try{
-      var icons= ClaimIcons.read(tools.stdLibBase(), Stream.concat(Project.claimants(f, alias(f), read), Project.preloads(f, alias(f), read)));
+      var icons= ClaimIcons.read(tools.stdLibBase(), Stream.concat(Project.claimants(f, alias(f), read), Project.preloads(f, alias(f), read)), e -> unreadable(f, e));
       var others= live.entrySet().stream().filter(e -> !e.getKey().equals(f)).map(e -> e.getValue().claims);
       var filled= Project.filled(read, live.get(f).claims, alias(f), others);
       Project.shortcuts(Project.claimants(f, alias(f), filled));
@@ -411,6 +413,19 @@ public final class Manager{
     catch (UserError e){ throw new Refused(e.getMessage()); }
     catch (UncheckedIOException e){ throw new Refused(Report.claimsNotSaved(e.getCause())); }
   }
+  private Refused unreadable(Path f, RuntimeException e){
+    var stale= stale(f);
+    var job= live.get(f).job;
+    if (stale.isPresent() && job.isEmpty()){ return new Refused(stale.get()); }
+    return new Refused(uncached(f, stale.isPresent() ? Report.filesUpdated(alias(f), job) : UserError.cacheCorruptedOrCrash(e).getMessage()));
+  }
+  private String uncached(Path f, String why){
+    uncache(f).ifPresent(w -> output(f, Report.cacheNotDeleted(w)));
+    live.get(f).claims = Project.noClaims;
+    view.show();
+    return why;
+  }
+  private Optional<String> stale(Path f){ return Facts.of(f, alias(f), Kind.code, tools.baseCache()).stale(); }
   private void succeeded(Path f, Live l){
     Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).forEach(p -> shortcut(f, p));
     unclaimedIcons(f, l.claims);
@@ -587,7 +602,7 @@ public final class Manager{
   }
   private void scan(Path f){
     var l= live.get(f);
-    if (!l.job.isEmpty()){ return; }
+    if (!l.job.isEmpty()){ inUse(f); return; }
     var e= registry.of(f).orElseThrow();
     var fresh= Facts.of(f, e.alias(), e.kind(), tools.baseCache());
     if (fresh.equals(l.scanned)){ return; }
@@ -601,6 +616,12 @@ public final class Manager{
     catch (UncheckedIOException err){ error = Optional.of(Report.fileFailure(err.getCause())); }
     if (!Facts.of(f, e.alias(), e.kind(), tools.baseCache()).equals(fresh)){ scan(f); return; }
     if (l.mains.isEmpty()){ l.facts = fresh.outOfDate(error.orElse(Report.packagesToCompile())); }
+  }
+  private void inUse(Path f){
+    var l= live.get(f);
+    if (l.job.equals(Project.compiling) || stale(f).isEmpty()){ return; }
+    l.terminated = true;
+    l.child.kill();
   }
   private void rotate(){
     if (!view.visible()){ return; }
