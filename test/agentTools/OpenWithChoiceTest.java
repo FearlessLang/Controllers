@@ -307,17 +307,17 @@ final class OpenWithChoiceTest extends ManagerTest{
     ranSecond.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "choice": {
-            "path": "Str:%s",
-            "kind": "code",
-            "mains": ["hello.Second"]
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(choice)));
+{
+  "projects": {
+    "choice": {
+      "path": "Str:%s",
+      "kind": "code",
+      "mains": ["hello.Second"]
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(choice)));
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

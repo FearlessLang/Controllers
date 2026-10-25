@@ -199,16 +199,16 @@ final class EditMetadataInvalidTest extends ManagerTest{
   @Override void walk() throws Throwable{
     var project= project("helloWorld");
     var idle= """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project));
     var bare= look();
     start();
     managerShown.go();

@@ -176,16 +176,16 @@ final class MalformedRegistryTest extends ManagerTest{
   @Override void walk() throws Throwable{
     var project= project("helloWorld");
     var remembered= """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project));
     start();
     managerShown.go();
     toFiles();

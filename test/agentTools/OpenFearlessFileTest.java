@@ -125,16 +125,16 @@ final class OpenFearlessFileTest extends ManagerTest{
     managerOpened.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project)));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project)));
     managerMenu.go();
     quitManager.go();
     managerQuitAgain.go();

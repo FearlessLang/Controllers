@@ -273,16 +273,16 @@ final class NestedFolderTest extends ManagerTest{
     Fs.writeUtf8(source.resolve("source.fearless"), "\n");
     var tree= tree();
     var remembered= """
-      {
-        "projects": {
-          "inner": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(inner));
+{
+  "projects": {
+    "inner": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(inner));
     start();
     managerShown.go();
     toFiles();

@@ -86,78 +86,78 @@ public final class NewProjectWizard extends Wizard implements INewWizard{
     return border ? 0xB08A00 : line ? 0x8A8A8A : 0xFFE680;
   }
   private static final String hello= """
-    use base.Main as Main;
+use base.Main as Main;
 
-    Hello: Main { sys -> sys.out.println("Hello World!") }
-    """;
+Hello: Main { sys -> sys.out.println("Hello World!") }
+""";
   private static final String gui= """
-    use base.Main as Main;
-    use base.Consumer as Consumer;
-    use base.Frame as Frame;
-    use base.Color as Color;
-    use base.Debug as Debug;
+use base.Main as Main;
+use base.Consumer as Consumer;
+use base.Frame as Frame;
+use base.Color as Color;
+use base.Debug as Debug;
 
-    Window: Main { sys -> sys.gui.name "Hello Fearless" .run HelloFrame }
-    HelloFrame: Consumer[mut Frame]{::
-      .content{::
-        .background (Color.ghostWhite)
-        .label{:: .text "Hello from a Fearless window" }
-        .button{::
-          .text "Say hi"
-          .background (Color.rubberDuck)
-          .action{Debug#"Hi from the button"}
-          }
-        }
+Window: Main { sys -> sys.gui.name "Hello Fearless" .run HelloFrame }
+HelloFrame: Consumer[mut Frame]{::
+  .content{::
+    .background (Color.ghostWhite)
+    .label{:: .text "Hello from a Fearless window" }
+    .button{::
+      .text "Say hi"
+      .background (Color.rubberDuck)
+      .action{Debug#"Hi from the button"}
       }
-    """;
+    }
+  }
+""";
   private static final String open= """
-    use base.Main as Main;
-    use base.Shortcut as Shortcut;
-    use base.OpenWith as OpenWith;
-    use base.Consumer as Consumer;
-    use base.Frame as Frame;
-    use base.Color as Color;
-    use base.Block as Block;
-    use base.Void as Void;
-    use base.Var as Var;
-    use base.Pane as Pane;
-    use base.Slot as Slot;
-    use base.Slots as Slots;
-    use base.WidthNat as WidthNat;
-    use base.HeightNat as HeightNat;
-    use base.InputCursor as InputCursor;
-    use base.BadStrUnitRecover as BadStrUnitRecover;
+use base.Main as Main;
+use base.Shortcut as Shortcut;
+use base.OpenWith as OpenWith;
+use base.Consumer as Consumer;
+use base.Frame as Frame;
+use base.Color as Color;
+use base.Block as Block;
+use base.Void as Void;
+use base.Var as Var;
+use base.Pane as Pane;
+use base.Slot as Slot;
+use base.Slots as Slots;
+use base.WidthNat as WidthNat;
+use base.HeightNat as HeightNat;
+use base.InputCursor as InputCursor;
+use base.BadStrUnitRecover as BadStrUnitRecover;
 
-    ByShortcut: Main, Shortcut[IconsApp] { sys -> sys.gui.name "Shortcut" .run ShortcutFrame }
-    ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.name "OpenWith" .icon IconsFile .run{f -> Block#
-      .let[mut Slot[mut Pane]] lines= {Slots#[mut Pane]}
-      .var[mut InputCursor] at= {sys.inputCursor}
-      .return{f
-        .title "drop more files here"
-        .virtualPixelSpace(WidthNat#600, HeightNat#400)
-        .modelFps(10, {:: .action{ShowFiles#(at, lines!)}})
-        .content{::
-          .background (Color.rubberDuck)
-          .vertical .chunk 1000 .heightGap 0
-          .save lines
-          }
-        }
-      }}
-    ShortcutFrame: Consumer[mut Frame]{::
-      .content{::
-        .background (Color.ghostWhite)
-        .label{:: .text "Started from the shortcut file by_shortcut.fapp... in the project folder." }
-        }
+ByShortcut: Main, Shortcut[IconsApp] { sys -> sys.gui.name "Shortcut" .run ShortcutFrame }
+ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.name "OpenWith" .icon IconsFile .run{f -> Block#
+  .let[mut Slot[mut Pane]] lines= {Slots#[mut Pane]}
+  .var[mut InputCursor] at= {sys.inputCursor}
+  .return{f
+    .title "drop more files here"
+    .virtualPixelSpace(WidthNat#600, HeightNat#400)
+    .modelFps(10, {:: .action{ShowFiles#(at, lines!)}})
+    .content{::
+      .background (Color.rubberDuck)
+      .vertical .chunk 1000 .heightGap 0
+      .save lines
       }
-    ShowFiles: {#(at: mut Var[mut InputCursor], lines: mut Pane): Void -> at.get#.match{
-      .empty -> Void;
-      .some file -> Block#
-        .do{(file.readStrUtf8 NoCr).split("" | "").flow.for{l -> Block#(lines.label{:: .text l .topInset 0 .bottomInset 0}, Void)}}
-        .do{at.set(at.get.next)}
-        .return{this#(at, lines)}
-      }}
-    NoCr: BadStrUnitRecover{reason, byteOffset, byteLength, rejectedValue -> (rejectedValue == 13).if{.then -> ""; .else -> "?"}}
-    """;
+    }
+  }}
+ShortcutFrame: Consumer[mut Frame]{::
+  .content{::
+    .background (Color.ghostWhite)
+    .label{:: .text "Started from the shortcut file by_shortcut.fapp... in the project folder." }
+    }
+  }
+ShowFiles: {#(at: mut Var[mut InputCursor], lines: mut Pane): Void -> at.get#.match{
+  .empty -> Void;
+  .some file -> Block#
+    .do{(file.readStrUtf8 NoCr).split("" | "").flow.for{l -> Block#(lines.label{:: .text l .topInset 0 .bottomInset 0}, Void)}}
+    .do{at.set(at.get.next)}
+    .return{this#(at, lines)}
+  }}
+NoCr: BadStrUnitRecover{reason, byteOffset, byteLength, rejectedValue -> (rejectedValue == 13).if{.then -> ""; .else -> "?"}}
+""";
   private static final class Page extends WizardPage{
     private Text folder;
     private String demo= "";

@@ -195,16 +195,16 @@ final class AddFolderTest extends ManagerTest{
     changed(empty, tiles);
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project)));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project)));
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

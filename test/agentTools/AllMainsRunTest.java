@@ -299,17 +299,17 @@ final class AllMainsRunTest extends ManagerTest{
     changed(before, output);
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "code",
-            "mains": ["hello.Hello1", "hello.Hello3", "hello.Hello4", "hello.Hello5", "hello.Hello6"]
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project)));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "code",
+      "mains": ["hello.Hello1", "hello.Hello3", "hello.Hello4", "hello.Hello5", "hello.Hello6"]
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project)));
     runV.go();
     mainsShownAgain.go();
     ticksArea.go();

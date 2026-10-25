@@ -233,13 +233,13 @@ final class CloseProgramWindowTest extends ManagerTest{
     var shut= files.resolve("shut");
     Fs.writeUtf8(shut.resolve("shut.fearless"), "\n");
     Fs.writeUtf8(shut.resolve("_shut").resolve("_rank_app.fear"), """
-      use base.Main as Main;
-      use base.Consumer as Consumer;
-      use base.Frame as Frame;
+use base.Main as Main;
+use base.Consumer as Consumer;
+use base.Frame as Frame;
 
-      Show: Main{sys -> sys.gui.run Note}
-      Note: Consumer[mut Frame]{:: .title "shut" .content.pane{:: .label{:: .text "close this window" } } }
-      """);
+Show: Main{sys -> sys.gui.run Note}
+Note: Consumer[mut Frame]{:: .title "shut" .content.pane{:: .label{:: .text "close this window" } } }
+""");
     var bare= look();
     start();
     managerShown.go();

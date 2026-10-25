@@ -35,17 +35,17 @@ final class StaleMainTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   static final String mains= "use base.Main as Main;\n\nFirst: Main{sys -> sys.out.println \"First\"}\nSecond: Main{sys -> sys.out.println \"Second\"}\n";
   static final String registry= """
-    {
-      "projects": {
-        "menu": {
-          "path": "Str:%s",
-          "kind": "code",
-          "mains": [%s]
-        }
-      },
-      "systemExtensions": []
+{
+  "projects": {
+    "menu": {
+      "path": "Str:%s",
+      "kind": "code",
+      "mains": [%s]
     }
-    """;
+  },
+  "systemExtensions": []
+}
+""";
   final Action openMenu= action("openMenu",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),

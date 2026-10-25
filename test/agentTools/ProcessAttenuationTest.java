@@ -491,24 +491,24 @@ final class ProcessAttenuationTest extends ManagerTest{
     closeFiles();
   }
   static final String attenuators= """
-      ,
-            "attenuators": {
-              "proc.Starter": ["proc.NoDownload"]
-            }""";
+,
+      "attenuators": {
+        "proc.Starter": ["proc.NoDownload"]
+      }""";
   static final String mains= """
-      ,
-            "mains": ["proc.Starter"]""";
+,
+      "mains": ["proc.Starter"]""";
   static String registry(Path proc, String kind, String more){
     return """
-      {
-        "projects": {
-          "proc": {
-            "path": "Str:%s",
-            "kind": "%s"%s
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(proc), kind, more);
+{
+  "projects": {
+    "proc": {
+      "path": "Str:%s",
+      "kind": "%s"%s
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(proc), kind, more);
   }
 }

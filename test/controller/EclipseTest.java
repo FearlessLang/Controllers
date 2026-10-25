@@ -46,13 +46,13 @@ final class EclipseTest{
     var at= dir.toString().replace("\\", "\\\\");
     var sep= dir.getFileSystem().getSeparator().replace("\\", "\\\\");
     assertEquals("""
-      {
-        "program": "Str:%1$s%2$sprogram",
-        "launcher": "Str:%1$s%2$sprogram%2$slauncher",
-        "manager": "Str:%1$s%2$smanager",
-        "baseCache": "Str:%1$s%2$sbaseCache"
-      }
-      """.stripIndent().formatted(at, sep), Fs.readUtf8(fearless.resolve("manager.info")));
+{
+  "program": "Str:%1$s%2$sprogram",
+  "launcher": "Str:%1$s%2$sprogram%2$slauncher",
+  "manager": "Str:%1$s%2$smanager",
+  "baseCache": "Str:%1$s%2$sbaseCache"
+}
+""".stripIndent().formatted(at, sep), Fs.readUtf8(fearless.resolve("manager.info")));
     assertEquals(List.of("manager.info", "plugins"), Fs.of(() -> { try (var s= Files.list(fearless)){ return s.map(p -> p.getFileName().toString()).sorted().toList(); } }));
   }
 }

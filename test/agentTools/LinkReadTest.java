@@ -463,10 +463,10 @@ final class LinkReadTest extends ManagerTest{
     readsSaved.go();
     stabilize();
     var reads= """
-      ,
-            "reads": {
-              "store": ["Stock"]
-            }""";
+,
+      "reads": {
+        "store": ["Stock"]
+      }""";
     checkContent(info, registry(store, reader, "data:readOnly", reads));
     storeTile.go();
     storeShown.go();
@@ -491,19 +491,19 @@ final class LinkReadTest extends ManagerTest{
   }
   static String registry(Path store, Path reader, String storeKind, String links){
     return """
-      {
-        "projects": {
-          "store": {
-            "path": "Str:%s",
-            "kind": "%s"
-          },
-          "reader": {
-            "path": "Str:%s",
-            "kind": "code"%s
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(store), storeKind, slashed(reader), links);
+{
+  "projects": {
+    "store": {
+      "path": "Str:%s",
+      "kind": "%s"
+    },
+    "reader": {
+      "path": "Str:%s",
+      "kind": "code"%s
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(store), storeKind, slashed(reader), links);
   }
 }

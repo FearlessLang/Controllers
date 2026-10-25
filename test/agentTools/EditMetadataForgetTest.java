@@ -200,8 +200,8 @@ final class EditMetadataForgetTest extends ManagerTest{
     var project= project("helloWorld");
     var other= project("helloStackTraces");
     var only= """
-      {"projects": {"hello_world": {"path": "Str:%s", "kind": "idle"}}, "systemExtensions": []}
-      """.formatted(slashed(project));
+{"projects": {"hello_world": {"path": "Str:%s", "kind": "idle"}}, "systemExtensions": []}
+""".formatted(slashed(project));
     var bare= look();
     start();
     managerShown.go();
@@ -222,16 +222,16 @@ final class EditMetadataForgetTest extends ManagerTest{
     onlySaved.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project)));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project)));
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

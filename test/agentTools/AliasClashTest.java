@@ -213,20 +213,20 @@ final class AliasClashTest extends ManagerTest{
     secondShown.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "twin": {
-            "path": "Str:%s",
-            "kind": "idle"
-          },
-          "twin2": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(first), slashed(second)));
+{
+  "projects": {
+    "twin": {
+      "path": "Str:%s",
+      "kind": "idle"
+    },
+    "twin2": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(first), slashed(second)));
     assertEquals(List.of("a/twin/_twin/_rank_app.fear", "a/twin/twin.fearless", "b/twin/_twin/_rank_app.fear", "b/twin/twin2.fearless"),
       Fs.walk(twins, s -> s.filter(Files::isRegularFile).map(p -> slashed(twins.relativize(p))).sorted().toList()));
     checkContent(files.resolve("twins/b/twin/twin2.fearless"), "\n");

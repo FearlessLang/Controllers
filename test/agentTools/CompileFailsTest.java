@@ -205,16 +205,16 @@ final class CompileFailsTest extends ManagerTest{
     compileFailed.go();
     stabilize();
     checkContent(files.resolve("broken/.fearless_out/compile_error.txt"), """
-      In file: fear:/_broken/_rank_app.fear
+In file: fear:/_broken/_rank_app.fear
 
-      003| Hello:Main{s->Nope.nope}
-         |               ^^^^^
+003| Hello:Main{s->Nope.nope}
+   |               ^^^^^
 
-      While inspecting a type name
-      Type "Nope" is not declared in package "broken" and is not made visible via "use".
-      In scope: "Hello", "Main".
-      Error 7 WellFormedness
-      """);
+While inspecting a type name
+Type "Nope" is not declared in package "broken" and is not made visible via "use".
+In scope: "Hello", "Main".
+Error 7 WellFormedness
+""");
     Fs.writeUtf8(source, "use base.Main as Main;\n\nHello:Main{s->base.Debug#(\"fixed\")}\n");
     stabilize();
     compileFixed.go();

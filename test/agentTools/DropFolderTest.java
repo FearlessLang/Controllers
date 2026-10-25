@@ -143,16 +143,16 @@ final class DropFolderTest extends ManagerTest{
     droppedSaved.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "dropped": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(dropped)));
+{
+  "projects": {
+    "dropped": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(dropped)));
     assertEquals(List.of("dropped/_dropped/_rank_app.fear", "dropped/dropped.fearless"), Fs.walk(drops, s -> s.filter(Files::isRegularFile).map(p -> slashed(drops.relativize(p))).sorted().toList()));
     managerMenu.go();
     quitManager.go();

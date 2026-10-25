@@ -161,16 +161,16 @@ final class ForgetProjectTest extends ManagerTest{
     forgotten.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project)));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project)));
     assertEquals(files, files(other));
     managerMenu.go();
     quitManager.go();

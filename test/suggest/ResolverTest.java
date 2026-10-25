@@ -65,15 +65,15 @@ final class ResolverTest{
   static final Api compiled= new Api(Api.parse(api));
   static final String head= Stream.of("Str", "Nat", "List", "Flow", "Opt", "Opts", "OptMatch", "F", "Block", "OrderHash", "Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
-    Cats: { #(name: Str, weight: Nat): Cat -> Cat: { .name: Str -> name; .weight: Nat -> weight; } }
-    Persons: { #(age: Nat, name: Str, cats: List[Cat]): Person -> Person: OrderHash[Person] { 'self
-      read .name: Str -> name;
-      read .age: Nat -> age;
-      read .cats: List[Cat] -> cats;
-      .cmp p1, p2 -> p1.age > (p2.age);
-      .hash: Nat -> age;
-      } }
-    Names: { #(ps: List[Person]): List[Str] ->\s""";
+Cats: { #(name: Str, weight: Nat): Cat -> Cat: { .name: Str -> name; .weight: Nat -> weight; } }
+Persons: { #(age: Nat, name: Str, cats: List[Cat]): Person -> Person: OrderHash[Person] { 'self
+  read .name: Str -> name;
+  read .age: Nat -> age;
+  read .cats: List[Cat] -> cats;
+  .cmp p1, p2 -> p1.age > (p2.age);
+  .hash: Nat -> age;
+  } }
+Names: { #(ps: List[Person]): List[Str] ->\s""";
   static final String person= ".age .assertEq .cats .cmp .hash .name";
   static final String nat= ".str + <=> >";
   static final String opt= ".get .match";

@@ -193,16 +193,16 @@ final class EditMetadataRenameTest extends ManagerTest{
     changed(valid, tile);
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "fresh": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(old)));
+{
+  "projects": {
+    "fresh": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(old)));
     var invalid= look();
     Files.move(old.resolve("old.fearless"), old.resolve("fresh.fearless"));
     stabilize();
