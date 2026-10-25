@@ -216,7 +216,7 @@ final class RecompileAfterEditTest extends ManagerTest{
     compile.go();
     firstCompiled.go();
     stabilize();
-    checkContent(files.resolve("draft/.fearless_out/draft_manifest.info"), "{\n  \"mains\": {\n    \"draft.First\": [###]\n  },\n  \"attenuators\": []\n}\n");
+    checkContent(files.resolve("draft/.fearless_out/draft_manifest.info"), "{\n  \"mains\": {\n    \"draft.First\": [###]\n  },\n  \"attenuators\": [],\n  \"dataRead\": [],\n  \"dataEdit\": []\n}\n");
     var runnable= look();
     Fs.writeUtf8(source, first+"Second:Main{s->base.Debug#(\"second\")}\n");
     stabilize();
@@ -229,7 +229,7 @@ final class RecompileAfterEditTest extends ManagerTest{
     editedCompiled.go();
     changed(outdated, button);
     stabilize();
-    checkContent(files.resolve("draft/.fearless_out/draft_manifest.info"), "{\n  \"mains\": {\n    \"draft.First\": [###],\n    \"draft.Second\": [###]\n  },\n  \"attenuators\": []\n}\n");
+    checkContent(files.resolve("draft/.fearless_out/draft_manifest.info"), "{\n  \"mains\": {\n    \"draft.First\": [###],\n    \"draft.Second\": [###]\n  },\n  \"attenuators\": [],\n  \"dataRead\": [],\n  \"dataEdit\": []\n}\n");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

@@ -66,7 +66,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   }
   static MainsInfo filled(MainsInfo info, MainsInfo previous, String alias, Stream<MainsInfo> all){
     var fill= new Fill(previous, alias, extensions(Stream.concat(Stream.of(info), all)), extensions(Stream.of(info)));
-    return new MainsInfo(info.mains().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> fill.main(e.getKey(), e.getValue()))), info.attenuators());
+    return new MainsInfo(info.mains().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> fill.main(e.getKey(), e.getValue()))), info.attenuators(), info.dataRead(), info.dataEdit());
   }
   private static HashSet<String> extensions(Stream<MainsInfo> infos){
     return infos.flatMap(i -> i.mains().values().stream())

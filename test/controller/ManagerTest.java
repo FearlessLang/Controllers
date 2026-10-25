@@ -149,7 +149,7 @@ final class ManagerTest{
   private static Function<Path,Optional<MainsInfo>> known(String... mains){ return known(List.of(), mains); }
   private static Function<Path,Optional<MainsInfo>> known(List<String> attenuators, String... mains){
     var main= new MainsInfo.Main("_hello/_rank_app.fear", List.of(), List.of(), List.of());
-    var known= Optional.of(new MainsInfo(Stream.of(mains).collect(Collectors.toMap(m -> m, _ -> main)), attenuators));
+    var known= Optional.of(new MainsInfo(Stream.of(mains).collect(Collectors.toMap(m -> m, _ -> main)), attenuators, List.of(), List.of()));
     return _ -> known;
   }
   private Manager manager(Path dir, Function<Path,Optional<MainsInfo>> read){ return manager(dir, view, read); }
