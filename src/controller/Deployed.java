@@ -15,6 +15,7 @@ import core.OtherPackages;
 import fileAssociations.Icon;
 import fileAssociations.WindowIcon;
 import naiveBackend.BackendTools;
+import realSourceOracle.RealSourceOracleWithZip;
 import tools.ChildJvm;
 import tools.Fs;
 import tools.JavacTool;
@@ -64,6 +65,6 @@ public final class Deployed implements Manager.Tools{
   }
   @Override public Optional<MainsInfo> mains(Path folder){
     var c= coordinator(folder);
-    return c.mains(folder, c.sourceOracle(stdLib("base")));
+    return c.mains(folder, RealSourceOracleWithZip.stdLib(stdLib("base")));
   }
 }

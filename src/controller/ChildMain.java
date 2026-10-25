@@ -6,6 +6,7 @@ import fileSupport.NativeLocaleForcer;
 import tools.ChildJvm;
 import tools.Fs;
 import managerMessages.Violation;
+import realSourceOracle.RealSourceOracleWithZip;
 import userMessages.Report;
 import userMessages.UserError;
 
@@ -28,6 +29,6 @@ public final class ChildMain{
     UserError.root = project;
     Fs.onSymbolicLink= Report::symlinkForbidden;
     var c= Deployed.coordinator(project);
-    c.compile(project, c.sourceOracle(Deployed.stdLib("base")));
+    c.compile(project, RealSourceOracleWithZip.stdLib(Deployed.stdLib("base")));
   }
 }
