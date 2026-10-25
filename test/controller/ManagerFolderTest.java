@@ -69,9 +69,9 @@ final class ManagerFolderTest{
   }
   @Test void aPathNamingNothingIsRefused(@TempDir Path dir){
     refused("""
-      The manager was asked to register
+      Refused request "Register" on path
       [###]myProject
-      but nothing exists there: register an existing folder, or a file inside one.""", () -> Manager.projectFolder(dir.resolve("myProject"), folder(dir, "manager")));
+      Nothing exists at that path.""", () -> Manager.projectFolder(dir.resolve("myProject"), folder(dir, "manager")));
   }
   @Test void theManagerFolderIsNotAProject(@TempDir Path dir){
     var managerDir= folder(dir, "manager");

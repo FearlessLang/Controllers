@@ -255,18 +255,11 @@ sync tools, and file preview tools.
   }
   @Test void folderNestedWithRegistered(){
     same("""
-Fearless cannot keep track of this project folder.
-
-The manager was asked to register:
+Refused request "Register" on path
   C:\\Users\\ada\\hello\\inner
-Fearless is already keeping track of:
+A registered project has the folder
   C:\\Users\\ada\\hello
-One of the two is inside the other. Fearless keeps track of project folders
-that do not overlap, so that every file belongs to exactly one project.
-
-Use the folder Fearless already keeps track of, or make Fearless forget that
-folder first, and then register this one again.
-""", Report.folderNestedWithRegistered(Path.of("C:\\Users\\ada\\hello\\inner"), Path.of("C:\\Users\\ada\\hello")));
+One of the two folders is inside the other: every file belongs to exactly one project.""", Report.folderNestedWithRegistered(Path.of("C:\\Users\\ada\\hello\\inner"), Path.of("C:\\Users\\ada\\hello")));
   }
   @Test void managerFolderNotAProject(){
     same("""
