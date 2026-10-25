@@ -90,6 +90,7 @@ The arguments are:
   public static String mountNotRegistered(String data){ return "no project "+disp(data)+" is registered."; }
   public static String mountNotData(String data, String kind){ return "the kind of project "+disp(data)+" is "+disp(kind)+", and only a project of kind \"dataRead\" or \"dataEdit\" is a data project."; }
   public static String mountNotEditable(String data, String type){ return "the kind of project "+disp(data)+" is \"dataRead\", and "+disp(type)+" is a DataEdit type: only a project of kind \"dataEdit\" is mounted on a DataEdit type."; }
+  public static String mountInvalid(String data, String why){ return "the content of project "+disp(data)+" is invalid:\n"+why.stripTrailing(); }
   public static String grantsWhileRunning(String name, String job){ return "Refused request to change the data projects mounted on the DataRead types of project "+disp(name)+".\n"+running(name, job)+"\nThe data projects of a main stay the same while the main runs."; }
 
   //-- registering a folder
