@@ -62,7 +62,8 @@ final class ResolverTest{
       m(".cmp", bs(), list(c("test.Person"), c("test.Person")), c("base.Bool")), m(".hash", bs(), list(), c("base.Nat")), m(".assertEq", bs(), list(c("test.Person")), c("base.Void"))),
     type("test.Persons", bs(), "[]", m("#", bs(), list(c("base.Nat"), c("base.Str"), c("base.List", c("test.Cat"))), c("test.Person"))),
     type("test.Cats", bs(), "[]", m("#", bs(), list(c("base.Str"), c("base.Nat")), c("test.Cat"))),
-    type("test.Pairs", bs(), "[]", m("#", bs("E"), list(x("E"), x("E")), c("base.Opt", x("E")))));
+    type("test.Pairs", bs(), "[]", m("#", bs("E"), list(x("E"), x("E")), c("base.Opt", x("E")))),
+    type("test.Student", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))));
   static final Api compiled= new Api(Api.parse(api));
   static final String head= Stream.of("Str", "Nat", "List", "Flow", "Opt", "Opts", "OptMatch", "F", "Block", "OrderHash", "Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
@@ -276,7 +277,7 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
   }
   @Test void aPackageNameBeforeTheDotSuggestsItsPublicTypes(){
     same(baseTypes, types(file+"base.|"));
-    same("Cat Cats Pairs Person Persons", types(file+"test.|"));
+    same("Cat Cats Pairs Person Persons Student", types(file+"test.|"));
     same("", probe("base.|"));
     same("", types(file+"ps.|"));
     same("", types(file+"Persons.|"));
@@ -339,6 +340,7 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same("Animal Dog", s.supers().stream().map(Ty::show).collect(Collectors.joining(" ")));
     same("Dog", supers("Animal: {}\nDog: Animal{}\nA: { .foo: Animal -> Rex: D|"));
     same("OrderHash[Person] Person", supers("A: { .foo: OrderHash[Person] -> Bob: |"));
+    same("Person Student", supers("A: { .foo: Person -> Bob: |"));
     same("Person", supers("A: { .foo(p: Person): Opt[OrderHash[Person]] -> Pairs#(p, Bob: P|"));
     same("", supers("A: { .foo: Animal -> rex: |"));
     same("", supers("A: { .foo: Nat; .bar(x: |"));

@@ -138,14 +138,16 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     var all= Stream.concat(Stream.of(expected), implementers(expected).stream());
     return all.filter(t -> t.show().startsWith(prefix)).toList();
   }
-  /// the types without generics having t as a supertype: the visible ones of the last compile and
-  /// the declarations of this file
+  /// the types without generics having t as a supertype, not through another supertype: the
+  /// visible ones of the last compile, which lists every supertype, and the declarations of this file
   private List<Ty> implementers(Ty t){
-    var compiled= api.all().stream().filter(x -> x.bs().isEmpty() && x.supers().contains(t)).map(x -> new Ty(x.name(), List.of()));
+    var compiled= api.all().stream().filter(x -> x.bs().isEmpty() && x.supers().contains(t) && x.supers().stream().noneMatch(s -> below(s, t))).map(x -> new Ty(x.name(), List.of()));
     var declared= headers(root).filter(h -> h.xs().isEmpty() && h.supers().stream().anyMatch(c -> parseType(c, Map.of()).equals(t))).map(h -> new Ty(pkg+"."+h.name(), List.of()));
     var visible= Stream.concat(compiled, declared).filter(x -> x.name().startsWith(pkg+".") || !x.show().startsWith("_"));
     return visible.distinct().sorted(byName).toList();
   }
+  /// s is another type having t as a supertype
+  private boolean below(Ty s, Ty t){ return !s.equals(t) && api.entry(s).filter(e -> e.supers().stream().anyMatch(c -> c.subst(e.bind(s)).equals(t))).isPresent(); }
   private static Stream<Header> headers(Group g){
     return g.items.stream().filter(it -> it instanceof Group).map(Group.class::cast)
       .flatMap(c -> Stream.concat((c.open == Kind.OCurly ? Chain.header(c) : Optional.<Header>empty()).stream(), headers(c)));
