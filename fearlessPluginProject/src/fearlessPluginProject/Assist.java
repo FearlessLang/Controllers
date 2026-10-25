@@ -14,6 +14,8 @@ import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.CompletionProposal;
+import org.eclipse.jface.text.contentassist.ContextInformation;
+import org.eclipse.jface.text.contentassist.ContextInformationValidator;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessorExtension;
 import org.eclipse.jface.text.contentassist.IContextInformation;
@@ -39,15 +41,19 @@ import suggest.Resolver.Row;
 /// the use directives of the head file of the package, its only _rank_ file (none when it has
 /// none or several), taken from the editor when that is the file being edited. The generic
 /// editor computes proposals off the UI thread, so the file comes from the document's file buffer.
+/// The context information, on ctrl+shift+space and after ( and , is the type expected at the
+/// cursor; after Name: the proposals are that type and the types implementing it, as supertypes.
 public final class Assist implements IContentAssistProcessorExtension{
   private record Loaded(long stamp, List<Type> types){}
   private record Text(long stamp, Docs docs){}
+  private record At(Path out, Api api, Resolver r){}
   private static final Map<Path,Loaded> loaded= new HashMap<>();
   private static final Map<Path,Text> texts= new HashMap<>();
-  @Override public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset){
+  /// the resolver of the edited text; null for a file of no mirrored project or outside a package folder
+  private static At _at(ITextViewer viewer){
     var file= ResourcesPlugin.getWorkspace().getRoot().getFile(FileBuffers.getTextFileBufferManager().getTextFileBuffer(viewer.getDocument()).getLocation());
     var project= ManagerLink.projects().get(file.getProject().getName());
-    if (project == null || file.getProjectRelativePath().segmentCount() < 3){ return new ICompletionProposal[0]; }
+    if (project == null || file.getProjectRelativePath().segmentCount() < 3){ return null; }
     var pkgDir= file.getProjectRelativePath().segment(1);
     var out= project.folder().resolve(".fearless_out");
     var text= viewer.getDocument().get();
@@ -56,11 +62,17 @@ public final class Assist implements IContentAssistProcessorExtension{
     var types= Stream.concat(Stream.of(base), jsons(out)).flatMap(p -> types(p).stream()).toList();
     var packages= Files.isDirectory(out) ? Api.packages(ManagerLink.read(out.resolve("_map.json")), pkgDir.substring(1)) : Map.<String,String>of();
     var api= new Api(types);
-    var s= Resolver.of(api, pkgDir.substring(1), packages, head, text).suggest(offset);
-    var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, docs(txt(out, pkg(t.name())))));
-    if (s.rows().isEmpty()){ return typeProposals.toArray(ICompletionProposal[]::new); }
-    var docs= api.entry(s.receiver()).map(t -> docs(txt(out, pkg(t.name()))));
-    return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, docs, s.receiver())), typeProposals).toArray(ICompletionProposal[]::new);
+    return new At(out, api, Resolver.of(api, pkgDir.substring(1), packages, head, text));
+  }
+  @Override public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset){
+    var a= _at(viewer);
+    if (a == null){ return new ICompletionProposal[0]; }
+    var s= a.r().suggest(offset);
+    var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, docs(txt(a.out(), pkg(t.name())))));
+    var others= Stream.concat(typeProposals, s.supers().stream().map(t -> superProposal(t, s.from(), offset, a.r().text(), docs(txt(a.out(), pkg(t.name()))))));
+    if (s.rows().isEmpty()){ return others.toArray(ICompletionProposal[]::new); }
+    var docs= a.api().entry(s.receiver()).map(t -> docs(txt(a.out(), pkg(t.name()))));
+    return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, docs, s.receiver())), others).toArray(ICompletionProposal[]::new);
   }
   private static ICompletionProposal proposal(Row r, int from, int offset, Optional<Docs> docs, Ty receiver){
     return new CompletionProposal(r.insert(), from, offset-from, r.insert().length(), null, r.display(), null, docs.flatMap(d -> d.method(simple(receiver.name()), receiver.args().size(), r.name(), r.ts().size())).orElse(null));
@@ -68,6 +80,10 @@ public final class Assist implements IContentAssistProcessorExtension{
   private static ICompletionProposal typeProposal(Ty t, int from, int offset, Docs docs){
     var name= simple(t.name());
     return new CompletionProposal("."+name, from, offset-from, name.length()+1, null, t.show(), null, docs.type(name, t.args().size()).orElse(null));
+  }
+  private static ICompletionProposal superProposal(Ty t, int from, int offset, String text, Docs docs){
+    var insert= (from > 0 && text.charAt(from-1) == ':' ? " " : "")+t.show();
+    return new CompletionProposal(insert, from, offset-from, insert.length(), null, t.show(), null, docs.type(simple(t.name()), t.args().size()).orElse(null));
   }
   private static String pkg(String name){ return name.substring(0, name.indexOf('.')); }
   private static String simple(String name){ return name.substring(name.indexOf('.')+1); }
@@ -94,9 +110,14 @@ public final class Assist implements IContentAssistProcessorExtension{
     var stamp= txt.toFile().lastModified();
     return texts.compute(txt, (p,old) -> old != null && old.stamp == stamp ? old : new Text(stamp, new Docs(ManagerLink.read(txt)))).docs;
   }
-  @Override public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset){ return null; }
+  @Override public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset){
+    var a= _at(viewer);
+    var t= a == null ? Ty.unknown : a.r().expected(offset);
+    if (t.equals(Ty.unknown)){ return new IContextInformation[0]; }
+    return new IContextInformation[]{ new ContextInformation(t.show(), "expected: "+t.show()) };
+  }
   @Override public boolean isCompletionProposalAutoActivation(char c, ITextViewer viewer, int offset){ return c == '.'; }
-  @Override public boolean isContextInformationAutoActivation(char c, ITextViewer viewer, int offset){ return false; }
+  @Override public boolean isContextInformationAutoActivation(char c, ITextViewer viewer, int offset){ return c == '(' || c == ','; }
   @Override public String getErrorMessage(){ return null; }
-  @Override public IContextInformationValidator getContextInformationValidator(){ return null; }
+  @Override public IContextInformationValidator getContextInformationValidator(){ return new ContextInformationValidator(this); }
 }

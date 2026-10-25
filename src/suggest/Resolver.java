@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import suggest.Api.Method;
 import suggest.Api.Ty;
@@ -42,7 +43,9 @@ import suggest.Tokens.Tok;
 /// methods of its supertypes. A lowercase name right before the dot that names a compiled
 /// package, a qualified type name being typed, or the package of a use directive, also lists the
 /// public types of that package. A package name written in this package stands for the package the
-/// map directives of the project give it here, if any.
+/// map directives of the project give it here, if any. The type expected at the cursor is the
+/// parameter type of the argument of the call holding it, or the result type of the method whose
+/// body holds it; after Name: it is listed with the types without generics implementing it.
 public record Resolver(Api api, String pkg, Map<String,String> packages, Map<String,String> aliases, String text, List<Tok> tokens, Group root){
   public record Row(String name, List<Ty> ts, Ty ret){
     public String insert(){ return name.startsWith(".") ? name : " "+name+" "; }
@@ -52,8 +55,9 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     }
   }
   /// the rows for the cursor, the receiver type they are the methods of, the offset their
-  /// text replaces from: the dot or the typed prefix, and the types of the package before the dot
-  public record Suggestions(int from, Ty receiver, List<Row> rows, List<Ty> types){}
+  /// text replaces from: the dot or the typed prefix, the types of the package before the dot
+  /// and the supertypes for the declaration being typed
+  public record Suggestions(int from, Ty receiver, List<Row> rows, List<Ty> types, List<Ty> supers){}
   private record Bound(Method m, HashMap<String,Ty> sub){}
   private static final Kind[] separators= {Kind.SemiColon, Kind.Comma, Kind.Arrow, Kind.Colon, Kind.SQuote};
   private static final Set<Kind> silent= Set.of(Kind.LineComment, Kind.BlockComment, Kind.BadUnclosedBlockComment, Kind.UStr, Kind.SStr, Kind.BadUStrUnclosed, Kind.BadSStrUnclosed, Kind.CCurlyId);
@@ -85,13 +89,14 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   /// method name the methods matching it; anywhere else the methods of the expression before the
   /// cursor, inserted with their dot
   public Suggestions suggest(int pos){
-    var inside= tokens.stream().anyMatch(t -> silent.contains(t.kind()) && t.start() < pos && (pos < t.end() || pos == t.end() && growing.contains(t.kind())));
-    if (inside){ return new Suggestions(pos, Ty.unknown, List.of(), List.of()); }
+    if (inside(pos)){ return new Suggestions(pos, Ty.unknown, List.of(), List.of(), List.of()); }
     var g= Tokens.innermost(root, pos);
     var items= new ArrayList<>(g.items.stream().filter(it -> it.start() < pos).toList());
     var from= pos;
     var prefix= "";
     var touching= !items.isEmpty() && items.getLast() instanceof Tok t && pos <= t.end();
+    var slot= superSlot(items, touching, pos);
+    if (slot.isPresent()){ return new Suggestions(slot.get(), Ty.unknown, List.of(), List.of(), supers(expectedAt(g, pos), text.substring(slot.get(), pos))); }
     var typing= touching && Tokens.is(items.getLast(), Kind.DotName, Kind.Op);
     var dot= text.lastIndexOf('.', pos-1);
     var qualifying= touching && Tokens.is(items.getLast(), Kind.UppercaseId) && dot >= items.getLast().start();
@@ -100,11 +105,76 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     else if (pos > 0 && text.charAt(pos-1) == '.'){ from = pos-1; prefix = "."; }
     var types= types(items, from, prefix);
     var seg= touching && !typing ? List.<Item>of() : segment(items);
-    if (seg.isEmpty()){ return new Suggestions(from, Ty.unknown, List.of(), types); }
+    if (seg.isEmpty()){ return new Suggestions(from, Ty.unknown, List.of(), types, List.of()); }
     var t= typeOf(Chain.parse(seg), scope(g, pos));
     var p= prefix;
     var rows= methods(t).stream().filter(m -> p.equals(".") || m.name().startsWith(p)).sorted(order).map(m -> new Row(m.name(), m.ts(), m.ret())).toList();
-    return new Suggestions(from, t, rows, types);
+    return new Suggestions(from, t, rows, types, List.of());
+  }
+  private boolean inside(int pos){
+    return tokens.stream().anyMatch(t -> silent.contains(t.kind()) && t.start() < pos && (pos < t.end() || pos == t.end() && growing.contains(t.kind())));
+  }
+  /// the type expected at the cursor; unknown inside a comment or a string
+  public Ty expected(int pos){ return inside(pos) ? Ty.unknown : expectedAt(Tokens.innermost(root, pos), pos); }
+  private Ty expectedAt(Group g, int pos){
+    var names= scope(g, pos);
+    return expectedIn(g, pos, names).map(x -> inScope(x, names)).orElse(Ty.unknown);
+  }
+  /// the type with the generics not in scope unknown
+  private static Ty inScope(Ty t, Map<String,Ty> scope){
+    if (t.isX()){ return scope.containsKey(t.name()) ? t : Ty.unknown; }
+    return new Ty(t.name(), t.args().stream().map(a -> inScope(a, scope)).toList());
+  }
+  /// where the supertype after Name: at the end of the items starts: the cursor, or the type name being typed
+  private static Optional<Integer> superSlot(List<Item> items, boolean touching, int pos){
+    var typed= touching && Tokens.is(items.getLast(), Kind.UppercaseId) && Tokens.text(items.getLast()).indexOf('.') == -1;
+    var k= typed ? items.size()-1 : items.size();
+    var slot= (typed || !touching) && k >= 2 && Tokens.is(items.get(k-1), Kind.Colon) && Tokens.is(items.get(k-2), Kind.UppercaseId);
+    return slot ? Optional.of(typed ? items.getLast().start() : pos) : Optional.empty();
+  }
+  /// the expected type and the types implementing it, whose simple name starts with the prefix
+  private List<Ty> supers(Ty expected, String prefix){
+    if (!expected.isC()){ return List.of(); }
+    var all= Stream.concat(Stream.of(expected), implementers(expected).stream());
+    return all.filter(t -> t.show().startsWith(prefix)).toList();
+  }
+  /// the types without generics having t as a supertype: the visible ones of the last compile and
+  /// the declarations of this file
+  private List<Ty> implementers(Ty t){
+    var compiled= api.all().stream().filter(x -> x.bs().isEmpty() && x.supers().contains(t)).map(x -> new Ty(x.name(), List.of()));
+    var declared= headers(root).filter(h -> h.xs().isEmpty() && h.supers().stream().anyMatch(c -> parseType(c, Map.of()).equals(t))).map(h -> new Ty(pkg+"."+h.name(), List.of()));
+    var visible= Stream.concat(compiled, declared).filter(x -> x.name().startsWith(pkg+".") || !x.show().startsWith("_"));
+    return visible.distinct().sorted(byName).toList();
+  }
+  private static Stream<Header> headers(Group g){
+    return g.items.stream().filter(it -> it instanceof Group).map(Group.class::cast)
+      .flatMap(c -> Stream.concat((c.open == Kind.OCurly ? Chain.header(c) : Optional.<Header>empty()).stream(), headers(c)));
+  }
+  /// the type expected at pos in g: the parameter type of the argument of the call g holds the
+  /// arguments of, or the result type of the method of the literal g whose body holds pos
+  private Optional<Ty> expectedIn(Group g, int pos, HashMap<String,Ty> scope){
+    if (g.open == Kind.ORound){ return argIn(g, pos, scope); }
+    if (g.open != Kind.OCurly){ return Optional.empty(); }
+    return Chain.methodsOf(g).stream().filter(m -> m.bodyStart() <= pos && pos <= m.end()).findFirst().flatMap(m -> result(g, m, scope));
+  }
+  /// the parameter type of the argument at pos of the call whose arguments are p, the call bound
+  /// by the type expected of it when it is the whole argument or body holding it
+  private Optional<Ty> argIn(Group p, int pos, HashMap<String,Ty> scope){
+    var seg= segment(p.parent, p.start);
+    var call= new ArrayList<>(seg);
+    call.add(p);
+    if (seg.isEmpty() || !(Chain.parse(call) instanceof Call c)){ return Optional.empty(); }
+    var idx= (int)p.items.stream().filter(it -> it.start() < pos && Tokens.is(it, Kind.Comma)).count();
+    var items= p.parent.items;
+    var next= items.indexOf(p)+1;
+    var whole= next == items.size() || Tokens.is(items.get(next), Kind.Comma, Kind.SemiColon);
+    var outer= whole ? expectedIn(p.parent, seg.get(0).start(), scope) : Optional.<Ty>empty();
+    return padded(c, idx, scope).flatMap(pc -> callSub(pc, scope, idx, outer)).map(b -> b.m.ts().get(idx).subst(b.sub).erase(b.m.bs()));
+  }
+  /// the call with unknown arguments up to the arity of its shortest method having an argument at idx
+  private Optional<Call> padded(Call c, int idx, Map<String,Ty> scope){
+    var n= entry(typeOf(c.recv(), scope)).flatMap(t -> t.ms().stream().filter(m -> m.name().equals(c.name()) && m.arity() > idx && m.arity() >= c.arity()).map(Method::arity).min(Integer::compare));
+    return n.map(k -> new Call(c.recv(), c.name(), Stream.concat(c.args().stream(), Stream.<E>generate(() -> Chain.unknown)).limit(k).toList(), c.targs()));
   }
   /// the public types of the package named right before the dot at from, alone or as the head of
   /// the qualified name being typed, whose simple name starts with what follows the dot
@@ -177,11 +247,13 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   /// the result type of the method of g whose body ends with the item, declared or implemented
   private Optional<Ty> result(Group g, Item last, HashMap<String,Ty> scope){
     var m= Chain.methodsOf(g).stream().filter(x -> g.open == Kind.OCurly && !x.body().isEmpty() && x.body().getLast() == last).findFirst();
-    if (m.isEmpty()){ return Optional.empty(); }
-    if (!m.get().result().isEmpty()){ return Optional.of(parseType(m.get().result(), scope)); }
+    return m.flatMap(x -> result(g, x, scope));
+  }
+  private Optional<Ty> result(Group g, Meth m, HashMap<String,Ty> scope){
+    if (!m.result().isEmpty()){ return Optional.of(parseType(m.result(), scope)); }
     var t= literal(g, scope);
     var e= entry(t);
-    return e.flatMap(x -> implemented(x, g, m.get())).map(x -> x.ret().subst(e.get().bind(t)).erase(x.bs()));
+    return e.flatMap(x -> implemented(x, g, m)).map(x -> x.ret().subst(e.get().bind(t)).erase(x.bs()));
   }
   /// the parameter type for the group in the call: as an argument of the call, as the thunk of a
   /// sugar, or in the rest of a sugar, which also binds the sugar's name
@@ -218,8 +290,9 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     return scope.getOrDefault(Tokens.text(a.items().get(0)), Ty.unknown);
   }
   /// the signature of a call and the substitution binding the receiver's generics, the explicit
-  /// type arguments, whatever meeting the arguments binds, but for the argument at skip, then
-  /// what meeting the result type expected of the call binds
+  /// type arguments, what meeting a class result type with the type expected of the call binds,
+  /// whatever meeting the arguments binds, but for the argument at skip, then what meeting a
+  /// generic result type with the type expected of the call binds
   private Optional<Bound> callSub(Call c, Map<String,Ty> scope, int skip, Optional<Ty> result){
     var recv= typeOf(c.recv(), scope);
     var e= entry(recv);
@@ -230,10 +303,12 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     if (targs.size() == m.get().bs().size()){ IntStream.range(0, targs.size()).forEach(j -> sub.put(m.get().bs().get(j), parseType(targs.get(j), scope))); }
     var open= new ArrayList<>(m.get().bs());
     e.get().bs().stream().filter(b -> sub.get(b).equals(Ty.unknown)).forEach(open::add);
+    var exact= m.get().ret().isC();
+    result.filter(r -> exact).ifPresent(r -> unify(m.get().ret(), r, sub, open));
     for (int j= 0; j < c.arity(); j += 1){
       if (j != skip){ unify(m.get().ts().get(j), typeOfArg(c.args().get(j), m.get().ts().get(j).subst(sub), scope), sub, open); }
     }
-    result.ifPresent(r -> unify(m.get().ret(), r, sub, open));
+    result.filter(r -> !exact).ifPresent(r -> unify(m.get().ret(), r, sub, open));
     return Optional.of(new Bound(m.get(), sub));
   }
   /// an open generic meets a bound type and is bound; a class meets a type whose supertypes, the

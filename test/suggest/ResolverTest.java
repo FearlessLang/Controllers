@@ -61,7 +61,8 @@ final class ResolverTest{
       m(".name", bs(), list(), c("base.Str")), m(".age", bs(), list(), c("base.Nat")), m(".cats", bs(), list(), c("base.List", c("test.Cat"))),
       m(".cmp", bs(), list(c("test.Person"), c("test.Person")), c("base.Bool")), m(".hash", bs(), list(), c("base.Nat")), m(".assertEq", bs(), list(c("test.Person")), c("base.Void"))),
     type("test.Persons", bs(), "[]", m("#", bs(), list(c("base.Nat"), c("base.Str"), c("base.List", c("test.Cat"))), c("test.Person"))),
-    type("test.Cats", bs(), "[]", m("#", bs(), list(c("base.Str"), c("base.Nat")), c("test.Cat"))));
+    type("test.Cats", bs(), "[]", m("#", bs(), list(c("base.Str"), c("base.Nat")), c("test.Cat"))),
+    type("test.Pairs", bs(), "[]", m("#", bs("E"), list(x("E"), x("E")), c("base.Opt", x("E")))));
   static final Api compiled= new Api(Api.parse(api));
   static final String head= Stream.of("Str", "Nat", "List", "Flow", "Opt", "Opts", "OptMatch", "F", "Block", "OrderHash", "Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
@@ -90,6 +91,15 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
   static String names(String text){ return at(text).rows().stream().map(Row::name).collect(Collectors.joining(" ")); }
   static String types(String text){ return at(text).types().stream().map(Ty::show).collect(Collectors.joining(" ")); }
   static String probe(String snippet){ return names(file+snippet); }
+  /// the type expected at the | of the text; every offset of the text is asked too
+  static String expected(String text){
+    var pos= text.indexOf('|');
+    var t= text.substring(0, pos)+text.substring(pos+1);
+    var r= Resolver.of(compiled, "test", Map.of(), head, t);
+    IntStream.rangeClosed(0, t.length()).forEach(r::expected);
+    return r.expected(pos).show();
+  }
+  static String supers(String text){ return at(text).supers().stream().map(Ty::show).collect(Collectors.joining(" ")); }
   static final String baseTypes= "Block Block[R] Bool Continuation[T,R] F[A,R] F[A,B,R] Float Flow[E] Int List[E] MF[R] Nat Opt[E] OptMatch[E,R] Opts OrderHash[T] Str Void";
   @Test void aParameterTypedInTheHeadRootsTheChain(){ same(".flow .get .size", probe("ps.|")); }
   @Test void aColonAfterParametersWithoutParenthesisTypesTheLastOne(){
@@ -266,7 +276,7 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
   }
   @Test void aPackageNameBeforeTheDotSuggestsItsPublicTypes(){
     same(baseTypes, types(file+"base.|"));
-    same("Cat Cats Person Persons", types(file+"test.|"));
+    same("Cat Cats Pairs Person Persons", types(file+"test.|"));
     same("", probe("base.|"));
     same("", types(file+"ps.|"));
     same("", types(file+"Persons.|"));
@@ -297,6 +307,48 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same("", names("A: { .foo(base: Nat) -> base.O| }"));
     same("Opt[E] OptMatch[E,R] Opts OrderHash[T]", types("A: { .foo(base: Nat) -> base.O| }"));
   }
+  @Test void anArgumentExpectsItsParameterType(){
+    same("Nat", expected(file+"ps.get(|"));
+    same("Nat", expected(file+"ps.get(1|"));
+    same("Str", expected(file+"Persons#(1, |"));
+    same("List[Cat]", expected(file+"Persons#(1, \"a\", p|)"));
+  }
+  @Test void anArgumentOfACallWithFewerArgumentsTypedExpectsTheParameterOfItsShortestMethod(){
+    same("Nat", expected(file+"Persons#(|"));
+    same("Nat", expected(file+"Persons#(|)"));
+  }
+  @Test void aGenericNotBoundIsUnknown(){
+    same("?", expected("A: { .foo -> Opts#(|"));
+    same("?", expected(file+"ps.flow.map{p -> |"));
+    same("X", expected("A[X]: { .foo(x: X): Opt[X] -> Opts#(|"));
+  }
+  @Test void theTypeExpectedOfTheCallBindsAClassResultBeforeTheArguments(){
+    same("Nat", expected("A: { .foo: Opt[Nat] -> Opts#(|"));
+    same("OrderHash[Person]", expected("A: { .foo(p: Person): Opt[OrderHash[Person]] -> Pairs#(p, |"));
+    same("Nat", expected("A: { .foo: Opt[Opt[Nat]] -> Opts#(Opts#(|"));
+    same("?", expected("A: { .foo: Opt[Nat] -> Opts#(|).get"));
+  }
+  @Test void aBodyExpectsTheResultTypeOfItsMethod(){
+    same("OptMatch[Str,Nat]", expected("A: { .foo: OptMatch[Str,Nat] -> |"));
+    same("Nat", expected("A: { .foo: F[Person,Nat] -> { p -> |"));
+    same("Bool", expected("Person: OrderHash[Person] { .cmp p1, p2 -> | }"));
+    same("?", expected("A: { .foo: Nat; .bar(x: Nat|"));
+  }
+  @Test void afterANameAndAColonTheExpectedTypeAndItsImplementersAreTheSupertypes(){
+    var s= at("Animal: {}\nDog: Animal{}\nA: { .foo: Animal -> Rex: |");
+    same("Animal Dog", s.supers().stream().map(Ty::show).collect(Collectors.joining(" ")));
+    same("Dog", supers("Animal: {}\nDog: Animal{}\nA: { .foo: Animal -> Rex: D|"));
+    same("OrderHash[Person] Person", supers("A: { .foo: OrderHash[Person] -> Bob: |"));
+    same("Person", supers("A: { .foo(p: Person): Opt[OrderHash[Person]] -> Pairs#(p, Bob: P|"));
+    same("", supers("A: { .foo: Animal -> rex: |"));
+    same("", supers("A: { .foo: Nat; .bar(x: |"));
+  }
+  @Test void theSupertypeReplacesTheTypeNameBeingTyped(){
+    var typed= "A: { .foo: OrderHash[Person] -> Bob: Or|";
+    assertEquals(typed.lastIndexOf("Or"), at(typed).from());
+    var empty= "A: { .foo: OrderHash[Person] -> Bob: |";
+    assertEquals(empty.indexOf('|'), at(empty).from());
+  }
   @Test void noTextNorCursorMakesTheSuggestionsThrow() throws IOException{
     var heads= head+"\nuse Foo as B;\nuse base. as C;\nuse as D;\nuse lib.Str as;\nuse lib.Nat as N;";
     List<Path> fear;
@@ -311,5 +363,9 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
       IntStream.range(0, t.length()).forEach(k -> suggest(heads, t.substring(0, k)+t.substring(k+1), k));
     }
   }
-  static void suggest(String head, String text, int pos){ Resolver.of(compiled, "base", Map.of("lib", "base"), head, text).suggest(pos); }
+  static void suggest(String head, String text, int pos){
+    var r= Resolver.of(compiled, "base", Map.of("lib", "base"), head, text);
+    r.suggest(pos);
+    r.expected(pos);
+  }
 }
