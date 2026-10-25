@@ -655,6 +655,28 @@ The attenuators are:
     idle(m);
     same("--- running hello.One ---\nran hello.One\n--- hello.One exited with 0 after [###]s ---\n", view.out(hello));
   }
+  @Test void aMountOfADataProjectWithInvalidContentStopsTheRun(@TempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Mount", "hello", "hello.Pub data");
+    Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
+    send(m, "Run", "hello", "hello.Hello");
+    same("""
+Refused request "Run" on project "hello".
+Project "hello" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:
+  The mount of "data" on "hello.Pub" is broken: the content of project "data" is invalid:
+[###]Bad Name.txt[###]""", view.refused.getLast());
+    assertEquals(1, view.refused.size());
+    Fs.ofV(() -> Files.delete(data.resolve("Bad Name.txt")));
+    send(m, "Run", "hello", "hello.Hello");
+    idle(m);
+    assertEquals(1, view.refused.size());
+    same("--- running hello.Hello ---\nran hello.Hello\n[###]", view.out(hello));
+  }
   @Test void aRunningMainKeepsTheDataProjectsOfItsMountsUntilItEnds(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Notes"), "hello.Slow"));
     var hello= code(m, dir, "hello");

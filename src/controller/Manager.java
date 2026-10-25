@@ -302,7 +302,8 @@ public final class Manager{
     attenuated.keySet().stream().filter(m -> !all.contains(m)).findFirst().ifPresent(m -> { throw new Refused(Report.attenuatedNotAMain(p.alias(), m, all)); });
     var attenuators= p.knownAttenuators();
     attenuated.forEach((m, as) -> as.stream().filter(a -> !attenuators.contains(a)).findFirst().ifPresent(a -> { throw new Refused(Report.notAnAttenuator(p.alias(), m, a, attenuators)); }));
-    var mountProblems= p.mountProblems(registry.all());
+    p.entry().mounts().values().stream().flatMap(d -> registry.named(d).stream()).forEach(e -> scan(e.path()));
+    var mountProblems= p.mountProblems(projects());
     if (!mountProblems.isEmpty()){ throw new Refused(Report.mountsRefused(p.alias(), mountProblems)); }
     selected = Optional.of(f);
     if (all.size() > 1){ registry.update(f, e -> e.withMains(mains)); }

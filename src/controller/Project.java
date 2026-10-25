@@ -49,17 +49,17 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public List<String> knownMains(){ return mains.map(m -> List.copyOf(m.mains().keySet())).orElse(List.of()); }
   public List<String> knownAttenuators(){ return mains.map(MainsInfo::attenuators).orElse(List.of()); }
   public List<String> knownDataRead(){ return mains.map(m -> Stream.concat(m.dataRead().stream(), m.dataEdit().stream()).sorted().toList()).orElse(List.of()); }
-  public Optional<String> brokenMount(String type, List<Entry> all){
+  public Optional<String> brokenMount(String type, List<Project> all){
     var data= entry.mounts().get(type);
     if (!knownDataRead().contains(type)){ return Optional.of(Report.mountNotDataRead(type, alias())); }
-    var target= OneOr.opt("project "+data, all.stream().filter(e -> e.alias().equals(data)));
+    var target= OneOr.opt("project "+data, all.stream().filter(p -> p.alias().equals(data)));
     if (target.isEmpty()){ return Optional.of(Report.mountNotRegistered(data)); }
     var kind= target.get().kind();
     if (!kind.isData()){ return Optional.of(Report.mountNotData(data, kind.text)); }
     if (kind == Kind.dataRead && mains.orElseThrow().dataEdit().contains(type)){ return Optional.of(Report.mountNotEditable(data, type)); }
-    return Optional.empty();
+    return target.get().problem().map(why -> Report.mountInvalid(data, why));
   }
-  public List<String> mountProblems(List<Entry> all){
+  public List<String> mountProblems(List<Project> all){
     var unmounted= knownDataRead().stream().filter(t -> !entry.mounts().containsKey(t)).map(Report::notMounted);
     var broken= entry.mounts().keySet().stream().flatMap(t -> brokenMount(t, all).map(why -> Report.brokenMount(t, entry.mounts().get(t), why)).stream());
     return Stream.concat(unmounted, broken).toList();
