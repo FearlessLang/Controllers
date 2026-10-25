@@ -294,16 +294,16 @@ final class ChooserNavigationTest extends ManagerTest{
     tileShown.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "inner": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(inner)));
+{
+  "projects": {
+    "inner": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(inner)));
     assertEquals(List.of(), Fs.walk(attic, s -> s.filter(p -> p.getParent().equals(attic) && Files.isRegularFile(p)).toList()));
     managerMenu.go();
     quitManager.go();

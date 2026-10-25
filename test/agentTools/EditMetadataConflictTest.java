@@ -17,20 +17,20 @@ final class EditMetadataConflictTest extends ManagerTest{
     on("void_i3", () -> region(val(null), val(null), val(null), val(null))),
     on("omarchy_hyprland", () -> region(val(null), val(null), val(null), val(null))));
   static final String two= """
-    {
-      "projects": {
-        "hello_world": {
-          "path": "Str:%s",
-          "kind": "%s"
-        },
-        "start": {
-          "path": "Str:%s",
-          "kind": "idle"
-        }
-      },
-      "systemExtensions": []
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "%s"
+    },
+    "start": {
+      "path": "Str:%s",
+      "kind": "idle"
     }
-    """;
+  },
+  "systemExtensions": []
+}
+""";
   final Action openHelloWorld= action("openHelloWorld",
     on("ubuntu_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
     on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),

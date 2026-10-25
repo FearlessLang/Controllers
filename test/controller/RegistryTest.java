@@ -42,14 +42,14 @@ final class RegistryTest{
   }
   @Test void aFullCodeProjectParsesEveryField(){
     var e= parse("""
-      {"someproject":{
-        "path":"Str:%sabs/someproject",
-        "kind":"code",
-        "mains":["some.Main1","some.Main2"],
-        "reads":{"publicfiles":["Data1"]},
-        "edits":{"publicdata":["Data2","Data3"]},
-        "attenuators":{"some.Main1":["some.NoGui","base.NoManager"]}
-      }}""".formatted(root)).getFirst();
+{"someproject":{
+  "path":"Str:%sabs/someproject",
+  "kind":"code",
+  "mains":["some.Main1","some.Main2"],
+  "reads":{"publicfiles":["Data1"]},
+  "edits":{"publicdata":["Data2","Data3"]},
+  "attenuators":{"some.Main1":["some.NoGui","base.NoManager"]}
+}}""".formatted(root)).getFirst();
     assertEquals(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code,
       List.of("some.Main1", "some.Main2"), Map.of("publicfiles", List.of("Data1")), Map.of("publicdata", List.of("Data2", "Data3")), Map.of("some.Main1", List.of("some.NoGui", "base.NoManager"))), e);
   }
@@ -174,25 +174,25 @@ final class RegistryTest{
     r.replace(content("{\"projects\": {\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"reads\": {\"zeta\": [\"Z\"], \"alpha\": [\"A\"], \"mid\": [\"M\"], \"beta\": [\"B\"]}}}, \"systemExtensions\": []}"));
     r.update(code, e -> e.withLinks(e.reads(), Map.of("zeta", List.of("W"))));
     assertEquals("""
-      {
-        "projects": {
-          "code": {
-            "path": "Str:%s",
-            "kind": "code",
-            "reads": {
-              "zeta": ["Z"],
-              "alpha": ["A"],
-              "mid": ["M"],
-              "beta": ["B"]
-            },
-            "edits": {
-              "zeta": ["W"]
-            }
-          }
-        },
-        "systemExtensions": []
+{
+  "projects": {
+    "code": {
+      "path": "Str:%s",
+      "kind": "code",
+      "reads": {
+        "zeta": ["Z"],
+        "alpha": ["A"],
+        "mid": ["M"],
+        "beta": ["B"]
+      },
+      "edits": {
+        "zeta": ["W"]
       }
-      """.formatted(unix(code)), Fs.readUtf8(folder(dir, "manager").resolve("projects.info")));
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(unix(code)), Fs.readUtf8(folder(dir, "manager").resolve("projects.info")));
   }
   @Test void aCorruptedFileRefusesToLoadWithARichError(@TempDir Path dir){
     Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), "not info at all");
@@ -201,11 +201,11 @@ final class RegistryTest{
   @Test void aMissingFileIsWrittenEmpty(@TempDir Path dir){
     registry(dir);
     assertEquals("""
-      {
-        "projects": {},
-        "systemExtensions": []
-      }
-      """, Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
+{
+  "projects": {},
+  "systemExtensions": []
+}
+""", Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
   }
   @Test void theSystemExtensionsSurviveAReReadAndAMalformedListRefusesToLoad(@TempDir Path dir){
     var r= registry(dir);
@@ -237,14 +237,14 @@ final class RegistryTest{
   }
   @Test void aTypeNameIsInReadsOrInEditsNotInBoth(){
     err("""
-      [###]"edits":{"pub":["Data2","Data1"]}[###]
-      [###]"Data1" is in both "reads"."pub" and "edits"."pub": a type name is in one link only, since the code reaches one data project through it; a type name in "edits" also reads.[###]""",
+[###]"edits":{"pub":["Data2","Data1"]}[###]
+[###]"Data1" is in both "reads"."pub" and "edits"."pub": a type name is in one link only, since the code reaches one data project through it; a type name in "edits" also reads.[###]""",
       () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"]},\"edits\":{\"pub\":[\"Data2\",\"Data1\"]}}}"));
   }
   @Test void aTypeNameNamesOneDataProject(){
     err("""
-      [###]"reads":{"pub":["Data1"],"notes":["Data1"]}[###]
-      [###]"Data1" is in both "reads"."pub" and "reads"."notes": a type name is in one link only[###]""",
+[###]"reads":{"pub":["Data1"],"notes":["Data1"]}[###]
+[###]"Data1" is in both "reads"."pub" and "reads"."notes": a type name is in one link only[###]""",
       () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"],\"notes\":[\"Data1\"]}}}"));
     err("[###]\"Data1\" is in both \"reads\".\"pub\" and \"edits\".\"notes\"[###]",
       () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"reads\":{\"pub\":[\"Data1\"]},\"edits\":{\"notes\":[\"Data1\"]}}}"));

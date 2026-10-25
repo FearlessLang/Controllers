@@ -48,13 +48,13 @@ final class ManagerFolderTest{
   }
   @Test void aStartWithTwoArgumentsIsAnInvalidCallNamingBoth(){
     same("""
-      InvalidCall
-      Fearless was started with 2 arguments, but without a first argument starting with
-      "FearlessCommand" it takes at most one: the file to open.
+InvalidCall
+Fearless was started with 2 arguments, but without a first argument starting with
+"FearlessCommand" it takes at most one: the file to open.
 
-      The arguments are:
-        myProject
-        other""", Main.message("myProject", "other"));
+The arguments are:
+  myProject
+  other""", Main.message("myProject", "other"));
   }
   @Test void theMessagesOfARunThatIsNotTheManagerAreAnInvalidCall(){
     same("InvalidCall\nFearless was started with the argument \"FearlessCommandFatalError\", but [###]", Main.message("FearlessCommandFatalError", "x"));
@@ -69,22 +69,22 @@ final class ManagerFolderTest{
   }
   @Test void aPathNamingNothingIsRefused(@TempDir Path dir){
     refused("""
-      Refused request "Register" on path
-      [###]myProject
-      Nothing exists at that path.""", () -> Manager.projectFolder(dir.resolve("myProject"), folder(dir, "manager")));
+Refused request "Register" on path
+[###]myProject
+Nothing exists at that path.""", () -> Manager.projectFolder(dir.resolve("myProject"), folder(dir, "manager")));
   }
   @Test void theManagerFolderIsNotAProject(@TempDir Path dir){
     var managerDir= folder(dir, "manager");
     refused("""
-      Fearless cannot keep track of this folder as a project.
+Fearless cannot keep track of this folder as a project.
 
-      The folder is:
-      [###]manager
-      The manager folder of this Fearless is:
-      [###]manager
-      The manager folder holds what Fearless remembers about your projects: it is
-      never part of a project, and no project is inside it.
-      """, () -> Manager.projectFolder(managerDir, managerDir));
+The folder is:
+[###]manager
+The manager folder of this Fearless is:
+[###]manager
+The manager folder holds what Fearless remembers about your projects: it is
+never part of a project, and no project is inside it.
+""", () -> Manager.projectFolder(managerDir, managerDir));
   }
   @Test void aFileInTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     var managerDir= folder(dir, "manager");
@@ -110,13 +110,13 @@ final class ManagerFolderTest{
   }
   @Test void theRootOfADriveIsNotAProject(@TempDir Path dir){
     refused("""
-      Fearless cannot keep track of the root of a drive or of the file system as a
-      project.
+Fearless cannot keep track of the root of a drive or of the file system as a
+project.
 
-      The folder is:
-      [###]
-      Put the project in a folder inside it, and make that folder the project
-      folder.
-      """, () -> Manager.projectFolder(dir.getRoot(), folder(dir, "manager")));
+The folder is:
+[###]
+Put the project in a folder inside it, and make that folder the project
+folder.
+""", () -> Manager.projectFolder(dir.getRoot(), folder(dir, "manager")));
   }
 }

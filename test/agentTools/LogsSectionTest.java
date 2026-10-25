@@ -296,12 +296,12 @@ final class LogsSectionTest extends ManagerTest{
     var diary= files.resolve("diary");
     Fs.writeUtf8(diary.resolve("diary.fearless"), "\n");
     Fs.writeUtf8(diary.resolve("_diary").resolve("_rank_app.fear"), """
-      use base.Main as Main;
-      use base.FileLog as FileLog;
+use base.Main as Main;
+use base.FileLog as FileLog;
 
-      Diary: FileLog{"diary"}
-      Write: Main{sys -> Diary.log("dear diary")}
-      """);
+Diary: FileLog{"diary"}
+Write: Main{sys -> Diary.log("dear diary")}
+""");
     start();
     managerShown.go();
     toFiles();

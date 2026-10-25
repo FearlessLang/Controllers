@@ -66,15 +66,15 @@ final class ManagerTest{
   @BeforeAll static void child(){
     var src= classes.resolve("Child.java");
     Fs.writeUtf8(src, """
-      public class Child{
-        public static void main(String[] a) throws Exception{
-          System.out.print(a[0]+"\\n");
-          System.out.flush();
-          Thread.sleep(Long.parseLong(a[2]));
-          System.exit(Integer.parseInt(a[1]));
-        }
-      }
-      """);
+public class Child{
+  public static void main(String[] a) throws Exception{
+    System.out.print(a[0]+"\\n");
+    System.out.flush();
+    Thread.sleep(Long.parseLong(a[2]));
+    System.exit(Integer.parseInt(a[1]));
+  }
+}
+""");
     Fs.runTool("javac", List.of("-d", classes.toString(), src.toString()));
     FactsTest.baseCache(classes);
   }
@@ -302,10 +302,10 @@ final class ManagerTest{
     send(m, "Run", "hello", "hello.Hello");
     idle(m);
     same("""
-      --- running hello.Hello ---
-      ran hello.Hello
-      --- hello.Hello exited with 0 after [###]s ---
-      """, view.out(hello));
+--- running hello.Hello ---
+ran hello.Hello
+--- hello.Hello exited with 0 after [###]s ---
+""", view.out(hello));
     assertEquals(List.of(hello, hello), view.cleared);
     assertEquals(List.of(), project(m, hello).entry().mains());
     assertFalse(Files.exists(hello.resolve(Facts.outDir).resolve("compile_error.txt")));
@@ -356,11 +356,11 @@ final class ManagerTest{
     send(m, "Terminate", "hello");
     idle(m);
     same("""
-      --- running hello.Slow ---
-      ran hello.Slow
-      --- terminating hello.Slow ---
-      --- hello.Slow exited with [###] after [###]s ---
-      """, view.out(hello));
+--- running hello.Slow ---
+ran hello.Slow
+--- terminating hello.Slow ---
+--- hello.Slow exited with [###] after [###]s ---
+""", view.out(hello));
     assertEquals(List.of(
       "Refused request \"Run\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
       "Refused request \"Compile\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
@@ -387,13 +387,13 @@ final class ManagerTest{
     send(m, "Run", "hello", "hello.Three hello.One");
     idle(m);
     same("""
-      --- running hello.One ---
-      ran hello.One
-      --- hello.One exited with 0 after [###]s ---
-      --- running hello.Three ---
-      ran hello.Three
-      --- hello.Three exited with 0 after [###]s ---
-      """, view.out(hello));
+--- running hello.One ---
+ran hello.One
+--- hello.One exited with 0 after [###]s ---
+--- running hello.Three ---
+ran hello.Three
+--- hello.Three exited with 0 after [###]s ---
+""", view.out(hello));
     assertEquals(List.of("hello.One", "hello.Three"), project(m, hello).selectedMains());
     same("[###]\"mains\": [\"hello.One\", \"hello.Three\"][###]", info(dir));
   }
@@ -405,17 +405,17 @@ final class ManagerTest{
     send(m, "Run", "hello", "");
     send(m, "Run", "hello", "hello.Nope hello.One");
     var none= """
-      Refused request "Run" on project "hello".
-      The request names no main.
-      The mains are:
-        hello.One
-        hello.Two""";
+Refused request "Run" on project "hello".
+The request names no main.
+The mains are:
+  hello.One
+  hello.Two""";
     assertEquals(List.of(none, none, """
-      Refused request "Run" on project "hello".
-      The request names "hello.Nope", and "hello.Nope" is not a main of project "hello".
-      The mains are:
-        hello.One
-        hello.Two"""), view.refused);
+Refused request "Run" on project "hello".
+The request names "hello.Nope", and "hello.Nope" is not a main of project "hello".
+The mains are:
+  hello.One
+  hello.Two"""), view.refused);
     assertEquals(List.of(hello), view.cleared);
   }
   @Test void forgettingAProjectForgetsItAndLeavesItsFolder(@TempDir Path dir){
@@ -435,10 +435,10 @@ final class ManagerTest{
     send(m, "Compile", hello.toString());
     assertEquals(List.of("hello "+hello), listed(m));
     assertEquals("""
-      Refused request "Compile" on project "other".
-      No project is named "other".
-      The projects are:
-        hello""", view.refused.getFirst());
+Refused request "Compile" on project "other".
+No project is named "other".
+The projects are:
+  hello""", view.refused.getFirst());
     assertTrue(view.refused.get(1).startsWith("Refused request \"Compile\" on project \""+hello+"\".\nNo project is named"));
   }
   @Test void aRequestTheManagerDoesNotKnowOrWithTheWrongArgumentsIsRefused(@TempDir Path dir){
@@ -590,13 +590,13 @@ final class ManagerTest{
     send(m, "Run", "hello", "hello.One hello.Two");
     idle(m);
     same("""
-      --- running hello.One ---
-      ran hello.One under hello.NoNet hello.NoGui
-      --- hello.One exited with 0 after [###]s ---
-      --- running hello.Two ---
-      ran hello.Two
-      --- hello.Two exited with 0 after [###]s ---
-      """, view.out(hello));
+--- running hello.One ---
+ran hello.One under hello.NoNet hello.NoGui
+--- hello.One exited with 0 after [###]s ---
+--- running hello.Two ---
+ran hello.Two
+--- hello.Two exited with 0 after [###]s ---
+""", view.out(hello));
     send(m, "Attenuate", "hello", "hello.One hello.NoGui hello.NoGui");
     assertEquals(Map.of("hello.One", List.of("hello.NoGui", "hello.NoGui")), project(m, hello).entry().attenuators());
     send(m, "Attenuate", "hello", "hello.One hello.NoNet hello.NoGui");
@@ -618,19 +618,19 @@ final class ManagerTest{
     send(m, "Attenuate", "hello", "hello.Old hello.NoGui");
     send(m, "Run", "hello", "hello.One");
     assertEquals("""
-      Refused request "Run" on project "hello".
-      "attenuators" of project "hello" names "hello.Old", and "hello.Old" is not a main of project "hello".
-      The mains are:
-        hello.One
-        hello.Two""", view.refused.getLast());
+Refused request "Run" on project "hello".
+"attenuators" of project "hello" names "hello.Old", and "hello.Old" is not a main of project "hello".
+The mains are:
+  hello.One
+  hello.Two""", view.refused.getLast());
     send(m, "Attenuate", "hello", "hello.Old");
     send(m, "Attenuate", "hello", "hello.Two hello.NoGui hello.NoNet");
     send(m, "Run", "hello", "hello.One");
     assertEquals("""
-      Refused request "Run" on project "hello".
-      Main "hello.Two" is attenuated by "hello.NoNet", and "hello.NoNet" is not an attenuator of project "hello".
-      The attenuators are:
-        hello.NoGui""", view.refused.getLast());
+Refused request "Run" on project "hello".
+Main "hello.Two" is attenuated by "hello.NoNet", and "hello.NoNet" is not an attenuator of project "hello".
+The attenuators are:
+  hello.NoGui""", view.refused.getLast());
     assertEquals(2, view.refused.size());
     same("--- compiling hello ---\ncompiled\n--- compile done ---\n", view.out(hello));
     send(m, "Attenuate", "hello", "hello.Two hello.NoGui");
@@ -814,18 +814,18 @@ final class ManagerTest{
     send(m, "Register", TaggedText.of(partly.toString()));
     send(m, "ConnectEclipse", TaggedText.of(closed.toString()));
     same("""
-      Refused request "Register" on path
-      [###]closed
-      The folder can not be read or changed: access denied: [###]closed[###]""", view.refused.get(0));
+Refused request "Register" on path
+[###]closed
+The folder can not be read or changed: access denied: [###]closed[###]""", view.refused.get(0));
     same("[###]readOnly\nThe folder can not be read or changed: access denied: [###]readOnly[###]", view.refused.get(1));
     same("[###]data\nThe folder can not be read or changed: access denied: [###]a.built[###]", view.refused.get(2));
     same("Eclipse is not connected from\n[###]closed\naccess denied: [###]closed", view.refused.get(3));
     assertEquals(List.of("partly "+partly), listed(m));
     same("""
-      The folder of this project can not be read:
-      [###]partly
-      access denied: [###]hidden
-      Give Fearless access to it, or forget this project.""", project(m, partly).problem().orElseThrow());
+The folder of this project can not be read:
+[###]partly
+access denied: [###]hidden
+Give Fearless access to it, or forget this project.""", project(m, partly).problem().orElseThrow());
     var again= manager(dir);
     again.settle();
     assertEquals(Project.State.dataInvalid, project(again, partly).state());
@@ -1195,8 +1195,8 @@ final class ManagerTest{
     infos.put("hello", claiming("hello.Hello", "", "foo"));
     compiled(m, "hello");
     var error= """
-      No free extension is left for "base.Shortcut[base.IconsConflict]" of main "hello.Hello": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager.
-      """;
+No free extension is left for "base.Shortcut[base.IconsConflict]" of main "hello.Hello": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager.
+""";
     same("--- compiling hello ---\ncompiled\n"+error+"--- compile failed ---\n", view.out(hello));
     same(error, compileError(hello));
     var p= project(m, hello);
@@ -1387,11 +1387,11 @@ final class ManagerTest{
     send(m, "Show", "hello");
     idle(m);
     same("""
-      --- running hello.Slow ---
-      ran hello.Slow
-      --- hello.Slow exited with [###] after [###]s ---
-      Some files inside the project "hello" were updated while main "hello.Slow" was running.
-      """, view.out(hello));
+--- running hello.Slow ---
+ran hello.Slow
+--- hello.Slow exited with [###] after [###]s ---
+Some files inside the project "hello" were updated while main "hello.Slow" was running.
+""", view.out(hello));
     assertEquals(shown+2, view.shown);
     assertFalse(Files.exists(hello.resolve(Facts.outDir)));
     assertEquals(Project.State.codeNoCache, project(m, hello).state());
@@ -1412,30 +1412,30 @@ final class ManagerTest{
   }
   private static String userLocked(String... lines){
     return """
-      Fearless cannot become the program that opens the kinds of file listed
-      below.
+Fearless cannot become the program that opens the kinds of file listed
+below.
 
-      Your system remembers a choice you made by hand for these kinds of file,
-      and no program can change or remove that choice, including this one.
-      Fearless stopped before touching anything: your system is exactly as it
-      was.
+Your system remembers a choice you made by hand for these kinds of file,
+and no program can change or remove that choice, including this one.
+Fearless stopped before touching anything: your system is exactly as it
+was.
 
-      The only way to clear it is Settings, Apps, Default apps, Reset - which
-      resets every app default on your machine, not only this one.
+The only way to clear it is Settings, Apps, Default apps, Reset - which
+resets every app default on your machine, not only this one.
 
-      What is locked:
-      """+String.join("\n", lines);
+What is locked:
+"""+String.join("\n", lines);
   }
   private static String notOurs(String... lines){
     return """
-      Fearless cannot become the program that opens the kinds of file listed
-      below.
+Fearless cannot become the program that opens the kinds of file listed
+below.
 
-      Another program already answers for these kinds of file. Fearless
-      stopped before touching anything: your system is exactly as it was.
+Another program already answers for these kinds of file. Fearless
+stopped before touching anything: your system is exactly as it was.
 
-      What stood in the way:
-      """+String.join("\n", lines);
+What stood in the way:
+"""+String.join("\n", lines);
   }
   @Test void theDesktopOpensEachCapturedExtensionWithItsIconOrTheConflictIcon(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -1697,12 +1697,12 @@ final class ManagerTest{
     assertEquals(Optional.of(other), m.state().selected());
     send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "hello", "hello.Other");
     same("""
-      Refused request to open
-      [###]a.foo
-      Main "hello.Other" of project "hello" does not open files with the extension "foo".
-      The mains opening them are:
-        hello::hello.Hello
-        other::other.Hello""", view.refused.getLast());
+Refused request to open
+[###]a.foo
+Main "hello.Other" of project "hello" does not open files with the extension "foo".
+The mains opening them are:
+  hello::hello.Hello
+  other::other.Hello""", view.refused.getLast());
     send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "hello");
     same("[###]\"OpenWithOrShortcut\"[###]", view.refused.getLast());
   }
@@ -1743,9 +1743,9 @@ final class ManagerTest{
     open(m, doc(dir, "page.htm"));
     open(m, dir.resolve("desk"));
     same("""
-      Refused request to open
-      [###]a.txt
-      No main opens files with the extension "txt".""", view.refused.get(0));
+Refused request to open
+[###]a.txt
+No main opens files with the extension "txt".""", view.refused.get(0));
     same("Refused request to open\n[###]gone.foo\nNo file is at that path.", view.refused.get(1));
     same("Refused request to open\n[###]e.foo\nThe file \"e.foo\" is empty. File associations do not reliably work for empty files on all operating systems.", view.refused.get(2));
     same("[###]page.htm\nNo main opens files with the extension \"htm\".", view.refused.get(3));
@@ -1762,11 +1762,11 @@ final class ManagerTest{
     same("--- compiling hello ---\ncompiled\n"+error+"\n--- compile failed ---\n", view.out(hello));
     same(error, compileError(hello));
     same("""
-      Add these system extensions to "systemExtensions" of projects.info?
-        "htm" for "base.OpenWith[hello.IconsFoo,\\"htm\\"]" of main "hello.Hello" of project "hello"
+Add these system extensions to "systemExtensions" of projects.info?
+  "htm" for "base.OpenWith[hello.IconsFoo,\\"htm\\"]" of main "hello.Hello" of project "hello"
 
-      The manager becomes the program opening every file with these extensions,
-      in place of the program opening them now. The project then needs compiling again.""", String.join("\n", view.asked));
+The manager becomes the program opening every file with these extensions,
+in place of the program opening them now. The project then needs compiling again.""", String.join("\n", view.asked));
     assertEquals(Map.of(), claimed(m));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
     assertEquals(List.of(List.of("htm")), view.offered);

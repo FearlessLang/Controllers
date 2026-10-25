@@ -183,9 +183,9 @@ final class FactsTest{
   }
   @Test void aMissingFolderIsAProblemNotACrash(@TempDir Path dir){
     same("""
-      The folder of this project does not exist:
-      [###]gone
-      Restore it, or forget this project.""", facts(dir.resolve("gone"), "gone", Kind.code).problem().orElseThrow());
+The folder of this project does not exist:
+[###]gone
+Restore it, or forget this project.""", facts(dir.resolve("gone"), "gone", Kind.code).problem().orElseThrow());
   }
   @Test void aFolderDeletedWhileItIsCheckedIsMissing(@TempDir Path dir){
     assertTimeoutPreemptively(Duration.ofSeconds(60), () -> {
@@ -210,10 +210,10 @@ final class FactsTest{
     Disk.noRead(hidden);
     Assumptions.assumeFalse(Files.isReadable(hidden));
     same("""
-      The folder of this project can not be read:
-      [###]someProject
-      access denied: [###]_hello
-      Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
+The folder of this project can not be read:
+[###]someProject
+access denied: [###]_hello
+Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
     Disk.allow(hidden);
   }
   @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
@@ -234,31 +234,31 @@ final class FactsTest{
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"), "");
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("b.png"), "");
     err("""
-      More than one .png file was found for this project's icon.
+More than one .png file was found for this project's icon.
 
-      Looked in:
-      [###]icon
+Looked in:
+[###]icon
 
-      Found:
-        a.png
-        b.png
+Found:
+  a.png
+  b.png
 
-      Keep exactly one .png file there.
-      """, () -> Facts.icon(project));
+Keep exactly one .png file there.
+""", () -> Facts.icon(project));
     assertFalse(facts(project, "someproject", Kind.code).problem().isEmpty());
   }
   @Test void anIconThatIsNotAnImageIsAProjectProblem(@TempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"), "not an image");
     err("""
-      The icon of this project is not a PNG image Fearless can read.
+The icon of this project is not a PNG image Fearless can read.
 
-      File:
-      [###]a.png
+File:
+[###]a.png
 
-      The icon of a project is the only .png file in its ".config/icon" folder:
-      replace that file with a PNG image, or remove it.
-      """, () -> Facts.icon(project));
+The icon of a project is the only .png file in its ".config/icon" folder:
+replace that file with a PNG image, or remove it.
+""", () -> Facts.icon(project));
     assertTrue(facts(project, "someproject", Kind.code).problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }
   @Test void aBrokenIconDoesNotHideAnUpToDateCache(@TempDir Path dir){

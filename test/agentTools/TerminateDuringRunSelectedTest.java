@@ -322,13 +322,13 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     var chain= files.resolve("chain");
     Fs.writeUtf8(chain.resolve("chain.fearless"), "\n");
     Fs.writeUtf8(chain.resolve("_chain").resolve("_rank_app.fear"), """
-      use base.Main as Main;
-      use base.Consumer as Consumer;
-      use base.Frame as Frame;
-      Show: Main{sys -> sys.gui.run Note}
-      Tell: Main{sys -> sys.out.println("told")}
-      Note: Consumer[mut Frame]{:: .title "chain" .content.pane{:: .label{:: .text "terminate this program" } } }
-      """);
+use base.Main as Main;
+use base.Consumer as Consumer;
+use base.Frame as Frame;
+Show: Main{sys -> sys.gui.run Note}
+Tell: Main{sys -> sys.out.println("told")}
+Note: Consumer[mut Frame]{:: .title "chain" .content.pane{:: .label{:: .text "terminate this program" } } }
+""");
     var bare= look();
     start();
     managerShown.go();
@@ -356,17 +356,17 @@ final class TerminateDuringRunSelectedTest extends ManagerTest{
     same(before, program);
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "chain": {
-            "path": "Str:%s",
-            "kind": "code",
-            "mains": ["chain.Show", "chain.Tell"]
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(chain)));
+{
+  "projects": {
+    "chain": {
+      "path": "Str:%s",
+      "kind": "code",
+      "mains": ["chain.Show", "chain.Tell"]
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(chain)));
     outputArea.go();
     var output= region;
     assert differing(running, look(), output) > 0;

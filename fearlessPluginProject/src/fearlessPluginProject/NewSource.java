@@ -56,12 +56,12 @@ public final class NewSource extends AbstractHandler{
   private static final String uses= Stream.of("Main", "UnitTests", "Test", "Void", "Bool", "Nat", "Int", "Float", "Str", "List", "Lists", "Opt", "Opts", "Block", "Error", "Debug")
     .map(t -> "use base."+t+" as "+t+";\n").collect(Collectors.joining());
   private static String tests(String name, String base){ return """
-    %s: %sUnitTests{::
-      .test Addition: %sTest{:: .check{(2 + 3).assertEq 5}}
-      .test Multiplication: %sTest{:: .check{(4 * 5).assertEq 20}}
-      .test LeftToRight: %sTest{:: .check{(2 + 3 * 4).assertEq 20}}
-      }
-    """.formatted(name, base, base, base, base); }
+%s: %sUnitTests{::
+  .test Addition: %sTest{:: .check{(2 + 3).assertEq 5}}
+  .test Multiplication: %sTest{:: .check{(4 * 5).assertEq 20}}
+  .test LeftToRight: %sTest{:: .check{(2 + 3 * 4).assertEq 20}}
+  }
+""".formatted(name, base, base, base, base); }
   private static final class Dialog extends TitleAreaDialog{
     private final IWorkbenchPage page;
     private final IProject project;

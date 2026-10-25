@@ -521,10 +521,10 @@ final class LinkWriteTest extends ManagerTest{
     editsSaved.go();
     stabilize();
     var edits= registry(vault, teller, """
-      ,
-            "edits": {
-              "vault": ["Coin"]
-            }""");
+,
+      "edits": {
+        "vault": ["Coin"]
+      }""");
     checkContent(info, edits);
     var before= look();
     readField.go();
@@ -557,19 +557,19 @@ final class LinkWriteTest extends ManagerTest{
   }
   static String registry(Path vault, Path teller, String links){
     return """
-      {
-        "projects": {
-          "vault": {
-            "path": "Str:%s",
-            "kind": "data:readWrite"
-          },
-          "teller": {
-            "path": "Str:%s",
-            "kind": "code"%s
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(vault), slashed(teller), links);
+{
+  "projects": {
+    "vault": {
+      "path": "Str:%s",
+      "kind": "data:readWrite"
+    },
+    "teller": {
+      "path": "Str:%s",
+      "kind": "code"%s
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(vault), slashed(teller), links);
   }
 }

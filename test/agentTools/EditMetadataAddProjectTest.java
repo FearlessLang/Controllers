@@ -230,8 +230,8 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     var project= project("helloWorld");
     var other= project("helloStackTraces");
     var both= """
-      {"projects": {"hello_world": {"path": "Str:%s", "kind": "idle"}, "start": {"path": "Str:%s", "kind": "idle"}}, "systemExtensions": []}
-      """.formatted(slashed(project), slashed(other));
+{"projects": {"hello_world": {"path": "Str:%s", "kind": "idle"}, "start": {"path": "Str:%s", "kind": "idle"}}, "systemExtensions": []}
+""".formatted(slashed(project), slashed(other));
     var bare= look();
     start();
     managerShown.go();
@@ -249,20 +249,20 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     bothSaved.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "idle"
-          },
-          "start": {
-            "path": "Str:%s",
-            "kind": "idle"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project), slashed(other)));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "idle"
+    },
+    "start": {
+      "path": "Str:%s",
+      "kind": "idle"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project), slashed(other)));
     secondTile.go();
     secondShown.go();
     var before= look();

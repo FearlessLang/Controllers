@@ -235,16 +235,16 @@ final class TerminateTest extends ManagerTest{
     same(before, program);
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "start": {
-            "path": "Str:%s",
-            "kind": "code"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(gui)));
+{
+  "projects": {
+    "start": {
+      "path": "Str:%s",
+      "kind": "code"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(gui)));
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

@@ -28,11 +28,11 @@ public final class Report{
   //-- the arguments of the manager program
   public static String tooManyArguments(List<String> args){
     return """
-      Fearless was started with %d arguments, but without a first argument starting with
-      "FearlessCommand" it takes at most one: the file to open.
+Fearless was started with %d arguments, but without a first argument starting with
+"FearlessCommand" it takes at most one: the file to open.
 
-      The arguments are:
-      %s""".formatted(args.size(), Join.of(args.stream().map(UserError::path), "", "\n", "", ""));
+The arguments are:
+%s""".formatted(args.size(), Join.of(args.stream().map(UserError::path), "", "\n", "", ""));
   }
   public static String reservedVerb(String arg){ return "Fearless was started with the argument "+disp(arg)+", but "+disp(arg)+" is not a request: only a running Fearless writes the messages \"InvalidCall\" and \"FatalError\"."; }
   public static String argumentWithNewline(List<String> args){
@@ -97,26 +97,26 @@ public final class Report{
   }
   public static String managerFolderNotAProject(Path folder, Path managerDir){
     return """
-      Fearless cannot keep track of this folder as a project.
+Fearless cannot keep track of this folder as a project.
 
-      The folder is:
-      %s
-      The manager folder of this Fearless is:
-      %s
-      The manager folder holds what Fearless remembers about your projects: it is
-      never part of a project, and no project is inside it.
-      """.formatted(path(folder.toString()), path(managerDir.toString()));
+The folder is:
+%s
+The manager folder of this Fearless is:
+%s
+The manager folder holds what Fearless remembers about your projects: it is
+never part of a project, and no project is inside it.
+""".formatted(path(folder.toString()), path(managerDir.toString()));
   }
   public static String projectFolderIsRoot(Path root){
     return """
-      Fearless cannot keep track of the root of a drive or of the file system as a
-      project.
+Fearless cannot keep track of the root of a drive or of the file system as a
+project.
 
-      The folder is:
-      %s
-      Put the project in a folder inside it, and make that folder the project
-      folder.
-      """.formatted(path(root.toString()));
+The folder is:
+%s
+Put the project in a folder inside it, and make that folder the project
+folder.
+""".formatted(path(root.toString()));
   }
   public static String registerRefused(Path folder, IOException e){
     return refusedPath("Register", folder)+"\nThe folder can not be read or changed: "+fileFailure(e);
@@ -129,27 +129,27 @@ public final class Report{
   public static String markerMissing(Path folder, String marker){ return "The marker file \""+marker+"\" is missing from\n"+path(folder.toString())+"\nRestore it, or forget and register this project folder again."; }
   public static UserError projectIconsMany(Path dir, List<Path> found){
     return new UserError("""
-      More than one .png file was found for this project's icon.
+More than one .png file was found for this project's icon.
 
-      Looked in:
-      %s
+Looked in:
+%s
 
-      Found:
-      %s
+Found:
+%s
 
-      Keep exactly one .png file there.
-      """.formatted(path(dir.toString()), Join.of(found.stream().map(p -> "  "+p.getFileName()), "", "\n", "", "")));
+Keep exactly one .png file there.
+""".formatted(path(dir.toString()), Join.of(found.stream().map(p -> "  "+p.getFileName()), "", "\n", "", "")));
   }
   public static UserError projectIconUnreadable(Path icon){
     return new UserError("""
-      The icon of this project is not a PNG image Fearless can read.
+The icon of this project is not a PNG image Fearless can read.
 
-      File:
-      %s
+File:
+%s
 
-      The icon of a project is the only .png file in its ".config/icon" folder:
-      replace that file with a PNG image, or remove it.
-      """.formatted(path(icon.toString())));
+The icon of a project is the only .png file in its ".config/icon" folder:
+replace that file with a PNG image, or remove it.
+""".formatted(path(icon.toString())));
   }
   public static String noCache(){ return "This project has no compilation cache."; }
   public static String stalePackages(List<String> pkgs){ return "The compilation cache of the package"+(pkgs.size() == 1 ? " " : "s ")+quoted(pkgs)+" is out of date."; }

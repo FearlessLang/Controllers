@@ -179,16 +179,16 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     codeShown.go();
     var selected= look();
     var remembered= """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "code"
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "code"
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project));
     stabilize();
     checkContent(info, remembered);
     managerMenu.go();

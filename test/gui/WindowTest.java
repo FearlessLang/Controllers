@@ -28,12 +28,12 @@ final class WindowTest{
   }
   @Test void anyOtherFailureWhileMakingTheWindowReportsItsOwnReason(){
     Err.strCmp("""
-      Fearless could not open its window.
+Fearless could not open its window.
 
-      Fearless needs to show a window, but opening the window failed.
+Fearless needs to show a window, but opening the window failed.
 
-      Reported reason:
-      no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new IllegalStateException("no screen"); })).getMessage());
+Reported reason:
+no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new IllegalStateException("no screen"); })).getMessage());
   }
   @Test void documentationThatIsNotThereIsSaidToTheManager(@TempDir Path dir){
     var said= new ArrayList<String>();

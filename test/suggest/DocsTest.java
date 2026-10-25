@@ -15,45 +15,45 @@ final class DocsTest{
   static{ Err.setUp(AssertionFailedError.class, Assertions::assertEquals, Assertions::assertTrue); }
   static void same(String expected, String actual){ Err.strCmp(expected, actual); }
   static final String txt= """
-    package base
+package base
 
-    Nat : Sealed, ToStr
-    \tread !=(read Nat):Bool
-        from: DataType[Nat,Nat]!=
-    \t+(Nat):Nat
-        ``this + x`` returns the checked sum.
-        example:
-            .check{(2 + 3) .assertEq 5}
-    \t.aluAnd(Nat):Nat
-    \t.str:Str
+Nat : Sealed, ToStr
+\tread !=(read Nat):Bool
+    from: DataType[Nat,Nat]!=
+\t+(Nat):Nat
+    ``this + x`` returns the checked sum.
+    example:
+        .check{(2 + 3) .assertEq 5}
+\t.aluAnd(Nat):Nat
+\t.str:Str
 
-    NatMatch[R:*]
-    \t.some(Nat):R
-    \tmut .map[R:*](mut MF[T,R]):mut Action[R]
+NatMatch[R:*]
+\t.some(Nat):R
+\tmut .map[R:*](mut MF[T,R]):mut Action[R]
 
-    Block : Sealed
-    \t#[R:**]:mut Block[R]
+Block : Sealed
+\t#[R:**]:mut Block[R]
 
-    Block[R:*] : Sealed
-      The block of a result R.
+Block[R:*] : Sealed
+  The block of a result R.
 
-      Blocks chain.
-    \tmut .return(mut MF[R]):R
+  Blocks chain.
+\tmut .return(mut MF[R]):R
 
-        The result.
-    \t.done:R
+    The result.
+\t.done:R
 
-    Pair[A:imm,read,B:*]
-    \t.a:A
+Pair[A:imm,read,B:*]
+\t.a:A
 
-    Gui
-      Text is drawn with fonts bundled in the standard library (Noto Sans, one Noto font per major script,
-      Noto Sans Symbols/Math): a character outside those fonts is drawn as a box [everywhere.
-      example:
-        .check{Gui.run{}}
-    \tmut .run(mut Consumer[mut Frame]):Void
-        ``this.run f`` runs the gui.
-    """;
+Gui
+  Text is drawn with fonts bundled in the standard library (Noto Sans, one Noto font per major script,
+  Noto Sans Symbols/Math): a character outside those fonts is drawn as a box [everywhere.
+  example:
+    .check{Gui.run{}}
+\tmut .run(mut Consumer[mut Frame]):Void
+    ``this.run f`` runs the gui.
+""";
   static final Docs docs= new Docs(txt);
   static String method(String type, int arity, String name, int n){ return docs.method(type, arity, name, n).orElseThrow(); }
   @Test void aMethodLineComesWithItsDocumentation(){

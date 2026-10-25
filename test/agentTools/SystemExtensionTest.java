@@ -291,16 +291,16 @@ final class SystemExtensionTest extends ManagerTest{
     allowed.go();
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "opens": {
-            "path": "Str:%s",
-            "kind": "code"
-          }
-        },
-        "systemExtensions": ["fzz"]
-      }
-      """.formatted(slashed(opens)));
+{
+  "projects": {
+    "opens": {
+      "path": "Str:%s",
+      "kind": "code"
+    }
+  },
+  "systemExtensions": ["fzz"]
+}
+""".formatted(slashed(opens)));
     compileAgain.go();
     compiled.go();
     var compiledLook= look();

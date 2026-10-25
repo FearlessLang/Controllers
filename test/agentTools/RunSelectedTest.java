@@ -269,17 +269,17 @@ final class RunSelectedTest extends ManagerTest{
     changed(before, output);
     stabilize();
     checkContent(info, """
-      {
-        "projects": {
-          "hello_world": {
-            "path": "Str:%s",
-            "kind": "code",
-            "mains": ["hello.Hello1", "hello.Hello4"]
-          }
-        },
-        "systemExtensions": []
-      }
-      """.formatted(slashed(project)));
+{
+  "projects": {
+    "hello_world": {
+      "path": "Str:%s",
+      "kind": "code",
+      "mains": ["hello.Hello1", "hello.Hello4"]
+    }
+  },
+  "systemExtensions": []
+}
+""".formatted(slashed(project)));
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
