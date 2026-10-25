@@ -112,7 +112,9 @@ final class Panel{
     return new JScrollPane(view){
       @Override public Dimension getPreferredSize(){
         var d= super.getPreferredSize();
-        return new Dimension(d.width, Math.max(40, Math.min(d.height, root.getHeight()/2)));
+        var wide= getViewport().getWidth() > 0 && view.getPreferredSize().width > getViewport().getWidth();
+        var bar= wide ? getHorizontalScrollBar().getPreferredSize().height : 0;
+        return new Dimension(d.width, Math.max(40, Math.min(d.height+bar, root.getHeight()/2)));
       }
       @Override public Dimension getMaximumSize(){ return new Dimension(Integer.MAX_VALUE, getPreferredSize().height); }
     };
@@ -286,12 +288,13 @@ final class Panel{
     if (!data.isVisible()){ return; }
     Stream.concat(p.knownDataRead().stream(), p.entry().mounts().keySet().stream()).distinct().sorted().forEach(t -> fillMount(p, t, all));
     if (!p.kind().isData()){ return; }
-    dataBox.add(row(0, new JLabel("Mounted on:")));
-    all.forEach(o -> o.entry().mounts().forEach((t, d) -> { if (d.equals(p.alias())){ dataBox.add(row(16, new JLabel(o.alias()+"::"+t))); } }));
+    var mounted= all.stream().flatMap(o -> o.entry().mounts().entrySet().stream().filter(m -> m.getValue().equals(p.alias())).map(m -> o.alias()+"::"+m.getKey())).toList();
+    dataBox.add(row(0, new JLabel(mounted.isEmpty() ? "Mounted on nothing" : "Mounted on:")));
+    mounted.forEach(m -> dataBox.add(row(16, new JLabel(m))));
     var free= all.stream().filter(o -> o.kind() == Kind.code).flatMap(o -> o.knownDataRead().stream().filter(t -> !o.entry().mounts().containsKey(t) && fits(o, t, p.kind())).map(t -> o.alias()+"::"+t)).toArray(String[]::new);
     if (free.length == 0){ return; }
     var combo= new JComboBox<>(free);
-    dataBox.add(row(16, combo, small("Mount", () -> mountFree(((String)combo.getSelectedItem()).split("::"), p.alias()))));
+    dataBox.add(row(0, new JLabel("Mount on"), combo, small("Mount", () -> mountFree(((String)combo.getSelectedItem()).split("::"), p.alias()))));
   }
   private void fillMount(Project p, String type, List<Project> all){
     var mounted= p.entry().mounts().get(type);
