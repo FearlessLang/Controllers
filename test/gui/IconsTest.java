@@ -28,8 +28,8 @@ final class IconsTest{
   static Project project(Path folder, Kind kind){
     var alias= folder.getFileName().toString().toLowerCase();
     Fs.writeUtf8(folder.resolve(alias+".fearless"), "");
-    var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), Map.of(), Map.of(), Map.of());
-    return new Project(entry, Facts.of(entry.path(), alias, kind, folder.resolve("unused")), Optional.empty(), Project.noClaims, Optional.empty(), "");
+    var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), Map.of(), Map.of());
+    return new Project(entry, Facts.of(entry.path(), alias, kind, folder.resolve("unused")), Optional.empty(), Project.noClaims, "");
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -45,7 +45,7 @@ final class IconsTest{
     Fs.ensureDir(file.getParent());
     Fs.ofV(() -> ImageIO.write(img, "png", file.toFile()));
   }
-  private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.of(project(folder, Kind.dataReadOnly), 64); }
+  private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.of(project(folder, Kind.dataRead), 64); }
   @Test void theIconIsThePngInDotConfigIcon(@TempDir Path dir){
     var project= folder(dir, "someProject");
     png(project.resolve(".config").resolve("icon").resolve("whatever.png"), Color.red);
@@ -62,7 +62,7 @@ final class IconsTest{
     var project= folder(dir, "someProject");
     png(project.resolve(".config").resolve("icon").resolve("a.png"), Color.red);
     png(project.resolve(".config").resolve("icon").resolve("b.png"), Color.blue);
-    assertEquals(Project.State.dataInvalid, project(project, Kind.dataReadOnly).state());
+    assertEquals(Project.State.dataReadInvalid, project(project, Kind.dataRead).state());
     assertEquals(64, icon(project).getWidth());
   }
   @Test void withNoIconOneIsMadeUpOfTheRightSize(@TempDir Path dir){

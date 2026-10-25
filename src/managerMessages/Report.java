@@ -77,17 +77,20 @@ The arguments are:
     return refused("Run", name)+"\nMain "+disp(main)+" is attenuated by "+disp(attenuator)+", and "+disp(attenuator)+" is not an attenuator of project "+disp(name)+"."+Join.of(attenuators.stream().map(a -> "\n  "+a), "\nThe attenuators are:", "", "", "\nThe project has no attenuator.");
   }
   public static String noMainAttenuated(String name){ return refused("Attenuate", name)+"\nThe request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all."; }
-  public static String unknownKind(String name, String text){ return refused("Kind", name)+"\n"+disp(text)+" is not a kind: the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."; }
+  public static String unknownKind(String name, String text){ return refused("Kind", name)+"\n"+disp(text)+" is not a kind: the kinds are \"idle\", \"code\", \"dataRead\" and \"dataEdit\"."; }
   public static String kindWhileBusy(String name, String kind, String job){ return "Refused request to change the kind of project "+disp(name)+" to "+disp(kind)+".\n"+running(name, job); }
   public static String removedWhileBusy(String name, String job){ return "Refused request to remove project "+disp(name)+".\n"+running(name, job); }
-  public static String malformedLink(String name, String link){ return refused("Link", name)+"\n"+disp(link)+" is not a link: a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link."; }
-  public static String linkMissing(String field, String name){ return "\""+field+"\" refers to \""+name+"\", but no project called \""+name+"\" is registered."; }
-  public static String linkWrongKind(String field, String name, String kind, boolean needsWrite){
-    var needed= needsWrite ? "\"data:readWrite\"" : "\"data:readOnly\" or \"data:readWrite\"";
-    return "\""+field+"\" refers to \""+name+"\", but the kind of \""+name+"\" is \""+kind+"\"; \""+field+"\" accepts only "+needed+".";
+  public static String malformedMount(String name, String mount){ return refused("Mount", name)+"\n"+disp(mount)+" is not a mount: a mount is the qualified name of a DataRead type, then the name of a data project, none to remove the mount of that DataRead type."; }
+  public static String mountsRefused(String name, List<String> problems){
+    return refused("Run", name)+"\nProject "+disp(name)+" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:"+Join.of(problems.stream().map(p -> "\n  "+p), "", "", "");
   }
-  public static String linkInvalid(String field, String name, String why){ return "\""+field+"\" refers to \""+name+"\", which is itself invalid:\n"+why; }
-  public static String grantsWhileRunning(String name, String job){ return "Refused request to change the data projects that project "+disp(name)+" reads or writes.\n"+running(name, job)+"\nThe data projects of a main stay the same while the main runs."; }
+  public static String notMounted(String type){ return "No data project is mounted on "+disp(type)+"."; }
+  public static String brokenMount(String type, String data, String why){ return "The mount of "+disp(data)+" on "+disp(type)+" is broken: "+why; }
+  public static String mountNotDataRead(String type, String name){ return disp(type)+" is not a DataRead type of project "+disp(name)+"."; }
+  public static String mountNotRegistered(String data){ return "no project "+disp(data)+" is registered."; }
+  public static String mountNotData(String data, String kind){ return "the kind of project "+disp(data)+" is "+disp(kind)+", and only a project of kind \"dataRead\" or \"dataEdit\" is a data project."; }
+  public static String mountNotEditable(String data, String type){ return "the kind of project "+disp(data)+" is \"dataRead\", and "+disp(type)+" is a DataEdit type: only a project of kind \"dataEdit\" is mounted on a DataEdit type."; }
+  public static String grantsWhileRunning(String name, String job){ return "Refused request to change the data projects mounted on the DataRead types of project "+disp(name)+".\n"+running(name, job)+"\nThe data projects of a main stay the same while the main runs."; }
 
   //-- registering a folder
   public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link, and Fearless does not follow symbolic links:\n"+path(p.toString())); }
@@ -169,7 +172,6 @@ replace that file with a PNG image, or remove it.
   public static String infoOverlap(String name, String other){ return "\""+name+"\" has the same path as \""+other+"\", or one is inside the other; every file belongs to exactly one project."; }
   public static String infoProjectNotObject(String name){ return "The metadata of \""+name+"\" must be an object {...}."; }
   public static String infoUnknownAttribute(String key, List<String> keys){ return "Unknown project attribute \""+key+"\": the attributes of a project are "+quoted(keys)+"."; }
-  public static String infoTypeTwice(String type, String first, String second){ return "\""+type+"\" is in both "+first+" and "+second+": a type name is in one link only, since the code reaches one data project through it; a type name in \"edits\" also reads."; }
   public static String infoMissingPath(String name){ return "Project \""+name+"\" is missing its \"path\": the absolute path of the project folder."; }
   public static String infoEmptyPath(){ return "\"path\" cannot be empty: it is the absolute path of the project folder."; }
   public static String infoNotAPath(String why){ return "\"path\" is not a path this system accepts: "+why; }
@@ -180,9 +182,8 @@ replace that file with a PNG image, or remove it.
   public static String infoNotList(String label){ return label+" must be a list [...] of strings."; }
   public static String infoNotShape(String given, String label, String shape){ return "\""+given+"\" in "+label+" is not "+shape+"."; }
   public static String infoRepeated(String given, String label){ return "\""+given+"\" is repeated in "+label+"."; }
-  public static String infoLinksNotObject(String key){ return "\""+key+"\" must be an object {...} mapping a project name to a list of type names."; }
-  public static String infoLinkBadName(String name, String key){ return "\""+name+"\" in \""+key+"\" is not a valid project name."; }
-  public static String infoLinkEmpty(String label, String name){ return label+" names no type: a link names the one or more type names the code uses for \""+name+"\"."; }
+  public static String infoMountsNotObject(){ return "\"mounts\" must be an object {...} mapping the name of a DataRead type to the name of a data project."; }
+  public static String infoMountBadName(String name, String label){ return "\""+name+"\" in "+label+" is not a valid project name."; }
   public static String infoAttenuatorsNotObject(){ return "\"attenuators\" must be an object {...} mapping a main name to a list of attenuator names."; }
   public static String infoAttenuatorsEmpty(String label){ return label+" names no attenuator: a main with no attenuator is left out of \"attenuators\"."; }
   public static String metadataNoFile(Path file){ return refusedPath("EditMetadata", file)+"\nNo file is at that path."; }

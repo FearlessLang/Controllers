@@ -35,8 +35,8 @@ final class ManagerFolderTest{
     assertEquals("Run\nhello_world\n\nPort:51234", Main.message("FearlessCommandRun", "hello_world", "Port:51234"));
     assertEquals("Run\nhello_world", Main.message("FearlessCommandRun", "hello_world"));
     assertEquals("Compile\nhello_world\nPort:51234", Main.message("FearlessCommandCompile", "hello_world", "Port:51234"));
-    assertEquals("Link\nhello_world\nnotes write Notes Diary", Main.message("FearlessCommandLink", "hello_world", "notes", "write", "Notes", "Diary"));
-    assertEquals("Link\nhello_world\nnotes write Notes Diary\nPort:51234", Main.message("FearlessCommandLink", "hello_world", "notes", "write", "Notes", "Diary", "Port:51234"));
+    assertEquals("Mount\nhello_world\nhello.Diary notes", Main.message("FearlessCommandMount", "hello_world", "hello.Diary", "notes"));
+    assertEquals("Mount\nhello_world\nhello.Diary notes\nPort:51234", Main.message("FearlessCommandMount", "hello_world", "hello.Diary", "notes", "Port:51234"));
     assertEquals("Show\nPort:51234", Main.message("FearlessCommandShow", "Port:51234"));
     assertEquals("Register\nBase16:2F646174612F68656C6C6F", Main.message("FearlessCommandRegister", "Base16:2F646174612F68656C6C6F"));
     assertEquals("Frobnicate\na", Main.message("FearlessCommandFrobnicate", "a"));

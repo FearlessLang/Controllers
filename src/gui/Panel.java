@@ -13,19 +13,13 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Image;
-import java.awt.KeyboardFocusManager;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -45,8 +39,6 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.Timer;
 
 import controller.Facts;
 import controller.Main;
@@ -62,13 +54,6 @@ import utils.Push;
 /// buttons that act on it. One Panel per project, kept while the project stays registered:
 /// it holds the Output of the project.
 final class Panel{
-  private static final class Link{
-    final JTextField field;
-    String was;
-    Link(JTextField field){ this.field= field; was= field.getText(); }
-    boolean typed(){ return !field.getText().strip().equals(was); }
-  }
-  private static final String linkChars= "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_' \b\177";
   private static final int iconSize= 32;
   private static final int claimSize= 20;
   private final Consumer<String> refuse;
@@ -80,8 +65,8 @@ final class Panel{
   private final Collapsible attenuators= new Collapsible("Attenuators", half(attenuatorsBox), false);
   private final JPanel claimsBox= new JPanel();
   private final Collapsible claims= new Collapsible("Extensions", half(claimsBox), true);
-  private final JPanel linksBox= new JPanel();
-  private final Collapsible links= new Collapsible("Links", half(linksBox), false);
+  private final JPanel dataBox= new JPanel();
+  private final Collapsible data= new Collapsible("Data", half(dataBox), false);
   private final JList<LogFiles.Entry> logList= new JList<>();
   private final Collapsible logs= new Collapsible("Logs", half(logList), false, small("Logs", this::openLogs));
   private final JButton openDocs= small("Open docs", this::openDocs);
@@ -91,12 +76,11 @@ final class Panel{
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
   private Object shown= List.of();
-  private HashMap<String,Link> linkFields= new HashMap<>();
   private Project project;
   Panel(Consumer<String> refuse){
     this.refuse= refuse;
     output.setEditable(false);
-    linksBox.setLayout(new BoxLayout(linksBox, BoxLayout.Y_AXIS));
+    dataBox.setLayout(new BoxLayout(dataBox, BoxLayout.Y_AXIS));
     claimsBox.setLayout(new BoxLayout(claimsBox, BoxLayout.Y_AXIS));
     attenuatorsBox.setLayout(new BoxLayout(attenuatorsBox, BoxLayout.Y_AXIS));
     root.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
@@ -116,7 +100,7 @@ final class Panel{
     Stream.of(header, shortcuts).forEach(top::add);
     var areas= new JPanel();
     areas.setLayout(new BoxLayout(areas, BoxLayout.Y_AXIS));
-    Stream.of(new Collapsible("Output", half(output), true, small("Clear", () -> output.setText(""))), attenuators, claims, links, logs).forEach(areas::add);
+    Stream.of(new Collapsible("Output", half(output), true, small("Clear", () -> output.setText(""))), attenuators, claims, data, logs).forEach(areas::add);
     areas.add(new JPanel());
     root.add(top, BorderLayout.NORTH);
     root.add(areas, BorderLayout.CENTER);
@@ -180,7 +164,7 @@ final class Panel{
   void render(Project p, List<Project> all, int height){
     var claimed= Project.claimed(all);
     var stamps= claimed.values().stream().flatMap(List::stream).map(c -> c.icon(".png").toFile().lastModified()).toList();
-    var next= List.of(p, all.stream().map(Project::entry).toList(), claimed, stamps, height);
+    var next= List.of(p, all.stream().map(Project::entry).toList(), all.stream().map(Project::mains).toList(), claimed, stamps, height);
     if (next.equals(shown)){ return; }
     shown = next;
     project = p;
@@ -200,7 +184,7 @@ final class Panel{
     fillShortcuts(p, claimed);
     fillAttenuators(p);
     fillClaims(p, claimed);
-    fillLinks(p, all);
+    fillData(p, all);
     logs.setVisible(p.kind() == Kind.code);
     var log= logList.getSelectedValue();
     logList.setListData(p.facts().logs().toArray(LogFiles.Entry[]::new));
@@ -287,8 +271,8 @@ final class Panel{
   private void fillKinds(Project p){
     kinds.removeAll();
     if (p.kind() != Kind.idle){ kinds.add(kindButton(p, "Back to idle", Kind.idle)); }
-    if (p.kind() != Kind.dataReadOnly){ kinds.add(kindButton(p, "Become data", Kind.dataReadOnly)); }
-    if (p.kind() != Kind.dataReadWrite){ kinds.add(kindButton(p, "Become editable data", Kind.dataReadWrite)); }
+    if (p.kind() != Kind.dataRead){ kinds.add(kindButton(p, "Become dataRead", Kind.dataRead)); }
+    if (p.kind() != Kind.dataEdit){ kinds.add(kindButton(p, "Become dataEdit", Kind.dataEdit)); }
     if (p.kind() != Kind.code){ kinds.add(kindButton(p, "Become code", Kind.code)); }
   }
   private JButton kindButton(Project p, String text, Kind target){
@@ -296,69 +280,33 @@ final class Panel{
     res.setEnabled(!p.busy());
     return res;
   }
-  private void fillLinks(Project p, List<Project> all){
-    var iAmCode= p.kind() == Kind.code;
-    var old= linkFields;
-    var owner= KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-    linkFields = new HashMap<>();
-    linksBox.removeAll();
-    var linked= Stream.concat(p.entry().reads().keySet().stream(), p.entry().edits().keySet().stream());
-    var own= Stream.concat(iAmCode ? all.stream().filter(o -> o.kind().isData()).map(Project::alias) : Stream.<String>empty(), linked).distinct().sorted().toList();
-    links.setVisible(iAmCode || p.kind().isData() || !own.isEmpty());
-    if (!links.isVisible()){ return; }
-    if (p.kind().isData()){
-      linksBox.add(new JLabel("Code projects that may read or edit this:"));
-      all.stream().filter(o -> o.kind() == Kind.code).sorted(Comparator.comparing(Project::alias)).forEach(o -> linksBox.add(linkRow(o, p.alias(), p.kind() == Kind.dataReadWrite, o.alias())));
-    }
-    if (iAmCode || !own.isEmpty()){ linksBox.add(new JLabel(iAmCode ? "Data projects this code project reads or edits:" : "Data projects this project reads or edits when it is code:")); }
-    own.forEach(a -> linksBox.add(linkRow(p, a, all.stream().anyMatch(o -> o.alias().equals(a) && o.kind() == Kind.dataReadWrite), a)));
-    old.values().forEach(l -> carry(l, owner));
+  private void fillData(Project p, List<Project> all){
+    dataBox.removeAll();
+    data.setVisible(p.kind() == Kind.code || p.kind().isData() || !p.entry().mounts().isEmpty());
+    if (!data.isVisible()){ return; }
+    Stream.concat(p.knownDataRead().stream(), p.entry().mounts().keySet().stream()).distinct().sorted().forEach(t -> fillMount(p, t, all));
+    if (!p.kind().isData()){ return; }
+    dataBox.add(row(0, new JLabel("Mounted on:")));
+    all.forEach(o -> o.entry().mounts().forEach((t, d) -> { if (d.equals(p.alias())){ dataBox.add(row(16, new JLabel(o.alias()+"::"+t))); } }));
+    var free= all.stream().filter(o -> o.kind() == Kind.code).flatMap(o -> o.knownDataRead().stream().filter(t -> !o.entry().mounts().containsKey(t) && fits(o, t, p.kind())).map(t -> o.alias()+"::"+t)).toArray(String[]::new);
+    if (free.length == 0){ return; }
+    var combo= new JComboBox<>(free);
+    dataBox.add(row(16, combo, small("Mount", () -> mountFree(((String)combo.getSelectedItem()).split("::"), p.alias()))));
   }
-  private void carry(Link from, Component owner){
-    var to= linkFields.get(from.field.getName());
-    if (to == null){ return; }
-    if (from.typed()){ to.field.setText(from.field.getText()); }
-    to.field.setCaretPosition(Math.min(from.field.getCaretPosition(), to.field.getText().length()));
-    if (from.field == owner){ to.field.requestFocusInWindow(); }
+  private void fillMount(Project p, String type, List<Project> all){
+    var mounted= p.entry().mounts().get(type);
+    var remove= small("Remove", () -> Main.command("Mount", p.alias(), type));
+    dataBox.add(mounted == null ? row(0, new JLabel(type), new JLabel("no mount")) : row(0, new JLabel(type), new JLabel("mounted: "+mounted), remove));
+    var broken= mounted == null || p.mains().isEmpty() ? Optional.<String>empty() : p.brokenMount(type, all.stream().map(Project::entry).toList());
+    broken.ifPresent(why -> dataBox.add(row(16, label(Report.brokenMount(type, mounted, why), false))));
+    if (!p.knownDataRead().contains(type)){ return; }
+    var choices= all.stream().filter(o -> fits(p, type, o.kind()) && !o.alias().equals(mounted)).map(Project::alias).toArray(String[]::new);
+    if (choices.length == 0){ return; }
+    var combo= new JComboBox<>(choices);
+    dataBox.add(row(16, combo, small("Mount", () -> Main.command("Mount", p.alias(), type, (String)combo.getSelectedItem()))));
   }
-  private JPanel linkRow(Project code, String data, boolean writable, String other){
-    var row= new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-    row.add(new JLabel(other));
-    row.add(linkField(code, data, other, "read", code.entry().reads()));
-    if (writable || code.entry().edits().containsKey(data)){ row.add(linkField(code, data, other, "write", code.entry().edits())); }
-    return row;
-  }
-  private JPanel linkField(Project code, String data, String other, String how, Map<String,List<String>> links){
-    var field= named(new JTextField(String.join(" ", links.getOrDefault(data, List.of())), 14), other+" "+how);
-    var link= new Link(field);
-    linkFields.put(field.getName(), link);
-    sendsOn(field, () -> send(link, code, data, how));
-    var res= new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
-    res.add(new JLabel(how));
-    res.add(field);
-    return res;
-  }
-  static void sendsOn(JTextField field, Runnable send){
-    var pause= new Timer(1000, _ -> send.run());
-    pause.setRepeats(false);
-    field.addFocusListener(new FocusAdapter(){
-      @Override public void focusLost(FocusEvent e){ send.run(); }
-    });
-    field.addKeyListener(new KeyAdapter(){
-      @Override public void keyTyped(KeyEvent e){ typed(e, pause, send); }
-    });
-  }
-  private static void typed(KeyEvent e, Timer pause, Runnable send){
-    if (linkChars.indexOf(e.getKeyChar()) >= 0){ pause.restart(); return; }
-    e.consume();
-    send.run();
-  }
-  private void send(Link link, Project code, String data, String how){
-    if (linkFields.get(link.field.getName()) != link || !link.typed()){ return; }
-    link.was = link.field.getText().strip();
-    var words= Stream.of(link.was.split(" +")).filter(w -> !w.isEmpty());
-    Main.command("Link", Stream.concat(Stream.of(code.alias(), data, how), words).toArray(String[]::new));
-  }
+  private static boolean fits(Project code, String type, Kind data){ return data == Kind.dataEdit || data == Kind.dataRead && !code.mains().orElseThrow().dataEdit().contains(type); }
+  private static void mountFree(String[] codeAndType, String data){ Main.command("Mount", codeAndType[0], codeAndType[1], data); }
   private static final class Arrow implements Icon{
     @Override public int getIconWidth(){ return 10; }
     @Override public int getIconHeight(){ return 6; }

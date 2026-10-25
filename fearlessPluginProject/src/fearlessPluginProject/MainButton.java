@@ -69,7 +69,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   }
   static State of(String alias, Map<String,ManagerLink.Project> projects){
     var p= projects.get(alias);
-    var action= action(alias, p, projects);
+    var action= action(alias, p);
     if (action != Action.run){ return new State(action, List.of(), List.of()); }
     var all= List.copyOf(ManagerLink.mains(p.folder()).keySet());
     return new State(action, all, all.stream().filter(p.mains()::contains).toList());
@@ -124,10 +124,8 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
       .orElse(page.map(p -> p.getSelection()).filter(s -> s instanceof IStructuredSelection).map(s -> ((IStructuredSelection)s).getFirstElement()).orElse(null));
     return Optional.ofNullable(Adapters.adapt(on, IResource.class)).map(r -> r.getProject().getName()).filter(found::containsKey);
   }
-  private static Action action(String alias, ManagerLink.Project p, Map<String,ManagerLink.Project> projects){
-    var linked= p.reads().stream().allMatch(a -> projects.containsKey(a) && projects.get(a).kind().startsWith("data:"))
-      && p.edits().stream().allMatch(a -> projects.containsKey(a) && projects.get(a).kind().equals("data:readWrite"));
-    if (!p.kind().equals("code") || !linked || !marked(p.folder(), alias)){ return Action.check; }
+  private static Action action(String alias, ManagerLink.Project p){
+    if (!p.kind().equals("code") || !marked(p.folder(), alias)){ return Action.check; }
     try{ return outOfDate(p.folder()) ? Action.compile : Action.run; }
     catch (Invalid e){ return Action.check; }
   }

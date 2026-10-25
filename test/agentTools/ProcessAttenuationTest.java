@@ -484,7 +484,7 @@ final class ProcessAttenuationTest extends ManagerTest{
     removeAttenuator.go();
     removed.go();
     stabilize();
-    checkContent(info, registry(proc, "data:readOnly", mains));
+    checkContent(info, registry(proc, "dataRead", mains));
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

@@ -173,7 +173,7 @@ final class FactsTest{
     var project= dir.resolve("publicFiles");
     Fs.writeUtf8(project.resolve("readme.txt"), "hi\n");
     Fs.writeUtf8(project.resolve("publicfiles.fearless"), "");
-    var facts= facts(project, "publicfiles", Kind.dataReadOnly);
+    var facts= facts(project, "publicfiles", Kind.dataRead);
     assertEquals(Optional.empty(), facts.problem());
     assertEquals(Optional.empty(), facts.stale());
   }
@@ -282,6 +282,6 @@ replace that file with a PNG image, or remove it.
   @Test void aDataFolderStillRejectsUnsafeNames(@TempDir Path dir){
     var project= dir.resolve("publicFiles");
     Fs.writeUtf8(project.resolve("Bad Name.txt"), "hi\n");
-    assertFalse(facts(project, "publicfiles", Kind.dataReadOnly).problem().isEmpty());
+    assertFalse(facts(project, "publicfiles", Kind.dataRead).problem().isEmpty());
   }
 }
