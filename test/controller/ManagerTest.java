@@ -1702,7 +1702,7 @@ final class ManagerTest{
       [###]a.txt
       No main opens files with the extension "txt".""", view.refused.get(0));
     same("Refused request to open\n[###]gone.foo\nNo file is at that path.", view.refused.get(1));
-    same("Refused request to open\n[###]e.foo\nThe file is empty: no main opens an empty file.", view.refused.get(2));
+    same("Refused request to open\n[###]e.foo\nThe file \"e.foo\" is empty. File associations do not reliably work for empty files on all operating systems.", view.refused.get(2));
     same("[###]page.htm\nNo main opens files with the extension \"htm\".", view.refused.get(3));
     same("[###]desk\nNo file is at that path.", view.refused.get(4));
     assertEquals(List.of(hello), view.cleared);

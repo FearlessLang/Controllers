@@ -198,7 +198,7 @@ public final class Report{
 
   //-- opening a file
   public static String openNoFile(Path file){ return refusedOpen(file)+"\nNo file is at that path."; }
-  public static String emptyFile(Path file){ return refusedOpen(file)+"\nThe file is empty: no main opens an empty file."; }
+  public static String emptyFile(Path file){ return refusedOpen(file)+"\nThe file "+disp(file.getFileName().toString())+" is empty. File associations do not reliably work for empty files on all operating systems."; }
   public static String noMainOpens(Path file, String ext){ return refusedOpen(file)+"\nNo main opens files with the extension "+disp(ext)+"."; }
   public static String notOpening(Path file, String name, String main, String ext, List<String> opening){ return refusedOpen(file)+"\nMain "+disp(main)+" of project "+disp(name)+" does not open files with the extension "+disp(ext)+"."+Join.of(opening.stream().map(m -> "\n  "+m), "\nThe mains opening them are:", "", ""); }
 
