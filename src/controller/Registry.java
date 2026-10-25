@@ -107,10 +107,10 @@ public final class Registry{
     save(next);
   }
   public void replace(Content next){ save(next); }
-  public static Grants grants(Content c, Entry e){ return new Grants(granted(c, e, Kind.dataRead), granted(c, e, Kind.dataEdit)); }
-  private static Map<String,Path> granted(Content c, Entry e, Kind kind){
+  public static Grants grants(Content c, Entry e, List<String> dataEdit){ return new Grants(granted(c, e, t -> !dataEdit.contains(t), Kind::isData), granted(c, e, dataEdit::contains, k -> k == Kind.dataEdit)); }
+  private static Map<String,Path> granted(Content c, Entry e, Predicate<String> types, Predicate<Kind> kinds){
     var res= new LinkedHashMap<String,Path>();
-    e.mounts().forEach((type, data) -> c.projects().stream().filter(t -> t.alias().equals(data) && t.kind() == kind).forEach(t -> res.put(type, t.path())));
+    e.mounts().forEach((type, data) -> c.projects().stream().filter(t -> types.test(type) && t.alias().equals(data) && kinds.test(t.kind())).forEach(t -> res.put(type, t.path())));
     return Collections.unmodifiableMap(res);
   }
   public static String text(Content c){ return Info.print(toInfo(c)); }

@@ -310,7 +310,7 @@ public final class Manager{
     l.terminated = false;
     l.todo = mains;
     l.input = input;
-    l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow());
+    l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow(), l.mains.orElseThrow().dataEdit());
     l.attenuators = attenuated;
     l.follow = follow;
     view.clear(f);
@@ -634,7 +634,7 @@ public final class Manager{
       var job= e.getValue().job;
       if (job.isEmpty() || job.equals(Project.compiling)){ continue; }
       var mounts= registry.of(e.getKey()).orElseThrow().mounts();
-      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey()))).filter(p -> !p.mounts().equals(mounts) || !Registry.grants(next, p).equals(e.getValue().grants));
+      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey()))).filter(p -> !p.mounts().equals(mounts) || !Registry.grants(next, p, e.getValue().mains.orElseThrow().dataEdit()).equals(e.getValue().grants));
       changed.ifPresent(p -> { throw new Refused(Report.grantsWhileRunning(p.alias(), job)); });
     }
   }

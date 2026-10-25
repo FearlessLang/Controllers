@@ -241,14 +241,14 @@ final class RegistryTest{
     err(inManager(Registry.real(manager), Registry.real(manager)), () -> registry(dir));
   }
   private static Entry entry(String alias, Kind kind, Map<String,String> mounts){ return new Entry(alias, Path.of(root+alias), kind, List.of(), mounts, Map.of()); }
-  @Test void aCodeProjectIsGrantedTheFolderOfEachDataProjectMountedOnItsTypesByTheKindOfThatDataProject(){
+  @Test void onlyAMountOfADataEditProjectOnADataEditTypeIsGrantedForEditing(){
     var pub= entry("pub", Kind.dataRead, Map.of());
     var notes= entry("notes", Kind.dataEdit, Map.of());
     var other= entry("other", Kind.code, Map.of());
-    var code= entry("code", Kind.code, Map.of("code.Pub", "pub", "code.Old", "notes", "code.Diary", "notes", "code.Gone", "gone", "code.Other", "other"));
-    var grants= Registry.grants(new Content(List.of(pub, notes, other, code), List.of()), code);
-    assertEquals(Map.of("code.Pub", pub.path()), grants.reads());
-    assertEquals(Map.of("code.Old", notes.path(), "code.Diary", notes.path()), grants.edits());
+    var code= entry("code", Kind.code, Map.of("code.Pub", "pub", "code.Old", "notes", "code.Diary", "notes", "code.Ledger", "pub", "code.Gone", "gone", "code.Other", "other"));
+    var grants= Registry.grants(new Content(List.of(pub, notes, other, code), List.of()), code, List.of("code.Diary", "code.Ledger"));
+    assertEquals(Map.of("code.Pub", pub.path(), "code.Old", notes.path()), grants.reads());
+    assertEquals(Map.of("code.Diary", notes.path()), grants.edits());
   }
   @Test void mountsSurviveAReRead(@TempDir Path dir){
     var code= folder(dir, "mycode");

@@ -49,7 +49,6 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public List<String> knownMains(){ return mains.map(m -> List.copyOf(m.mains().keySet())).orElse(List.of()); }
   public List<String> knownAttenuators(){ return mains.map(MainsInfo::attenuators).orElse(List.of()); }
   public List<String> knownDataRead(){ return mains.map(m -> Stream.concat(m.dataRead().stream(), m.dataEdit().stream()).sorted().toList()).orElse(List.of()); }
-  /// What makes the mount on `type` broken, if it is; `all` are the registered projects.
   public Optional<String> brokenMount(String type, List<Entry> all){
     var data= entry.mounts().get(type);
     if (!knownDataRead().contains(type)){ return Optional.of(Report.mountNotDataRead(type, alias())); }
@@ -60,7 +59,6 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
     if (kind == Kind.dataRead && mains.orElseThrow().dataEdit().contains(type)){ return Optional.of(Report.mountNotEditable(data, type)); }
     return Optional.empty();
   }
-  /// Each DataRead type with no mount and each broken mount, one line each, as the error of a `Run` lists them.
   public List<String> mountProblems(List<Entry> all){
     var unmounted= knownDataRead().stream().filter(t -> !entry.mounts().containsKey(t)).map(Report::notMounted);
     var broken= entry.mounts().keySet().stream().flatMap(t -> brokenMount(t, all).map(why -> Report.brokenMount(t, entry.mounts().get(t), why)).stream());

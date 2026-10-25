@@ -593,7 +593,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     idle(m);
     assertEquals(3, view.refused.size());
     var folder= project(m, data).folder();
-    assertEquals(List.of(new Registry.Grants(Map.of(), Map.of("hello.Diary", folder, "hello.Pub", folder))), granted);
+    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder), Map.of("hello.Diary", folder))), granted);
   }
   @Test void attenuatorsAreSetByRequestAndARunStartsEachMainUnderItsOwn(@TempDir Path dir){
     var m= manager(dir, known(List.of("hello.NoGui", "hello.NoNet"), "hello.One", "hello.Two"));
@@ -668,7 +668,7 @@ The attenuators are:
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     var folder= project(m, data).folder();
-    assertEquals(List.of(new Registry.Grants(Map.of(), Map.of("hello.Notes", folder, "hello.Pub", folder))), granted);
+    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder), Map.of("hello.Notes", folder))), granted);
     var before= info(dir);
     send(m, "Mount", "hello", "hello.Old other");
     send(m, "Kind", "data", "dataRead");
