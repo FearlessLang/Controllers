@@ -313,7 +313,7 @@ final class ManagerTest{
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     send(m, "Run", "hello", "hello.Hello");
-    assertEquals(List.of("The manager was asked \"Run\" on \"hello\", but \"hello\" is \"code: not compiled (no cache)\": compile it first."), view.refused);
+    assertEquals(List.of("Refused request \"Run\" on project \"hello\".\nThe state of project \"hello\" is \"code: not compiled (no cache)\": only a project in state \"code: compiled\" runs a main."), view.refused);
     assertEquals("", view.out(hello));
     assertFalse(Files.exists(hello.resolve(Facts.outDir)));
   }
@@ -404,12 +404,14 @@ final class ManagerTest{
     send(m, "Run", "hello", "");
     send(m, "Run", "hello", "hello.Nope hello.One");
     var none= """
-      The manager was asked "Run" on "hello", but the request names no main.
+      Refused request "Run" on project "hello".
+      The request names no main.
       The mains are:
         hello.One
         hello.Two""";
     assertEquals(List.of(none, none, """
-      The manager was asked "Run" on "hello" for "hello.Nope", but "hello.Nope" is not a main of "hello".
+      Refused request "Run" on project "hello".
+      The request names "hello.Nope", and "hello.Nope" is not a main of project "hello".
       The mains are:
         hello.One
         hello.Two"""), view.refused);
@@ -422,7 +424,7 @@ final class ManagerTest{
     assertEquals(List.of(), listed(m));
     assertEquals(Optional.empty(), m.state().selected());
     send(m, "Show", "hello");
-    assertEquals("The manager was asked \"Show\" on the project \"hello\", but no project is named \"hello\".\nNo project is registered.", view.refused.getLast());
+    assertEquals("Refused request \"Show\" on project \"hello\".\nNo project is named \"hello\".\nNo project is registered.", view.refused.getLast());
     assertTrue(Files.isRegularFile(hello.resolve("hello.fearless")));
   }
   @Test void aRequestNamesARegisteredProject(@TempDir Path dir){
@@ -432,10 +434,11 @@ final class ManagerTest{
     send(m, "Compile", hello.toString());
     assertEquals(List.of("hello "+hello), listed(m));
     assertEquals("""
-      The manager was asked "Compile" on the project "other", but no project is named "other".
+      Refused request "Compile" on project "other".
+      No project is named "other".
       The projects are:
         hello""", view.refused.getFirst());
-    assertTrue(view.refused.get(1).startsWith("The manager was asked \"Compile\" on the project \""+hello+"\", but no project is named"));
+    assertTrue(view.refused.get(1).startsWith("Refused request \"Compile\" on project \""+hello+"\".\nNo project is named"));
   }
   @Test void aRequestTheManagerDoesNotKnowOrWithTheWrongArgumentsIsRefused(@TempDir Path dir){
     var m= manager(dir);
@@ -446,11 +449,11 @@ final class ManagerTest{
     send(m, "Forget", "hello", "now");
     send(m, "Run");
     assertEquals(5, view.refused.size());
-    assertEquals("The manager was asked \"build\", but that is not a request it knows: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\", \"Attenuate\".", view.refused.get(0));
-    assertEquals("The manager was asked to change the kind of \"hello\" to \"library\", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".", view.refused.get(1));
-    assertEquals("The manager was asked to link \"hello\" with \"data sometimes\", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link.", view.refused.get(2));
-    assertEquals("The manager was asked \"Forget\" with 2 arguments, but \"Forget\" takes 1.\nThe arguments are:\n  \"hello\"\n  \"now\"", view.refused.get(3));
-    assertEquals("The manager was asked \"Run\" with 0 arguments, but \"Run\" takes 1 or 2.\nThe arguments are:\n  <none>", view.refused.get(4));
+    assertEquals("Refused request \"build\".\n\"build\" is not a request of the manager: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Link\", \"Attenuate\".", view.refused.get(0));
+    assertEquals("Refused request \"Kind\" on project \"hello\".\n\"library\" is not a kind: the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\".", view.refused.get(1));
+    assertEquals("Refused request \"Link\" on project \"hello\".\n\"data sometimes\" is not a link: a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link.", view.refused.get(2));
+    assertEquals("Refused request \"Forget\" with 2 arguments.\nRequest \"Forget\" takes 1 argument.\nThe arguments are:\n  \"hello\"\n  \"now\"", view.refused.get(3));
+    assertEquals("Refused request \"Run\" with 0 arguments.\nRequest \"Run\" takes 1 or 2 arguments.\nThe arguments are:\n  <none>", view.refused.get(4));
     assertEquals(Kind.idle, m.state().projects().getFirst().kind());
   }
   @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
@@ -487,7 +490,7 @@ final class ManagerTest{
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     send(m, "Register", TaggedText.of(folder(hello, "inner").toString()));
-    same("Fearless cannot keep track of this project folder.[###]", view.refused.getFirst());
+    same("Refused request \"Register\" on path\n[###]One of the two folders is inside the other[###]", view.refused.getFirst());
     assertEquals(List.of("hello "+hello), listed(m));
   }
   @Test void aLinkToARegisteredFolderOnlySelectsItAndALinkIntoOneIsRefused(@TempDir Path dir){
@@ -501,7 +504,7 @@ final class ManagerTest{
     send(m, "Register", TaggedText.of(inner.toString()));
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
     assertEquals(1, view.refused.size());
-    same("[###]Fearless is already keeping track of:\n[###]hello\nOne of the two is inside the other.[###]", view.refused.getFirst());
+    same("[###]A registered project has the folder\n[###]hello\nOne of the two folders is inside the other[###]", view.refused.getFirst());
   }
   @Test void kindsChangeToAnyKind(@TempDir Path dir){
     var m= manager(dir);
@@ -526,8 +529,8 @@ final class ManagerTest{
     send(m, "Compile", "data");
     send(m, "Run", "data", "data.Main");
     assertEquals(List.of(
-      "The manager was asked \"Compile\" on \"data\", but \"data\" is \"idle\": only a \"code\" project can \"Compile\".",
-      "The manager was asked \"Run\" on \"data\", but \"data\" is \"idle\": only a \"code\" project can \"Run\"."), view.refused);
+      "Refused request \"Compile\" on project \"data\".\nThe kind of project \"data\" is \"idle\": only a project of kind \"code\" accepts request \"Compile\".",
+      "Refused request \"Run\" on project \"data\".\nThe kind of project \"data\" is \"idle\": only a project of kind \"code\" accepts request \"Run\"."), view.refused);
     assertEquals("", view.out(data));
     send(m, "Check", "data");
     assertEquals("The project \"data\" is valid, and up to date.\n", view.out(data));
@@ -568,7 +571,7 @@ final class ManagerTest{
     send(m, "Kind", "data", "idle");
     assertEquals(Project.State.codeInvalid, project(m, hello).state());
     send(m, "Compile", "hello");
-    assertEquals("The manager was asked \"Compile\" on \"hello\", but its content is invalid:\n\"reads\" refers to \"data\", but the kind of \"data\" is \"idle\"; \"reads\" accepts only \"data:readOnly\" or \"data:readWrite\".", view.refused.getLast());
+    assertEquals("Refused request \"Compile\" on project \"hello\".\nThe content of project \"hello\" is invalid:\n\"reads\" refers to \"data\", but the kind of \"data\" is \"idle\"; \"reads\" accepts only \"data:readOnly\" or \"data:readWrite\".", view.refused.getLast());
     send(m, "Link", "hello", "data read");
     send(m, "Link", "hello", "data write");
     assertEquals(List.of(Map.of(), Map.of()), List.of(project(m, hello).entry().reads(), project(m, hello).entry().edits()));
@@ -599,7 +602,7 @@ final class ManagerTest{
     send(m, "Attenuate", "hello", "hello.One NoGui");
     same("[###]\"NoGui\" in \"attenuators\".\"hello.One\" is not a Fearless attenuator name[###]", view.refused.getLast());
     send(m, "Attenuate", "hello", "");
-    assertEquals("The manager was asked to attenuate a main of \"hello\", but the request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all.", view.refused.getLast());
+    assertEquals("Refused request \"Attenuate\" on project \"hello\".\nThe request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all.", view.refused.getLast());
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     send(m, "Attenuate", "data", "hello.One hello.NoGui");
@@ -614,7 +617,8 @@ final class ManagerTest{
     send(m, "Attenuate", "hello", "hello.Old hello.NoGui");
     send(m, "Run", "hello", "hello.One");
     assertEquals("""
-      The manager was asked "Run" on "hello", but "hello.Old" has attenuators, and "hello.Old" is not a main of "hello".
+      Refused request "Run" on project "hello".
+      "attenuators" of project "hello" names "hello.Old", and "hello.Old" is not a main of project "hello".
       The mains are:
         hello.One
         hello.Two""", view.refused.getLast());
@@ -622,7 +626,8 @@ final class ManagerTest{
     send(m, "Attenuate", "hello", "hello.Two hello.NoGui hello.NoNet");
     send(m, "Run", "hello", "hello.One");
     assertEquals("""
-      The manager was asked "Run" on "hello", but "hello.Two" is attenuated by "hello.NoNet", and "hello.NoNet" is not an attenuator of "hello".
+      Refused request "Run" on project "hello".
+      Main "hello.Two" is attenuated by "hello.NoNet", and "hello.NoNet" is not an attenuator of project "hello".
       The attenuators are:
         hello.NoGui""", view.refused.getLast());
     assertEquals(2, view.refused.size());
@@ -673,7 +678,7 @@ final class ManagerTest{
     edit(m, dir, "{\"projects\": {}, \"systemExtensions\": []}");
     assertEquals(List.of(), listed(m));
     send(m, "EditMetadata", TaggedText.of(dir.resolve("none.info").toString()));
-    same("The manager was asked to replace projects.info with the content of\n[###]none.info\nbut no file is there.", view.refused.getLast());
+    same("Refused request \"EditMetadata\" on path\n[###]none.info\nNo file is at that path.", view.refused.getLast());
   }
   /// Forget, Kind and Link are EditMetadata with projects.info changed in one place: the same outcome, down to the refusal.
   private record Twin(Manager m, View view, Path dir){}
@@ -772,7 +777,7 @@ final class ManagerTest{
     send(m, "Forget", "data");
     assertEquals(List.of(), listed(m));
     send(m, "Register", TaggedText.of(data.toString()));
-    same("The manager was asked to register\n[###]data\nbut nothing exists there: register an existing folder, or a file inside one.", view.refused.getLast());
+    same("Refused request \"Register\" on path\n[###]data\nNothing exists at that path.", view.refused.getLast());
     assertEquals(List.of(), listed(m));
   }
   @Test void everyRequestNamingAProjectChecksItWhileTheWindowIsHidden(@TempDir Path dir){
@@ -808,12 +813,11 @@ final class ManagerTest{
     send(m, "Register", TaggedText.of(partly.toString()));
     send(m, "ConnectEclipse", TaggedText.of(closed.toString()));
     same("""
-      The manager was asked to register
+      Refused request "Register" on path
       [###]closed
-      but could not read or change it: access denied: [###]closed[###]
-      Give Fearless access to the folder, then register it again.""", view.refused.get(0));
-    same("[###]readOnly\nbut could not read or change it: access denied: [###]readOnly[###]", view.refused.get(1));
-    same("[###]data\nbut could not read or change it: access denied: [###]a.built[###]", view.refused.get(2));
+      The folder can not be read or changed: access denied: [###]closed[###]""", view.refused.get(0));
+    same("[###]readOnly\nThe folder can not be read or changed: access denied: [###]readOnly[###]", view.refused.get(1));
+    same("[###]data\nThe folder can not be read or changed: access denied: [###]a.built[###]", view.refused.get(2));
     same("Eclipse is not connected from\n[###]closed\naccess denied: [###]closed", view.refused.get(3));
     assertEquals(List.of("partly "+partly), listed(m));
     same("""
@@ -868,17 +872,17 @@ final class ManagerTest{
     send(m, "Register", "");
     send(m, "Register", "Str: ");
     assertEquals(List.of(
-      "The manager was asked \"Run\" on the project \"\", but no project is named \"\".\nNo project is registered.",
-      "The manager was asked \"Register\", but its path is not a tagged text: \"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
-      "The manager was asked \"Register\", but its path is empty."), view.refused);
+      "Refused request \"Run\" on project \"\".\nNo project is named \"\".\nNo project is registered.",
+      "Refused request \"Register\".\nThe path of the request is not a tagged text: \"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
+      "Refused request \"Register\".\nThe path of the request is empty."), view.refused);
   }
   @Test void aRequestWhosePathIsRelativeIsRefused(@TempDir Path dir){
     var m= manager(dir);
     send(m, "Register", "Str:hello");
     send(m, "OpenWithOrShortcut", "Str:notes.htm");
     assertEquals(List.of(
-      "The manager was asked \"Register\" on \"hello\", but that path is relative: a message names a path in full, from the root of its drive or file system.",
-      "The manager was asked \"OpenWithOrShortcut\" on \"notes.htm\", but that path is relative: a message names a path in full, from the root of its drive or file system."), view.refused);
+      "Refused request \"Register\" on path \"hello\".\nPath \"hello\" is relative: a request names a path in full, from the root of its drive or file system.",
+      "Refused request \"OpenWithOrShortcut\" on path \"notes.htm\".\nPath \"notes.htm\" is relative: a request names a path in full, from the root of its drive or file system."), view.refused);
     assertEquals(List.of(), listed(m));
   }
   @Test void aRegisterWhosePathIsNotATaggedTextOrNotAPathIsRefused(@TempDir Path dir){
@@ -886,8 +890,8 @@ final class ManagerTest{
     send(m, "Register", dir.toString());
     send(m, "Register", TaggedText.of("a\u0000b"));
     assertEquals(2, view.refused.size());
-    assertEquals("The manager was asked \"Register\", but its path is not a tagged text: \""+dir+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.", view.refused.get(0));
-    same("The manager was asked \"Register\" on \"a\" [Null 0x00] \"b\", but that is not a path this system accepts: "+(Fs.isWindows() ? "[###]" : "Nul character not allowed."), view.refused.get(1));
+    assertEquals("Refused request \"Register\".\nThe path of the request is not a tagged text: \""+dir+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.", view.refused.get(0));
+    same("Refused request \"Register\" on path \"a\" [Null 0x00] \"b\".\n\"a\" [Null 0x00] \"b\" is not a path this system accepts: "+(Fs.isWindows() ? "[###]" : "Nul character not allowed."), view.refused.get(1));
     assertEquals(List.of(), listed(m));
   }
   @Test void aProjectsInfoThatIsNotValidIsFatal(@TempDir Path dir){
@@ -1624,7 +1628,7 @@ final class ManagerTest{
     assertEquals(Optional.of(hello), m.state().selected());
     touch(hello);
     open(m, doc(dir, "b.fapp001"));
-    assertEquals(List.of("The manager was asked \"Run\" on \"hello\", but \"hello\" is \"code: not compiled (cache out of date)\": compile it first."), view.refused);
+    assertEquals(List.of("Refused request \"Run\" on project \"hello\".\nThe state of project \"hello\" is \"code: not compiled (cache out of date)\": only a project in state \"code: compiled\" runs a main."), view.refused);
     assertEquals(List.of(), view.choices);
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
   }
@@ -1648,9 +1652,9 @@ final class ManagerTest{
     assertEquals(Optional.of(other), m.state().selected());
     send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "hello", "hello.Other");
     same("""
-      The manager was asked to open
+      Refused request to open
       [###]a.foo
-      with "hello.Other" of "hello", but that main does not open files with the extension "foo".
+      Main "hello.Other" of project "hello" does not open files with the extension "foo".
       The mains opening them are:
         hello::hello.Hello
         other::other.Hello""", view.refused.getLast());
@@ -1694,13 +1698,13 @@ final class ManagerTest{
     open(m, doc(dir, "page.htm"));
     open(m, dir.resolve("desk"));
     same("""
-      The manager was asked to open
+      Refused request to open
       [###]a.txt
-      but no main opens files with the extension "txt".""", view.refused.get(0));
-    same("The manager was asked to open\n[###]gone.foo\nbut that path names no file.", view.refused.get(1));
-    same("The manager was asked to open\n[###]e.foo\nbut that file is empty: no main runs on an empty file.", view.refused.get(2));
-    same("[###]page.htm\nbut no main opens files with the extension \"htm\".", view.refused.get(3));
-    same("[###]desk\nbut that path names no file.", view.refused.get(4));
+      No main opens files with the extension "txt".""", view.refused.get(0));
+    same("Refused request to open\n[###]gone.foo\nNo file is at that path.", view.refused.get(1));
+    same("Refused request to open\n[###]e.foo\nThe file is empty: no main opens an empty file.", view.refused.get(2));
+    same("[###]page.htm\nNo main opens files with the extension \"htm\".", view.refused.get(3));
+    same("[###]desk\nNo file is at that path.", view.refused.get(4));
     assertEquals(List.of(hello), view.cleared);
     assertEquals(List.of("hello "+hello), listed(m));
   }

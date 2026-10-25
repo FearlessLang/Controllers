@@ -42,18 +42,23 @@ public final class Report{
 
   //-- the form of a message
   public static String unreadableMessage(Path file){ return "The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\nThe bytes of\n"+path(file.toString())+"\ndo not form valid UTF-8 text."; }
+  private static String refused(String verb){ return "Refused request "+disp(verb)+"."; }
+  private static String refused(String verb, String name){ return "Refused request "+disp(verb)+" on project "+disp(name)+"."; }
+  private static String refusedPath(String verb, Path p){ return "Refused request "+disp(verb)+" on path\n"+path(p.toString()); }
+  private static String refusedOpen(Path p){ return "Refused request to open\n"+path(p.toString()); }
   public static String unknownVerb(String verb, List<String> verbs){
-    return "The manager was asked "+disp(verb)+", but that is not a request it knows: the requests are "+quoted(verbs)+".";
+    return refused(verb)+"\n"+disp(verb)+" is not a request of the manager: the requests are "+quoted(verbs)+".";
   }
   public static String wrongLines(String verb, List<String> args, List<Integer> takes){
-    return "The manager was asked "+disp(verb)+" with "+args.size()+" argument"+(args.size() == 1 ? "" : "s")+", but "+disp(verb)+" takes "+Join.of(takes.stream().map(i -> ""+i), "", " or ", "")+".\nThe arguments are:\n"+Join.of(args.stream().map(a -> "  "+disp(a)), "", "\n", "", "  <none>");
+    var n= takes.size() == 1 && takes.getFirst() == 1 ? " argument" : " arguments";
+    return "Refused request "+disp(verb)+" with "+args.size()+" argument"+(args.size() == 1 ? "" : "s")+".\nRequest "+disp(verb)+" takes "+Join.of(takes.stream().map(i -> ""+i), "", " or ", "")+n+".\nThe arguments are:\n"+Join.of(args.stream().map(a -> "  "+disp(a)), "", "\n", "", "  <none>");
   }
-  public static String notTagged(String verb, String why){ return "The manager was asked "+disp(verb)+", but its path is not a tagged text: "+why; }
-  public static String blankPath(String verb){ return "The manager was asked "+disp(verb)+", but its path is empty."; }
-  public static String notAPath(String verb, String given, String why){ return "The manager was asked "+disp(verb)+" on "+disp(given)+", but that is not a path this system accepts: "+why+"."; }
-  public static String relativePath(String verb, String given){ return "The manager was asked "+disp(verb)+" on "+disp(given)+", but that path is relative: a message names a path in full, from the root of its drive or file system."; }
+  public static String notTagged(String verb, String why){ return refused(verb)+"\nThe path of the request is not a tagged text: "+why; }
+  public static String blankPath(String verb){ return refused(verb)+"\nThe path of the request is empty."; }
+  public static String notAPath(String verb, String given, String why){ return "Refused request "+disp(verb)+" on path "+disp(given)+".\n"+disp(given)+" is not a path this system accepts: "+why+"."; }
+  public static String relativePath(String verb, String given){ return "Refused request "+disp(verb)+" on path "+disp(given)+".\nPath "+disp(given)+" is relative: a request names a path in full, from the root of its drive or file system."; }
   public static String unknownProject(String verb, String name, List<String> names){
-    return "The manager was asked "+disp(verb)+" on the project "+disp(name)+", but no project is named "+disp(name)+"."+Join.of(names.stream().map(n -> "\n  "+n), "\nThe projects are:", "", "", "\nNo project is registered.");
+    return refused(verb, name)+"\nNo project is named "+disp(name)+"."+Join.of(names.stream().map(n -> "\n  "+n), "\nThe projects are:", "", "", "\nNo project is registered.");
   }
   public static String badPort(String text){ return "The manager was given the port "+disp(text)+", but a port is \"Port:\" then a number from 1 to 65535."; }
   public static String portClosed(int port, IOException e){ return "The manager was given the port "+port+", but no program of this machine accepts a connection there: "+fileFailure(e); }
@@ -61,21 +66,21 @@ public final class Report{
   //-- requests the state of the project refuses
   private static String running(String name, String job){ return job.equals(Project.compiling) ? "A compilation of project "+disp(name)+" is currently running." : "Main "+disp(job)+" is currently running inside project "+disp(name)+"."; }
   public static String busy(String verb, String name, String job){ return "Refused request "+disp(verb)+" on project "+disp(name)+".\n"+running(name, job); }
-  public static String notCode(String verb, String name, String kind){ return "The manager was asked "+disp(verb)+" on "+disp(name)+", but "+disp(name)+" is "+disp(kind)+": only a \"code\" project can "+disp(verb)+"."; }
-  public static String invalidContent(String verb, String name, String why){ return "The manager was asked "+disp(verb)+" on "+disp(name)+", but its content is invalid:\n"+why.stripTrailing(); }
-  public static String notCompiled(String name, String state){ return "The manager was asked \"Run\" on "+disp(name)+", but "+disp(name)+" is "+disp(state)+": compile it first."; }
-  public static String noMainNamed(String name, List<String> mains){ return "The manager was asked \"Run\" on "+disp(name)+", but the request names no main."+mains(mains); }
-  public static String notAMain(String name, String main, List<String> mains){ return "The manager was asked \"Run\" on "+disp(name)+" for "+disp(main)+", but "+disp(main)+" is not a main of "+disp(name)+"."+mains(mains); }
+  public static String notCode(String verb, String name, String kind){ return refused(verb, name)+"\nThe kind of project "+disp(name)+" is "+disp(kind)+": only a project of kind \"code\" accepts request "+disp(verb)+"."; }
+  public static String invalidContent(String verb, String name, String why){ return refused(verb, name)+"\nThe content of project "+disp(name)+" is invalid:\n"+why.stripTrailing(); }
+  public static String notCompiled(String name, String state){ return refused("Run", name)+"\nThe state of project "+disp(name)+" is "+disp(state)+": only a project in state \"code: compiled\" runs a main."; }
+  public static String noMainNamed(String name, List<String> mains){ return refused("Run", name)+"\nThe request names no main."+mains(mains); }
+  public static String notAMain(String name, String main, List<String> mains){ return refused("Run", name)+"\nThe request names "+disp(main)+", and "+disp(main)+" is not a main of project "+disp(name)+"."+mains(mains); }
   private static String mains(List<String> mains){ return Join.of(mains.stream().map(m -> "\n  "+m), "\nThe mains are:", "", "", "\n"+"The project has no main."); }
-  public static String attenuatedNotAMain(String name, String main, List<String> mains){ return "The manager was asked \"Run\" on "+disp(name)+", but "+disp(main)+" has attenuators, and "+disp(main)+" is not a main of "+disp(name)+"."+mains(mains); }
+  public static String attenuatedNotAMain(String name, String main, List<String> mains){ return refused("Run", name)+"\n\"attenuators\" of project "+disp(name)+" names "+disp(main)+", and "+disp(main)+" is not a main of project "+disp(name)+"."+mains(mains); }
   public static String notAnAttenuator(String name, String main, String attenuator, List<String> attenuators){
-    return "The manager was asked \"Run\" on "+disp(name)+", but "+disp(main)+" is attenuated by "+disp(attenuator)+", and "+disp(attenuator)+" is not an attenuator of "+disp(name)+"."+Join.of(attenuators.stream().map(a -> "\n  "+a), "\nThe attenuators are:", "", "", "\nThe project has no attenuator.");
+    return refused("Run", name)+"\nMain "+disp(main)+" is attenuated by "+disp(attenuator)+", and "+disp(attenuator)+" is not an attenuator of project "+disp(name)+"."+Join.of(attenuators.stream().map(a -> "\n  "+a), "\nThe attenuators are:", "", "", "\nThe project has no attenuator.");
   }
-  public static String noMainAttenuated(String name){ return "The manager was asked to attenuate a main of "+disp(name)+", but the request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all."; }
-  public static String unknownKind(String name, String text){ return "The manager was asked to change the kind of "+disp(name)+" to "+disp(text)+", but the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."; }
+  public static String noMainAttenuated(String name){ return refused("Attenuate", name)+"\nThe request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all."; }
+  public static String unknownKind(String name, String text){ return refused("Kind", name)+"\n"+disp(text)+" is not a kind: the kinds are \"idle\", \"code\", \"data:readOnly\" and \"data:readWrite\"."; }
   public static String kindWhileBusy(String name, String kind, String job){ return "Refused request to change the kind of project "+disp(name)+" to "+disp(kind)+".\n"+running(name, job); }
   public static String removedWhileBusy(String name, String job){ return "Refused request to remove project "+disp(name)+".\n"+running(name, job); }
-  public static String malformedLink(String name, String link){ return "The manager was asked to link "+disp(name)+" with "+disp(link)+", but a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link."; }
+  public static String malformedLink(String name, String link){ return refused("Link", name)+"\n"+disp(link)+" is not a link: a link is the name of a data project, then \"read\" or \"write\", then the type names the code uses for it, none to remove the link."; }
   public static String linkMissing(String field, String name){ return "\""+field+"\" refers to \""+name+"\", but no project called \""+name+"\" is registered."; }
   public static String linkWrongKind(String field, String name, String kind, boolean needsWrite){
     var needed= needsWrite ? "\"data:readWrite\"" : "\"data:readOnly\" or \"data:readWrite\"";
@@ -86,21 +91,9 @@ public final class Report{
 
   //-- registering a folder
   public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link, and Fearless does not follow symbolic links:\n"+path(p.toString())); }
-  public static String registerNothing(Path path){ return "The manager was asked to register\n"+path(path.toString())+"\nbut nothing exists there: register an existing folder, or a file inside one."; }
+  public static String registerNothing(Path path){ return refusedPath("Register", path)+"\nNothing exists at that path."; }
   public static String folderNestedWithRegistered(Path folder, Path registered){
-    return """
-      Fearless cannot keep track of this project folder.
-
-      The manager was asked to register:
-      %s
-      Fearless is already keeping track of:
-      %s
-      One of the two is inside the other. Fearless keeps track of project folders
-      that do not overlap, so that every file belongs to exactly one project.
-
-      Use the folder Fearless already keeps track of, or make Fearless forget that
-      folder first, and then register this one again.
-      """.formatted(path(folder.toString()), path(registered.toString()));
+    return refusedPath("Register", folder)+"\nA registered project has the folder\n"+path(registered.toString())+"\nOne of the two folders is inside the other: every file belongs to exactly one project.";
   }
   public static String managerFolderNotAProject(Path folder, Path managerDir){
     return """
@@ -126,7 +119,7 @@ public final class Report{
       """.formatted(path(root.toString()));
   }
   public static String registerRefused(Path folder, IOException e){
-    return "The manager was asked to register\n"+path(folder.toString())+"\nbut could not read or change it: "+fileFailure(e)+"\nGive Fearless access to the folder, then register it again.";
+    return refusedPath("Register", folder)+"\nThe folder can not be read or changed: "+fileFailure(e);
   }
 
   //-- the content of a project folder
@@ -191,9 +184,9 @@ public final class Report{
   public static String infoLinkEmpty(String label, String name){ return label+" names no type: a link names the one or more type names the code uses for \""+name+"\"."; }
   public static String infoAttenuatorsNotObject(){ return "\"attenuators\" must be an object {...} mapping a main name to a list of attenuator names."; }
   public static String infoAttenuatorsEmpty(String label){ return label+" names no attenuator: a main with no attenuator is left out of \"attenuators\"."; }
-  public static String metadataNoFile(Path file){ return "The manager was asked to replace projects.info with the content of\n"+path(file.toString())+"\nbut no file is there."; }
-  public static String metadataNotUtf8(Path file){ return "The manager was asked to replace projects.info with the content of\n"+path(file.toString())+"\nbut its bytes do not form valid UTF-8 text."; }
-  public static String metadataUnreadable(Path file, IOException e){ return "The manager was asked to replace projects.info with the content of\n"+path(file.toString())+"\nbut could not read it: "+fileFailure(e); }
+  public static String metadataNoFile(Path file){ return refusedPath("EditMetadata", file)+"\nNo file is at that path."; }
+  public static String metadataNotUtf8(Path file){ return refusedPath("EditMetadata", file)+"\nThe bytes of the file do not form valid UTF-8 text."; }
+  public static String metadataUnreadable(Path file, IOException e){ return refusedPath("EditMetadata", file)+"\nThe file can not be read: "+fileFailure(e); }
   public static String metadataChanged(){ return "The project metadata is not committed: projects.info changed while it was edited.\nClose the editor, and choose Edit project metadata again to edit what projects.info holds now."; }
 
   //-- Eclipse
@@ -204,10 +197,10 @@ public final class Report{
   public static String eclipseNotConnected(Path chosen, IOException e){ return "Eclipse is not connected from\n"+path(chosen.toString())+"\n"+fileFailure(e); }
 
   //-- opening a file
-  public static String openNoFile(Path file){ return "The manager was asked to open\n"+path(file.toString())+"\nbut that path names no file."; }
-  public static String emptyFile(Path file){ return "The manager was asked to open\n"+path(file.toString())+"\nbut that file is empty: no main runs on an empty file."; }
-  public static String noMainOpens(Path file, String ext){ return "The manager was asked to open\n"+path(file.toString())+"\nbut no main opens files with the extension "+disp(ext)+"."; }
-  public static String notOpening(Path file, String name, String main, String ext, List<String> opening){ return "The manager was asked to open\n"+path(file.toString())+"\nwith "+disp(main)+" of "+disp(name)+", but that main does not open files with the extension "+disp(ext)+"."+Join.of(opening.stream().map(m -> "\n  "+m), "\nThe mains opening them are:", "", ""); }
+  public static String openNoFile(Path file){ return refusedOpen(file)+"\nNo file is at that path."; }
+  public static String emptyFile(Path file){ return refusedOpen(file)+"\nThe file is empty: no main opens an empty file."; }
+  public static String noMainOpens(Path file, String ext){ return refusedOpen(file)+"\nNo main opens files with the extension "+disp(ext)+"."; }
+  public static String notOpening(Path file, String name, String main, String ext, List<String> opening){ return refusedOpen(file)+"\nMain "+disp(main)+" of project "+disp(name)+" does not open files with the extension "+disp(ext)+"."+Join.of(opening.stream().map(m -> "\n  "+m), "\nThe mains opening them are:", "", ""); }
 
   //-- the claims of the mains of a project
   public static UserError noFreeExtension(String main, boolean shortcut, String icon){
