@@ -12,6 +12,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.Locale;
 
 import controller.Registry.Entry;
 import controller.Registry.Kind;
@@ -101,7 +102,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
         .flatMap(m -> (shortcut ? m.shortcuts() : m.openWiths()).stream())
         .filter(p -> p.icon().equals(c.icon())).map(MainsInfo.Claim::extension)
         .filter(e -> e.matches(prefix+"[0-9]{3}") && !explicit.contains(e)).findFirst()
-        .or(() -> IntStream.range(0, 1000).mapToObj(i -> prefix+"%03d".formatted((start+i)%1000)).filter(e -> !used.contains(e)).findFirst())
+        .or(() -> IntStream.range(0, 1000).mapToObj(i -> prefix+String.format(Locale.ROOT, "%03d", (start+i)%1000)).filter(e -> !used.contains(e)).findFirst())
         .orElseThrow(() -> Report.noFreeExtension(main, shortcut, c.icon()));
       used.add(ext);
       return new MainsInfo.Claim(c.icon(), c.diskPath(), c.zipSteps(), c.zipEntry(), ext);

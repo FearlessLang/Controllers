@@ -12,6 +12,7 @@ import fileAssociations.LinuxAssociations;
 import fileAssociations.WindowIcon;
 import tools.Fs;
 import tools.JavacTool;
+import tools.PathClassLoader;
 import userMessages.Violation;
 
 /// Makes this Fearless the program the desktop opens `.fearless` files with.
@@ -31,7 +32,7 @@ public final class Association{
   public static Path iconFile(){ return JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("icon.png"); }
   static String deskId(Path folder, String main){ return identity(launcher())+"-"+LinuxAssociations.hash((folder+"\n"+main).getBytes(StandardCharsets.UTF_8)); }
   static List<String> desk(Path folder, String main){
-    return List.of("-DfearlessDesk.id="+deskId(folder, main), "-DfearlessDesk.icons="+folder.resolve(Facts.outDir).resolve("icons"), "-DfearlessDesk.relaunch=\""+launcher()+"\" \""+folder+"\"", "-DfearlessManager.launcher="+launcher());
+    return List.of("-DfearlessDesk.id="+deskId(folder, main), "-DfearlessDesk.icons="+PathClassLoader.text(folder.resolve(Facts.outDir).resolve("icons")), "-DfearlessDesk.relaunch=\""+launcher()+"\" \""+folder+"\"", "-DfearlessManager.launcher="+launcher());
   }
   static void reconcile(Path launcher, List<Icon> extensions, List<WindowIcon> windows, Function<String,String> claimedBy){
     FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, windows, launcher, iconFile(),

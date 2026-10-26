@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.util.Locale;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -20,7 +21,7 @@ final class Collapsible extends JPanel{
     super(new BorderLayout());
     this.title= title;
     this.body= body;
-    head.setName(title.toLowerCase()+"Head");
+    head.setName(title.toLowerCase(Locale.ROOT)+"Head");
     head.setHorizontalAlignment(SwingConstants.LEFT);
     head.setBorderPainted(false);
     head.setFocusPainted(false);

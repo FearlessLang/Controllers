@@ -38,6 +38,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import java.util.Locale;
 
 import javax.imageio.ImageIO;
 
@@ -1230,7 +1231,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     var hello= code(m, dir, "hello");
     code(m, dir, "other");
     allow(m, dir, "foo");
-    var all= IntStream.range(0, 1000).mapToObj(i -> "[\"other.IconsO\", \"art/o.png\", \"\", \"\", \"fapp%03d\"]".formatted(i)).collect(Collectors.joining(", "));
+    var all= IntStream.range(0, 1000).mapToObj(i -> String.format(Locale.ROOT, "[\"other.IconsO\", \"art/o.png\", \"\", \"\", \"fapp%03d\"]", i)).collect(Collectors.joining(", "));
     infos.put("other", "{\"other.Other\": [\"_other/_rank_app.fear\", ["+all+"], [], []]}\n");
     compiled(m, "other");
     infos.put("hello", claiming("hello.Hello", "", "foo"));

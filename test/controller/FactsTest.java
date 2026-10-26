@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.IntStream;
+import java.util.Locale;
 
 import javax.imageio.ImageIO;
 
@@ -33,7 +34,7 @@ final class FactsTest{
     var res= dir.resolve(name);
     Fs.writeUtf8(res.resolve("_hello").resolve("_rank_app.fear"), "use base.Main as Main;\n");
     Fs.writeUtf8(res.resolve("readme"), "hi\n");
-    Fs.writeUtf8(res.resolve(name.toLowerCase()+".fearless"), "");
+    Fs.writeUtf8(res.resolve(name.toLowerCase(Locale.ROOT)+".fearless"), "");
     backdated(res);
     return res;
   }

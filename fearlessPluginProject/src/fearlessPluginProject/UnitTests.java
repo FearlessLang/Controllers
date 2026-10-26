@@ -30,7 +30,7 @@ final class UnitTests{
     return """
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-<testsuite name="%s" tests="%d" failures="%d" errors="0">
+<testsuite name="%s" tests="%s" failures="%s" errors="0">
 %s</testsuite>
 </testsuites>
 """.formatted(name, count(body, "<testcase "), count(body, "<failure>"), body);

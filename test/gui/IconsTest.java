@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Locale;
 
 import javax.imageio.ImageIO;
 
@@ -26,7 +27,7 @@ import tools.Fs;
 
 final class IconsTest{
   static Project project(Path folder, Kind kind){
-    var alias= folder.getFileName().toString().toLowerCase();
+    var alias= folder.getFileName().toString().toLowerCase(Locale.ROOT);
     Fs.writeUtf8(folder.resolve(alias+".fearless"), "");
     var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), Map.of(), Map.of());
     return new Project(entry, Facts.of(entry.path(), alias, kind, folder.resolve("unused")), Optional.empty(), Project.noClaims, "");

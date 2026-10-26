@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import java.util.Locale;
 
 import fileSupport.NativeLocaleForcer;
 import fileSupport.StringFiles;
@@ -159,7 +160,7 @@ public final class Main implements Manager.Exit{
   //Write to a .tmp name, then atomically rename it to .msg: the owner drains
   //only *.msg, so it can never observe a half written file.
   private static void leave(Path msgDir, String message){
-    var name= "%020d-%s".formatted(System.currentTimeMillis(), UUID.randomUUID());
+    var name= String.format(Locale.ROOT, "%020d-%s", System.currentTimeMillis(), UUID.randomUUID());
     var tmp= msgDir.resolve(name+".tmp");
     StringFiles.writeNew(tmp, message, UserError.onFileError());
     try{ Fs.move(tmp, msgDir.resolve(name+".msg"), ATOMIC_MOVE); }
@@ -187,7 +188,7 @@ public final class Main implements Manager.Exit{
     wipe().ifPresent(Main::display);
   }
   private void probe(WatchService watcher){
-    StringFiles.writeNew(msgDir().resolve("%020d-%s.tmp".formatted(System.currentTimeMillis(), UUID.randomUUID())), "", UserError.onFileError());
+    StringFiles.writeNew(msgDir().resolve(String.format(Locale.ROOT, "%020d-%s.tmp", System.currentTimeMillis(), UUID.randomUUID())), "", UserError.onFileError());
     WatchKey key;
     try{ key= watcher.poll(5, TimeUnit.SECONDS); }
     catch (InterruptedException e){ throw Bug.of(e); }
