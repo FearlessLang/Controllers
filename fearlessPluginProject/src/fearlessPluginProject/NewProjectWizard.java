@@ -125,13 +125,13 @@ use base.Slot as Slot;
 use base.Slots as Slots;
 use base.WidthNat as WidthNat;
 use base.HeightNat as HeightNat;
-use base.InputCursor as InputCursor;
+use base.CapInputCursor as CapInputCursor;
 use base.BadStrUnitRecover as BadStrUnitRecover;
 
 ByShortcut: Main, Shortcut[IconsApp] { sys -> sys.gui.name "Shortcut" .run ShortcutFrame }
 ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.name "OpenWith" .icon IconsFile .run{f -> Block#
   .let[mut Slot[mut Pane]] lines= {Slots#[mut Pane]}
-  .var[mut InputCursor] at= {sys.inputCursor}
+  .var[mut CapInputCursor] at= {sys.inputCursor}
   .return{f
     .title "drop more files here"
     .virtualPixelSpace(WidthNat#600, HeightNat#400)
@@ -149,7 +149,7 @@ ShortcutFrame: Consumer[mut Frame]{::
     .label{:: .text "Started from the shortcut file by_shortcut.fapp... in the project folder." }
     }
   }
-ShowFiles: {#(at: mut Var[mut InputCursor], lines: mut Pane): Void -> at.get#.match{
+ShowFiles: {#(at: mut Var[mut CapInputCursor], lines: mut Pane): Void -> at.get#.match{
   .empty -> Void;
   .some file -> Block#
     .do{(file.readStrUtf8 NoCr).split("" | "").flow.for{l -> Block#(lines.label{:: .text l .topInset 0 .bottomInset 0}, Void)}}
