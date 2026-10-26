@@ -5,17 +5,18 @@ import java.nio.file.Path;
 import fileSupport.NativeLocaleForcer;
 import tools.ChildJvm;
 import tools.Fs;
+import tools.PathClassLoader;
 import managerMessages.Violation;
 import realSourceOracle.RealSourceOracleWithZip;
 import userMessages.Report;
 import userMessages.UserError;
 
-/// The child JVM the manager starts to compile one project: the arg is the project folder.
+/// The child JVM the manager starts to compile one project: the arg is the project folder, as PathClassLoader.argOf writes it.
 public final class ChildMain{
   public static void main(String[] args){
     NativeLocaleForcer.forceEnglish();
     ChildJvm.watchParent();
-    var project= Path.of(args[0]);
+    var project= PathClassLoader.pathOf(args[0]);
     var exitCode= 0;
     try{ compile(project); }
     catch (UserError e){ exitCode = 1; System.err.print(e.getMessage().stripTrailing()+"\n"); }
