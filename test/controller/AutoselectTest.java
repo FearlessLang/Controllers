@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +22,7 @@ final class AutoselectTest{
   private static MainsInfo shortcut(String main, String icon, String ext){ return info(main, List.of(claim(icon, ext)), List.of()); }
   private static MainsInfo others(String... exts){ return info("other.Other", Stream.of(exts).map(e -> claim("other.IconsO", e)).toList(), List.of()); }
   static int start(String alias, String main, String icon){ return Math.floorMod((alias+"::"+main+"::"+icon).hashCode(), 1000); }
-  static String fapp(int n){ return "fapp%03d".formatted(Math.floorMod(n, 1000)); }
+  static String fapp(int n){ return String.format(Locale.ROOT, "fapp%03d", Math.floorMod(n, 1000)); }
   private static List<String> exts(MainsInfo i){
     return i.mains().values().stream().flatMap(m -> Stream.concat(m.shortcuts().stream(), m.openWiths().stream())).map(Claim::extension).toList();
   }
@@ -31,7 +32,7 @@ final class AutoselectTest{
   @Test void theStartIsTheHashOfAliasMainAndIcon(){
     var n= Math.floorMod("hello::hello.Bar::hello.IconsBar".hashCode(), 1000);
     assertEquals(List.of(fapp(n)), filled(shortcut("hello.Bar", "hello.IconsBar", ""), Project.noClaims, "hello"));
-    assertEquals(List.of("ffile%03d".formatted(n)), filled(info("hello.Bar", List.of(), List.of(claim("hello.IconsBar", ""))), Project.noClaims, "hello"));
+    assertEquals(List.of(String.format(Locale.ROOT, "ffile%03d", n)), filled(info("hello.Bar", List.of(), List.of(claim("hello.IconsBar", ""))), Project.noClaims, "hello"));
   }
   @Test void anExplicitExtensionIsKept(){
     assertEquals(List.of("fapp042"), filled(shortcut("hello.Bar", "hello.IconsBar", "fapp042"), Project.noClaims, "hello", others("fapp042")));
@@ -54,7 +55,7 @@ final class AutoselectTest{
     var fresh= shortcut("hello.Bar", "hello.IconsBar", "");
     assertEquals(List.of(fapp(n)), filled(fresh, shortcut("hello.Bar", "hello.IconsBaz", fapp(n+5)), "hello"));
     assertEquals(List.of(fapp(n)), filled(fresh, shortcut("hello.Baz", "hello.IconsBar", fapp(n+5)), "hello"));
-    assertEquals(List.of(fapp(n)), filled(fresh, info("hello.Bar", List.of(), List.of(claim("hello.IconsBar", "ffile%03d".formatted(n+5)))), "hello"));
+    assertEquals(List.of(fapp(n)), filled(fresh, info("hello.Bar", List.of(), List.of(claim("hello.IconsBar", String.format(Locale.ROOT, "ffile%03d", n+5)))), "hello"));
   }
   @Test void aKeptExtensionIsNotOneTheProjectClaimsExplicitly(){
     var n= start("hello", "hello.Bar", "hello.IconsBar");
@@ -77,7 +78,7 @@ final class AutoselectTest{
     err("""
 No free extension is left for "base.Shortcut[hello.IconsBar]" of main "hello.Bar": all the 1000 extensions "fapp000" to "fapp999" are used by the projects of this manager.
 """, () -> Project.filled(shortcut("hello.Bar", "hello.IconsBar", ""), Project.noClaims, "hello", Stream.of(all)));
-    var openWiths= info("other.Other", List.of(), IntStream.range(0, 1000).mapToObj(i -> claim("other.IconsO", "ffile%03d".formatted(i))).toList());
+    var openWiths= info("other.Other", List.of(), IntStream.range(0, 1000).mapToObj(i -> claim("other.IconsO", String.format(Locale.ROOT, "ffile%03d", i))).toList());
     err("""
 No free extension is left for "base.OpenWith[base.IconsConflict]" of main "hello.Foo_1": all the 1000 extensions "ffile000" to "ffile999" are used by the projects of this manager. Claim a system extension instead, for example "base.OpenWith[base.IconsConflict,\\"foo1\\"]".
 """, () -> Project.filled(info("hello.Foo_1", List.of(), List.of(claim("base.IconsConflict", ""))), Project.noClaims, "hello", Stream.of(openWiths)));

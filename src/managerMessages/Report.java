@@ -28,7 +28,7 @@ public final class Report{
   //-- the arguments of the manager program
   public static String tooManyArguments(List<String> args){
     return """
-Fearless was started with %d arguments, but without a first argument starting with
+Fearless was started with %s arguments, but without a first argument starting with
 "FearlessCommand" it takes at most one: the file to open.
 
 The arguments are:
