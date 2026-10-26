@@ -19,6 +19,7 @@ import realSourceOracle.RealSourceOracleWithZip;
 import tools.ChildJvm;
 import tools.Fs;
 import tools.JavacTool;
+import tools.PathClassLoader;
 import tools.SourceOracle;
 import userMessages.Violation;
 
@@ -44,7 +45,7 @@ public final class Deployed implements Manager.Tools{
       "--enable-native-access=Commons,Coordinator",
       "-p", appDir().resolve(JavacTool.deployedModsDirName).toString(),
       "-m", "Controller/controller.ChildMain",
-      folder.toString()), out);
+      PathClassLoader.argOf(folder)), out);
   }
   @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
     return Coordinator.startMain(folder, stdLib("base"), main, input, grants.reads(), grants.edits(), attenuators, Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
