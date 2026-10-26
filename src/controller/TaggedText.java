@@ -65,7 +65,7 @@ public final class TaggedText{
       return res.toString();
     }
     try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
-    catch (CharacterCodingException e){ throw bad.apply("\""+text+"\" names a path this system can not give to Java: its bytes are not valid in "+System.getProperty("sun.jnu.encoding")+"."); }
+    catch (CharacterCodingException e){ throw bad.apply("\""+text+"\" names a path this system cannot give to Java: its bytes are not valid in "+System.getProperty("sun.jnu.encoding")+"."); }
   }
   private static String strExpr(String s){
     var parts= List.of(s.split("\n", -1));

@@ -62,7 +62,7 @@ final class Info{
       return res.toString();
     }
     try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
-    catch (CharacterCodingException e){ throw new IllegalStateException("The manager wrote the path \""+s+"\", which this system can not give to Java.", e); }
+    catch (CharacterCodingException e){ throw new IllegalStateException("The manager wrote the path \""+s+"\", which this system cannot give to Java.", e); }
   }
   private Object value(){
     ws();

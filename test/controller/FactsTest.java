@@ -210,7 +210,7 @@ Restore it, or forget this project.""", facts(dir.resolve("gone"), "gone", Kind.
     Disk.noRead(hidden);
     Assumptions.assumeFalse(Files.isReadable(hidden));
     same("""
-The folder of this project can not be read:
+The folder of this project cannot be read:
 [###]someProject
 access denied: [###]_hello
 Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());

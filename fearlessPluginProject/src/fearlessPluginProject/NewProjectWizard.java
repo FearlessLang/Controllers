@@ -201,7 +201,7 @@ NoCr: BadStrUnitRecover{reason, byteOffset, byteLength, rejectedValue -> (reject
       var f= folder();
       if (demo.isEmpty() || !Files.exists(f)){ return Optional.empty(); }
       try (var entries= Files.list(f)){ return entries.findAny().map(e -> "The folder "+f+" is not empty: a demo goes in a new or empty folder."); }
-      catch (IOException e){ return Optional.of("The folder "+f+" can not be read: "+e.getMessage()); }
+      catch (IOException e){ return Optional.of("The folder "+f+" cannot be read: "+e.getMessage()); }
     }
     private void browse(){
       var chosen= new DirectoryDialog(getShell()).open();

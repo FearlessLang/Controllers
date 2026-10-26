@@ -72,6 +72,6 @@ final class TaggedTextTest{
     err("\"Base16:4\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.", () -> read("Base16:4"));
     err("[###]each as 2 uppercase hex digits.", () -> read("Base16:4a00"));
     if (Fs.isWindows()){ err("\"Base16:430000\" is malformed: a Windows name is 16 bit units, so its bytes are an even number.", () -> read("Base16:430000")); return; }
-    err("\"Base16:FF\" names a path this system can not give to Java: its bytes are not valid in "+System.getProperty("sun.jnu.encoding")+".", () -> read("Base16:FF"));
+    err("\"Base16:FF\" names a path this system cannot give to Java: its bytes are not valid in "+System.getProperty("sun.jnu.encoding")+".", () -> read("Base16:FF"));
   }
 }

@@ -442,7 +442,7 @@ abstract class ManagerTest{
     on("arch_sway", () -> waitClickKeys(val(100), val(600), val(600), KeyEvent.VK_ALT, KeyEvent.VK_SHIFT, KeyEvent.VK_Q)),//a click on an empty part of the file manager window, then Alt+Shift+Q, the key closing a window on this desk
     on("void_i3", () -> waitClickKeys(val(100), val(600), val(600), KeyEvent.VK_ALT, KeyEvent.VK_SHIFT, KeyEvent.VK_Q)),//a click on an empty part of the file manager window, then Alt+Shift+Q, the key closing a window on this desk
     on("omarchy_hyprland", () -> waitClick(val(100), val(1884), val(61))));
-  //makes the files icon reachable, on a desk where filesIcon can not reach it directly; on every other desk a wait, which is not a finding
+  //makes the files icon reachable, on a desk where filesIcon cannot reach it directly; on every other desk a wait, which is not a finding
   final Action showFilesIcon= action("showFilesIcon",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(100))),
@@ -458,7 +458,7 @@ abstract class ManagerTest{
     on("arch_sway", () -> waitKeys(val(100), KeyEvent.VK_ALT, KeyEvent.VK_D)),//Alt+D opens the launcher of this desk
     on("void_i3", () -> waitKeys(val(100), KeyEvent.VK_ALT, KeyEvent.VK_D)),//Alt+D opens the launcher of this desk
     on("omarchy_hyprland", () -> waitKeys(val(100), KeyEvent.VK_ALT, KeyEvent.VK_SPACE)));//Alt+Space opens the apps menu of this desk
-  //makes the open file manager window reachable, on a desk where fileManagerToFront can not reach it directly; on every other desk, also where the file manager window is already visible, a wait, which is not a finding
+  //makes the open file manager window reachable, on a desk where fileManagerToFront cannot reach it directly; on every other desk, also where the file manager window is already visible, a wait, which is not a finding
   final Action showFileManager= action("showFileManager",
     on("ubuntu_gnome", () -> waitAfter(val(100))),
     on("kubuntu_plasma", () -> waitAfter(val(100))),
