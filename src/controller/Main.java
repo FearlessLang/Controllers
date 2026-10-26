@@ -32,6 +32,8 @@ import gui.Window;
 import managerMessages.Report;
 import managerMessages.Violation;
 import tools.Fs;
+import tools.PathBytes;
+import tools.PathClassLoader;
 import tools.JavacTool;
 import userMessages.UserError;
 import utils.Bug;
@@ -62,7 +64,7 @@ public final class Main implements Manager.Exit{
     NativeLocaleForcer.forceEnglish();
     Fs.onSymbolicLink= Report::symbolicLink;
     var exitCode= 0;
-    try{ run(message(args)); }
+    try{ NativeLocaleForcer.requireUtf8FileNames(); run(message(fileAsArg(args))); }
     catch (UserError e){ exitCode = 1; fatal(e); }
     catch (VirtualMachineError|LinkageError e){ exitCode = 2; fatal(Violation.vmOrLinkageFailure(e)); }
     catch (Throwable t){ exitCode = 3; fatal(UserError.crashed(t)); }
@@ -71,6 +73,12 @@ public final class Main implements Manager.Exit{
   //TO TEST: on Windows the launcher hands Java a '?' in place of an unpaired surrogate of the
   //argument, so a file whose name holds one is refused as a broken path when given as the
   //argument; a "Base16:" path of a FearlessCommand argument carries it.
+  //The JVM hands main the arguments decoded as text, and bytes not valid in the file name encoding are
+  //lost: a file argument is read again as the bytes the process received, and handed on as PathClassLoader.argOf.
+  private static String[] fileAsArg(String[] args){
+    if (args.length != 1 || args[0].startsWith(prefix)){ return args; }
+    return new String[]{PathClassLoader.argOf(PathBytes.arg(args, 0).toAbsolutePath())};
+  }
   static String message(String... args){
     if (args.length == 0){ return "Show"; }
     if (!args[0].startsWith(prefix)){ return file(args); }
@@ -87,21 +95,21 @@ public final class Main implements Manager.Exit{
   }
   private static String absolute(String tagged){
     try{
-      var given= TaggedText.read(tagged, Refused::new);
-      if (given.isBlank() || Path.of(given).isAbsolute()){ return tagged; }
-      return TaggedText.line(Path.of(given).toAbsolutePath().toString());
+      var given= TaggedText.readPath(tagged, Refused::new);
+      if (given.toString().isBlank() || given.isAbsolute()){ return tagged; }
+      return TaggedText.ofPath(given.toAbsolutePath());
     }
     catch (Refused|InvalidPathException e){ return tagged; }
   }
   private static String file(String[] args){
     if (args.length > 1){ return "InvalidCall\n"+Report.tooManyArguments(List.of(args)); }
     Path path;
-    try{ path= Path.of(args[0]).toAbsolutePath().normalize(); }
-    catch (InvalidPathException e){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
+    try{ path= (args[0].startsWith("file:") ? PathClassLoader.pathOf(args[0]) : Path.of(args[0])).toAbsolutePath().normalize(); }
+    catch (IllegalArgumentException e){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
     if (args[0].isBlank() || path.getFileName() == null){ return "InvalidCall\n"+Report.brokenPath(args[0]); }
     var project= Files.isDirectory(path) || path.getFileName().toString().endsWith(Names.ext);
     var verb= project ? "Register" : "OpenWithOrShortcut";
-    return verb+"\n"+TaggedText.line(path.toString());
+    return verb+"\n"+TaggedText.ofPath(path);
   }
   public static void command(String verb, String... args){
     var cmd= Stream.concat(Stream.of(Association.launcher().toString(), prefix+verb), Stream.of(args)).toList();
@@ -111,7 +119,7 @@ public final class Main implements Manager.Exit{
     pb.environment().keySet().removeIf(k -> k.startsWith("_JPACKAGE_"));
     Fs.of(pb::start);
   }
-  public static String path(Path p){ return TaggedText.base16(p.toString()); }
+  public static String path(Path p){ return TaggedText.ofPath(p); }
   private static void fatal(UserError e){
     if (started.isEmpty()){ display(e); return; }
     var main= started.get();

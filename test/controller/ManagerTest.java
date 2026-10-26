@@ -56,6 +56,7 @@ import mainCoordinator.MakeDemo;
 import resources.LocalResources;
 import tools.ChildJvm;
 import tools.Fs;
+import tools.PathBytes;
 import userMessages.Report;
 import userMessages.UserError;
 import userMessages.Violation;
@@ -247,7 +248,18 @@ public class Child{
     var odd= folder(dir, Fs.isWindows() ? "a\ud800b" : "a\nb");
     send(m, "Register", TaggedText.line(odd.toString()));
     assertEquals(List.of("a_b "+odd), listed(m));
-    same(Fs.isWindows() ? "[###]\"path\": \"Base16:[###]610000D86200\",[###]" : "[###]\"path\": \"Str:[###]/a\\nb\",[###]", info(dir));
+    same(Fs.isWindows() ? "[###]\"path\": \"Base16:[###]610000D86200\",[###]" : "[###]\"path\": \"UStr:([###]/a\\\" | \\\"b\\\").u\",[###]", info(dir));
+    var again= manager(dir);
+    again.settle();
+    assertEquals(Kind.idle, project(again, odd).kind());
+  }
+  @Test void aFolderNamedByBytesThatAreNotUtf8IsRegisteredByItsMessageAndRemembered(@TempDir Path dir){
+    Assumptions.assumeTrue(Fs.isLinux());
+    var m= manager(dir);
+    var odd= dir.resolve(PathBytes.path(new byte[]{'c', 'a', 'f', (byte)0xE9}));
+    Fs.ensureDir(odd);
+    send(m, "Register", TaggedText.ofPath(odd));
+    same("[###]\"path\": \"Base16:[###]\",[###]", info(dir));
     var again= manager(dir);
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());

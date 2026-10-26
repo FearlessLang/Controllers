@@ -1,9 +1,9 @@
 package fearlessPluginProject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -11,6 +11,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -85,14 +86,25 @@ public final class ManagerLink{
     try{ return Files.getLastModifiedTime(file).toMillis(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
+  //As controller.TaggedText: the bytes of a name on Linux and macOS are the ones its file URI escapes.
   static String pathArg(Path path){
     var text= path.toString();
-    if (!System.getProperty("os.name").startsWith("Windows")){ return "Base16:"+HexFormat.of().withUpperCase().formatHex(text.getBytes(Charset.forName(System.getProperty("sun.jnu.encoding")))); }
+    if (!Info.windows){ return "Base16:"+HexFormat.of().withUpperCase().formatHex(uriBytes(path.toAbsolutePath().toUri().getRawPath())); }
     var bytes= new byte[text.length()*2];
     for (int i= 0; i < text.length(); i += 1){ bytes[2*i] = (byte)text.charAt(i); bytes[2*i+1] = (byte)(text.charAt(i) >> 8); }
     return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes);
   }
-  private static Path path(Object text){ return Path.of(Info.tagged(text)); }
+  private static byte[] uriBytes(String raw){
+    var res= new ByteArrayOutputStream();
+    for (int i= 0; i < raw.length(); i += 1){
+      if (raw.charAt(i) != '%'){ res.write(raw.charAt(i)); continue; }
+      res.write(HexFormat.fromHexDigits(raw, i+1, i+3));
+      i += 2;
+    }
+    var bytes= res.toByteArray();
+    return bytes.length > 1 && bytes[bytes.length-1] == '/' ? Arrays.copyOf(bytes, bytes.length-1) : bytes;
+  }
+  private static Path path(Object text){ return Info.taggedPath(text); }
   static void send(String verb, String... args){
     var cmd= Stream.concat(Stream.of(launcher.toString(), "FearlessCommand"+verb), Stream.of(args)).toList();
     try{ new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(); }

@@ -33,7 +33,7 @@ public final class Eclipse{
     var info= List.of(field("program", program), field("launcher", launcher), field("manager", managerDir), field("baseCache", baseCache));
     replace(fearless.resolve("manager.info"), Info.print(new Obj(info, Info.noSpan)).getBytes(UTF_8));
   }
-  private static Field field(String key, Path value){ return new Field(key, Info.noSpan, new Str(TaggedText.of(value.toString()), Info.noSpan)); }
+  private static Field field(String key, Path value){ return new Field(key, Info.noSpan, new Str(TaggedText.ofPath(value), Info.noSpan)); }
   private static void replace(Path file, byte[] content){
     var tmp= file.resolveSibling(file.getFileName()+".tmp");
     Fs.ensureDir(file.getParent());

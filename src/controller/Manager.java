@@ -253,12 +253,11 @@ public final class Manager{
     }
   }
   private static Path path(String verb, String text){
-    var given= TaggedText.read(text, m -> new Refused(Report.notTagged(verb, m)));
-    if (given.isBlank()){ throw new Refused(Report.blankPath(verb)); }
     Path res;
-    try{ res= Path.of(given); }
-    catch (InvalidPathException e){ throw new Refused(Report.notAPath(verb, given, e.getReason())); }
-    if (!res.isAbsolute()){ throw new Refused(Report.relativePath(verb, given)); }
+    try{ res= TaggedText.readPath(text, m -> new Refused(Report.notTagged(verb, m))); }
+    catch (InvalidPathException e){ throw new Refused(Report.notAPath(verb, e.getInput(), e.getReason())); }
+    if (res.toString().isBlank()){ throw new Refused(Report.blankPath(verb)); }
+    if (!res.isAbsolute()){ throw new Refused(Report.relativePath(verb, res.toString())); }
     return res.normalize();
   }
   private void project(String verb, List<String> args, Optional<Follow> follow){
