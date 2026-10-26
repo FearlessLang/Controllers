@@ -1,12 +1,17 @@
 package controller;
 
+import static java.nio.charset.StandardCharsets.UTF_16LE;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -14,29 +19,35 @@ import java.util.stream.Stream;
 
 import metaParser.Message;
 import tools.Fs;
+import tools.PathBytes;
 import utils.Range;
 
-/// A text that may hold characters outside the Fearless character set, as the files and messages
-/// of the manager write it: "Str:" then the text, when every character is in the Fearless
-/// character set; else "UStr:" then the text as UStr.escape prints it, when it is Unicode; else
-/// (a path only) "Base16:" then the bytes naming it on this system, two uppercase hex digits each.
-/// Any of the three reads back as the same text.
+/// A path as the files and messages of the manager write it: "Str:" then its text, when every
+/// character is in the Fearless character set and on one line; else "UStr:" then its text as
+/// UStr.escape prints it; else "Base16:" then the units naming it, two uppercase hex digits each.
+/// The units of a name are its bytes on Linux and macOS, its 16 bit units on Windows, written little
+/// endian. The text of a path is the decoding of its units as UTF-8 (on Windows, as UTF-16): a path
+/// is written as text when its units decode, and as "Base16:" otherwise. Any of the three reads back
+/// as the same units, whatever file name encoding the reading JVM has.
 public final class TaggedText{
   private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
   public static String of(String text){ return text.codePoints().allMatch(TaggedText::safe) ? "Str:"+text : notStr(text); }
   public static String line(String text){ return text.indexOf('\n') < 0 ? of(text) : notStr(text); }
-  private static String notStr(String text){
-    if (text.codePoints().noneMatch(TaggedText::surrogate)){ return "UStr:"+uStr(text.codePoints().toArray()); }
-    return base16(text);
+  private static String notStr(String text){ return "UStr:"+uStr(text.codePoints().toArray()); }
+  public static String ofPath(Path p){
+    var units= units(p);
+    return text(units).map(TaggedText::line).orElseGet(() -> "Base16:"+HexFormat.of().withUpperCase().formatHex(units));
   }
-  public static String base16(String path){ return "Base16:"+HexFormat.of().withUpperCase().formatHex(bytes(path)); }
+  static Path readPath(String tagged, Function<String,? extends RuntimeException> bad){
+    if (!tagged.startsWith("Base16:")){ var text= read(tagged, bad); return pathOf(units(text), text, bad); }
+    var hex= tagged.substring("Base16:".length());
+    if (!hex.matches("(?:[0-9A-F]{2})+")){ throw bad.apply("\""+tagged+"\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits."); }
+    return pathOf(HexFormat.of().parseHex(hex), tagged, bad);
+  }
   static String read(String text, Function<String,? extends RuntimeException> bad){
     if (text.startsWith("Str:")){ return safeAfter("Str:", text, bad); }
     if (text.startsWith("UStr:")){ return new Reader(safeAfter("UStr:", text, bad), bad).all(); }
-    if (!text.startsWith("Base16:")){ throw bad.apply("\""+text+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way."); }
-    var hex= text.substring("Base16:".length());
-    if (!hex.matches("(?:[0-9A-F]{2})+")){ throw bad.apply("\""+text+"\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits."); }
-    return path(HexFormat.of().parseHex(hex), text, bad);
+    throw bad.apply("\""+text+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.");
   }
   private static String safeAfter(String tag, String text, Function<String,? extends RuntimeException> bad){
     var res= text.substring(tag.length());
@@ -46,26 +57,26 @@ public final class TaggedText{
   }
   private static boolean safe(int c){ return c < 128 && Fs.allowed.indexOf(c) >= 0; }
   private static boolean surrogate(int c){ return c >= 0xD800 && c <= 0xDFFF; }
-  //A Windows name is UTF-16 code units, written little endian; an unpaired surrogate is a unit
-  //like any other, and Java keeps it in a String. Tested on Windows only.
-  //Elsewhere a name is bytes, which Java decodes and encodes with sun.jnu.encoding. TO TEST on
-  //Linux and macOS: a folder whose name is not valid in that encoding (Java gives the manager
-  //another name, which names nothing).
-  private static byte[] bytes(String path){
-    if (!Fs.isWindows()){ return path.getBytes(Charset.forName(System.getProperty("sun.jnu.encoding"))); }
-    var res= new byte[path.length()*2];
-    for (int i : Range.of(0, path.length())){ res[2*i] = (byte)path.charAt(i); res[2*i+1] = (byte)(path.charAt(i) >> 8); }
+  private static byte[] units(Path p){ return Fs.isWindows() ? utf16Units(p.toString()) : PathBytes.of(p); }
+  private static byte[] units(String text){ return Fs.isWindows() ? utf16Units(text) : text.getBytes(UTF_8); }
+  private static byte[] utf16Units(String s){
+    var res= new byte[s.length()*2];
+    for (int i : Range.of(0, s.length())){ res[2*i] = (byte)s.charAt(i); res[2*i+1] = (byte)(s.charAt(i) >> 8); }
     return res;
   }
-  private static String path(byte[] bytes, String text, Function<String,? extends RuntimeException> bad){
-    if (Fs.isWindows()){
-      if (bytes.length % 2 != 0){ throw bad.apply("\""+text+"\" is malformed: a Windows name is 16 bit units, so its bytes are an even number."); }
-      var res= new StringBuilder();
-      for (int i= 0; i < bytes.length; i += 2){ res.append((char)((bytes[i] & 0xFF) | (bytes[i+1] & 0xFF) << 8)); }
-      return res.toString();
+  private static Optional<String> text(byte[] units){
+    try{ return Optional.of((Fs.isWindows() ? UTF_16LE : UTF_8).newDecoder().decode(ByteBuffer.wrap(units)).toString()); }
+    catch (CharacterCodingException e){ return Optional.empty(); }
+  }
+  private static Path pathOf(byte[] units, String given, Function<String,? extends RuntimeException> bad){
+    if (!Fs.isWindows()){
+      for (var b : units){ if (b == 0){ throw new InvalidPathException(given, "Nul character not allowed"); } }
+      return PathBytes.path(units);
     }
-    try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
-    catch (CharacterCodingException e){ throw bad.apply("\""+text+"\" names a path this system cannot give to Java: its bytes are not valid in "+System.getProperty("sun.jnu.encoding")+"."); }
+    if (units.length % 2 != 0){ throw bad.apply("\""+given+"\" is malformed: a Windows name is 16 bit units, so its bytes are an even number."); }
+    var res= new StringBuilder();
+    for (int i= 0; i < units.length; i += 2){ res.append((char)((units[i] & 0xFF) | (units[i+1] & 0xFF) << 8)); }
+    return Path.of(res.toString());
   }
   private static String strExpr(String s){
     var parts= List.of(s.split("\n", -1));

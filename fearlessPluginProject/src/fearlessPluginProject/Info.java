@@ -1,8 +1,7 @@
 package fearlessPluginProject;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,9 +14,8 @@ import java.util.stream.Stream;
 
 /// Reads the Info files the manager writes (fileSupport.Info in Coordinator): objects {...},
 /// lists [...] and strings "..." (escapes \" \\ \n); an object becomes a Map in field order.
-/// A text that may hold characters outside the Fearless character set (a path, a compile error)
-/// is tagged, as controller.TaggedText writes it: "Str:" then the text, "UStr:" then the text as
-/// UStr.escape prints it, or "Base16:" then the bytes naming a path on this system.
+/// A path is tagged, as controller.TaggedText writes it: "Str:" then its text, "UStr:" then its
+/// text as UStr.escape prints it, or "Base16:" then the units naming it.
 /// Anything else is an error naming the file and the offset.
 final class Info{
   private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
@@ -37,32 +35,39 @@ final class Info{
   }
   @SuppressWarnings("unchecked") static Map<String,Object> obj(Object value){ return (Map<String,Object>)value; }
   @SuppressWarnings("unchecked") static List<Object> lst(Object value){ return (List<Object>)value; }
-  static String tagged(Object value){
+  static Path taggedPath(Object value){
     var s= (String)value;
-    if (s.startsWith("Str:")){ return s.substring("Str:".length()); }
-    if (s.startsWith("UStr:")){
-      var p= new Info("the text \""+s+"\"", s.substring("UStr:".length()));
-      try{
-        var res= p.expr();
-        if (p.i != p.text.length()){ throw p.bad("the end of the text"); }
-        return res;
-      }
-      catch (IndexOutOfBoundsException e){ throw p.bad("more text"); }
+    if (s.startsWith("Base16:")){
+      if (!s.substring("Base16:".length()).matches("(?:[0-9A-F]{2})+")){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
+      return path(HexFormat.of().parseHex(s.substring("Base16:".length())), s);
     }
-    if (!s.startsWith("Base16:") || !s.substring("Base16:".length()).matches("(?:[0-9A-F]{2})+")){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
-    return path(HexFormat.of().parseHex(s.substring("Base16:".length())), s);
+    var text= text(s);
+    return windows ? Path.of(text) : path(text.getBytes(StandardCharsets.UTF_8), s);
   }
-  //As controller.TaggedText: UTF-16 little endian units on Windows, sun.jnu.encoding bytes
-  //elsewhere. TO TEST on Linux and macOS.
-  private static String path(byte[] bytes, String s){
-    if (System.getProperty("os.name").startsWith("Windows")){
-      if (bytes.length % 2 != 0){ throw new IllegalStateException("The manager wrote the malformed path \""+s+"\"."); }
-      var res= new StringBuilder();
-      for (int j= 0; j < bytes.length; j += 2){ res.append((char)((bytes[j] & 0xFF) | (bytes[j+1] & 0xFF) << 8)); }
-      return res.toString();
+  private static String text(String s){
+    if (s.startsWith("Str:")){ return s.substring("Str:".length()); }
+    if (!s.startsWith("UStr:")){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
+    var p= new Info("the text \""+s+"\"", s.substring("UStr:".length()));
+    try{
+      var res= p.expr();
+      if (p.i != p.text.length()){ throw p.bad("the end of the text"); }
+      return res;
     }
-    try{ return Charset.forName(System.getProperty("sun.jnu.encoding")).newDecoder().decode(ByteBuffer.wrap(bytes)).toString(); }
-    catch (CharacterCodingException e){ throw new IllegalStateException("The manager wrote the path \""+s+"\", which this system cannot give to Java.", e); }
+    catch (IndexOutOfBoundsException e){ throw p.bad("more text"); }
+  }
+  static final boolean windows= System.getProperty("os.name").startsWith("Windows");
+  //As controller.TaggedText: the units of a name are 16 bit units on Windows, written little endian,
+  //and bytes elsewhere, which a file URI writes one by one. TO TEST on Windows and macOS.
+  private static Path path(byte[] units, String s){
+    if (!windows){
+      var uri= new StringBuilder("file://");
+      for (var b : units){ uri.append('%').append(HexFormat.of().toHexDigits(b)); }
+      return Path.of(URI.create(uri.toString().replace("%2f", "/")));
+    }
+    if (units.length % 2 != 0){ throw new IllegalStateException("The manager wrote the malformed path \""+s+"\"."); }
+    var res= new StringBuilder();
+    for (int j= 0; j < units.length; j += 2){ res.append((char)((units[j] & 0xFF) | (units[j+1] & 0xFF) << 8)); }
+    return Path.of(res.toString());
   }
   private Object value(){
     ws();

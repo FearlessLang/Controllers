@@ -160,12 +160,11 @@ public final class Registry{
   }
   private static Path pathOf(String source, String alias, Obj obj){
     var field= obj.field("path").orElseThrow(() -> Info.err(source, obj.span(), Report.infoMissingPath(alias)));
-    var s= TaggedText.read(str(source, field.value(), "\"path\""), m -> Info.err(source, field.value().span(), m));
-    if (s.isEmpty()){ throw Info.err(source, field.value().span(), Report.infoEmptyPath()); }
     Path path;
-    try{ path= Path.of(s); }
+    try{ path= TaggedText.readPath(str(source, field.value(), "\"path\""), m -> Info.err(source, field.value().span(), m)); }
     catch (InvalidPathException e){ throw Info.err(source, field.value().span(), Report.infoNotAPath(e.getMessage())); }
-    if (!path.isAbsolute()){ throw Info.err(source, field.value().span(), Report.infoNotAbsolute(s)); }
+    if (path.toString().isEmpty()){ throw Info.err(source, field.value().span(), Report.infoEmptyPath()); }
+    if (!path.isAbsolute()){ throw Info.err(source, field.value().span(), Report.infoNotAbsolute(path.toString())); }
     return path.normalize();
   }
   private static Kind kindOf(String source, String alias, Obj obj){
@@ -229,7 +228,7 @@ public final class Registry{
   }
   private static Info entryToInfo(Entry e){
     var fields= new ArrayList<Field>();
-    fields.add(new Field("path", Info.noSpan, new Info.Str(TaggedText.of(e.path().toString().replace(e.path().getFileSystem().getSeparator(), "/")), Info.noSpan)));
+    fields.add(new Field("path", Info.noSpan, new Info.Str(TaggedText.ofPath(e.path()), Info.noSpan)));
     fields.add(new Field("kind", Info.noSpan, new Info.Str(e.kind().text, Info.noSpan)));
     if (!e.mains().isEmpty()){ fields.add(new Field("mains", Info.noSpan, strList(e.mains()))); }
     if (!e.mounts().isEmpty()){ fields.add(new Field("mounts", Info.noSpan, new Obj(e.mounts().entrySet().stream().map(m -> new Field(m.getKey(), Info.noSpan, new Info.Str(m.getValue(), Info.noSpan))).toList(), Info.noSpan))); }
