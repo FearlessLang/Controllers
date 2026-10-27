@@ -81,6 +81,18 @@ Gui
     assertEquals(Optional.empty(), docs.type("_AANat", 0));
     assertEquals(Optional.empty(), docs.method("_AANat", 0, ".str", 0));
   }
+  @Test void aMethodWithOneLinePerReceiverCapabilityComesWithEveryLine(){
+    var d= new Docs("""
+package base
+
+EList[E:*]
+\tmut .get(Nat):E
+    the element as mut
+\tread .get(Nat):read/imm E
+    the element as read
+""");
+    same("mut .get(Nat):E\nthe element as mut\nread .get(Nat):read/imm E\nthe element as read", d.method("EList", 1, ".get", 1).orElseThrow());
+  }
   @Test void aMissingPublicTypeOrMethodIsAnError(){
     same("No type Nope with 0 generics in the documentation", assertThrows(IllegalArgumentException.class, () -> docs.type("Nope", 0)).getMessage());
     same("No type Nat with 1 generics in the documentation", assertThrows(IllegalArgumentException.class, () -> docs.type("Nat", 1)).getMessage());
