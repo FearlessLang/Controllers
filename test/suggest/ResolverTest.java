@@ -190,10 +190,10 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same("", names("NewThing[T]: OrderHash[NewThing[T]] { .foo(l: List[T]) -> l.get(0).| }"));
     same(".assertEq .cmp .hash", names("A: { .foo(n: NewThing) -> n.| }\nNewThing: OrderHash[NewThing] { }"));
   }
-  @Test void aDeclarationTheLastCompileDoesNotKnowHasTheMethodOfItsFirstSupertypeHavingIt(){
-    same(opt, names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.| }"));
-    same(nat, names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.get.| }"));
-    same(".size +", names("NewThing: Opt[Str], Opt[Nat] { .foo -> this.get.| }"));
+  @Test void aDeclarationTheLastCompileDoesNotKnowHasEveryMethodOfItsSupertypes(){
+    same(".get .get .match .match", names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.| }"));
+    same(".size .str + + <=> >", names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.get.| }"));
+    same(".size .str + + <=> >", names("NewThing: Opt[Str], Opt[Nat] { .foo -> this.get.| }"));
   }
   @Test void cyclicSupertypesTheLastCompileDoesNotKnowAddNoMethods(){
     same(".assertEq .cmp .hash", names("A: B, OrderHash[A] { .foo(a: A) -> a.| }\nB: A { }"));
@@ -350,6 +350,34 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     assertEquals(typed.lastIndexOf("Or"), at(typed).from());
     var empty= "A: { .foo: OrderHash[Person] -> Bob: |";
     assertEquals(empty.indexOf('|'), at(empty).from());
+  }
+  @Test void anArgumentWithoutParenthesisExpectsItsParameterType(){
+    same("Nat", expected("A: { .foo: Str -> 1 + |"));
+    same("Nat", expected(file+"ps.get |"));
+  }
+  @Test void aLiteralArgumentOfAnArgumentIsTypedByTheTypeExpectedOfTheOuterCall(){
+    same(nat, names("A: { .foo: Opt[Opt[F[Nat,Nat]]] -> Opts#(Opts#({x -> x.| })) }"));
+  }
+  static String rc(String rc, String method){ return method.replaceFirst("\"imm\"", "\""+rc+"\""); }
+  static final Api boxes= new Api(Api.parse(list(
+    type("base.Nat", bs(), "[]", m(".str", bs(), list(), c("base.Str"))),
+    type("base.Str", bs(), "[]", m(".size", bs(), list(), c("base.Nat"))),
+    type("test.Box", bs("E"), "[]",
+      rc("read", m(".get", bs(), list(), x("E"))), rc("mut", m(".get", bs(), list(), x("E"))),
+      rc("read", m(".at", bs(), list(c("base.Str")), x("E"))), rc("mut", m(".at", bs(), list(c("base.Str")), x("E")))))));
+  static Suggestions box(String text){
+    var pos= text.indexOf('|');
+    return Resolver.of(boxes, "test", Map.of(), "use base.Nat as Nat;", text.substring(0, pos)+text.substring(pos+1)).suggest(pos);
+  }
+  @Test void aCallOfAMethodWithOneSignaturePerReceiverCapabilityHasItsResultType(){
+    same(".str", box("A: { .foo(b: Box[Nat]) -> b.get.| }").rows().stream().map(Row::name).collect(Collectors.joining(" ")));
+    same(".str", box("A: { .foo(b: Box[Nat]) -> b.at(\"a\").| }").rows().stream().map(Row::name).collect(Collectors.joining(" ")));
+    same("Str", box("A: { .foo(b: Box[Nat]) -> b.at(Bob: |").supers().stream().map(Ty::show).collect(Collectors.joining(" ")));
+  }
+  @Test void theMethodsDifferingInTheReceiverCapabilityShowTheirCapability(){
+    var rows= box("A: { .foo(b: Box[Nat]) -> b.| }").rows();
+    same(".at .at .get .get", rows.stream().map(Row::name).collect(Collectors.joining(" ")));
+    same("4", ""+rows.stream().map(Row::display).distinct().count());
   }
   @Test void noTextNorCursorMakesTheSuggestionsThrow() throws IOException{
     var heads= head+"\nuse Foo as B;\nuse base. as C;\nuse as D;\nuse lib.Str as;\nuse lib.Nat as N;";
