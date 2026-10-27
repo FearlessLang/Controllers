@@ -9,6 +9,8 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
 
+import tools.JavacTool;
+
 /// Association is a thin adapter over Commons' fileAssociations; these pin the
 /// adapter's identity/family rules.
 final class AssociationTest{
@@ -19,6 +21,11 @@ final class AssociationTest{
     assertEquals(identity, Association.identity(Path.of(linuxLauncher)));
     assertEquals(identity, Association.identity(Path.of("fearlessManaged0_001.exe")));
     assertNotEquals(Association.identity(Path.of(linuxLauncher)), Association.identity(Path.of("/home/me/fearlessBin0_001/bin/fearlessBin0_001")));
+  }
+  @Test void theTwoLaunchersOfOneFearlessAreOneIdentity(){
+    assertEquals(JavacTool.managerFolderOf(Path.of(linuxLauncher)), JavacTool.managerFolderOf(Path.of(linuxLauncher+"w")));
+    assertEquals(Association.identity(Path.of(linuxLauncher)), Association.identity(Path.of(linuxLauncher+"w")));
+    assertEquals(Association.identity(Path.of("fearlessManaged0_001.exe")), Association.identity(Path.of("fearlessManaged0_001w.exe")));
   }
   @Test void everyLauncherOfTheFamilyNamesItInItsOwnFile(){
     assertTrue(Association.belongsToFamily.test("fearlessManaged0_001"));
