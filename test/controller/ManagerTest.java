@@ -690,6 +690,17 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(1, view.refused.size());
     same("--- running hello.Hello ---\nran hello.Hello\n[###]", view.out(hello));
   }
+  @Test void theProblemOfADataProjectNamesTheZipWhoseEntryNameIsNotUtf8(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    var bytes= new ByteArrayOutputStream();
+    Fs.ofV(() -> { try (var z= new ZipOutputStream(bytes, StandardCharsets.ISO_8859_1)){ z.putNextEntry(new ZipEntry("caf\u00e9.txt")); z.write('h'); } });
+    Fs.ofV(() -> Files.write(data.resolve("pics.zip"), bytes.toByteArray()));
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    assertEquals(Project.State.dataReadInvalid, project(m, data).state());
+    same("[###]pics.zip[###]", project(m, data).problem().orElseThrow());
+  }
   @Test void aFolderHoldingAResourceWithoutExtensionNamedAsTheFolderIsRegisteredValid(@TempDir Path dir){
     var m= manager(dir);
     var todo= dir.resolve("todo");
@@ -698,6 +709,15 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Kind", project(m, todo).alias(), "dataRead");
     assertEquals(Optional.empty(), project(m, todo).problem());
     assertEquals(Project.State.dataRead, project(m, todo).state());
+  }
+  @Test void aDataProjectHoldingAResourceDatedInTheFutureIsValid(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    Fs.ofV(() -> Files.setLastModifiedTime(data.resolve("readme.txt"), FileTime.fromMillis(System.currentTimeMillis() + Duration.ofDays(1).toMillis())));
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    assertEquals(Optional.empty(), project(m, data).problem());
+    assertEquals(Project.State.dataRead, project(m, data).state());
   }
   @Test void aRunningMainKeepsTheDataProjectsOfItsMountsUntilItEnds(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Notes"), "hello.Slow"));
