@@ -47,7 +47,7 @@ final class TaggedTextTest{
   }
   @Test void aPathThatIsNotUnicodeIsBase16OfTheUtf16LittleEndianUnitsOfWindows(){
     Assumptions.assumeTrue(Fs.isWindows());
-    pathRoundTrip(Path.of("C:/a\ud800"), "Base16:43003A002F00610000D8");
+    pathRoundTrip(Path.of("C:/a\ud800"), "Base16:43003A005C00610000D8");
   }
   @Test void aPathIsStrOrUStrWhenItsBytesAreUtf8AndBase16Otherwise(){
     Assumptions.assumeTrue(Fs.isLinux());

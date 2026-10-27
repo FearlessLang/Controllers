@@ -255,7 +255,7 @@ public final class Manager{
   private static Path path(String verb, String text){
     Path res;
     try{ res= TaggedText.readPath(text, m -> new Refused(Report.notTagged(verb, m))); }
-    catch (InvalidPathException e){ throw new Refused(Report.notAPath(verb, e.getInput(), e.getReason())); }
+    catch (InvalidPathException e){ throw new Refused(e.getInput().isBlank() ? Report.blankPath(verb) : Report.notAPath(verb, e.getInput(), e.getReason())); }
     if (res.toString().isBlank()){ throw new Refused(Report.blankPath(verb)); }
     if (!res.isAbsolute()){ throw new Refused(Report.relativePath(verb, res.toString())); }
     return res.normalize();
