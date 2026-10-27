@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -1086,6 +1087,60 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     assertEquals("The manager was given the port \"Port:0\", but a port is \"Port:\" then a number from 1 to 65535.", view.refused.get(1));
     assertEquals("The manager was given the port \"Port:65536\", but a port is \"Port:\" then a number from 1 to 65535.", view.refused.get(2));
     assertEquals(Project.State.codeNoCache, project(m, hello).state());
+  }
+  @Test void anArgumentHoldingANewlineIsRefusedOnThePortOfTheMessage(@TempDir Path dir){
+    var m= manager(dir);
+    try (var server= port()){
+      server.setSoTimeout(10_000);
+      var answer= follower(server);
+      send(m, Main.message("FearlessCommandShow", "a\nb", "Port:"+server.getLocalPort()));
+      assertEquals("Refused\n"+view.refused.getFirst(), answer.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+  }
+  @Test void anEmptyArgumentOfAMountOrAnAttenuateIsRefusedNotDropped(@TempDir Path dir){
+    var m= manager(dir, known(List.of("hello.NoGui"), List.of("hello.Pub"), List.of(), "hello.One"));
+    var hello= code(m, dir, "hello");
+    send(m, "Attenuate", "hello", "hello.One hello.NoGui");
+    send(m, "Mount", "hello", "hello.Pub data");
+    send(m, Main.message("FearlessCommandAttenuate", "hello", "hello.One", ""));
+    send(m, Main.message("FearlessCommandMount", "hello", "hello.Pub", ""));
+    assertEquals(Map.of("hello.One", List.of("hello.NoGui")), project(m, hello).entry().attenuators());
+    assertEquals(Map.of("hello.Pub", "data"), project(m, hello).entry().mounts());
+    assertEquals(2, view.refused.size());
+  }
+  private static List<String> mainsWhenHeard(ServerSocket server){
+    try (var s= server.accept(); var in= s.getInputStream()){
+      s.setSoTimeout(10_000);
+      in.read();
+      return ProcessHandle.current().descendants().filter(ProcessHandle::isAlive).flatMap(p -> p.info().commandLine().stream()).filter(c -> c.contains("ran hello.Slow")).toList();
+    }
+    catch (SocketTimeoutException e){ return List.of(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+  }
+  @Test void theConnectionOfAQuitHearsAppliedOnlyOnceNoMainRuns(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    try (var server= port()){
+      var heard= CompletableFuture.supplyAsync(() -> mainsWhenHeard(server));
+      send(m, "Quit", "Port:"+server.getLocalPort());
+      assertEquals(List.of(), heard.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    finally{ send(m, "Terminate", "hello"); idle(m); }
+  }
+  @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    try (var server= port()){
+      var check= follower(server);
+      send(m, "Check", "hello", "Port:"+server.getLocalPort());
+      assertEquals("Applied\nThis project has no compilation cache.\n", check.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    assertEquals("This project has no compilation cache.\n", view.out(hello));
   }
   @Test void connectingEclipseNeedsAnEclipseFolder(@TempDir Path dir){
     var m= manager(dir);
