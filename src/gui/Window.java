@@ -24,7 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -80,6 +82,7 @@ public final class Window implements Manager.View{
   final JSplitPane split= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
   private final Map<Path,Panel> panels= new HashMap<>();
   private final Map<Path,JDialog> editors= new HashMap<>();
+  private final Set<Path> written= ConcurrentHashMap.newKeySet();
   private final StandIn standIn= new StandIn();
   private State state= new State(List.of(), Optional.empty(), List.of());
   private Optional<Panel> shown= Optional.empty();
@@ -167,12 +170,13 @@ public final class Window implements Manager.View{
   }
   @Override public void edited(Path file){
     SwingUtilities.invokeLater(() -> { var editor= editors.remove(file); if (editor != null){ editor.dispose(); } });
-    Fs.ofV(() -> Files.deleteIfExists(file));
+    if (written.remove(file)){ Fs.ofV(() -> Files.deleteIfExists(file)); }
   }
   @Override public boolean visible(){ return onScreen; }
   private Path commit(String content){
     var file= Fs.of(() -> Files.createTempFile("projects", ".info"));
     file.toFile().deleteOnExit();
+    written.add(file);
     Fs.writeUtf8(file, content);
     Main.command("EditMetadata", Main.path(file));
     return file;
