@@ -27,7 +27,8 @@ public final class Association{
   static String identity(Path launcher){
     var file= launcher.getFileName().toString();
     var dot= file.lastIndexOf('.');
-    return dot < 0 ? file : file.substring(0, dot);
+    var name= dot < 0 ? file : file.substring(0, dot);
+    return name.endsWith(JavacTool.winKey) ? name.substring(0, name.length()-1) : name;
   }
   public static Path iconFile(){ return JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("icon.png"); }
   static String deskId(Path folder, String main){ return identity(launcher())+"-"+LinuxAssociations.hash((folder+"\n"+main).getBytes(StandardCharsets.UTF_8)); }
