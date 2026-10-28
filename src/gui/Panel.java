@@ -166,7 +166,7 @@ final class Panel{
   void render(Project p, List<Project> all, int height){
     var claimed= Project.claimed(all);
     var stamps= claimed.values().stream().flatMap(List::stream).map(c -> c.icon(".png").toFile().lastModified()).toList();
-    var next= List.of(p, all.stream().map(Project::entry).toList(), all.stream().map(Project::mains).toList(), claimed, stamps, height);
+    var next= List.of(p, all, stamps, height);
     if (next.equals(shown)){ return; }
     shown = next;
     project = p;

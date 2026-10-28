@@ -54,7 +54,7 @@ public final class Names{
   }
   private static boolean isFree(Path folder, String name, Set<String> taken){
     var moved= markers(folder).stream().limit(1).toList();
-    return !taken.contains(name) && list(folder).stream().filter(p -> !moved.contains(p)).noneMatch(p -> p.getFileName().toString().equalsIgnoreCase(name+ext));
+    return !taken.contains(name) && list(folder).stream().filter(p -> !moved.contains(p)).map(p -> p.getFileName().toString()).noneMatch(f -> f.equalsIgnoreCase(name+ext) || f.equalsIgnoreCase(name));
   }
   private static void nameAs(Path folder, String name){
     assert isName(name);

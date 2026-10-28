@@ -690,6 +690,15 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(1, view.refused.size());
     same("--- running hello.Hello ---\nran hello.Hello\n[###]", view.out(hello));
   }
+  @Test void aFolderHoldingAResourceWithoutExtensionNamedAsTheFolderIsRegisteredValid(@TempDir Path dir){
+    var m= manager(dir);
+    var todo= dir.resolve("todo");
+    Fs.writeUtf8(todo.resolve("todo"), "milk\n");
+    send(m, "Register", TaggedText.of(todo.toString()));
+    send(m, "Kind", project(m, todo).alias(), "dataRead");
+    assertEquals(Optional.empty(), project(m, todo).problem());
+    assertEquals(Project.State.dataRead, project(m, todo).state());
+  }
   @Test void aRunningMainKeepsTheDataProjectsOfItsMountsUntilItEnds(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Notes"), "hello.Slow"));
     var hello= code(m, dir, "hello");
