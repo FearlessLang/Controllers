@@ -21,9 +21,13 @@ public final class Docs{
   public Optional<String> type(String simple, int arity){ return header(simple, arity).map(this::text); }
   /// the method's line and its documentation
   public Optional<String> method(String simple, int arity, String name, int n){
-    return header(simple, arity).map(i -> text(IntStream.range(i+1, entryEnd(i))
-      .filter(j -> lines.get(j).startsWith("\t") && signature(lines.get(j)).equals(name+"/"+n)).findFirst()
-      .orElseThrow(() -> new IllegalArgumentException("No method "+name+"/"+n+" of "+simple+" in the documentation"))));
+    return header(simple, arity).map(i -> methods(i, simple, name, n));
+  }
+  private String methods(int i, String simple, String name, int n){
+    var res= IntStream.range(i+1, entryEnd(i))
+      .filter(j -> lines.get(j).startsWith("\t") && signature(lines.get(j)).equals(name+"/"+n)).mapToObj(this::text).toList();
+    if (res.isEmpty()){ throw new IllegalArgumentException("No method "+name+"/"+n+" of "+simple+" in the documentation"); }
+    return String.join("\n", res);
   }
   private Optional<Integer> header(String simple, int arity){
     var res= IntStream.range(0, lines.size()).filter(i -> isHeader(lines.get(i), simple, arity)).boxed().findFirst();
