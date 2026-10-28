@@ -51,6 +51,7 @@ import org.junit.jupiter.api.io.TempDir;
 import controller.Manager.State;
 import controller.Registry.Kind;
 import coordinator.MainsInfo;
+import fileSupport.LogFiles;
 import fileAssociations.Icon;
 import mainCoordinator.MakeDemo;
 import resources.LocalResources;
@@ -1026,6 +1027,23 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     assertEquals(List.of(hello), reads);
     assertEquals(Project.State.codeOutdated, p.state());
     assertEquals(Optional.empty(), p.mains());
+  }
+  private static Optional<MainsInfo> logged(Path f, Path log, List<Path> reads, Function<Path,Optional<MainsInfo>> mains){
+    reads.add(f);
+    if (Files.exists(log) && reads.size() <= 5){ Fs.ofV(() -> Files.setLastModifiedTime(log, FileTime.fromMillis(Fs.lastModified(log)+1000))); }
+    return mains.apply(f);
+  }
+  @Test void aLogWrittenWhileTheManagerReadsTheMainsDoesNotMakeTheManagerReadTheMainsAgain(@TempDir Path dir){
+    var reads= new ArrayList<Path>();
+    var log= dir.resolve("hello").resolve(LogFiles.runDir).resolve("logs").resolve("_base").resolve("log.log");
+    var mains= known("hello.Hello");
+    var m= manager(dir, f -> logged(f, log, reads, mains));
+    code(m, dir, "hello");
+    compiled(m, "hello");
+    Fs.writeUtf8(log, "a line\n");
+    reads.clear();
+    send(m, "Check", "hello");
+    assertEquals(1, reads.size());
   }
   @Test void aNewManagerRemembersTheProjects(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
