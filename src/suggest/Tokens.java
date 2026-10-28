@@ -18,7 +18,7 @@ final class Tokens{
     Ws("\\s+"), LineComment("//[^\\n]*"), BlockComment("(?s)/\\*.*?\\*/"),
     BadUnclosedBlockComment("(?s)/\\*(?!.*?\\*/).*"), BadUnopenedBlockCommentClose("\\*/"),
     Arrow("->"), ORound("\\("), CRound("\\)"), OCurly("\\{"), CCurlyId("\\}[A-Za-z0-9_]+'*"), CCurly("\\}"),
-    OSquareArg("(?<=[A-Za-z0-9_'`\\x22\\x5C/#\\x2A\\x2D\\x2B%<>=!&\\x5E~\\x3F\\x7C])\\["), BadOSquare("\\["), CSquare("\\]"),
+    OSquareArg("(?<=[A-Za-z0-9_'`\\x22\\x5C/#\\x2A\\x2D\\x2B%<>=!&\\x5E~\\x3F\\x7C])(?<!\\x2A/)\\["), BadOSquare("\\["), CSquare("\\]"),
     Underscore("_"), Comma(","), SemiColon(";"), ColonColon("::"), Colon(":"), Eq("="), SQuote("'"),
     ReadImm("read/imm"), RCap("readH|mutH|imm|iso|read|mut"),
     SignedFloat("[+-](?:[0-9](?:[0-9_]*[0-9])?)\\.(?:[0-9](?:[0-9_]*[0-9])?)(?:[eE][+-]?[0-9](?:[0-9_]*[0-9])?)?(?:soft)?"),
@@ -30,7 +30,7 @@ final class Tokens{
     UppercaseId("(?:(?!(?:con|prn|aux|nul)(?![a-z0-9_])|(?:com|lpt)[1-9](?![a-z0-9_]))[a-z][a-z0-9_]*\\x2E)?_*[A-Z][A-Za-z0-9_]*'*"),
     BadUppercaseId("(?:[a-z][a-z0-9_]*\\x2E)?_*[A-Z][A-Za-z0-9_]*'*"),
     LowercaseId("_*[a-z][A-Za-z0-9_]*'*"),
-    BadSStrQuote("'[^'\\x0A]*'"),
+    BadSStrQuote("'(?:(?!//|/\\x2A)[^'\\x0A\\x22`])*'(?![_a-z])"),
     Op("(?:(?!/\\x2A|\\x2A/|//)[\\x5C/#\\x2A\\x2D\\x2B%<>=!&\\x5E~\\x3F\\x7C])+");
     final Pattern pattern;
     Kind(String regex){ this.pattern= Pattern.compile(regex); }
