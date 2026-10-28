@@ -66,6 +66,7 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
       : stalePkgs.isEmpty() ? Optional.<String>empty() : Optional.of(Report.stalePackages(stalePkgs));
     return new Facts(hasCache, stale, icon, LogFiles.list(folder), problem);
   }
+  Facts withLogs(List<LogFiles.Entry> logs){ return new Facts(hasCache, stale, icon, logs, problem); }
   Facts outOfDate(String why){ return new Facts(hasCache, Optional.of(why), icon, logs, problem); }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));
