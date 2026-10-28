@@ -299,7 +299,7 @@ final class LogsSectionTest extends ManagerTest{
 use base.Main as Main;
 use base.FileLog as FileLog;
 
-Diary: FileLog{"diary"}
+Diary: FileLog{}
 Write: Main{sys -> Diary.log("dear diary")}
 """);
     start();
