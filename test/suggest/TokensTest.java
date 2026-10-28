@@ -21,6 +21,13 @@ final class TokensTest{
     same("BadUStrUnclosed|\"ab", tokens("\"ab"));
     same("BadUnclosedBlockComment|/* a", tokens("/* a"));
   }
+  @Test void aQuoteFollowedByALowercaseLetterOrAnUnderscoreClosesNoString(){
+    same("SQuote|' LowercaseId|a DotName|.m Arrow|-> SQuote|' LowercaseId|b DotName|.n", tokens("'a .m -> 'b .n"));
+    same("SQuote|' LowercaseId|a DotName|.m Arrow|-> SQuote|' Underscore|_", tokens("'a .m -> '_"));
+  }
+  @Test void aBlockCommentBetweenANameAndASquareSeparatesThem(){
+    same("UppercaseId|A BlockComment|/**/ BadOSquare|[ UppercaseId|X CSquare|]", tokens("A/**/[X]"));
+  }
   @Test void longestMatchTiesToTheEarlierKind(){
     same("ReadImm|read/imm UppercaseId|X", tokens("read/imm X"));
     same("SignedInt|+1 UnSignedFloat|2.5 Op|+ SignedFloat|-1.0e3soft", tokens("+1 2.5 + -1.0e3soft"));
