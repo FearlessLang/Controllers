@@ -612,7 +612,6 @@ public final class Manager{
     try{ l.mains = tools.mains(f); }
     catch (UserError err){ error = Optional.of(err.getMessage()); }
     catch (UncheckedIOException err){ error = Optional.of(Report.fileFailure(err.getCause())); }
-    if (!Facts.of(f, e.alias(), e.kind(), tools.baseCache()).withLogs(fresh.logs()).equals(fresh)){ scan(f); return; }
     if (l.mains.isEmpty()){ l.facts = fresh.outOfDate(error.orElse(Report.packagesToCompile())); }
   }
   private void inUse(Path f){
