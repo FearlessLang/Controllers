@@ -374,7 +374,7 @@ public final class Manager{
     l.child = null;
     if (l.job.equals(Project.compiling)){ compiled(f, l, ec); return; }
     output(f, "--- "+l.job+" exited with "+ec+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
-    if (stale(f).isPresent()){ l.terminated = true; output(f, uncached(f, Report.filesUpdated(alias(f), l.job))+"\n"); }
+    if (broken(f)){ l.terminated = true; output(f, uncached(f, Report.filesUpdated(alias(f), l.job))+"\n"); }
     next(f);
   }
   private void compiled(Path f, Live l, int ec){
@@ -428,6 +428,10 @@ public final class Manager{
     return why;
   }
   private Optional<String> stale(Path f){ return Facts.of(f, alias(f), Kind.code, tools.baseCache()).stale(); }
+  private boolean broken(Path f){
+    var facts= Facts.of(f, alias(f), Kind.code, tools.baseCache());
+    return facts.stale().isPresent() || facts.problem().isPresent();
+  }
   private void succeeded(Path f, Live l){
     Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).forEach(p -> shortcut(f, p));
     unclaimedIcons(f, l.claims);
@@ -607,17 +611,16 @@ public final class Manager{
     l.scanned = fresh;
     l.facts = fresh;
     l.mains = Optional.empty();
-    if (e.kind() != Kind.code || fresh.stale().isPresent()){ return; }
+    if (e.kind() != Kind.code || fresh.stale().isPresent() || fresh.problem().isPresent()){ return; }
     Optional<String> error= Optional.empty();
     try{ l.mains = tools.mains(f); }
     catch (UserError err){ error = Optional.of(err.getMessage()); }
     catch (UncheckedIOException err){ error = Optional.of(Report.fileFailure(err.getCause())); }
-    if (!Facts.of(f, e.alias(), e.kind(), tools.baseCache()).withLogs(fresh.logs()).equals(fresh)){ scan(f); return; }
     if (l.mains.isEmpty()){ l.facts = fresh.outOfDate(error.orElse(Report.packagesToCompile())); }
   }
   private void inUse(Path f){
     var l= live.get(f);
-    if (l.job.equals(Project.compiling) || stale(f).isEmpty()){ return; }
+    if (l.job.equals(Project.compiling) || !broken(f)){ return; }
     l.terminated = true;
     l.child.kill();
   }
