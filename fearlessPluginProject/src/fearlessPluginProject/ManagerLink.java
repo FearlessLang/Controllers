@@ -65,7 +65,8 @@ public final class ManagerLink{
     var res= new long[]{stamp(manager.resolve("projects.info"))};
     var visitor= new SimpleFileVisitor<Path>(){
       @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes a){
-        if (dir.equals(out(folder))){ return FileVisitResult.SKIP_SUBTREE; }
+        var dot= !dir.equals(folder) && dir.getFileName().toString().startsWith(".");
+        if (dot){ return FileVisitResult.SKIP_SUBTREE; }
         res[0] = Math.max(res[0], a.lastModifiedTime().toMillis());
         return FileVisitResult.CONTINUE;
       }
