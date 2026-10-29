@@ -16,6 +16,7 @@ final class Follow{
   private static final Pattern port= Pattern.compile("Port:([1-9][0-9]{0,4})");
   private final LinkedBlockingDeque<Optional<String>> queue= new LinkedBlockingDeque<>();
   private final Socket socket;
+  private volatile boolean closed;
   private Follow(Socket socket){ this.socket= socket; }
   static Follow to(String text){
     var m= port.matcher(text);
@@ -24,7 +25,7 @@ final class Follow{
     try{ return new Follow(new Socket(InetAddress.getLoopbackAddress(), number)); }
     catch (IOException e){ throw new Refused(Report.portClosed(number, e)); }
   }
-  void send(String text){ queue.add(Optional.of(text)); }
+  void send(String text){ if (!closed){ queue.add(Optional.of(text)); } }
   void end(){ queue.add(Optional.empty()); }
   void applied(){ start("Applied\n"); }
   void refuse(String why){ start("Refused\n"+why); end(); }
@@ -36,7 +37,7 @@ final class Follow{
     try (socket; var out= socket.getOutputStream()){
       for (var next= queue.take(); next.isPresent(); next = queue.take()){ out.write(next.get().getBytes(UTF_8)); out.flush(); }
     }
-    catch (IOException e){}
+    catch (IOException e){ closed = true; queue.clear(); }
     catch (InterruptedException e){ throw Bug.of(e); }
   }
 }
