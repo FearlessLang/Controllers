@@ -74,9 +74,10 @@ public final class Main implements Manager.Exit{
   //argument; a "Base16:" path of a FearlessCommand argument carries it.
   //The JVM hands main the arguments decoded as text, and bytes not valid in the file name encoding are
   //lost: a file argument is read again as the bytes the process received, and handed on as PathClassLoader.argOf.
-  private static String[] fileAsArg(String[] args){
-    if (args.length != 1 || args[0].startsWith(prefix)){ return args; }
-    return new String[]{PathClassLoader.argOf(PathBytes.arg(args, 0).toAbsolutePath())};
+  static String[] fileAsArg(String[] args){
+    if (args.length != 1 || args[0].startsWith(prefix) || args[0].isBlank()){ return args; }
+    try{ return new String[]{PathClassLoader.argOf(PathBytes.arg(args, 0).toAbsolutePath())}; }
+    catch (InvalidPathException e){ return args; }
   }
   static String message(String... args){
     if (args.length == 0){ return "Show"; }

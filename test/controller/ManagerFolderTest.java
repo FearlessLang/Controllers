@@ -41,6 +41,10 @@ final class ManagerFolderTest{
     assertEquals("Register\nBase16:2F646174612F68656C6C6F", Main.message("FearlessCommandRegister", "Base16:2F646174612F68656C6C6F"));
     assertEquals("Frobnicate\na", Main.message("FearlessCommandFrobnicate", "a"));
   }
+  @Test void aBlankArgumentIsABrokenPath(){
+    same("InvalidCall\nFearless was started to open [###], but that is not a path of a file this system accepts.", Main.message(Main.fileAsArg(new String[]{""})));
+    same("InvalidCall\nFearless was started to open [###], but that is not a path of a file this system accepts.", Main.message(Main.fileAsArg(new String[]{" "})));
+  }
   @Test void aRelativePathOfAFearlessCommandNamesThePathFromWhereTheCommandStarted(){
     var here= Path.of("").toAbsolutePath();
     assertEquals("Register\nStr:"+here.resolve("myProject"), Main.message("FearlessCommandRegister", "Str:myProject"));
