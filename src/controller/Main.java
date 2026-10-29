@@ -27,7 +27,6 @@ import java.util.Locale;
 
 import fileSupport.NativeLocaleForcer;
 import fileSupport.StringFiles;
-import gui.Tray;
 import gui.Window;
 import managerMessages.Report;
 import managerMessages.Violation;
@@ -182,7 +181,7 @@ public final class Main implements Manager.Exit{
     manager = new Manager(managerDir, new Deployed(), window, this);
     UserError.owner(window.frame);
     userMessages.Violation.running(() -> manager.state().running());
-    window.tray(Tray.install(window));
+    window.tray();
     window.show();
     manager.drain();
     Thread.startVirtualThread(() -> watch(watcher));
