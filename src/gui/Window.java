@@ -119,7 +119,7 @@ public final class Window implements Manager.View{
     if (leaves){ focus.clearFocusOwner(); }
   }
   public static Window create(Main main, Path managerDir){ return onEdt(() -> new Window(main, managerDir.resolve("projects.info"))); }
-  public void tray(boolean present){ tray = present; }
+  public void tray(){ tray = onEdt(() -> Tray.install(this)); }
   void fail(Throwable problem){ main.fail(problem); }
   static <T> T onEdt(Supplier<T> make){
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
