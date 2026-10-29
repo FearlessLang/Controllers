@@ -1477,6 +1477,24 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertFalse(Files.exists(hello.resolve(Facts.outDir)));
     assertEquals(Project.State.codeNoCache, project(m, hello).state());
   }
+  @Test void aMarkerDeletedWhileAMainRunsTerminatesTheMainAndDeletesTheCache(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    Fs.ofV(() -> Files.delete(hello.resolve("hello.fearless")));
+    send(m, "Show", "hello");
+    idle(m);
+    same("""
+--- running hello.Slow ---
+ran hello.Slow
+--- hello.Slow exited with [###] after [###]s ---
+Some files inside the project "hello" were updated while main "hello.Slow" was running.
+""", view.out(hello));
+    assertFalse(Files.exists(hello.resolve(Facts.outDir)));
+    assertEquals(Project.State.codeInvalid, project(m, hello).state());
+  }
   @Test void aSourceUpdatedDuringACompileFailsTheCompileAndDeletesTheCache(@TempDir Path dir){
     var m= manager(dir, "edited.Hello");
     var edited= code(m, dir, "edited");
