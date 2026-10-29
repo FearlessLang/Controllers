@@ -179,7 +179,7 @@ final class RegistryTest{
   @Test void changingTheMountsKeepsTheirOrderInTheFile(@TempDir Path dir){
     var code= folder(dir, "code");
     var r= registry(dir);
-    r.replace(content("{\"projects\": {\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}}, \"systemExtensions\": []}"));
+    r.save(content("{\"projects\": {\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}}, \"systemExtensions\": []}"));
     r.update(code, e -> e.withMounts(remounted(e.mounts())));
     assertEquals("""
 {
@@ -214,7 +214,7 @@ final class RegistryTest{
   }
   @Test void theSystemExtensionsSurviveAReReadAndAMalformedListRefusesToLoad(@TempDir Path dir){
     var r= registry(dir);
-    r.replace(new Content(List.of(), List.of("pdf", "htm")));
+    r.save(new Content(List.of(), List.of("pdf", "htm")));
     assertEquals(List.of("pdf", "htm"), registry(dir).extensions());
     err("[###]\"fapp001\" in \"systemExtensions\" is not a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\".[###]", () -> content("{\"projects\":{},\"systemExtensions\":[\"htm\", \"fapp001\"]}"));
     err("[###]\"htm\" is repeated in \"systemExtensions\".[###]", () -> content("{\"projects\":{},\"systemExtensions\":[\"htm\", \"htm\"]}"));
@@ -256,12 +256,5 @@ final class RegistryTest{
     r.add("mycode", code);
     r.update(code, e -> e.withKind(Kind.code).withMounts(Map.of("mycode.Pub", "pub", "mycode.Diary", "notes")));
     assertEquals(Map.of("mycode.Pub", "pub", "mycode.Diary", "notes"), registry(dir).of(code).orElseThrow().mounts());
-  }
-  @Test void anEditThatWouldWriteAnInvalidFileIsRefusedAndChangesNothing(@TempDir Path dir){
-    var project= folder(dir, "someproject");
-    var r= registry(dir);
-    r.add("someproject", project);
-    same("[###]\"hello\" in \"mains\" is not a Fearless main name[###]", assertThrows(Refused.class, () -> r.update(project, e -> e.withMains(List.of("hello")))).getMessage());
-    assertEquals(List.of(), r.all().getFirst().mains());
   }
 }

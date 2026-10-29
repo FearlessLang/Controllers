@@ -119,7 +119,6 @@ public final class Main implements Manager.Exit{
     pb.environment().keySet().removeIf(k -> k.startsWith("_JPACKAGE_"));
     Fs.of(pb::start);
   }
-  public static String path(Path p){ return TaggedText.ofPath(p); }
   private static void fatal(UserError e){
     if (started.isEmpty()){ display(e); return; }
     var main= started.get();

@@ -56,6 +56,7 @@ import javax.swing.WindowConstants;
 
 import controller.Deployed;
 import controller.Main;
+import controller.TaggedText;
 import controller.Manager;
 import controller.Manager.State;
 import controller.Project;
@@ -178,7 +179,7 @@ public final class Window implements Manager.View{
     file.toFile().deleteOnExit();
     written.add(file);
     Fs.writeUtf8(file, content);
-    Main.command("EditMetadata", Main.path(file));
+    Main.command("EditMetadata", TaggedText.ofPath(file));
     return file;
   }
   private void chooser(Path file, List<Project.Claimant> choices){
@@ -201,7 +202,7 @@ public final class Window implements Manager.View{
   private static void pick(JDialog dialog, JList<Project.Claimant> list, Path file){
     if (list.isSelectionEmpty()){ return; }
     dialog.dispose();
-    Main.command("OpenWithOrShortcut", Main.path(file), list.getSelectedValue().alias(), list.getSelectedValue().main());
+    Main.command("OpenWithOrShortcut", TaggedText.ofPath(file), list.getSelectedValue().alias(), list.getSelectedValue().main());
   }
   static JList<Project.Claimant> choices(List<Project.Claimant> choices){
     var icons= choices.stream().map(c -> new ImageIcon(Icons.of(c, 32))).toList();
@@ -222,8 +223,7 @@ public final class Window implements Manager.View{
     var hidden= frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) != 0;
     if (hidden && !surfaced){ main.fail(Violation.desktopHidesWindow()); }
   }
-  private Panel panel(Path folder){ return panels.computeIfAbsent(folder, _ -> new Panel(this::refuseHere)); }
-  private void refuseHere(String text){ say(text); }
+  private Panel panel(Path folder){ return panels.computeIfAbsent(folder, _ -> new Panel(this::say)); }
   private void render(State s){
     state = s;
     tiles.render(s);
@@ -249,10 +249,10 @@ public final class Window implements Manager.View{
     var res= new JMenuBar();
     var manager= new JMenu("Manager");
     manager.setMnemonic('M');
-    manager.add(item("Add folder...", () -> choose("Add a Fearless project folder", p -> Main.command("Register", Main.path(p)))));
+    manager.add(item("Add folder...", () -> choose("Add a Fearless project folder", p -> Main.command("Register", TaggedText.ofPath(p)))));
     manager.add(item("Edit project metadata...", this::editMetadata));
-    manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse", Main.path(p)))));
-    manager.add(item("Base documentation", () -> open(this::refuseHere, Deployed.stdLib("baseCache").resolve("base.html"))));
+    manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse", TaggedText.ofPath(p)))));
+    manager.add(item("Base documentation", () -> open(this::say, Deployed.stdLib("baseCache").resolve("base.html"))));
     manager.addSeparator();
     manager.add(item("Reset", this::reset));
     manager.add(item("Quit", () -> Main.command("Quit")));
@@ -283,8 +283,8 @@ public final class Window implements Manager.View{
         return true;
       }
       @Override public boolean importData(TransferSupport support){
-        var paths= Drop.paths(support.getTransferable(), Window.this::refuseHere);
-        paths.forEach(p -> Main.command("Register", Main.path(p)));
+        var paths= Drop.paths(support.getTransferable(), Window.this::say);
+        paths.forEach(p -> Main.command("Register", TaggedText.ofPath(p)));
         return !paths.isEmpty();
       }
     };

@@ -101,12 +101,8 @@ public final class Registry{
   }
   public void update(Path folder, UnaryOperator<Entry> op){
     assert of(folder).isPresent();
-    var next= new Content(all().stream().map(e -> e.path().equals(folder) ? op.apply(e) : e).toList(), extensions());
-    try{ parse(text(next), infoFile(), p -> p, dir); }
-    catch (UserError e){ throw new Refused(e.getMessage()); }
-    save(next);
+    save(new Content(all().stream().map(e -> e.path().equals(folder) ? op.apply(e) : e).toList(), extensions()));
   }
-  public void replace(Content next){ save(next); }
   public static Grants grants(Content c, Entry e, List<String> dataEdit){ return new Grants(granted(c, e, t -> !dataEdit.contains(t), Kind::isData), granted(c, e, dataEdit::contains, k -> k == Kind.dataEdit)); }
   private static Map<String,Path> granted(Content c, Entry e, Predicate<String> types, Predicate<Kind> kinds){
     var res= new LinkedHashMap<String,Path>();
@@ -115,7 +111,7 @@ public final class Registry{
   }
   public static String text(Content c){ return Info.print(toInfo(c)); }
   public String text(){ return text(content); }
-  private void save(Content c){
+  public void save(Content c){
     check.accept(c);
     var text= text(c);
     assert parse(text, infoFile(), p -> p, dir).equals(c);

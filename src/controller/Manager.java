@@ -567,7 +567,7 @@ public final class Manager{
       catch (UserError e){ throw new Refused(e.getMessage()); }
     }
     var old= registry.content();
-    registry.replace(next);
+    registry.save(next);
     live.keySet().stream().filter(f -> registry.of(f).isEmpty()).toList().forEach(this::drop);
     registry.all().stream().filter(e -> !live.containsKey(e.path())).forEach(this::open);
     var dropped= old.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();

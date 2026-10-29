@@ -42,6 +42,7 @@ import javax.swing.JTextArea;
 
 import controller.Facts;
 import controller.Main;
+import controller.TaggedText;
 import controller.Project;
 import controller.Registry.Kind;
 import fileSupport.LogFiles;
@@ -198,7 +199,7 @@ final class Panel{
     shortcuts.removeAll();
     var mine= mine(p, claimed).filter(Project.Claimant::shortcut).toList();
     shortcuts.setVisible(!mine.isEmpty());
-    mine.forEach(c -> shortcuts.add(doubleClicked(named(shortcut(c), "shortcut "+c.main()+" "+c.claim().extension()), () -> Main.command("OpenWithOrShortcut", Main.path(c.shortcutFile())))));
+    mine.forEach(c -> shortcuts.add(doubleClicked(named(shortcut(c), "shortcut "+c.main()+" "+c.claim().extension()), () -> Main.command("OpenWithOrShortcut", TaggedText.ofPath(c.shortcutFile())))));
   }
   private static JLabel shortcut(Project.Claimant c){
     return Tiles.desktop(new JLabel(), new ImageIcon(Icons.of(c, Tiles.iconSize)), c.shortcutFile().getFileName().toString());
