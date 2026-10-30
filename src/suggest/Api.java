@@ -84,7 +84,7 @@ public final class Api{
     var j= new Json(json);
     var all= j.obj(() -> j.obj(j::str));
     j.check(j.i == json.length());
-    return all.getOrDefault(pkg, Map.of());
+    return all.getOrDefault(pkg, Map.of()).entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().split(" ")[0]));
   }
   @SuppressWarnings("unchecked") private static List<Object> arr(Object o){ return (List<Object>)o; }
   private static String str(Object o){ return (String)o; }
