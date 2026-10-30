@@ -1100,6 +1100,23 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     idle(m);
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
   }
+  @Test void anInvalidCallWithAPortIsRefusedOnThatPort(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    try (var server= port()){
+      server.setSoTimeout(10_000);
+      var newline= follower(server);
+      m.message(Main.message("FearlessCommandShow", "a\nb", "Port:"+server.getLocalPort()));
+      m.settle();
+      same("Refused\nFearless was started with an argument holding a newline, but[###]", newline.join());
+      var reserved= follower(server);
+      m.message(Main.message("FearlessCommandFatalError", "Port:"+server.getLocalPort()));
+      m.settle();
+      same("Refused\nFearless was started with the argument \"FearlessCommandFatalError\", but [###]", reserved.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    assertEquals(2, view.refused.size());
+    same("Fearless was started with an argument holding a newline, but[###]", view.refused.get(0));
+  }
   @Test void aPortWhereNobodyListensOrThatIsNotAPortIsRefused(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");

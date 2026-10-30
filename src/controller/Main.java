@@ -83,15 +83,15 @@ public final class Main implements Manager.Exit{
     if (args.length == 0){ return "Show"; }
     if (!args[0].startsWith(prefix)){ return file(args); }
     var verb= args[0].substring(prefix.length());
-    if (List.of("InvalidCall", "FatalError").contains(verb)){ return "InvalidCall\n"+Report.reservedVerb(args[0]); }
-    if (Stream.of(args).anyMatch(a -> a.indexOf('\n') >= 0)){ return "InvalidCall\n"+Report.argumentWithNewline(List.of(args)); }
+    var port= args[args.length-1].startsWith("Port:") ? "\n"+args[args.length-1] : "";
+    if (List.of("InvalidCall", "FatalError").contains(verb)){ return "InvalidCall\n"+Report.reservedVerb(args[0])+port; }
+    if (Stream.of(args).anyMatch(a -> a.indexOf('\n') >= 0)){ return "InvalidCall\n"+Report.argumentWithNewline(List.of(args))+port; }
     var rest= List.of(args).subList(1, args.length);
     if (pathVerbs.contains(verb) && !rest.isEmpty()){ rest = Stream.concat(Stream.of(absolute(rest.getFirst())), rest.stream().skip(1)).toList(); }
     if (!List.of("Run", "Mount", "Attenuate").contains(verb) || rest.size() < 2){ return String.join("\n", Stream.concat(Stream.of(verb), rest.stream()).toList()); }
     var words= rest.subList(1, rest.size());
-    var port= words.getLast().startsWith("Port:");
-    var named= String.join(" ", port ? words.subList(0, words.size()-1) : words);
-    return verb+"\n"+rest.getFirst()+"\n"+named+(port ? "\n"+words.getLast() : "");
+    var named= String.join(" ", port.isEmpty() ? words : words.subList(0, words.size()-1));
+    return verb+"\n"+rest.getFirst()+"\n"+named+port;
   }
   private static String absolute(String tagged){
     try{

@@ -225,13 +225,14 @@ public final class Manager{
     var lines= List.of(message.split("\n", -1));
     var verb= lines.getFirst();
     var args= lines.subList(1, lines.size());
-    if (verb.equals("InvalidCall")){ view.refuse(String.join("\n", args)); return; }
     if (verb.equals("FatalError")){ throw Violation.fatalFromRun(String.join("\n", args)); }
     var port= !args.isEmpty() && args.getLast().startsWith("Port:");
+    var rest= port ? args.subList(0, args.size()-1) : args;
     var follow= Optional.<Follow>empty();
     try{
       follow = port ? Optional.of(Follow.to(args.getLast())) : follow;
-      request(verb, port ? args.subList(0, args.size()-1) : args, follow);
+      if (verb.equals("InvalidCall")){ throw new Refused(String.join("\n", rest)); }
+      request(verb, rest, follow);
       follow.ifPresent(Follow::applied);
       if (!List.of("Run", "Compile").contains(verb)){ follow.ifPresent(Follow::end); }
     }
