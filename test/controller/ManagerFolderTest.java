@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -36,7 +37,29 @@ final class ManagerFolderTest{
     assertEquals("Mount\nhello_world\nhello.Diary notes", Main.message("FearlessCommandMount", "hello_world", "hello.Diary", "notes"));
     assertEquals("Mount\nhello_world\nhello.Diary notes\nPort:51234", Main.message("FearlessCommandMount", "hello_world", "hello.Diary", "notes", "Port:51234"));
     assertEquals("Show\nPort:51234", Main.message("FearlessCommandShow", "Port:51234"));
-    assertEquals("Register\nBase16:2F646174612F68656C6C6F", Main.message("FearlessCommandRegister", "Base16:2F646174612F68656C6C6F"));
+    var hello= Fs.isWindows() ? "Base16:43003A005C0064006100740061005C00680065006C006C006F00" : "Base16:2F646174612F68656C6C6F";
+    assertEquals("Register\n"+hello, Main.message("FearlessCommandRegister", hello));
+  }
+  @Test void aBase16PathIsTheUnitsOfThisSystem(){
+    var windows= Fs.isWindows();
+    assertEquals("Register\nStr:"+Path.of("").toAbsolutePath().resolve("ab"), Main.message("FearlessCommandRegister", windows ? "Base16:61006200" : "Base16:6162"));
+    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is empty.", Main.message("FearlessCommandRegister", windows ? "Base16:2000" : "Base16:20"));
+    same("InvalidCall\nRefused request \"Register\" on path [###] is not a path this system accepts: [###]", Main.message("FearlessCommandRegister", windows ? "Base16:2F000000" : "Base16:2F00"));
+    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is not a tagged text: \"Base16:\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.", Main.message("FearlessCommandRegister", "Base16:"));
+  }
+  @Test void aBase16PathOfAnOddNumberOfBytesIsRefusedOnlyOnWindows(){
+    var odd= "Base16:2F646174612F68656C6C6F";
+    if (!Fs.isWindows()){ assertEquals("Register\n"+odd, Main.message("FearlessCommandRegister", odd)); return; }
+    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is not a tagged text: \"Base16:2F646174612F68656C6C6F\" is malformed: a Windows name is 16 bit units, so its bytes are an even number.", Main.message("FearlessCommandRegister", odd));
+  }
+  @Test void aBase16PathThatIsNotUnicodeStaysBase16(){
+    Assumptions.assumeFalse(Fs.isMac());
+    var notUnicode= Fs.isWindows() ? "Base16:43003A005C00610000D8" : "Base16:2F636166E9";
+    assertEquals("Register\n"+notUnicode, Main.message("FearlessCommandRegister", notUnicode));
+  }
+  @Test void aWindowsPathWithARootButNoDriveTakesTheDriveOfTheStartFolder(){
+    Assumptions.assumeTrue(Fs.isWindows());
+    assertEquals("Register\nStr:"+Path.of("").toAbsolutePath().getRoot().resolve("data\\hello"), Main.message("FearlessCommandRegister", "Base16:2F0064006100740061002F00680065006C006C006F00"));
   }
   @Test void badArgumentsAreAnInvalidCall(){
     assertEquals("InvalidCall\nRefused request \"build\".\n\"build\" is not a request of the manager: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Mount\", \"Attenuate\".", Main.message("FearlessCommandbuild", "hello"));
