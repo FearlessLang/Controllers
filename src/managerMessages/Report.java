@@ -34,7 +34,6 @@ Fearless was started with %s arguments, but without a first argument starting wi
 The arguments are:
 %s""".formatted(args.size(), Join.of(args.stream().map(UserError::path), "", "\n", "", ""));
   }
-  public static String reservedVerb(String arg){ return "Fearless was started with the argument "+disp(arg)+", but "+disp(arg)+" is not a request: only a running Fearless writes the messages \"InvalidCall\" and \"FatalError\"."; }
   public static String argumentWithNewline(List<String> args){
     return "Fearless was started with an argument holding a newline, but every argument of a FearlessCommand is one line: a path is written as \"Base16:\" then its bytes.\nThe arguments are:\n"+Join.of(args.stream().map(a -> "  "+disp(a)), "", "\n", "", "");
   }
@@ -56,7 +55,6 @@ The arguments are:
   public static String notTagged(String verb, String why){ return refused(verb)+"\nThe path of the request is not a tagged text: "+why; }
   public static String blankPath(String verb){ return refused(verb)+"\nThe path of the request is empty."; }
   public static String notAPath(String verb, String given, String why){ return "Refused request "+disp(verb)+" on path "+disp(given)+".\n"+disp(given)+" is not a path this system accepts: "+why+"."; }
-  public static String relativePath(String verb, String given){ return "Refused request "+disp(verb)+" on path "+disp(given)+".\nPath "+disp(given)+" is relative: a request names a path in full, from the root of its drive or file system."; }
   public static String unknownProject(String verb, String name, List<String> names){
     return refused(verb, name)+"\nNo project is named "+disp(name)+"."+Join.of(names.stream().map(n -> "\n  "+n), "\nThe projects are:", "", "", "\nNo project is registered.");
   }
@@ -69,7 +67,7 @@ The arguments are:
   public static String notCode(String verb, String name, String kind){ return refused(verb, name)+"\nThe kind of project "+disp(name)+" is "+disp(kind)+": only a project of kind \"code\" accepts request "+disp(verb)+"."; }
   public static String invalidContent(String verb, String name, String why){ return refused(verb, name)+"\nThe content of project "+disp(name)+" is invalid:\n"+why.stripTrailing(); }
   public static String notCompiled(String name, String state){ return refused("Run", name)+"\nThe state of project "+disp(name)+" is "+disp(state)+": only a project in state \"code: compiled\" runs a main."; }
-  public static String noMainNamed(String name, List<String> mains){ return refused("Run", name)+"\nThe request names no main."+mains(mains); }
+  public static String noMainNamed(String name){ return refused("Run", name)+"\nThe request names no main."; }
   public static String notAMain(String name, String main, List<String> mains){ return refused("Run", name)+"\nThe request names "+disp(main)+", and "+disp(main)+" is not a main of project "+disp(name)+"."+mains(mains); }
   private static String mains(List<String> mains){ return Join.of(mains.stream().map(m -> "\n  "+m), "\nThe mains are:", "", "", "\n"+"The project has no main."); }
   public static String attenuatedNotAMain(String name, String main, List<String> mains){ return refused("Run", name)+"\n\"attenuators\" of project "+disp(name)+" names "+disp(main)+", and "+disp(main)+" is not a main of project "+disp(name)+"."+mains(mains); }

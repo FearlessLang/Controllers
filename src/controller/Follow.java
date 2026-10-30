@@ -18,10 +18,9 @@ final class Follow{
   private final Socket socket;
   private volatile boolean closed;
   private Follow(Socket socket){ this.socket= socket; }
+  static boolean isPort(String text){ var m= port.matcher(text); return m.matches() && Integer.parseInt(m.group(1)) <= 65535; }
   static Follow to(String text){
-    var m= port.matcher(text);
-    var number= m.matches() ? Integer.parseInt(m.group(1)) : 0;
-    if (number == 0 || number > 65535){ throw new Refused(Report.badPort(text)); }
+    var number= Integer.parseInt(text.substring("Port:".length()));
     try{ return new Follow(new Socket(InetAddress.getLoopbackAddress(), number)); }
     catch (IOException e){ throw new Refused(Report.portClosed(number, e)); }
   }
