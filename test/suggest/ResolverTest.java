@@ -271,7 +271,7 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same(baseTypes, at("", packages, "A: { .foo -> base.| }").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
   }
   @Test void theMapOfThePackageIsReadFromTheCompiledMap(){
-    assertEquals(Map.of("lib", "base", "x", "y"), Api.packages("{\"app\":{\"lib\":\"base\",\n\"x\":\"y\"}\n,\n\"other\":{\"a\":\"b\"}\n}\n", "app"));
+    assertEquals(Map.of("lib", "base", "x", "y"), Api.packages("{\"app\":{\"lib\":\"base fear:/_app/_rank_app.fear\",\n\"x\":\"y fear:/_app/_rank_app.fear\"}\n,\n\"other\":{\"a\":\"b fear:/_other/_rank_app.fear\"}\n}\n", "app"));
     assertEquals(Map.of(), Api.packages("{}", "app"));
     assertThrows(IllegalArgumentException.class, () -> Api.packages("{\"app\":{\"lib\":\"base\"}", "app"));
   }
