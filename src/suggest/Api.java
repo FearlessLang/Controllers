@@ -79,7 +79,7 @@ public final class Api{
     return new Ty(str(a.get(2)), a.subList(3, a.size()).stream().map(Api::ty).toList());
   }
   /// the packages the map directives of the project give the package names written in pkg, from
-  /// the _map.json the compiler writes, {"target":{"in":"out",...},...}; a malformed text is an error
+  /// the _map.json the compiler writes, {"target":{"in":"out rankFile",...},...}; a malformed text is an error
   public static Map<String,String> packages(String json, String pkg){
     var j= new Json(json);
     var all= j.obj(() -> j.obj(j::str));
