@@ -99,6 +99,7 @@ public final class Manager{
     Optional<Follow> follow= Optional.empty();
   }
   private static final String conflict= "base.IconsConflict";
+  static final List<String> pathVerbs= List.of("Register", "ConnectEclipse", "EditMetadata", "OpenWithOrShortcut");
   private static final Map<String,List<Integer>> verbs= verbs();
   private static Map<String,List<Integer>> verbs(){
     var res= new LinkedHashMap<String,List<Integer>>();
@@ -106,7 +107,7 @@ public final class Manager{
     Stream.of("Quit", "Reset").forEach(v -> res.put(v, List.of(0)));
     Stream.of("Register", "ConnectEclipse", "EditMetadata", "OpenWithOrShortcut", "Check", "Terminate", "DeleteCache", "Forget").forEach(v -> res.put(v, List.of(1)));
     res.put("OpenWithOrShortcut", List.of(1, 3));
-    res.put("Run", List.of(1, 2));
+    res.put("Run", List.of(2));
     res.put("Compile", List.of(1));
     res.put("Kind", List.of(2));
     res.put("Mount", List.of(2));
@@ -237,10 +238,24 @@ public final class Manager{
     }
     catch (Refused r){ follow.ifPresent(fl -> fl.refuse(r.getMessage())); view.refuse(r.getMessage()); }
   }
-  private void request(String verb, List<String> args, Optional<Follow> follow){
+  static void wellFormed(String message){
+    var lines= List.of(message.split("\n", -1));
+    var verb= lines.getFirst();
+    var port= lines.size() > 1 && lines.getLast().startsWith("Port:");
+    if (port && !Follow.isPort(lines.getLast())){ throw new Refused(Report.badPort(lines.getLast())); }
+    var args= lines.subList(1, lines.size()-(port ? 1 : 0));
     var takes= verbs.get(verb);
     if (takes == null){ throw new Refused(Report.unknownVerb(verb, List.copyOf(verbs.keySet()))); }
     if (!takes.contains(args.size())){ throw new Refused(Report.wrongLines(verb, args, takes)); }
+    var root= pathVerbs.contains(verb) && path(verb, args.getFirst()).getFileName() == null;
+    if (root && verb.equals("Register")){ throw new Refused(Report.projectFolderIsRoot(path(verb, args.getFirst()))); }
+    var second= args.size() > 1 ? words(args.get(1)) : List.<String>of();
+    if (verb.equals("Kind") && Kind.of(args.get(1)).isEmpty()){ throw new Refused(Report.unknownKind(args.getFirst(), args.get(1))); }
+    if (verb.equals("Mount") && (second.isEmpty() || second.size() > 2)){ throw new Refused(Report.malformedMount(args.getFirst(), args.get(1))); }
+    if (verb.equals("Attenuate") && second.isEmpty()){ throw new Refused(Report.noMainAttenuated(args.getFirst())); }
+    if (verb.equals("Run") && second.isEmpty()){ throw new Refused(Report.noMainNamed(args.getFirst())); }
+  }
+  private void request(String verb, List<String> args, Optional<Follow> follow){
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch (verb){
       case "Quit" -> exit.quit();
@@ -257,7 +272,6 @@ public final class Manager{
     try{ res= TaggedText.readPath(text, m -> new Refused(Report.notTagged(verb, m))); }
     catch (InvalidPathException e){ throw new Refused(e.getInput().isBlank() ? Report.blankPath(verb) : Report.notAPath(verb, e.getInput(), e.getReason())); }
     if (res.toString().isBlank()){ throw new Refused(Report.blankPath(verb)); }
-    if (!res.isAbsolute()){ throw new Refused(Report.relativePath(verb, res.toString())); }
     return res.normalize();
   }
   private void project(String verb, List<String> args, Optional<Follow> follow){
@@ -266,7 +280,7 @@ public final class Manager{
     scan(f);
     switch (verb){
       case "Show" -> { selected = Optional.of(f); view.show(); }
-      case "Run" -> run(f, args.size() > 1 ? args.get(1) : "", follow, Optional.empty());
+      case "Run" -> run(f, args.get(1), follow, Optional.empty());
       case "Compile" -> compile(f, follow);
       case "Check" -> check(f);
       case "Terminate" -> terminate(f);
@@ -294,7 +308,6 @@ public final class Manager{
     if (p.needsCompiling()){ throw new Refused(Report.notCompiled(p.alias(), p.state().text)); }
     var all= p.knownMains();
     var words= words(named);
-    if (words.isEmpty()){ throw new Refused(Report.noMainNamed(p.alias(), all)); }
     words.stream().filter(w -> !all.contains(w)).findFirst().ifPresent(w -> { throw new Refused(Report.notAMain(p.alias(), w, all)); });
     var mains= all.stream().filter(words::contains).toList();
     var attenuated= p.entry().attenuators();
@@ -491,7 +504,7 @@ public final class Manager{
     catch (UncheckedIOException e){ return Optional.of(Report.fileFailure(e.getCause())); }
   }
   private void kind(Path f, String text){
-    var kind= Kind.of(text).orElseThrow(() -> new Refused(Report.unknownKind(alias(f), text)));
+    var kind= Kind.of(text).orElseThrow();
     edit(f, e -> e.withKind(kind));
   }
   private void forget(Path f){
@@ -500,12 +513,10 @@ public final class Manager{
   }
   private void mount(Path f, String text){
     var words= words(text);
-    if (words.isEmpty() || words.size() > 2){ throw new Refused(Report.malformedMount(alias(f), text)); }
     edit(f, o -> o.withMounts(with(o.mounts(), words.getFirst(), words.stream().skip(1).findFirst())));
   }
   private void attenuate(Path f, String text){
     var words= words(text);
-    if (words.isEmpty()){ throw new Refused(Report.noMainAttenuated(alias(f))); }
     edit(f, o -> o.withAttenuators(with(o.attenuators(), words.getFirst(), Optional.of(words.subList(1, words.size())).filter(as -> !as.isEmpty()))));
   }
   private void edit(Path f, UnaryOperator<Entry> op){

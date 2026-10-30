@@ -412,20 +412,12 @@ ran hello.Three
     assertEquals(List.of("hello.One", "hello.Three"), project(m, hello).selectedMains());
     same("[###]\"mains\": [\"hello.One\", \"hello.Three\"][###]", info(dir));
   }
-  @Test void aRunNamingNoMainOrAnUnknownOneIsRefused(@TempDir Path dir){
+  @Test void aRunNamingAnUnknownMainIsRefused(@TempDir Path dir){
     var m= manager(dir, "hello.One", "hello.Two");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
-    send(m, "Run", "hello");
-    send(m, "Run", "hello", "");
     send(m, "Run", "hello", "hello.Nope hello.One");
-    var none= """
-Refused request "Run" on project "hello".
-The request names no main.
-The mains are:
-  hello.One
-  hello.Two""";
-    assertEquals(List.of(none, none, """
+    assertEquals(List.of("""
 Refused request "Run" on project "hello".
 The request names "hello.Nope", and "hello.Nope" is not a main of project "hello".
 The mains are:
@@ -455,24 +447,6 @@ No project is named "other".
 The projects are:
   hello""", view.refused.getFirst());
     assertTrue(view.refused.get(1).startsWith("Refused request \"Compile\" on project \""+hello+"\".\nNo project is named"));
-  }
-  @Test void aRequestTheManagerDoesNotKnowOrWithTheWrongArgumentsIsRefused(@TempDir Path dir){
-    var m= manager(dir);
-    registered(m, dir, "hello");
-    send(m, "build", "hello");
-    send(m, "Kind", "hello", "library");
-    send(m, "Mount", "hello", "hello.Pub data sometimes");
-    send(m, "Mount", "hello", "");
-    send(m, "Forget", "hello", "now");
-    send(m, "Run");
-    assertEquals(6, view.refused.size());
-    assertEquals("Refused request \"build\".\n\"build\" is not a request of the manager: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Mount\", \"Attenuate\".", view.refused.get(0));
-    assertEquals("Refused request \"Kind\" on project \"hello\".\n\"library\" is not a kind: the kinds are \"idle\", \"code\", \"dataRead\" and \"dataEdit\".", view.refused.get(1));
-    assertEquals("Refused request \"Mount\" on project \"hello\".\n\"hello.Pub data sometimes\" is not a mount: a mount is the qualified name of a DataRead type, then the name of a data project, none to remove the mount of that DataRead type.", view.refused.get(2));
-    assertEquals("Refused request \"Mount\" on project \"hello\".\n\"\" is not a mount: a mount is the qualified name of a DataRead type, then the name of a data project, none to remove the mount of that DataRead type.", view.refused.get(3));
-    assertEquals("Refused request \"Forget\" with 2 arguments.\nRequest \"Forget\" takes 1 argument.\nThe arguments are:\n  \"hello\"\n  \"now\"", view.refused.get(4));
-    assertEquals("Refused request \"Run\" with 0 arguments.\nRequest \"Run\" takes 1 or 2 arguments.\nThe arguments are:\n  <none>", view.refused.get(5));
-    assertEquals(Kind.idle, m.state().projects().getFirst().kind());
   }
   @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
     var m= manager(dir);
@@ -633,13 +607,11 @@ ran hello.Two
     send(m, "Attenuate", "hello", "hello.One hello.NoNet hello.NoGui");
     send(m, "Attenuate", "hello", "hello.One NoGui");
     same("[###]\"NoGui\" in \"attenuators\".\"hello.One\" is not a Fearless attenuator name[###]", view.refused.getLast());
-    send(m, "Attenuate", "hello", "");
-    assertEquals("Refused request \"Attenuate\" on project \"hello\".\nThe request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all.", view.refused.getLast());
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     send(m, "Attenuate", "data", "hello.One hello.NoGui");
     assertEquals(Map.of("hello.One", List.of("hello.NoGui")), project(m, data).entry().attenuators());
-    assertEquals(2, view.refused.size());
+    assertEquals(1, view.refused.size());
     assertEquals(Map.of("hello.One", List.of("hello.NoNet", "hello.NoGui")), project(m, hello).entry().attenuators());
   }
   @Test void aRunIsRefusedWhileAnAttenuatedMainOrAnAppliedAttenuatorIsNotOfTheProject(@TempDir Path dir){
@@ -850,7 +822,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     view.visible = false;
-    for (var request : List.of(List.of("Mount", "data", "other.Other other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Kind", "data", "library"))){
+    for (var request : List.of(List.of("Mount", "data", "other.Other other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Check", "data"))){
       var valid= Files.exists(data);
       if (valid){ Fs.rmTree(data); }
       else{ data(dir); Fs.writeUtf8(data.resolve("data.fearless"), ""); }
@@ -940,15 +912,6 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
       "Refused request \"Run\" on project \"\".\nNo project is named \"\".\nNo project is registered.",
       "Refused request \"Register\".\nThe path of the request is not a tagged text: \"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
       "Refused request \"Register\".\nThe path of the request is empty."), view.refused);
-  }
-  @Test void aRequestWhosePathIsRelativeIsRefused(@TempDir Path dir){
-    var m= manager(dir);
-    send(m, "Register", "Str:hello");
-    send(m, "OpenWithOrShortcut", "Str:notes.htm");
-    assertEquals(List.of(
-      "Refused request \"Register\" on path \"hello\".\nPath \"hello\" is relative: a request names a path in full, from the root of its drive or file system.",
-      "Refused request \"OpenWithOrShortcut\" on path \"notes.htm\".\nPath \"notes.htm\" is relative: a request names a path in full, from the root of its drive or file system."), view.refused);
-    assertEquals(List.of(), listed(m));
   }
   @Test void aRegisterWhosePathIsNotATaggedTextOrNotAPathIsRefused(@TempDir Path dir){
     var m= manager(dir);
@@ -1100,18 +1063,14 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     idle(m);
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
   }
-  @Test void aPortWhereNobodyListensOrThatIsNotAPortIsRefused(@TempDir Path dir){
+  @Test void aPortWhereNobodyListensIsRefused(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     int closed;
     try (var server= port()){ closed= server.getLocalPort(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
     send(m, "Compile", "hello", "Port:"+closed);
-    send(m, "Compile", "hello", "Port:0");
-    send(m, "Kind", "hello", "code", "Port:65536");
     same("The manager was given the port "+closed+", but no program of this machine accepts a connection there: connect: [###]", view.refused.get(0));
-    assertEquals("The manager was given the port \"Port:0\", but a port is \"Port:\" then a number from 1 to 65535.", view.refused.get(1));
-    assertEquals("The manager was given the port \"Port:65536\", but a port is \"Port:\" then a number from 1 to 65535.", view.refused.get(2));
     assertEquals(Project.State.codeNoCache, project(m, hello).state());
   }
   @Test void connectingEclipseNeedsAnEclipseFolder(@TempDir Path dir){
@@ -1802,8 +1761,6 @@ Main "hello.Other" of project "hello" does not open files with the extension "fo
 The mains opening them are:
   hello::hello.Hello
   other::other.Hello""", view.refused.getLast());
-    send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "hello");
-    same("[###]\"OpenWithOrShortcut\"[###]", view.refused.getLast());
   }
   @Test void anExtensionMatchesInAnyCaseAsTheDesktopMatchesIt(@TempDir Path dir){
     var m= opening(dir);

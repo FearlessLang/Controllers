@@ -48,7 +48,6 @@ import utils.Bug;
 /// System.exit, and the operating system reclaims them on process death.
 public final class Main implements Manager.Exit{
   private static final String prefix= "FearlessCommand";
-  private static final List<String> pathVerbs= List.of("Register", "ConnectEclipse", "EditMetadata", "OpenWithOrShortcut");
   private static FileLock lock;
   private static Optional<Main> started= Optional.empty();
   private final Path managerDir;
@@ -83,10 +82,14 @@ public final class Main implements Manager.Exit{
     if (args.length == 0){ return "Show"; }
     if (!args[0].startsWith(prefix)){ return file(args); }
     var verb= args[0].substring(prefix.length());
-    if (List.of("InvalidCall", "FatalError").contains(verb)){ return "InvalidCall\n"+Report.reservedVerb(args[0]); }
     if (Stream.of(args).anyMatch(a -> a.indexOf('\n') >= 0)){ return "InvalidCall\n"+Report.argumentWithNewline(List.of(args)); }
     var rest= List.of(args).subList(1, args.length);
-    if (pathVerbs.contains(verb) && !rest.isEmpty()){ rest = Stream.concat(Stream.of(absolute(rest.getFirst())), rest.stream().skip(1)).toList(); }
+    if (Manager.pathVerbs.contains(verb) && !rest.isEmpty()){ rest = Stream.concat(Stream.of(absolute(rest.getFirst())), rest.stream().skip(1)).toList(); }
+    var res= lines(verb, rest);
+    try{ Manager.wellFormed(res); return res; }
+    catch (Refused e){ return "InvalidCall\n"+e.getMessage(); }
+  }
+  private static String lines(String verb, List<String> rest){
     if (!List.of("Run", "Mount", "Attenuate").contains(verb) || rest.size() < 2){ return String.join("\n", Stream.concat(Stream.of(verb), rest.stream()).toList()); }
     var words= rest.subList(1, rest.size());
     var port= words.getLast().startsWith("Port:");
