@@ -15,7 +15,6 @@ import core.OtherPackages;
 import fileAssociations.Icon;
 import fileAssociations.WindowIcon;
 import naiveBackend.BackendTools;
-import realSourceOracle.RealSourceOracleWithZip;
 import tools.ChildJvm;
 import tools.Fs;
 import tools.JavacTool;
@@ -65,7 +64,6 @@ public final class Deployed implements Manager.Tools{
     Eclipse.connect(eclipse, appDir().resolve("eclipsePlugin"), Main.programDir(), Association.launcher(), managerDir, stdLib("baseCache"));
   }
   @Override public Optional<MainsInfo> mains(Path folder){
-    var c= coordinator(folder);
-    return c.mains(folder, RealSourceOracleWithZip.stdLib(stdLib("base")));
+    return coordinator(folder).mains(folder);
   }
 }
