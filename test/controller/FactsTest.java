@@ -98,6 +98,15 @@ final class FactsTest{
     assertFalse(facts.hasCache());
     assertEquals(Optional.of("This project has no compilation cache."), facts.stale());
   }
+  @Test void aCodeProjectWithNoPackageUsesOnlyBaseAndIsUpToDate(@TempDir Path dir){
+    var project= dir.resolve("someProject");
+    Fs.writeUtf8(project.resolve("readme"), "hi\n");
+    Fs.writeUtf8(project.resolve("someproject.fearless"), "");
+    backdated(project);
+    var facts= facts(project, "someproject", Kind.code);
+    assertEquals(Optional.empty(), facts.problem());
+    assertTrue(upToDate(facts));
+  }
   @Test void anOutFolderHoldingNoPackageIsNoCache(@TempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve(Facts.outDir).resolve("check_error.txt"), "broken");

@@ -61,9 +61,9 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     var out= folder.resolve(outDir);
     var hasCache= Fs.isDirectory(out) && Names.list(out).stream().anyMatch(p -> p.getFileName().toString().endsWith(".built"));
     var stalePkgs= built.entrySet().stream().filter(e -> !e.getValue()).map(Map.Entry::getKey).toList();
-    var stale= kind != Kind.code ? Optional.<String>empty()
-      : !hasCache || built.isEmpty() ? Optional.of(Report.noCache())
-      : stalePkgs.isEmpty() ? Optional.<String>empty() : Optional.of(Report.stalePackages(stalePkgs));
+    var stale= kind != Kind.code || stalePkgs.isEmpty() ? Optional.<String>empty()
+      : !hasCache ? Optional.of(Report.noCache())
+      : Optional.of(Report.stalePackages(stalePkgs));
     return new Facts(hasCache, stale, icon, LogFiles.list(folder), problem);
   }
   Facts outOfDate(String why){ return new Facts(hasCache, Optional.of(why), icon, logs, problem); }

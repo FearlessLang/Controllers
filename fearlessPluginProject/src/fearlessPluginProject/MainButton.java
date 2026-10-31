@@ -145,7 +145,6 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     "_rank_base", "_rank_core", "_rank_driver", "_rank_worker", "_rank_framework", "_rank_accumulator", "_rank_tool", "_rank_app");
   private static boolean outOfDate(Path folder){
     var refs= refs(folder);
-    if (refs.stream().noneMatch(r -> r.name().endsWith(".fear"))){ throw new Invalid(); }
     var pkgs= new LinkedHashMap<String,List<Ref>>();
     for (var r : refs){
       var pkg= pkg(r);
@@ -155,7 +154,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var rank= new HashMap<String,Integer>();
     pkgs.forEach((pkg, rs) -> rank.put(pkg, rank(rs)));
     var out= ManagerLink.out(folder);
-    if (!Files.isDirectory(out)){ return true; }
+    if (!Files.isDirectory(out)){ return !pkgs.isEmpty(); }
     var map= stamp(out.resolve("_map.json"));
     return pkgs.keySet().stream().anyMatch(pkg -> !built(out, pkg, pkgs.get(pkg), rank, map));
   }
