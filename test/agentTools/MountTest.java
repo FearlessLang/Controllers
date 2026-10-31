@@ -586,7 +586,7 @@ use base.Lists as L;
 Pub: base.DataRead{}
 Diary: base.DataEdit{}
 Write: Main{s -> base.Block#
-  .do{s.dataEdit(Diary).writeStrUtf8(L#("today.txt"), "a day")}
+  .do{s.dataEdit(Diary).writeStrAsciiUtf8Latin1(L#("today.txt"), "a day")}
   .return{Debug#(s.dataRead(Pub).paths({}).str{::})}
   }
 """);
