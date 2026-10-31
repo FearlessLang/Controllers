@@ -133,7 +133,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
       case idle -> State.idle;
       case dataRead -> State.dataRead;
       case dataEdit -> State.dataEdit;
-      case code -> !facts.hasCache() ? State.codeNoCache : needsCompiling() ? State.codeOutdated : State.codeCompiled;
+      case code -> !needsCompiling() ? State.codeCompiled : facts.hasCache() ? State.codeOutdated : State.codeNoCache;
     };
   }
   public enum Action{ check, compile, run, terminate }
