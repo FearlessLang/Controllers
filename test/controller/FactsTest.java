@@ -268,8 +268,8 @@ The icon of this project is not a PNG image Fearless can read.
 File:
 [###]a.png
 
-The icon of a project is the only .png file in its ".config/icon" folder:
-replace that file with a PNG image, or remove it.
+The icon of a project is the only .png file in its folder ".config/icon".
+Replace that file with a PNG image, or remove it.
 """, () -> Facts.icon(project));
     assertTrue(facts(project, "someproject", Kind.code).problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }

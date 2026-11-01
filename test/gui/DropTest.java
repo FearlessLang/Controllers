@@ -57,10 +57,10 @@ final class DropTest{
     var t= fixed(uriList("java.lang.String"), "https://x/y\r\n"+root+"data/a\r\nsmb://host/share/b\r\nhome/me/c\r\nfile:///a b\r\n");
     assertUris(Drop.paths(t, refused::add), root+"data/a");
     assertEquals(List.of(
-      "Nothing is registered from \"https://x/y\", dropped on the window: only a \"file:\" URI names a file or folder of this computer.",
-      "Nothing is registered from \"smb://host/share/b\", dropped on the window: only a \"file:\" URI names a file or folder of this computer.",
-      "Nothing is registered from \"home/me/c\", dropped on the window: only a \"file:\" URI names a file or folder of this computer.",
-      "Nothing is registered from \"file:///a b\", dropped on the window: it is not a URI: Illegal character in path."), refused);
+      "Nothing is registered from \"https://x/y\",\ndropped on the window: only a \"file:\" URI names a file or folder of this computer.",
+      "Nothing is registered from \"smb://host/share/b\",\ndropped on the window: only a \"file:\" URI names a file or folder of this computer.",
+      "Nothing is registered from \"home/me/c\",\ndropped on the window: only a \"file:\" URI names a file or folder of this computer.",
+      "Nothing is registered from \"file:///a b\",\ndropped on the window: it is not a URI: Illegal character in path."), refused);
   }
   @Test void aDropTheDesktopDoesNotHandOverIsRefused(){
     var t= fixed(uriList("java.io.InputStream"), new InputStream(){ @Override public int read() throws IOException{ throw new IOException("the drag ended"); } });
