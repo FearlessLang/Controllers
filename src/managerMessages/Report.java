@@ -4,6 +4,7 @@ import static userMessages.UserError.disp;
 import static userMessages.UserError.path;
 
 import java.io.IOException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +15,7 @@ import controller.Registry;
 import coordinator.MainsInfo;
 import tools.Fs;
 import userMessages.UserError;
+import userMessages.Violation;
 import utils.Join;
 
 /// Report: what the user gave the manager that it cannot accept: a message, a folder, the
@@ -22,7 +24,7 @@ import utils.Join;
 public final class Report{
   public static String quoted(List<String> texts){ return Join.of(texts.stream().map(t -> "\""+t+"\""), "", ", ", ""); }
   public static String fileFailure(IOException e){
-    return e.getClass().getSimpleName().replaceFirst("Exception$", "").replaceAll("(?<=[a-z])(?=[A-Z])", " ").toLowerCase(Locale.ROOT)+": "+e.getMessage();
+    return e.getClass().getSimpleName().replaceFirst("Exception$", "").replaceAll("(?<=[a-z])(?=[A-Z])", " ").toLowerCase(Locale.ROOT)+": "+(e instanceof FileSystemException f ? Violation.lines(f) : e.getMessage());
   }
 
   //-- the arguments of the manager program
@@ -37,7 +39,7 @@ The arguments are:
   public static String argumentWithNewline(List<String> args){
     return "Fearless was started with an argument holding a newline, but every argument of a FearlessCommand is one line: a path is written as \"Base16:\" then its bytes.\nThe arguments are:\n"+Join.of(args.stream().map(a -> "  "+disp(a)), "", "\n", "", "");
   }
-  public static String brokenPath(String given){ return "Fearless was started to open "+disp(given)+", but that is not a path of a file this system accepts."; }
+  public static String brokenPath(String given){ return "Fearless was started to open "+disp(given)+",\nbut that is not a path of a file this system accepts."; }
 
   //-- the form of a message
   public static String unreadableMessage(Path file){ return "The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\nThe bytes of\n"+path(file.toString())+"\ndo not form valid UTF-8 text."; }
@@ -54,7 +56,7 @@ The arguments are:
   }
   public static String notTagged(String verb, String why){ return refused(verb)+"\nThe path of the request is not a tagged text: "+why; }
   public static String blankPath(String verb){ return refused(verb)+"\nThe path of the request is empty."; }
-  public static String notAPath(String verb, String given, String why){ return "Refused request "+disp(verb)+" on path "+disp(given)+".\n"+disp(given)+" is not a path this system accepts: "+why+"."; }
+  public static String notAPath(String verb, String given, String why){ return "Refused request "+disp(verb)+" on path "+disp(given)+".\n"+disp(given)+"\nis not a path this system accepts: "+why+"."; }
   public static String unknownProject(String verb, String name, List<String> names){
     return refused(verb, name)+"\nNo project is named "+disp(name)+"."+Join.of(names.stream().map(n -> "\n  "+n), "\nThe projects are:", "", "", "\nNo project is registered.");
   }
@@ -80,7 +82,7 @@ The arguments are:
   public static String removedWhileBusy(String name, String job){ return "Refused request to remove project "+disp(name)+".\n"+running(name, job); }
   public static String malformedMount(String name, String mount){ return refused("Mount", name)+"\n"+disp(mount)+" is not a mount: a mount is the qualified name of a DataRead type, then the name of a data project, none to remove the mount of that DataRead type."; }
   public static String mountsRefused(String name, List<String> problems){
-    return refused("Run", name)+"\nProject "+disp(name)+" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:"+Join.of(problems.stream().map(p -> "\n  "+p), "", "", "");
+    return refused("Run", name)+"\nProject "+disp(name)+" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:"+Join.of(problems.stream().map(p -> "\n  "+p.replace("\n", "\n  ")), "", "", "");
   }
   public static String notMounted(String type){ return "No data project is mounted on "+disp(type)+"."; }
   public static String brokenMount(String type, String data, String why){ return "The mount of "+disp(data)+" on "+disp(type)+" is broken: "+why; }
@@ -149,8 +151,8 @@ The icon of this project is not a PNG image Fearless can read.
 File:
 %s
 
-The icon of a project is the only .png file in its ".config/icon" folder:
-replace that file with a PNG image, or remove it.
+The icon of a project is the only .png file in its folder ".config/icon".
+Replace that file with a PNG image, or remove it.
 """.formatted(path(icon.toString())));
   }
   public static String noCache(){ return "This project has no compilation cache."; }
@@ -159,8 +161,8 @@ replace that file with a PNG image, or remove it.
   public static String packagesToCompile(){ return "The compilation cache does not contain the mains of this project."; }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
-  public static String cacheNotDeleted(String why){ return "--- the compilation cache is not deleted: "+why+" ---\n"; }
-  public static String notWritten(String file, IOException e){ return "--- "+file+" is not written: "+fileFailure(e)+" ---\n"; }
+  public static String cacheNotDeleted(String why){ return "--- the compilation cache is not deleted: "+why+"\n---\n"; }
+  public static String notWritten(String file, IOException e){ return "--- "+file+" is not written: "+fileFailure(e)+"\n---\n"; }
 
   //-- projects.info
   public static String infoNotObject(){ return "The whole file must be an object {...} with \"projects\" and \"systemExtensions\"."; }
@@ -228,7 +230,7 @@ replace that file with a PNG image, or remove it.
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" cannot both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
-  public static String iconGone(Path file){ return "--- the icon file of a claim of this project is gone: "+file+"; the project claims no extension until it is compiled again ---\n"; }
+  public static String iconGone(Path file){ return "--- the icon file of a claim of this project is gone: "+file+"\nThe project claims no extension until it is compiled again ---\n"; }
   public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project cannot be saved in its compilation cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
   public static String extensionsNotAllowed(List<Project.Claimant> cs){
     return Join.of(cs.stream().map(c -> "The system extension "+disp(c.claim().extension())+" of "+claim(c)+" of main "+disp(c.main())+" is not in \"systemExtensions\" of projects.info."), "", "\n", "");
@@ -239,7 +241,7 @@ replace that file with a PNG image, or remove it.
   }
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c -> disp(c.main())+" of project "+disp(c.alias())), " claimed by ", " and ", "", ""); }
   public static UserError iconRefused(Project.Claimant c, String problem){
-    return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"): an icon must be a square PNG image with a side from 64 to 1024 pixels.");
+    return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"):\nan icon must be a square PNG image with a side from 64 to 1024 pixels.");
   }
   private static String icon(Project.Claimant c){ return "The icon "+disp(c.claim().icon())+" in "+claim(c)+" of main "+disp(c.main()); }
   private static String from(MainsInfo.Claim c){ return disp(Join.of(Stream.of(c.diskPath(), c.zipSteps().replace(';', '/'), c.zipEntry()).filter(s -> !s.isEmpty()), "", "/", "")); }
@@ -248,6 +250,6 @@ replace that file with a PNG image, or remove it.
   public static String nothingToOpen(Path path){ return "Nothing is opened: nothing exists at\n"+path(path.toString()); }
   public static String notOpened(Path path, IOException e){ return "Nothing is opened at\n"+path(path.toString())+"\n"+fileFailure(e); }
   public static String noDocs(Path gen){ return "The documentation is not opened: no .html file is in\n"+path(gen.toString()); }
-  public static String dropRefused(String item, String why){ return "Nothing is registered from "+disp(item)+", dropped on the window: "+why+"."; }
+  public static String dropRefused(String item, String why){ return "Nothing is registered from "+disp(item)+",\ndropped on the window: "+why+"."; }
   public static String dropUnreadable(Exception e){ return "Nothing is registered from what was dropped on the window: the desktop did not hand it over: "+e.getMessage(); }
 }

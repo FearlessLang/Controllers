@@ -66,7 +66,7 @@ final class Sni{
     var address= System.getenv("DBUS_SESSION_BUS_ADDRESS");
     if (address == null){ return false; }
     var path= Pattern.compile("(^|;)unix:([^;]*,)?path=([^,;]+)").matcher(address);
-    if (!path.find()){ throw Violation.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS \""+address+"\" names no \"unix:path=\" socket")); }
+    if (!path.find()){ throw Violation.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS \""+address+"\"\nnames no \"unix:path=\" socket")); }
     var icon= new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
     var g= icon.createGraphics();
     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);

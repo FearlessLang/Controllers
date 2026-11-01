@@ -54,6 +54,20 @@ Reported reason:
 The process cannot access the file because it is being used by another process
 """, Violation.couldNotLoadIcon(icon, cause).getMessage());
   }
+  @Test void couldNotLoadIconFileSystem(){
+    var icon= Path.of("C:\\Program Files\\FearlessManaged0_007\\app\\icon.png");
+    var cause= new java.nio.file.AccessDeniedException(icon.toString(), null, "the file is locked");
+    same("""
+Fearless could not load its own icon.
+
+This copy of Fearless should already have this file:
+  C:\\Program Files\\FearlessManaged0_007\\app\\icon.png
+
+Reported reason:
+C:\\Program Files\\FearlessManaged0_007\\app\\icon.png
+the file is locked
+""", Violation.couldNotLoadIcon(icon, cause).getMessage());
+  }
   @Test void couldNotDecodeIcon(){
     var icon= Path.of("C:\\Users\\ada\\Downloads\\fearlessManaged0_007\\app\\icon.png");
     same("""

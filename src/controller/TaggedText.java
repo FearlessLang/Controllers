@@ -41,19 +41,19 @@ public final class TaggedText{
   static Path readPath(String tagged, Function<String,? extends RuntimeException> bad){
     if (!tagged.startsWith("Base16:")){ var text= read(tagged, bad); return pathOf(units(text), text, bad); }
     var hex= tagged.substring("Base16:".length());
-    if (!hex.matches("(?:[0-9A-F]{2})+")){ throw bad.apply("\""+tagged+"\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits."); }
+    if (!hex.matches("(?:[0-9A-F]{2})+")){ throw bad.apply("\""+tagged+"\"\nis malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits."); }
     return pathOf(HexFormat.of().parseHex(hex), tagged, bad);
   }
   static String read(String text, Function<String,? extends RuntimeException> bad){
     if (text.startsWith("Str:")){ return safeAfter("Str:", text, bad); }
     if (text.startsWith("UStr:")){ return new Reader(safeAfter("UStr:", text, bad), bad).all(); }
-    throw bad.apply("\""+text+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.");
+    throw bad.apply("\""+text+"\"\nis malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.");
   }
   private static String safeAfter(String tag, String text, Function<String,? extends RuntimeException> bad){
     var res= text.substring(tag.length());
     var unsafe= res.codePoints().filter(c -> !safe(c)).findFirst();
     if (unsafe.isEmpty()){ return res; }
-    throw bad.apply(Message.displayString(text)+" is malformed: after \""+tag+"\" every character is in the Fearless character set, but "+Message.displayChar(unsafe.getAsInt())+" is not.");
+    throw bad.apply(Message.displayString(text)+"\nis malformed: after \""+tag+"\" every character is in the Fearless character set, but "+Message.displayChar(unsafe.getAsInt())+" is not.");
   }
   private static boolean safe(int c){ return c < 128 && Fs.allowed.indexOf(c) >= 0; }
   private static boolean surrogate(int c){ return c >= 0xD800 && c <= 0xDFFF; }
@@ -73,7 +73,7 @@ public final class TaggedText{
       for (var b : units){ if (b == 0){ throw new InvalidPathException(given, "Nul character not allowed"); } }
       return PathBytes.path(units);
     }
-    if (units.length % 2 != 0){ throw bad.apply("\""+given+"\" is malformed: a Windows name is 16 bit units, so its bytes are an even number."); }
+    if (units.length % 2 != 0){ throw bad.apply("\""+given+"\"\nis malformed: a Windows name is 16 bit units, so its bytes are an even number."); }
     var res= new StringBuilder();
     for (int i= 0; i < units.length; i += 2){ res.append((char)((units[i] & 0xFF) | (units[i+1] & 0xFF) << 8)); }
     return Path.of(res.toString());
@@ -143,7 +143,7 @@ public final class TaggedText{
       if (i != s.length()){ throw fail("the end of the text"); }
       return res;
     }
-    private RuntimeException fail(String expected){ return bad.apply("\"UStr:"+s+"\" is malformed: "+expected+" was expected at offset "+i+" after \"UStr:\"."); }
+    private RuntimeException fail(String expected){ return bad.apply("\"UStr:"+s+"\"\nis malformed: "+expected+" was expected at offset "+i+" after \"UStr:\"."); }
     private String expr(){
       var sb= new StringBuilder(atom());
       while (true){

@@ -871,7 +871,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     Fs.writeUtf8(cache.resolve("a.built"), "");
     Disk.noWrite(cache);
     send(again, "DeleteCache", "data");
-    same("--- the compilation cache is not deleted: access denied: [###]a.built ---\n", view.out(cached));
+    same("--- the compilation cache is not deleted: access denied: [###]a.built\n---\n", view.out(cached));
     List.of(closed, readOnly, cache, hidden).forEach(Disk::allow);
   }
   @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@TempDir Path dir){
@@ -910,7 +910,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Register", "Str: ");
     assertEquals(List.of(
       "Refused request \"Run\" on project \"\".\nNo project is named \"\".\nNo project is registered.",
-      "Refused request \"Register\".\nThe path of the request is not a tagged text: \"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
+      "Refused request \"Register\".\nThe path of the request is not a tagged text: \"\"\nis malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
       "Refused request \"Register\".\nThe path of the request is empty."), view.refused);
   }
   @Test void aRegisterWhosePathIsNotATaggedTextOrNotAPathIsRefused(@TempDir Path dir){
@@ -918,8 +918,8 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Register", dir.toString());
     send(m, "Register", TaggedText.of("a\u0000b"));
     assertEquals(2, view.refused.size());
-    assertEquals("Refused request \"Register\".\nThe path of the request is not a tagged text: \""+dir+"\" is malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.", view.refused.get(0));
-    same("Refused request \"Register\" on path \"a\" [Null 0x00] \"b\".\n\"a\" [Null 0x00] \"b\" is not a path this system accepts: "+(Fs.isWindows() ? "[###]" : "Nul character not allowed."), view.refused.get(1));
+    assertEquals("Refused request \"Register\".\nThe path of the request is not a tagged text: \""+dir+"\"\nis malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.", view.refused.get(0));
+    same("Refused request \"Register\" on path \"a\" [Null 0x00] \"b\".\n\"a\" [Null 0x00] \"b\"\nis not a path this system accepts: "+(Fs.isWindows() ? "[###]" : "Nul character not allowed."), view.refused.get(1));
     assertEquals(List.of(), listed(m));
   }
   @Test void aProjectsInfoThatIsNotValidIsFatal(@TempDir Path dir){
@@ -961,7 +961,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     var m= manager(dir, "hello.Hello");
     var noJvm= code(m, dir, "nojvm");
     send(m, "Compile", "nojvm");
-    assertEquals("--- compiling nojvm ---\n--- compile did not start: io: Cannot run program \"java\": error=2, No such file or directory ---\n", view.out(noJvm));
+    assertEquals("--- compiling nojvm ---\n--- compile did not start: io: Cannot run program \"java\": error=2, No such file or directory\n---\n", view.out(noJvm));
     assertEquals(Project.State.codeNoCache, project(m, noJvm).state());
   }
   @Test void mainsTheCompilerWouldCompileMakeTheProjectOutOfDate(@TempDir Path dir){
@@ -1261,7 +1261,7 @@ No free extension is left for "base.Shortcut[base.IconsConflict]" of main "hello
   private static byte[] bytes(Path file){ return Fs.of(() -> Files.readAllBytes(file)); }
   private static Path icons(Path project){ return project.resolve(Facts.outDir).resolve("icons"); }
   private static String iconError(String claim, String problem, String from){
-    return "The icon \"hello.IconsFoo\" in \""+claim+"\" of main \"hello.Hello\" "+problem+" (from \""+from+"\"): an icon must be a square PNG image with a side from 64 to 1024 pixels.\n";
+    return "The icon \"hello.IconsFoo\" in \""+claim+"\" of main \"hello.Hello\" "+problem+" (from \""+from+"\"):\nan icon must be a square PNG image with a side from 64 to 1024 pixels.\n";
   }
   @Test void anIconIsASquarePngWithASideFrom64To1024Pixels(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -1606,7 +1606,7 @@ What stood in the way:
     compiled(m, "hello", "other");
     Fs.rmTree(hello.resolve(Facts.outDir));
     send(m, "Show", "other");
-    same("[###]--- the icon file of a claim of this project is gone: "+icons(hello).resolve("base.IconsConflict.png")+"; the project claims no extension until it is compiled again ---\n", view.out(hello));
+    same("[###]--- the icon file of a claim of this project is gone: "+icons(hello).resolve("base.IconsConflict.png")+"\nThe project claims no extension until it is compiled again ---\n", view.out(hello));
     assertEquals(Project.noClaims, project(m, hello).claims());
     assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png", ".foo manager/icons/base.IconsConflict.png", ".qux other/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
@@ -1621,7 +1621,7 @@ What stood in the way:
     touch(hello);
     compiled(m, "hello");
     Disk.allow(hello);
-    assertEquals("--- compiling hello ---\ncompiled\n--- hello.fapp010 is not written: access denied: "+hello.resolve("hello.fapp010")+" ---\n--- compile done ---\n", view.out(hello));
+    assertEquals("--- compiling hello ---\ncompiled\n--- hello.fapp010 is not written: access denied: "+hello.resolve("hello.fapp010")+"\n---\n--- compile done ---\n", view.out(hello));
     assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"), wanted(dir));
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
   }

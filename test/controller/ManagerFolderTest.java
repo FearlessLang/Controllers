@@ -44,13 +44,13 @@ final class ManagerFolderTest{
     var windows= Fs.isWindows();
     assertEquals("Register\nStr:"+Path.of("").toAbsolutePath().resolve("ab"), Main.message("FearlessCommandRegister", windows ? "Base16:61006200" : "Base16:6162"));
     assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is empty.", Main.message("FearlessCommandRegister", windows ? "Base16:2000" : "Base16:20"));
-    same("InvalidCall\nRefused request \"Register\" on path [###] is not a path this system accepts: [###]", Main.message("FearlessCommandRegister", windows ? "Base16:2F000000" : "Base16:2F00"));
-    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is not a tagged text: \"Base16:\" is malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.", Main.message("FearlessCommandRegister", "Base16:"));
+    same("InvalidCall\nRefused request \"Register\" on path [###]\nis not a path this system accepts: [###]", Main.message("FearlessCommandRegister", windows ? "Base16:2F000000" : "Base16:2F00"));
+    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is not a tagged text: \"Base16:\"\nis malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.", Main.message("FearlessCommandRegister", "Base16:"));
   }
   @Test void aBase16PathOfAnOddNumberOfBytesIsRefusedOnlyOnWindows(){
     var odd= "Base16:2F646174612F68656C6C6F";
     if (!Fs.isWindows()){ assertEquals("Register\n"+odd, Main.message("FearlessCommandRegister", odd)); return; }
-    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is not a tagged text: \"Base16:2F646174612F68656C6C6F\" is malformed: a Windows name is 16 bit units, so its bytes are an even number.", Main.message("FearlessCommandRegister", odd));
+    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is not a tagged text: \"Base16:2F646174612F68656C6C6F\"\nis malformed: a Windows name is 16 bit units, so its bytes are an even number.", Main.message("FearlessCommandRegister", odd));
   }
   @Test void aBase16PathThatIsNotUnicodeStaysBase16(){
     Assumptions.assumeFalse(Fs.isMac());
@@ -79,8 +79,8 @@ final class ManagerFolderTest{
     same("InvalidCall\n[###]root of a drive[###]", Main.message("FearlessCommandRegister", TaggedText.ofPath(Path.of("").toAbsolutePath().getRoot())));
   }
   @Test void aBlankArgumentIsABrokenPath(){
-    same("InvalidCall\nFearless was started to open [###], but that is not a path of a file this system accepts.", Main.message(Main.fileAsArg(new String[]{""})));
-    same("InvalidCall\nFearless was started to open [###], but that is not a path of a file this system accepts.", Main.message(Main.fileAsArg(new String[]{" "})));
+    same("InvalidCall\nFearless was started to open [###],\nbut that is not a path of a file this system accepts.", Main.message(Main.fileAsArg(new String[]{""})));
+    same("InvalidCall\nFearless was started to open [###],\nbut that is not a path of a file this system accepts.", Main.message(Main.fileAsArg(new String[]{" "})));
   }
   @Test void aRelativePathOfAFearlessCommandNamesThePathFromWhereTheCommandStarted(){
     var here= Path.of("").toAbsolutePath();

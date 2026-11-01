@@ -367,7 +367,7 @@ public final class Manager{
     var l= live.get(f);
     try{ l.child = jvm.get(); }
     catch (UncheckedIOException e){
-      output(f, "--- "+(what.equals(Project.compiling) ? "compile" : what)+" did not start: "+Report.fileFailure(e.getCause())+" ---\n");
+      output(f, "--- "+(what.equals(Project.compiling) ? "compile" : what)+" did not start: "+Report.fileFailure(e.getCause())+"\n---\n");
       ended(f);
       return;
     }
