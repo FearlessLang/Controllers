@@ -19,9 +19,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.osgi.framework.FrameworkUtil;
+
+import suggest.Api;
 
 /// The manager this plugin was connected to (see controller.Eclipse in Controllers).
 /// manager.info, next to the plugins folder holding this plugin, names the manager program,
@@ -45,33 +48,38 @@ public final class ManagerLink{
     return new Project(path(o.get("path")), (String)o.get("kind"), mains);
   }
   static Path out(Path folder){ return folder.resolve(".fearless_out"); }
-  static Map<String,String> mains(Path folder){
-    var res= new LinkedHashMap<String,String>();
-    for (var file : manifests(folder)){ Info.obj(Info.parse(file).get("mains")).forEach((main,m) -> res.put(main, (String)Info.lst(m).getFirst())); }
-    return res;
+  static List<String> mains(Path folder){
+    return jsons(out(folder)).flatMap(f -> Info.obj(Info.parse(f.toString(), Api.parse(read(f)).manifest()).get("mains")).keySet().stream()).toList();
   }
-  static List<Path> manifests(Path folder){
-    var out= out(folder);
-    if (!Files.isDirectory(out)){ return List.of(); }
-    try (var s= Files.list(out)){ return s.filter(p -> p.getFileName().toString().endsWith("_manifest.info")).sorted().toList(); }
+  static Stream<Path> jsons(Path out){
+    if (!Files.isDirectory(out)){ return Stream.of(); }
+    try (var files= Files.list(out)){ return files.filter(p -> p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
-  static Optional<String> error(Path folder, String name){
-    var file= out(folder).resolve(name);
+  /// the error of _error.txt, while _error.txt is not a stale error file (see ControllersDesign, Eclipse)
+  static Optional<String> error(Path folder){
+    var file= out(folder).resolve("_error.txt");
     if (!Files.exists(file)){ return Optional.empty(); }
-    return changed(folder) > stamp(file) ? Optional.empty() : Optional.of(read(file));
+    return stale(folder, stamp(file)) ? Optional.empty() : Optional.of(read(file));
   }
-  private static long changed(Path folder){
-    var res= new long[]{stamp(manager.resolve("projects.info"))};
+  private static boolean stale(Path folder, long time){
+    var now= System.currentTimeMillis();
+    var config= folder.resolve(".config");
+    var icon= config.resolve("icon");
+    var res= new boolean[]{false};
     var visitor= new SimpleFileVisitor<Path>(){
+      FileVisitResult seen(BasicFileAttributes a){
+        var t= a.lastModifiedTime().toMillis();
+        res[0] = t > time && t <= now;
+        return res[0] ? FileVisitResult.TERMINATE : FileVisitResult.CONTINUE;
+      }
       @Override public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes a){
-        if (dir.equals(out(folder))){ return FileVisitResult.SKIP_SUBTREE; }
-        res[0] = Math.max(res[0], a.lastModifiedTime().toMillis());
-        return FileVisitResult.CONTINUE;
+        if (!visible(folder, dir) && !dir.equals(config) && !dir.equals(icon)){ return FileVisitResult.SKIP_SUBTREE; }
+        return seen(a);
       }
       @Override public FileVisitResult visitFile(Path file, BasicFileAttributes a){
-        res[0] = Math.max(res[0], a.lastModifiedTime().toMillis());
-        return FileVisitResult.CONTINUE;
+        if (!visible(folder, file) && !file.getParent().equals(icon)){ return FileVisitResult.CONTINUE; }
+        return seen(a);
       }
       @Override public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException{
         if (e instanceof NoSuchFileException){ return FileVisitResult.CONTINUE; }
@@ -81,6 +89,9 @@ public final class ManagerLink{
     try{ Files.walkFileTree(folder, visitor); }
     catch (IOException e){ throw new UncheckedIOException(e); }
     return res[0];
+  }
+  private static boolean visible(Path folder, Path p){
+    return StreamSupport.stream(folder.relativize(p).spliterator(), false).noneMatch(n -> n.toString().startsWith("."));
   }
   private static long stamp(Path file){
     try{ return Files.getLastModifiedTime(file).toMillis(); }

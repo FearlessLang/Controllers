@@ -178,7 +178,7 @@ final class Panel{
     action.setText(switch (a){ case check -> "Check"; case compile -> "Compile"; case run -> "Run"; case terminate -> "Terminate"; });
     action.setIcon(several ? new Arrow() : null);
     action.setHorizontalTextPosition(JButton.LEADING);
-    action.setEnabled(a != Project.Action.run || !p.knownMains().isEmpty());
+    action.setEnabled(!p.job().equals(Project.compiling) && (a != Project.Action.run || !p.knownMains().isEmpty()));
     openDocs.setEnabled(p.mains().isPresent());
     deleteCache.setEnabled(!p.busy());
     forget.setEnabled(!p.busy());

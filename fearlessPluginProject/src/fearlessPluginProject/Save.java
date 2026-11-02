@@ -1,6 +1,5 @@
 package fearlessPluginProject;
 
-import java.time.Duration;
 import java.util.stream.Stream;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -17,9 +16,10 @@ public final class Save extends AbstractHandler{
     var project= Adapters.adapt(editor.getEditorInput(), IResource.class).getProject();
     var alias= project.getName();
     if (!ManagerLink.project(alias).kind().equals("code")){ editor.doSave(new NullProgressMonitor()); return null; }
-    if (Follow.compilingFor(alias, Duration.ofSeconds(15))){ return null; }
+    if (Follow.compiling(alias)){ return null; }
     ManagerLink.send("Terminate", alias);
     Stream.of(editor.getSite().getPage().getDirtyEditors()).filter(e -> project.equals(projectOf(e))).forEach(e -> e.doSave(new NullProgressMonitor()));
+    if (MainButton.of(alias, ManagerLink.projects()).action() == MainButton.Action.check){ ManagerLink.send("Check", alias); return null; }
     Follow.compile(alias);
     return null;
   }

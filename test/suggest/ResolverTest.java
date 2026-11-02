@@ -64,7 +64,7 @@ final class ResolverTest{
     type("test.Cats", bs(), "[]", m("#", bs(), list(c("base.Str"), c("base.Nat")), c("test.Cat"))),
     type("test.Pairs", bs(), "[]", m("#", bs("E"), list(x("E"), x("E")), c("base.Opt", x("E")))),
     type("test.Student", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))));
-  static final Api compiled= new Api(Api.parse(api));
+  static final Api compiled= new Api(ApiTest.types(api));
   static final String head= Stream.of("Str", "Nat", "List", "Flow", "Opt", "Opts", "OptMatch", "F", "Block", "OrderHash", "Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
 Cats: { #(name: Str, weight: Nat): Cat -> Cat: { .name: Str -> name; .weight: Nat -> weight; } }
@@ -269,11 +269,6 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same(baseTypes, at("", packages, "A: { .foo -> lib.| }").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
     same("Opt[E] OptMatch[E,R] Opts", at("", packages, "use lib.Op|").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
     same(baseTypes, at("", packages, "A: { .foo -> base.| }").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
-  }
-  @Test void theMapOfThePackageIsReadFromTheCompiledMap(){
-    assertEquals(Map.of("lib", "base", "x", "y"), Api.packages("{\"app\":{\"lib\":\"base fear:/_app/_rank_app.fear\",\n\"x\":\"y fear:/_app/_rank_app.fear\"}\n,\n\"other\":{\"a\":\"b fear:/_other/_rank_app.fear\"}\n}\n", "app"));
-    assertEquals(Map.of(), Api.packages("{}", "app"));
-    assertThrows(IllegalArgumentException.class, () -> Api.packages("{\"app\":{\"lib\":\"base\"}", "app"));
   }
   @Test void aPackageNameBeforeTheDotSuggestsItsPublicTypes(){
     same(baseTypes, types(file+"base.|"));

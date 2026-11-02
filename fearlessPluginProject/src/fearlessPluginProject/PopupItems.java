@@ -47,8 +47,8 @@ public final class PopupItems extends CompoundContributionItem{
   /// The html page of every package of the project, then the one of the standard library,
   /// each in a browser tab of its own that opening again reuses.
   private static void docs(Path folder){
-    var genJava= folder.resolve(".fearless_out").resolve("gen_java");
-    try (var pages= Files.isDirectory(genJava) ? Files.walk(genJava) : Stream.<Path>of()){
+    var out= ManagerLink.out(folder);
+    try (var pages= Files.isDirectory(out) ? Files.list(out) : Stream.<Path>of()){
       Stream.concat(pages.filter(p -> p.toString().endsWith(".html")).sorted(), Stream.of(ManagerLink.baseCache.resolve("base.html"))).forEach(PopupItems::open);
     }
     catch (IOException e){ throw new UncheckedIOException(e); }

@@ -8,11 +8,9 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Stream;
 
 import controller.Project;
 import controller.Registry;
-import coordinator.MainsInfo;
 import tools.Fs;
 import userMessages.UserError;
 import userMessages.Violation;
@@ -160,6 +158,8 @@ Replace that file with a PNG image, or remove it.
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
   public static String cacheNotDeleted(String why){ return "--- the compilation cache is not deleted: "+why+"\n---\n"; }
+  public static String alreadyCompiled(String alias){ return "The project "+disp(alias)+" was already up to date and compiled."; }
+  public static String cacheNotFinished(String why){ return "--- the compilation cache is not completed: "+why+"\n---\n"; }
   public static String notWritten(String file, IOException e){ return "--- "+file+" is not written: "+fileFailure(e)+"\n---\n"; }
 
   //-- projects.info
@@ -228,8 +228,6 @@ Replace that file with a PNG image, or remove it.
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" cannot both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
-  public static String iconGone(Path file){ return "--- the icon file of a claim of this project is gone: "+file+"\nThe project claims no extension until it is compiled again ---\n"; }
-  public static String claimsNotSaved(IOException e){ return "The icons and the extensions of the claims of this project cannot be saved in its compilation cache: "+fileFailure(e)+"\nGive Fearless access to the folder, then compile the project again."; }
   public static String extensionsNotAllowed(List<Project.Claimant> cs){
     return Join.of(cs.stream().map(c -> "The system extension "+disp(c.claim().extension())+" of "+claim(c)+" of main "+disp(c.main())+" is not in \"systemExtensions\" of projects.info."), "", "\n", "");
   }
@@ -238,11 +236,6 @@ Replace that file with a PNG image, or remove it.
       "Add these system extensions to \"systemExtensions\" of projects.info?\n", "\n", "\n\nThe manager becomes the program opening every file with these extensions,\nin place of the program opening them now. The project then needs compiling again.");
   }
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c -> disp(c.main())+" of project "+disp(c.alias())), " claimed by ", " and ", "", ""); }
-  public static UserError iconRefused(Project.Claimant c, String problem){
-    return new UserError(icon(c)+" "+problem+" (from "+from(c.claim())+"):\nan icon must be a square PNG image with a side from 64 to 1024 pixels.");
-  }
-  private static String icon(Project.Claimant c){ return "The icon "+disp(c.claim().icon())+" in "+claim(c)+" of main "+disp(c.main()); }
-  private static String from(MainsInfo.Claim c){ return disp(Join.of(Stream.of(c.diskPath(), c.zipSteps().replace(';', '/'), c.zipEntry()).filter(s -> !s.isEmpty()), "", "/", "")); }
 
   //-- what the window opens
   public static String nothingToOpen(Path path){ return "Nothing is opened: nothing exists at\n"+path(path.toString()); }

@@ -356,7 +356,7 @@ public final class Manager{
   private void compile(Path f, Optional<Follow> follow){
     runnable(f, "Compile");
     selected = Optional.of(f);
-    if (!project(f).needsCompiling()){ follow.ifPresent(Follow::end); return; }
+    if (!project(f).needsCompiling()){ upToDate(f, follow); return; }
     var l= live.get(f);
     l.terminated = false;
     l.follow = follow;
@@ -364,6 +364,11 @@ public final class Manager{
     view.clear(f);
     output(f, "--- compiling "+alias(f)+" ---\n");
     start(f, Project.compiling, () -> tools.compile(f, alias(f), out(f)));
+  }
+  private void upToDate(Path f, Optional<Follow> follow){
+    var text= Report.alreadyCompiled(alias(f))+"\n";
+    view.output(f, text);
+    follow.ifPresent(fl -> { fl.send(text); fl.end(); });
   }
   private void check(Path f){
     idle(f, "Check");
@@ -427,25 +432,32 @@ public final class Manager{
     }
     var refused= List.<Project.Claimant>of();
     if (!failed){
-      var claims= cached(f);
       try{
+        var claims= new MainsInfo(Coordinator.cachedMains(f));
         Project.shortcuts(Project.claimants(f, alias(f), claims));
         refused = Project.claimants(f, alias(f), claims).filter(c -> !allowed(c)).toList();
         if (!refused.isEmpty()){ throw new UserError(Report.extensionsNotAllowed(refused)); }
       }
-      catch (UserError e){ failed = true; errorFile(f, e.getMessage()); output(f, e.getMessage().stripTrailing()+"\n"); }
+      catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); }
     }
     var refusedHere= rebuild(Optional.of(f));
     failed |= refusedHere.isPresent();
+    if (!failed){ failed = !Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).allMatch(p -> shortcut(f, p)); }
     if (!failed){
-      Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).forEach(p -> shortcut(f, p));
-      uncached(f, () -> Coordinator.finish(f));
+      try{ Coordinator.finish(f); }
+      catch (UncheckedIOException e){ failed = true; stepFailed(f, Report.cacheNotFinished(Report.fileFailure(e.getCause()))); }
     }
     output(f, "--- compile "+(!failed ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
     scan(f);
     if (l.mains.isPresent()){ forgetStale(f); }
     ended(f);
     if (!refused.isEmpty()){ allow(refused); }
+  }
+  /// A failing step after Coordinator.compile: the corruption rule for a corrupted cache, else the error in _error.txt and in the Output.
+  private void stepFailed(Path f, String why){
+    if (UserError.cacheCorrupted(why)){ corrupted(f, why); return; }
+    errorFile(f, why);
+    output(f, why.stripTrailing()+"\n");
   }
   private void errorFile(Path f, String why){ uncached(f, () -> Coordinator.writeError(f, why)); }
   private void uncached(Path f, Runnable r){
@@ -463,13 +475,14 @@ public final class Manager{
   private void allow(List<Project.Claimant> refused){
     view.allow(Report.allowExtensions(refused), refused.stream().map(c -> c.claim().extension()).distinct().toList());
   }
-  private void shortcut(Path f, Path file){
-    try{ Fs.writeString(file, MakeDemo.markerContent, StandardOpenOption.CREATE_NEW); }
-    catch (IOException e){ output(f, Report.notWritten(file.getFileName().toString(), e)); }
+  private boolean shortcut(Path f, Path file){
+    try{ Fs.writeString(file, MakeDemo.markerContent, StandardOpenOption.CREATE_NEW); return true; }
+    catch (IOException e){ stepFailed(f, Report.notWritten(file.getFileName().toString(), e)); return false; }
   }
   private void terminate(Path f){
     selected = Optional.of(f);
     var l= live.get(f);
+    if (l.job.equals(Project.compiling)){ throw new Refused(Report.busy("Terminate", alias(f), l.job)); }
     if (l.child == null){ return; }
     l.terminated = true;
     output(f, "--- terminating "+l.job+" ---\n");
@@ -604,11 +617,11 @@ public final class Manager{
     Facts fresh;
     try{ fresh= facts(f); }
     catch (UserError err){ corrupted(f, err.getMessage()); rebuild(Optional.empty()); fresh= facts(f); }
+    if (fresh.problem().isPresent() && Fs.isDirectory(f)){ errorFile(f, fresh.problem().get()); }
     if (fresh.equals(l.scanned)){ return; }
     l.scanned = fresh;
     l.facts = fresh;
     l.mains = fresh.mains();
-    if (fresh.problem().isPresent() && Fs.isDirectory(f)){ errorFile(f, fresh.problem().get()); }
   }
   private Facts facts(Path f){
     var e= registry.of(f).orElseThrow();

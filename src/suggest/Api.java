@@ -2,13 +2,13 @@ package suggest;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -56,14 +56,22 @@ public final class Api{
   List<Ty> types(String pkg){
     return types.values().stream().filter(t -> t.name.startsWith(pkg+".") && !t.name.startsWith(pkg+"._")).map(t -> new Ty(t.name, t.bs.stream().map(b -> new Ty(b, List.of())).toList())).toList();
   }
-  /// [name, rc, [[X, rcs..]..], [[C, ts..]..], methods, self] with a method
+  /// The <pkg>.json the compiler writes, {"inputsSnapshot":"..",\n"manifest":"..",\n"types":[..]}\n
+  /// (coordinator.OutputHelper), with a type [name, rc, [[X, rcs..]..], [[C, ts..]..], methods, self], a method
   /// [name, rc, [[X, rcs..]..], [ts..], ret, origin, origin arity, abs|concrete] and a type
   /// [x, [rc,] X] or [c, rc, C, ts..]; a malformed text is an error
-  public static List<Type> parse(String json){
+  public record Compiled(String inputsSnapshot, String manifest, List<Type> types){}
+  public static Compiled parse(String json){
     var j= new Json(json);
+    j.expect("{\"inputsSnapshot\":");
+    var snapshot= j.str();
+    j.expect(",\n\"manifest\":");
+    var manifest= j.str();
+    j.expect(",\n\"types\":");
     var all= j.arr();
+    j.expect("}\n");
     j.check(j.i == json.length());
-    return all.stream().map(t -> type(arr(t))).toList();
+    return new Compiled(snapshot, manifest, all.stream().map(t -> type(arr(t))).toList());
   }
   private static Type type(List<Object> a){
     var supers= arr(a.get(3)).stream().map(o -> { var c= arr(o); return new Ty(str(c.get(0)), c.subList(1, c.size()).stream().map(Api::ty).toList()); }).toList();
@@ -78,37 +86,15 @@ public final class Api{
     if (str(a.get(0)).equals("x")){ return new Ty(str(a.getLast()), List.of()); }
     return new Ty(str(a.get(2)), a.subList(3, a.size()).stream().map(Api::ty).toList());
   }
-  /// the packages the map directives of the project give the package names written in pkg, from
-  /// the _map.json the compiler writes, {"target":{"in":"out rankFile",...},...}; a malformed text is an error
-  public static Map<String,String> packages(String json, String pkg){
-    var j= new Json(json);
-    var all= j.obj(() -> j.obj(j::str));
-    j.check(j.i == json.length());
-    return all.getOrDefault(pkg, Map.of()).entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().split(" ")[0]));
-  }
   @SuppressWarnings("unchecked") private static List<Object> arr(Object o){ return (List<Object>)o; }
   private static String str(Object o){ return (String)o; }
-  /// nested arrays of strings, a backslash escaping the next character, without whitespace, as ApiJson writes them, and objects
-  /// as the _map.json of the compiler has them: a newline after a comma and after the closing brace
+  /// nested arrays of strings without whitespace, a backslash escaping the next character and \n a newline
   private static final class Json{
     private final String s;
     private int i;
     Json(String s){ this.s= s; }
     void check(boolean ok){ if (!ok){ throw new IllegalArgumentException("Malformed compiled json at offset "+i); } }
-    <T> Map<String,T> obj(Supplier<T> value){
-      check(s.startsWith("{", i));
-      i += 1;
-      var res= new LinkedHashMap<String,T>();
-      while (!s.startsWith("}", i)){
-        if (!res.isEmpty()){ check(s.startsWith(",\n", i)); i += 2; }
-        var k= str();
-        check(s.startsWith(":", i));
-        i += 1;
-        check(res.put(k, value.get()) == null);
-      }
-      i += s.startsWith("}\n", i) ? 2 : 1;
-      return res;
-    }
+    void expect(String text){ check(s.startsWith(text, i)); i += text.length(); }
     List<Object> arr(){
       check(s.startsWith("[", i));
       var res= new ArrayList<Object>();
@@ -125,7 +111,7 @@ public final class Api{
       var j= i+1;
       while (j < s.length() && s.charAt(j) != '"'){ j += s.charAt(j) == '\\' ? 2 : 1; }
       check(j < s.length());
-      var res= s.substring(i+1, j).replaceAll("\\\\(.)", "$1");
+      var res= Pattern.compile("\\\\(.)").matcher(s.substring(i+1, j)).replaceAll(m -> m.group(1).equals("n") ? "\n" : Matcher.quoteReplacement(m.group(1)));
       i = j+1;
       return res;
     }

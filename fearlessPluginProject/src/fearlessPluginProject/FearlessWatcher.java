@@ -25,7 +25,7 @@ import org.osgi.framework.FrameworkUtil;
 
 
 /// Started with the workbench, and every two seconds, mirrors the registered projects of the
-/// manager into the workspace and reflects their files: the error of the last compile into the
+/// manager into the workspace and reflects their files: the error of _error.txt into the
 /// Problems view, and the unit test log the running main writes into the JUnit view.
 /// A mirrored project lives in the workspace's own folder and reaches the real project folder
 /// only through a linked folder, so Eclipse never writes into that folder. The linked folder
@@ -88,17 +88,15 @@ public final class FearlessWatcher extends Job implements IStartup{
   }
   private void reflect(IProject project, ManagerLink.Project p) throws CoreException{
     var alias= project.getName();
-    var problem= ManagerLink.error(p.folder(), "compile_error.txt").orElse("");
-    var check= ManagerLink.error(p.folder(), "check_error.txt").orElse("");
+    var problem= ManagerLink.error(p.folder()).orElse("");
     var m= at.matcher(problem);
     var found= m.find();
     var on= found ? project.getFolder(srcName).getFile(new Path(m.group(1))) : project;
     var target= found && on.exists() ? on : project;
-    var key= problem+" on "+target.getFullPath()+"\n"+check;
+    var key= problem+" on "+target.getFullPath();
     if (!key.equals(marks.put(alias, key))){
       project.deleteMarkers(problemType, true, IResource.DEPTH_INFINITE);
-      mark(target, problem, found && target != project ? Integer.parseInt(m.group(2)) : 0);
-      mark(project, check, 0);
+      mark(target, problem, target != project ? Integer.parseInt(m.group(2)) : 0);
     }
     var report= UnitTests.report(alias, p.folder());
     if (report.isEmpty() || report.get().equals(reports.put(alias, report.get()))){ return; }

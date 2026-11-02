@@ -112,6 +112,7 @@ public class Child{
       Pattern.compile("\\[\"([a-z][a-z0-9_]*\\.[A-Za-z0-9_]+)\", \"").matcher(mains).results().map(r -> r.group(1)).distinct()
         .forEach(i -> image(outDir.resolve("icons").resolve(i+".png"), 64, 64, "png"));
       if (folder.getFileName().toString().equals("edited")){ touch(folder); }
+      if (folder.getFileName().toString().equals("slowcompile")){ return jvm(out, "compiling", "1", "3000"); }
       var previous= outDir.resolve(alias+".json");
       if (Files.exists(previous)){
         for (var r : Pattern.compile("\\\\\"\\\\\", \\\\\"((fapp|ffile)[0-9]{3})\\\\\"\\]").matcher(Fs.readUtf8(previous)).results().toList()){ mains = mains.replaceFirst("@@"+r.group(2), r.group(1)); }
@@ -413,6 +414,34 @@ ran hello.Slow
       "Refused request to change the kind of project \"hello\" to \"idle\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
       "Refused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\"."), view.refused);
     assertEquals(Kind.code, project(m, hello).kind());
+  }
+  @Test void aRunningCompilationRefusesTerminate(@TempDir Path dir){
+    var m= manager(dir);
+    var slow= code(m, dir, "slowcompile");
+    send(m, "Compile", "slowcompile");
+    until(m, _ -> view.out(slow).contains("compiling\n"));
+    send(m, "Terminate", "slowcompile");
+    assertEquals(List.of("Refused request \"Terminate\" on project \"slowcompile\".\nA compilation of project \"slowcompile\" is currently running."), view.refused);
+    idle(m);
+    same("[###]compiling\n--- compile failed with 1 ---\n", view.out(slow));
+  }
+  @Test void compileOfACompiledProjectSaysSo(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Compile", "hello");
+    same("[###]--- compile done ---\nThe project \"hello\" was already up to date and compiled.\n", view.out(hello));
+  }
+  @Test void everyCheckOfAnInvalidProjectWritesItsErrorFile(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= code(m, dir, "hello");
+    Fs.ofV(() -> Files.delete(hello.resolve("hello.fearless")));
+    send(m, "Check", "hello");
+    var error= hello.resolve(Facts.outDir).resolve("_error.txt");
+    same("[###]\"hello.fearless\" is missing[###]", Fs.readUtf8(error));
+    Fs.ofV(() -> Files.delete(error));
+    send(m, "Check", "hello");
+    same("[###]\"hello.fearless\" is missing[###]", Fs.readUtf8(error));
   }
   @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
     var m= manager(dir, "hello.Slow", "hello.Two");
@@ -1054,7 +1083,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
       same("Applied\n--- compiling hello ---\ncompiled\n--- compile done ---\n", compile.join());
       var nothing= follower(server);
       send(m, "Compile", "hello", "Port:"+server.getLocalPort());
-      assertEquals("Applied\n", nothing.join());
+      assertEquals("Applied\nThe project \"hello\" was already up to date and compiled.\n", nothing.join());
       var run= follower(server);
       send(m, "Run", "hello", "hello.Hello", "Port:"+server.getLocalPort());
       same("Applied\n--- running hello.Hello ---\nran hello.Hello\n--- hello.Hello exited with 0 after [###]s ---\n", run.join());
@@ -1388,7 +1417,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(calls+1, associated.size());
     assertEquals(associated.get(calls-1), associated.getLast());
   }
-  @Test void aShortcutFileTheManagerCanNotCreateIsToldAndTheCompileIsDone(@TempDir Path dir){
+  @Test void aShortcutFileTheManagerCanNotCreateFailsTheCompile(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1398,9 +1427,11 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     touch(hello);
     compiled(m, "hello");
     Disk.allow(hello);
-    assertEquals("--- compiling hello ---\ncompiled\n--- hello.fapp010 is not written: access denied: "+hello.resolve("hello.fapp010")+"\n---\n--- compile done ---\n", view.out(hello));
+    var notWritten= "--- hello.fapp010 is not written: access denied: "+hello.resolve("hello.fapp010")+"\n---\n";
+    assertEquals("--- compiling hello ---\ncompiled\n"+notWritten+"--- compile failed ---\n", view.out(hello));
+    assertEquals(notWritten, Fs.readUtf8(hello.resolve(Facts.outDir).resolve("_error.txt")));
     assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"), wanted(dir));
-    assertEquals(Project.State.codeCompiled, project(m, hello).state());
+    assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
   private static List<String> top(Path project){ return Names.list(project).stream().map(p -> p.getFileName().toString()).toList(); }
   @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@TempDir Path dir){

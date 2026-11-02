@@ -3,15 +3,20 @@ package fearlessPluginProject;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.jface.text.contentassist.ContextInformation;
@@ -20,10 +25,13 @@ import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessorExtension;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
 
 import suggest.Api;
 import suggest.Api.Ty;
 import suggest.Api.Type;
+import suggest.Cached;
 import suggest.Docs;
 import suggest.Resolver;
 import suggest.Resolver.Row;
@@ -33,11 +41,11 @@ import suggest.Resolver.Row;
 /// last compile describes them (suggest.Resolver), and the types of the package named before the
 /// dot, in a use directive or in code; a type and a method alike come with their documentation
 /// from the text rendering next to the api json, and the methods of a type the last compile does
-/// not know, declared in the edited file, with none. The edited file, src/_pkg/name.fear of a
+/// not know, declared in the edited file, with none. The edited file, under the folder _pkg of a
 /// mirrored project, names the project and the package (a file of no mirrored project, or outside
 /// a package folder, gets nothing); the compiled information is the api json of every package
 /// of the project and of the standard library, read again when its file changes, and the map
-/// directives of the project as the last compile resolved them (_map.json); the aliases are
+/// directives of the rank files of the project (suggest.Cached); the aliases are
 /// the use directives of the head file of the package, its only _rank_ file (none when it has
 /// none or several), taken from the editor when that is the file being edited. The generic
 /// editor computes proposals off the UI thread, so the file comes from the document's file buffer.
@@ -46,49 +54,88 @@ import suggest.Resolver.Row;
 public final class Assist implements IContentAssistProcessorExtension{
   private record Loaded(long stamp, List<Type> types){}
   private record Text(long stamp, Docs docs){}
-  private record At(Path out, Api api, Resolver r){}
+  private record At(String alias, Path out, Api api, Resolver r, boolean unfinished, List<Path> read){}
+  /// a malformed <pkg>.json, a missing <pkg>.txt, or a type or a method missing from the documentation
+  private static final class Broken extends RuntimeException{
+    private static final long serialVersionUID= 1L;
+    Broken(Path file, Exception e){ super("The compilation cache of this project is broken.\nFile: "+file+"\n"+(e instanceof NoSuchFileException ? "The file is missing." : e.getMessage())); }
+  }
   private static final Map<Path,Loaded> loaded= new HashMap<>();
   private static final Map<Path,Text> texts= new HashMap<>();
   /// the resolver of the edited text; null for a file of no mirrored project or outside a package folder
   private static At _at(ITextViewer viewer){
-    var file= ResourcesPlugin.getWorkspace().getRoot().getFile(FileBuffers.getTextFileBufferManager().getTextFileBuffer(viewer.getDocument()).getLocation());
+    var file= file(viewer);
     var project= ManagerLink.projects().get(file.getProject().getName());
-    if (project == null || file.getProjectRelativePath().segmentCount() < 3){ return null; }
-    var pkgDir= file.getProjectRelativePath().segment(1);
-    var out= project.folder().resolve(".fearless_out");
+    var segments= List.of(file.getProjectRelativePath().removeLastSegments(1).segments());
+    var at= IntStream.range(1, segments.size()).filter(i -> segments.get(i).startsWith("_") && !segments.get(i).contains(".")).boxed().toList();
+    if (project == null || at.size() != 1){ return null; }
+    var folder= project.folder().resolve(String.join("/", segments.subList(1, at.getFirst()+1)));
+    var pkg= segments.get(at.getFirst()).substring(1);
+    var out= ManagerLink.out(project.folder());
+    var unfinished= Files.exists(out.resolve("_unfinished.txt"));
     var text= viewer.getDocument().get();
-    var head= file.getName().startsWith("_rank_") ? text : head(project.folder().resolve(pkgDir));
-    var base= ManagerLink.baseCache.resolve("base.json");
-    var types= Stream.concat(Stream.of(base), jsons(out)).flatMap(p -> types(p).stream()).toList();
-    var packages= Files.isDirectory(out) ? Api.packages(ManagerLink.read(out.resolve("_map.json")), pkgDir.substring(1)) : Map.<String,String>of();
+    var head= file.getName().startsWith("_rank_") ? text : head(folder);
+    var read= ManagerLink.jsons(out).toList();
+    var types= Stream.concat(Stream.of(ManagerLink.baseCache.resolve("base.json")), read.stream()).flatMap(p -> types(p).stream()).toList();
     var api= new Api(types);
-    return new At(out, api, Resolver.of(api, pkgDir.substring(1), packages, head, text));
+    var r= Resolver.of(api, pkg, Cached.packages(project.folder(), pkg), head, text);
+    return new At(file.getProject().getName(), out, api, r, unfinished, read);
   }
   @Override public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset){
-    var a= _at(viewer);
-    if (a == null){ return new ICompletionProposal[0]; }
+    try{
+      var a= _at(viewer);
+      if (a == null){ return new ICompletionProposal[0]; }
+      try{ return proposals(a, offset, true); }
+      catch (Broken e){
+        if (!forgiven(a)){ return new ICompletionProposal[]{ clean(a.alias(), e.getMessage()) }; }
+        return proposals(a, offset, false);
+      }
+    }
+    catch (Broken e){ return new ICompletionProposal[]{ clean(file(viewer).getProject().getName(), e.getMessage()) }; }
+  }
+  private static IFile file(ITextViewer viewer){ return ResourcesPlugin.getWorkspace().getRoot().getFile(FileBuffers.getTextFileBufferManager().getTextFileBuffer(viewer.getDocument()).getLocation()); }
+  /// _unfinished.txt was there before the files were read, or is there now, or a <pkg>.json that was read is gone
+  private static boolean forgiven(At a){ return a.unfinished() || Files.exists(a.out().resolve("_unfinished.txt")) || a.read().stream().anyMatch(p -> !Files.exists(p)); }
+  private static ICompletionProposal[] proposals(At a, int offset, boolean documented){
     var s= a.r().suggest(offset);
-    var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, docs(txt(a.out(), pkg(t.name())))));
-    var others= Stream.concat(typeProposals, s.supers().stream().map(t -> superProposal(t, s.from(), offset, a.r().text(), docs(txt(a.out(), pkg(t.name()))))));
+    var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size()))));
+    var others= Stream.concat(typeProposals, s.supers().stream().map(t -> superProposal(t, s.from(), offset, a.r().text(), doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size())))));
     if (s.rows().isEmpty()){ return others.toArray(ICompletionProposal[]::new); }
-    var docs= a.api().entry(s.receiver()).map(t -> docs(txt(a.out(), pkg(t.name()))));
-    return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, docs, s.receiver())), others).toArray(ICompletionProposal[]::new);
+    var receiver= a.api().entry(s.receiver());
+    return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, receiver.map(t -> doc(a, documented, t.name(), d -> d.method(simple(s.receiver().name()), s.receiver().args().size(), r.name(), r.ts().size()))).orElse(null))), others).toArray(ICompletionProposal[]::new);
   }
-  private static ICompletionProposal proposal(Row r, int from, int offset, Optional<Docs> docs, Ty receiver){
-    return new CompletionProposal(r.insert(), from, offset-from, r.insert().length(), null, r.display(), null, docs.flatMap(d -> d.method(simple(receiver.name()), receiver.args().size(), r.name(), r.ts().size())).orElse(null));
+  private static String doc(At a, boolean documented, String name, Function<Docs,Optional<String>> f){
+    if (!documented){ return null; }
+    var txt= txt(a.out(), pkg(name));
+    try{ return f.apply(docs(txt)).orElse(null); }
+    catch (IllegalArgumentException e){ throw new Broken(txt, e); }
+    catch (UncheckedIOException e){ throw new Broken(txt, e.getCause()); }
   }
-  private static ICompletionProposal typeProposal(Ty t, int from, int offset, Docs docs){
+  private static ICompletionProposal clean(String alias, String error){
+    return new ICompletionProposal(){
+      @Override public void apply(IDocument document){ ManagerLink.send("DeleteCache", alias); }
+      @Override public Point getSelection(IDocument document){ return null; }
+      @Override public String getAdditionalProposalInfo(){ return error; }
+      @Override public String getDisplayString(){ return "Clean"; }
+      @Override public Image getImage(){ return null; }
+      @Override public IContextInformation getContextInformation(){ return null; }
+    };
+  }
+  private static ICompletionProposal proposal(Row r, int from, int offset, String doc){
+    return new CompletionProposal(r.insert(), from, offset-from, r.insert().length(), null, r.display(), null, doc);
+  }
+  private static ICompletionProposal typeProposal(Ty t, int from, int offset, String doc){
     var name= simple(t.name());
-    return new CompletionProposal("."+name, from, offset-from, name.length()+1, null, t.show(), null, docs.type(name, t.args().size()).orElse(null));
+    return new CompletionProposal("."+name, from, offset-from, name.length()+1, null, t.show(), null, doc);
   }
-  private static ICompletionProposal superProposal(Ty t, int from, int offset, String text, Docs docs){
+  private static ICompletionProposal superProposal(Ty t, int from, int offset, String text, String doc){
     var insert= (from > 0 && text.charAt(from-1) == ':' ? " " : "")+t.show();
-    return new CompletionProposal(insert, from, offset-from, insert.length(), null, t.show(), null, docs.type(simple(t.name()), t.args().size()).orElse(null));
+    return new CompletionProposal(insert, from, offset-from, insert.length(), null, t.show(), null, doc);
   }
   private static String pkg(String name){ return name.substring(0, name.indexOf('.')); }
   private static String simple(String name){ return name.substring(name.indexOf('.')+1); }
   private static Path txt(Path out, String pkg){
-    return pkg.equals("base") ? ManagerLink.baseCache.resolve("base.txt") : out.resolve("gen_java").resolve(pkg+".txt");
+    return pkg.equals("base") ? ManagerLink.baseCache.resolve("base.txt") : out.resolve(pkg+".txt");
   }
   private static String head(Path pkgDir){
     try (var files= Files.list(pkgDir)){
@@ -97,14 +144,10 @@ public final class Assist implements IContentAssistProcessorExtension{
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
-  private static Stream<Path> jsons(Path out){
-    if (!Files.isDirectory(out)){ return Stream.of(); }
-    try (var files= Files.list(out)){ return files.filter(p -> p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
-    catch (IOException e){ throw new UncheckedIOException(e); }
-  }
   private static synchronized List<Type> types(Path json){
     var stamp= json.toFile().lastModified();
-    return loaded.compute(json, (p,old) -> old != null && old.stamp == stamp ? old : new Loaded(stamp, Api.parse(ManagerLink.read(json)))).types;
+    try{ return loaded.compute(json, (p,old) -> old != null && old.stamp == stamp ? old : new Loaded(stamp, Api.parse(ManagerLink.read(json)).types())).types; }
+    catch (IllegalArgumentException e){ throw new Broken(json, e); }
   }
   private static synchronized Docs docs(Path txt){
     var stamp= txt.toFile().lastModified();

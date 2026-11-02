@@ -23,8 +23,9 @@ final class Info{
   private final String text;
   private int i;
   private Info(String file, String text){ this.file= file; this.text= text; }
-  static Map<String,Object> parse(Path file){
-    var p= new Info(file.toString(), ManagerLink.read(file));
+  static Map<String,Object> parse(Path file){ return parse(file.toString(), ManagerLink.read(file)); }
+  static Map<String,Object> parse(String file, String text){
+    var p= new Info(file, text);
     try{
       var res= p.obj();
       p.ws();

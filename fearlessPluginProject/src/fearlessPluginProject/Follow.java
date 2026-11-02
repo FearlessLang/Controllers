@@ -7,8 +7,6 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -17,12 +15,9 @@ final class Follow{
   private static final String applied= "Applied\n";
   final String alias;
   final boolean compile;
-  final Instant since= Instant.now();
   private Follow(String alias, boolean compile){ this.alias= alias; this.compile= compile; }
   static Optional<Follow> followed(){ return followed; }
-  static boolean compilingFor(String alias, Duration longer){
-    return followed.filter(j -> j.compile && j.alias.equals(alias) && j.since.plus(longer).isBefore(Instant.now())).isPresent();
-  }
+  static boolean compiling(String alias){ return followed.filter(j -> j.compile && j.alias.equals(alias)).isPresent(); }
   static void compile(String alias){ follow(alias, true, "Compile", alias); }
   static void run(String alias, String... mains){ follow(alias, false, "Run", Stream.concat(Stream.of(alias), Stream.of(mains)).toArray(String[]::new)); }
   private static void follow(String alias, boolean compile, String verb, String... args){
