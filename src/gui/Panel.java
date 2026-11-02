@@ -319,7 +319,7 @@ final class Panel{
     var mounted= p.entry().mounts().get(type);
     var remove= small("Remove", () -> Main.command("Unmount "+p.alias()+" "+type));
     dataBox.add(mounted == null ? row(0, new JLabel(type), new JLabel("no mount")) : row(0, new JLabel(type), new JLabel("mounted: "+mounted), remove));
-    var broken= mounted == null || p.mains().isEmpty() ? Optional.<String>empty() : p.brokenMount(type, all);
+    var broken= mounted == null ? Optional.<String>empty() : p.brokenMount(type, all);
     broken.ifPresent(why -> dataBox.add(row(16, label(Report.brokenMount(type, mounted, why).replace('\n', ' '), false))));
     if (!p.knownDataRead().contains(type)){ return; }
     var choices= all.stream().filter(o -> fits(p, type, o.kind()) && o.problem().isEmpty() && !o.alias().equals(mounted)).map(Project::alias).toArray(String[]::new);

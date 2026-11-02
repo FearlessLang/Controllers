@@ -55,14 +55,15 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public List<String> knownMains(){ return mains.map(m -> List.copyOf(m.mains().keySet())).orElse(List.of()); }
   public List<String> knownAttenuators(){ return mains.map(MainsInfo::attenuators).orElse(List.of()); }
   public List<String> knownDataRead(){ return mains.map(m -> Stream.concat(m.dataRead().stream(), m.dataEdit().stream()).sorted().toList()).orElse(List.of()); }
+  /// what makes the mount of the type broken; the causes that need the DataRead types of the project only once its mains are known
   public Optional<String> brokenMount(String type, List<Project> all){
     var data= entry.mounts().get(type);
-    if (!knownDataRead().contains(type)){ return Optional.of(Report.mountNotDataRead(type, alias())); }
+    if (mains.isPresent() && !knownDataRead().contains(type)){ return Optional.of(Report.mountNotDataRead(type, alias())); }
     var target= OneOr.opt("project "+data, all.stream().filter(p -> p.alias().equals(data)));
     if (target.isEmpty()){ return Optional.of(Report.mountNotRegistered(data)); }
     var kind= target.get().kind();
     if (!kind.isData()){ return Optional.of(Report.mountNotData(data, kind.text)); }
-    if (kind == Kind.dataRead && mains.orElseThrow().dataEdit().contains(type)){ return Optional.of(Report.mountNotEditable(data, type)); }
+    if (kind == Kind.dataRead && mains.isPresent() && mains.get().dataEdit().contains(type)){ return Optional.of(Report.mountNotEditable(data, type)); }
     return target.get().problem().map(why -> Report.mountInvalid(data, why));
   }
   public List<String> mountProblems(List<Project> all){

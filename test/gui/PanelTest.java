@@ -53,6 +53,13 @@ final class PanelTest{
     panel.render(withClaims, List.of(withClaims), 800);
     assertEquals(List.of(), all(panel.root).filter(c -> c.getName() != null && c.getName().startsWith("shortcut ")).toList());
   }
+  @Test void aMountOfAProjectThatIsNotRegisteredIsMarkedAlsoBeforeACompilation(@TempDir Path dir){
+    Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
+    var hello= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.empty());
+    var panel= new Panel(_ -> {});
+    panel.render(hello, List.of(hello), 800);
+    assertEquals(List.of("The mount of \"notes\" on \"hello.Diary\" is broken: no project \"notes\" is registered."), brokenMounts(panel));
+  }
   @Test void theDataAreaShowsTheMountBrokenOnceTheMountedDataProjectBecomesInvalid(@TempDir Path dir){
     var notesFolder= dir.resolve("notes");
     Fs.writeUtf8(notesFolder.resolve("notes.fearless"), "");
