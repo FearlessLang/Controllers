@@ -824,6 +824,27 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(Map.of("hello.Notes", "data", "hello.Pub", "data", "hello.Old", "other"), project(m, hello).entry().mounts());
     assertEquals(Kind.dataRead, project(m, other).kind());
   }
+  @Test void anEditRenamingAProjectRemovesItAndAddsAProjectWithNoCache(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    edit(m, dir, info(dir).replace("\"hello\": {", "\"hello2\": {"));
+    assertEquals(List.of("hello2 "+hello), listed(m));
+    assertFalse(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
+  }
+  @Test void anEditRenamingAProjectWithARunningMainIsRefused(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    var before= info(dir);
+    edit(m, dir, before.replace("\"hello\": {", "\"hello2\": {"));
+    assertEquals(before, info(dir));
+    same("Refused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".", view.refused.getLast());
+    send(m, "Terminate", "hello");
+    idle(m);
+  }
   @Test void anEditKeepsTheTextOfItsFile(@TempDir Path dir){
     var m= manager(dir);
     var text= "{ \"systemExtensions\": [ ],\n  \"projects\": { } }\n";

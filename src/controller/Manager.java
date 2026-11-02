@@ -538,20 +538,23 @@ public final class Manager{
     if (!registry.extensions().equals(next.extensions())){ reconcile(Optional.empty(), next.extensions()); }
     var old= registry.content();
     registry.save(next, text);
-    live.keySet().stream().filter(f -> registry.of(f).isEmpty()).toList().forEach(this::drop);
-    var added= registry.all().stream().filter(e -> !live.containsKey(e.path())).toList();
+    var removed= old.projects().stream().filter(o -> same(o, next).isEmpty()).toList();
+    var added= next.projects().stream().filter(e -> same(e, old).isEmpty()).toList();
+    removed.forEach(o -> drop(o.path()));
     added.forEach(e -> { uncached(e.path(), () -> Coordinator.deleteCache(e.path())); open(e); });
     var dropped= old.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();
-    var kinds= old.projects().stream().filter(o -> registry.of(o.path()).filter(e -> e.kind() != o.kind()).isPresent()).map(Entry::path).toList();
+    var kinds= old.projects().stream().filter(o -> same(o, next).filter(e -> e.kind() != o.kind()).isPresent()).map(Entry::path).toList();
     var claiming= live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList();
     Stream.concat(kinds.stream(), claiming.stream()).distinct().forEach(this::deleted);
-    var removedCode= old.projects().stream().anyMatch(o -> o.kind() == Kind.code && registry.of(o.path()).isEmpty());
+    var removedCode= removed.stream().anyMatch(o -> o.kind() == Kind.code);
     if (removedCode || !added.isEmpty() || !kinds.isEmpty() || !claiming.isEmpty()){ rebuild(Optional.empty()); }
     registry.all().forEach(e -> scan(e.path()));
   }
+  /// the entry of c with the name and the folder of e: a project whose name or folder changes is removed and added
+  private static Optional<Entry> same(Entry e, Content c){ return OneOr.opt("project "+e.alias(), c.projects().stream().filter(n -> n.alias().equals(e.alias()) && n.path().equals(e.path()))); }
   private void kept(Entry o, Content next){
     var l= live.get(o.path());
-    var e= OneOr.opt("project "+o.alias(), next.projects().stream().filter(n -> n.path().equals(o.path())));
+    var e= same(o, next);
     if (e.isEmpty()){ throw new Refused(Report.removedWhileBusy(o.alias(), l.job)); }
     if (e.get().kind() != o.kind()){ throw new Refused(Report.kindWhileBusy(o.alias(), e.get().kind().text, l.job)); }
     var dropped= registry.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();

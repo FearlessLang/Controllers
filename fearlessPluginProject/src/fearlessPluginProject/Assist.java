@@ -97,7 +97,7 @@ public final class Assist implements IContentAssistProcessorExtension{
   private static ICompletionProposal[] proposals(At a, int offset, boolean documented){
     var s= a.r().suggest(offset);
     var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size()))));
-    var others= Stream.concat(typeProposals, s.supers().stream().map(t -> superProposal(t, s.from(), offset, a.r().text(), doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size())))));
+    var others= Stream.concat(typeProposals, s.supers().stream().map(t -> superProposal(t, s.from(), offset, a.r().text(), a.api().entry(t).map(e -> doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size()))).orElse(null))));
     if (s.rows().isEmpty()){ return others.toArray(ICompletionProposal[]::new); }
     return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, a.api().entry(r.owner()).map(t -> doc(a, documented, t.name(), d -> d.method(simple(r.owner().name()), r.owner().args().size(), r.rc(), r.name(), r.ts().size()))).orElse(null))), others).toArray(ICompletionProposal[]::new);
   }
@@ -138,6 +138,10 @@ public final class Assist implements IContentAssistProcessorExtension{
     var stamp= json.toFile().lastModified();
     try{ return loaded.compute(json, (p,old) -> old != null && old.stamp == stamp ? old : new Loaded(stamp, Api.parse(ManagerLink.read(json)).types())).types; }
     catch (IllegalArgumentException e){ throw new Broken(json, e); }
+    catch (UncheckedIOException e){
+      if (!(e.getCause() instanceof NoSuchFileException)){ throw e; }
+      return List.of();
+    }
   }
   private static synchronized Docs docs(Path txt){
     var stamp= txt.toFile().lastModified();

@@ -63,7 +63,8 @@ final class ResolverTest{
     type("test.Persons", bs(), "[]", m("#", bs(), list(c("base.Nat"), c("base.Str"), c("base.List", c("test.Cat"))), c("test.Person"))),
     type("test.Cats", bs(), "[]", m("#", bs(), list(c("base.Str"), c("base.Nat")), c("test.Cat"))),
     type("test.Pairs", bs(), "[]", m("#", bs("E"), list(x("E"), x("E")), c("base.Opt", x("E")))),
-    type("test.Student", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))));
+    type("test.Student", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))),
+    type("test._Shy", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))));
   static final Api compiled= new Api(ApiTest.types(api));
   static final String head= Stream.of("Str", "Nat", "List", "Flow", "Opt", "Opts", "OptMatch", "F", "Block", "OrderHash", "Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
@@ -339,6 +340,28 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same("Person", supers("A: { .foo(p: Person): Opt[OrderHash[Person]] -> Pairs#(p, Bob: P|"));
     same("", supers("A: { .foo: Animal -> rex: |"));
     same("", supers("A: { .foo: Nat; .bar(x: |"));
+  }
+  @Test void theSupertypesAreProposedAlsoWithTheCursorTouchingTheColonAndNeverPrivateCompiledTypes(){
+    same("Person Student", supers("A: { .foo: Person -> Bob:|"));
+    same("Person Student", supers("A: { .foo: Person -> Bob: |"));
+    same("Person Student _Mine", supers("_Mine: Person{}\nA: { .foo: Person -> Bob: |"));
+  }
+  @Test void nothingIsProposedTouchingAClosingBracketOrAtTheStartOfAName(){
+    same("", probe("ps.get(0)|"));
+    same(person, probe("ps.get(0) |"));
+    same("", probe("ps |get"));
+  }
+  @Test void theArgumentOfACallWithoutParenthesesExpectsTheTypeOfItsParameter(){
+    same("Nat", expected("A: { .foo(n: Nat): Str -> n + |"));
+    same("Str", expected("A: { .foo(n: Nat): Str -> |"));
+  }
+  @Test void aDeclarationBeforeTheCursorHasTheTypeItDeclaresAndItsMethodsTheDocumentationOfTheirSupertype(){
+    var s= at("A: { .foo -> Dog: Cat{}.|");
+    same("Dog", s.receiver().show());
+    same("Cat Cat", s.rows().stream().map(r -> r.owner().show()).collect(Collectors.joining(" ")));
+  }
+  @Test void aMethodOfTwoSupertypesIsProposedForEachOfThem(){
+    same(".age .assertEq .assertEq .cats .cmp .cmp .hash .hash .name", names("Two: Person, OrderHash[Person]{}\nA: { .foo(t: Two): Nat -> t.|"));
   }
   @Test void theSupertypeReplacesTheTypeNameBeingTyped(){
     var typed= "A: { .foo: OrderHash[Person] -> Bob: Or|";

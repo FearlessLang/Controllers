@@ -80,7 +80,8 @@ public final class Api{
     var all= j.arr();
     j.expect("}\n");
     j.check(j.i == json.length());
-    return new Compiled(snapshot, manifest, all.stream().map(t -> type(arr(t))).toList());
+    try{ return new Compiled(snapshot, manifest, all.stream().map(t -> type(arr(t))).toList()); }
+    catch (ClassCastException|IndexOutOfBoundsException e){ throw new IllegalArgumentException("Malformed compiled json: a type, a method or a type of a method does not have its shape"); }
   }
   private static Type type(List<Object> a){
     var supers= arr(a.get(3)).stream().map(o -> { var c= arr(o); return new Ty(str(c.get(0)), c.subList(1, c.size()).stream().map(Api::ty).toList()); }).toList();
