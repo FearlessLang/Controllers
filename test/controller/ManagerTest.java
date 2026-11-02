@@ -137,7 +137,7 @@ public class Child{
       windows.add(preloads.stream().map(c -> c.label()+" "+c.claim().icon()).toList());
       var all= Stream.concat(Stream.of(new Icon(".fearless", null, null)), captured.stream()).toList();
       var userLocked= all.stream().map(Icon::extension).filter(locked::contains).toList();
-      if (!userLocked.isEmpty()){ throw new Refusal(Violation.associationUserLocked(userLocked, claimedBy), userLocked); }
+      if (!userLocked.isEmpty()){ throw new Refusal(Violation.associationUserLocked(userLocked.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy), userLocked); }
       var blocked= all.stream().map(Icon::extension).filter(e -> !Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw new Refusal(Violation.associationNotOurs(blocked, claimedBy), List.copyOf(blocked.keySet())); }
     }
@@ -396,7 +396,7 @@ ran hello.Hello
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     compiled(m, "hello");
-    assertEquals(List.of(hello), view.cleared);
+    assertEquals(List.of(hello, hello), view.cleared);
     assertEquals(known("hello.Hello").apply(hello), project(m, hello).mains());
   }
   @Test void aBusyProjectRefusesJobsDeleteCacheKindAndForgetThenTerminateEndsTheJob(@TempDir Path dir){
@@ -446,7 +446,7 @@ ran hello.Slow
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     send(m, "Compile", "hello");
-    same("[###]--- compile done ---\nThe project \"hello\" was already up to date and compiled.\n", view.out(hello));
+    assertEquals("The project \"hello\" was already up to date and compiled.\n", view.out(hello));
   }
   @Test void everyCheckOfAnInvalidProjectWritesItsErrorFile(@TempDir Path dir){
     var m= manager(dir);
@@ -1442,7 +1442,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     manager(dir, "hello.Hello").settle();
     assertEquals(3, failures.size());
     assertEquals(List.of(UserError.class, UserError.class, UserError.class), failures.stream().map(Object::getClass).toList());
-    same(userLocked(".qux claimed by \"other.Other\" of project \"other\""), failures.get(0).getMessage());
+    same(userLocked(".qux claimed by \"other.Other\" of project \"other\" -> vim"), failures.get(0).getMessage());
     same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"), failures.get(1).getMessage());
     same(notOurs(".fearless -> fearlessBin0_003"), failures.get(2).getMessage());
     failures.clear();
@@ -1452,7 +1452,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     locked.add(".htm");
     var before= info(dir);
     allow(m, dir, "htm");
-    same(userLocked(".htm"), view.refused.getLast());
+    same(userLocked(".htm -> vim"), view.refused.getLast());
     assertEquals(before, info(dir));
     assertEquals(List.of(), m.state().extensions());
     assertEquals(List.of(), view.edited);
@@ -1735,6 +1735,23 @@ in place of the program opening them now. The project then needs compiling again
     allow(m, dir, "htm");
     same(notOurs(".fearless -> fearlessBin0_003"), failures.getFirst().getMessage());
     failures.clear();
+  }
+  @Test void anEditAddingAProjectWhoseFolderIsMissingCreatesNoFolder(@TempDir Path dir){
+    var m= manager(dir);
+    var gone= dir.resolve("typo").resolve("proj");
+    var path= TaggedText.ofPath(gone).replace("\\", "\\\\").replace("\"", "\\\"");
+    edit(m, dir, "{\"projects\": {\"proj\": {\"path\": \""+path+"\", \"kind\": \"idle\"}}, \"systemExtensions\": []}");
+    m.settle();
+    assertFalse(Files.exists(dir.resolve("typo")));
+    assertEquals(List.of(), listed(m));
+  }
+  @Test void anEditChangingOnlyTheSelectedMainsDoesNotReconcile(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    code(m, dir, "hello");
+    compiled(m, "hello");
+    var calls= associated.size();
+    message(m, List.of("SelectMains", "hello", "hello.Hello"));
+    assertEquals(calls, associated.size());
   }
   @Test void removingASystemExtensionDeletesTheCompiledCacheOfTheProjectsOpeningIt(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");

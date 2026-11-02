@@ -333,6 +333,7 @@ public final class Manager{
     start(f, Project.compiling, () -> tools.compile(f, alias(f), out(f)));
   }
   private void upToDate(Path f, Optional<Follow> follow){
+    view.clear(f);
     var text= Report.alreadyCompiled(alias(f))+"\n";
     view.output(f, text);
     follow.ifPresent(fl -> { fl.send(text); fl.end(); });
@@ -499,7 +500,7 @@ public final class Manager{
     registry.overlapping(folder).ifPresent(o -> { throw new Refused(Report.folderNestedWithRegistered(folder, o)); });
     String alias;
     try{
-      if (Fs.exists(folder.resolve(Facts.outDir))){ Coordinator.deleteCache(folder); }
+      Coordinator.deleteCache(folder);
       alias= Names.makeUnique(folder, registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
     }
     catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder, e.getCause())); }
@@ -535,9 +536,11 @@ public final class Manager{
     var added= registry.all().stream().filter(e -> !live.containsKey(e.path())).toList();
     added.forEach(e -> { uncached(e.path(), () -> Coordinator.deleteCache(e.path())); open(e); });
     var dropped= old.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();
-    old.projects().stream().filter(o -> registry.of(o.path()).filter(e -> e.kind() != o.kind()).isPresent()).forEach(o -> deleted(o.path()));
-    live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList().forEach(this::deleted);
-    rebuild(Optional.empty());
+    var kinds= old.projects().stream().filter(o -> registry.of(o.path()).filter(e -> e.kind() != o.kind()).isPresent()).map(Entry::path).toList();
+    var claiming= live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList();
+    Stream.concat(kinds.stream(), claiming.stream()).distinct().forEach(this::deleted);
+    var removedCode= old.projects().stream().anyMatch(o -> o.kind() == Kind.code && registry.of(o.path()).isEmpty());
+    if (removedCode || !added.isEmpty() || !kinds.isEmpty() || !claiming.isEmpty()){ rebuild(Optional.empty()); }
     registry.all().forEach(e -> scan(e.path()));
   }
   private void kept(Entry o, Content next){

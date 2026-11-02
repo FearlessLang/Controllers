@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -117,10 +118,11 @@ public final class ManagerLink{
     return bytes.length > 1 && bytes[bytes.length-1] == '/' ? Arrays.copyOf(bytes, bytes.length-1) : bytes;
   }
   private static Path path(Object text){ return Info.taggedPath(text); }
-  /// Runs the manager program with the call of the verb and its arguments, and waits for the end of that run.
+  /// Runs the manager program with the call of the verb and its arguments, and waits for the end of that run, at most 10 seconds:
+  /// a run that becomes the 'single' manager does not end, and it has written its message files before taking instance.lock.
   static void send(String verb, String... args){
     var cmd= List.of(launcher.toString(), Stream.concat(Stream.of("FearlessCommand"+verb), Stream.of(args)).collect(Collectors.joining(" ")));
-    try{ new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(); }
+    try{ new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(10, TimeUnit.SECONDS); }
     catch (IOException e){ throw new UncheckedIOException(e); }
     catch (InterruptedException e){ Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
   }
