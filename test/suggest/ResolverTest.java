@@ -147,8 +147,8 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same(".size +", probe("ps.flow.map{::.name}.list.get(0).|"));
     same(".filter .first .fold .list .map", probe("ps.flow.map{::.name}.map{::.size}.|"));
     same(".size +", probe("ps.flow.map{p -> p.cats.flow.map{::.name}.list}.list.get(0).get(1).|"));
-    same(".map(F[Person,R]): Flow[R]", at(file+"ps.flow.|").rows().get(4).display());
-    same(".fold(MF[R], F[R,Person,R]): R", at(file+"ps.flow.|").rows().get(2).display());
+    same("imm .map(F[Person,R]): Flow[R]", at(file+"ps.flow.|").rows().get(4).display());
+    same("imm .fold(MF[R], F[R,Person,R]): R", at(file+"ps.flow.|").rows().get(2).display());
   }
   @Test void foldBindsTheAccumulatorFromTheThunkBeforeTypingTheLambda(){
     same(nat, probe("ps.flow.fold({0}, {acc, p -> acc.|"));
@@ -190,10 +190,10 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same("", names("NewThing[T]: OrderHash[NewThing[T]] { .foo(l: List[T]) -> l.get(0).| }"));
     same(".assertEq .cmp .hash", names("A: { .foo(n: NewThing) -> n.| }\nNewThing: OrderHash[NewThing] { }"));
   }
-  @Test void aDeclarationTheLastCompileDoesNotKnowHasTheMethodOfItsFirstSupertypeHavingIt(){
-    same(opt, names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.| }"));
-    same(nat, names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.get.| }"));
-    same(".size +", names("NewThing: Opt[Str], Opt[Nat] { .foo -> this.get.| }"));
+  @Test void aDeclarationTheLastCompileDoesNotKnowHasTheMethodsOfAllItsSupertypes(){
+    same(".get .get .match .match", names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.| }"));
+    same(".size .str + + <=> >", names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.get.| }"));
+    same(".size .str + + <=> >", names("NewThing: Opt[Str], Opt[Nat] { .foo -> this.get.| }"));
   }
   @Test void cyclicSupertypesTheLastCompileDoesNotKnowAddNoMethods(){
     same(".assertEq .cmp .hash", names("A: B, OrderHash[A] { .foo(a: A) -> a.| }\nB: A { }"));
@@ -226,7 +226,7 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     assertEquals(file.length()+8, s.from());
     assertEquals(" + ", s.rows().get(1).insert());
     same(".str", s.rows().get(0).insert());
-    same("+(Nat): Nat", s.rows().get(1).display());
+    same("imm +(Nat): Nat", s.rows().get(1).display());
   }
   @Test void afterAnExpressionTheMethodsAreInsertedAtTheCursor(){
     var s= at(file+"ps.flow |");

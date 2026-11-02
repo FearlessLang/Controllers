@@ -101,8 +101,7 @@ public final class Assist implements IContentAssistProcessorExtension{
     var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size()))));
     var others= Stream.concat(typeProposals, s.supers().stream().map(t -> superProposal(t, s.from(), offset, a.r().text(), doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size())))));
     if (s.rows().isEmpty()){ return others.toArray(ICompletionProposal[]::new); }
-    var receiver= a.api().entry(s.receiver());
-    return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, receiver.map(t -> doc(a, documented, t.name(), d -> d.method(simple(s.receiver().name()), s.receiver().args().size(), r.name(), r.ts().size()))).orElse(null))), others).toArray(ICompletionProposal[]::new);
+    return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, a.api().entry(r.owner()).map(t -> doc(a, documented, t.name(), d -> d.method(simple(r.owner().name()), r.owner().args().size(), r.rc(), r.name(), r.ts().size()))).orElse(null))), others).toArray(ICompletionProposal[]::new);
   }
   private static String doc(At a, boolean documented, String name, Function<Docs,Optional<String>> f){
     if (!documented){ return null; }

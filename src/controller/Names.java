@@ -48,8 +48,8 @@ public final class Names{
   }
   public static String free(Path folder, String wanted, Set<String> taken){
     var lower= wanted.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]+", "_");
-    var base= lower.substring(0, Math.min(lower.length(), 64));
-    var name= isName(base) ? base : "p"+base;
+    var cut= lower.substring(0, Math.min(lower.length(), 64));
+    var name= isName(cut) ? cut : ("p"+cut).substring(0, Math.min(cut.length()+1, 64));
     return IntStream.iterate(1, i -> i+1).mapToObj(i -> i == 1 ? name : name+i).filter(n -> isName(n) && isFree(folder, n, taken)).findFirst().orElseThrow();
   }
   private static boolean isFree(Path folder, String name, Set<String> taken){

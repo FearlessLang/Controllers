@@ -15,12 +15,19 @@ import java.util.stream.IntStream;
 /// The compiled information of the packages in scope, read from the api json the compiler
 /// writes for every package (apiJson.ApiJson in Coordinator): each type with its generics,
 /// its supertypes and every method it has, inherited ones included. Reference capabilities are
-/// dropped: a type is a class C[T1..Tn] (a qualified name), a type variable X, or unknown.
+/// dropped from types: a type is a class C[T1..Tn] (a qualified name), a type variable X, unknown, or the
+/// several types of an expression calling methods that differ in the reference capability of the receiver.
 public final class Api{
   public record Ty(String name, List<Ty> args){
     public static final Ty unknown= new Ty("?", List.of());
+    /// the type of several types: unknown for none, the type itself for one
+    static Ty of(List<Ty> ts){
+      var all= ts.stream().flatMap(t -> t.alternatives().stream()).distinct().toList();
+      return all.isEmpty() ? unknown : all.size() == 1 ? all.getFirst() : new Ty("|", all);
+    }
+    List<Ty> alternatives(){ return name.equals("|") ? args : List.of(this); }
     public boolean isC(){ return name.indexOf('.') >= 0; }
-    public boolean isX(){ return !isC() && !name.equals("?"); }
+    public boolean isX(){ return !isC() && !name.equals("?") && !name.equals("|"); }
     Ty subst(Map<String,Ty> sub){
       if (isX()){ return sub.getOrDefault(name, this); }
       return new Ty(name, args.stream().map(a -> a.subst(sub)).toList());
@@ -31,20 +38,22 @@ public final class Api{
     }
     /// the type with simple names
     public String show(){
+      if (name.equals("|")){ return args.stream().map(Ty::show).collect(Collectors.joining(" | ")); }
       var simple= name.substring(name.indexOf('.')+1);
       return args.isEmpty() ? simple : simple+"["+args.stream().map(Ty::show).collect(Collectors.joining(","))+"]";
     }
   }
-  public record Method(String name, List<String> bs, List<Ty> ts, Ty ret, boolean abs){
+  public record Method(String name, String rc, List<String> bs, List<Ty> ts, Ty ret, boolean abs){
     public int arity(){ return ts.size(); }
-    Method subst(Map<String,Ty> sub){ return new Method(name, bs, ts.stream().map(t -> t.subst(sub)).toList(), ret.subst(sub), abs); }
+    Method subst(Map<String,Ty> sub){ return new Method(name, rc, bs, ts.stream().map(t -> t.subst(sub)).toList(), ret.subst(sub), abs); }
   }
   public record Type(String name, List<String> bs, List<Ty> supers, List<Method> ms){
-    Optional<Method> method(String name, int arity){ return ms.stream().filter(m -> m.name.equals(name) && m.arity() == arity).reduce((a,b) -> { throw new IllegalArgumentException("Type "+this.name+" has two methods "+a.name+" of "+arity+" parameters"); }); }
+    /// the methods of that name and arity: several when they differ in the reference capability of the receiver
+    List<Method> methods(String name, int arity){ return ms.stream().filter(m -> m.name.equals(name) && m.arity() == arity).toList(); }
     /// the abstract method of that arity a method without name implements: the only one but for the taken names
     Optional<Method> lambda(int arity, Set<String> taken){
       var names= ms.stream().filter(m -> m.abs && m.arity() == arity && !taken.contains(m.name)).map(Method::name).distinct().toList();
-      return names.size() == 1 ? method(names.get(0), arity) : Optional.empty();
+      return names.size() == 1 ? methods(names.get(0), arity).stream().findFirst() : Optional.empty();
     }
     Map<String,Ty> bind(Ty t){ return IntStream.range(0, bs.size()).boxed().collect(Collectors.toMap(bs::get, t.args::get)); }
   }
@@ -79,7 +88,7 @@ public final class Api{
   }
   private static List<String> bs(Object o){ return arr(o).stream().map(b -> str(arr(b).get(0))).toList(); }
   private static Method method(List<Object> a){
-    return new Method(str(a.get(0)), bs(a.get(2)), arr(a.get(3)).stream().map(Api::ty).toList(), ty(a.get(4)), str(a.get(7)).equals("abs"));
+    return new Method(str(a.get(0)), str(a.get(1)), bs(a.get(2)), arr(a.get(3)).stream().map(Api::ty).toList(), ty(a.get(4)), str(a.get(7)).equals("abs"));
   }
   private static Ty ty(Object o){
     var a= arr(o);

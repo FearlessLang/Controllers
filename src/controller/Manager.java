@@ -207,7 +207,8 @@ public final class Manager{
     try{ tools.associate(next, preloads().toList(), e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of()))); }
     catch (Refusal r){
       var claims= compiled.stream().flatMap(f -> Project.claimants(f, alias(f), live.get(f).claims)).map(c -> "."+c.claim().extension());
-      var brought= Stream.concat(claims, extensions.stream().map(x -> "."+x)).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
+      var added= extensions.stream().filter(x -> !registry.extensions().contains(x)).map(x -> "."+x);
+      var brought= Stream.concat(claims, added).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
       if (r.extensions.isEmpty() || r.extensions.contains(".fearless") || !brought.containsAll(r.extensions)){ throw r.error; }
       if (compiled.isEmpty()){ throw new Refused(r.getMessage()); }
       var hit= r.extensions.stream().flatMap(e -> claimed.getOrDefault(e.substring(1), List.of()).stream()).map(Project.Claimant::folder).distinct().toList();
@@ -436,7 +437,7 @@ public final class Manager{
     uncached(f, () -> Coordinator.deleteCache(f));
     live.get(f).claims = Project.noClaims;
   }
-  private boolean broken(Path f){ return facts(f).map(x -> x.stale().isPresent() || x.problem().isPresent()).orElse(true); }
+  private boolean broken(Path f){ return checked(f).map(x -> x.stale().isPresent() || x.problem().isPresent()).orElse(true); }
   private void allow(List<Project.Claimant> refused){
     view.allow(Report.allowExtensions(refused), refused.stream().map(c -> c.claim().extension()).distinct().toList());
   }
@@ -498,7 +499,7 @@ public final class Manager{
     registry.overlapping(folder).ifPresent(o -> { throw new Refused(Report.folderNestedWithRegistered(folder, o)); });
     String alias;
     try{
-      Coordinator.deleteCache(folder);
+      if (Fs.exists(folder.resolve(Facts.outDir))){ Coordinator.deleteCache(folder); }
       alias= Names.makeUnique(folder, registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
     }
     catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder, e.getCause())); }

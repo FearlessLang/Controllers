@@ -1441,6 +1441,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     held.put(".fearless", List.of("fearlessBin0_003"));
     manager(dir, "hello.Hello").settle();
     assertEquals(3, failures.size());
+    assertEquals(List.of(UserError.class, UserError.class, UserError.class), failures.stream().map(Object::getClass).toList());
     same(userLocked(".qux claimed by \"other.Other\" of project \"other\""), failures.get(0).getMessage());
     same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"), failures.get(1).getMessage());
     same(notOurs(".fearless -> fearlessBin0_003"), failures.get(2).getMessage());
