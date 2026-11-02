@@ -791,6 +791,37 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     same("[###]ran hello.Slow\n--- terminating hello.Slow ---\n--- hello.Slow exited with [###]", view.out(hello));
     assertEquals("The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getFirst());
   }
+  @Test void aRefusedForgetOfAnUnreachableProjectIsShownNotFatal(@TempDir Path dir) throws IOException{
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir.resolve("a"), "hello");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    Files.move(dir.resolve("a"), dir.resolve("b"));
+    Disk.link(dir.resolve("a"), dir.resolve("b"));
+    Fs.rmTree(data);
+    send(m, "Check", "data");
+    same("[###]The project \"data\" connects to the folder [###]\nThis folder is now unreachable.\nThe project \"data\" has now been removed.\nRefused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".[###]", String.join("\n", view.refused));
+    send(m, "Terminate", "hello");
+    assertEquals(List.of(), failures);
+  }
+  @Test void anEditAddingAProjectWhoseCacheCanNotBeDeletedSaysSoInTheOutput(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var text= info(dir);
+    send(m, "Forget", "hello");
+    var cache= folder(hello, ".fearless_out");
+    Fs.writeUtf8(cache.resolve("a.built"), "");
+    Disk.noWrite(cache);
+    try{
+      edit(m, dir, text);
+      assertEquals(List.of("hello "+hello), listed(m));
+      same("--- the compilation cache is not deleted: access denied: [###]\n---\n", view.out(hello));
+    }
+    finally{ Disk.allow(cache); }
+  }
   @Test void aKindChangeOfADataProjectMountedOnARunningMainIsRefused(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
     var hello= code(m, dir, "hello");

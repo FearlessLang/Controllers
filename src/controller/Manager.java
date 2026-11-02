@@ -569,7 +569,7 @@ public final class Manager{
     var removed= old.projects().stream().filter(o -> same(o, next).isEmpty()).toList();
     var added= next.projects().stream().filter(e -> same(e, old).isEmpty()).toList();
     removed.forEach(o -> drop(o.path()));
-    added.forEach(e -> { uncached(e.path(), () -> Coordinator.deleteCache(e.path())); open(e); });
+    added.forEach(e -> { live.put(e.path(), new Live()); uncached(e.path(), () -> Coordinator.deleteCache(e.path())); scan(e.path()); });
     var dropped= old.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();
     var kinds= old.projects().stream().filter(o -> same(o, next).filter(e -> e.kind() != o.kind()).isPresent()).map(Entry::path).toList();
     var claiming= live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList();
@@ -651,7 +651,8 @@ public final class Manager{
     var alias= alias(f);
     registry.all().stream().filter(e -> e.mounts().containsValue(alias) && live.get(e.path()).child != null && !live.get(e.path()).job.equals(Project.compiling)).map(Entry::path).toList().forEach(this::endMain);
     view.refuse(Report.unreachable(alias(f), f));
-    forget(f);
+    try{ forget(f); }
+    catch (Refused r){ view.refuse(r.getMessage()); }
   }
   private void rotate(){
     if (!view.visible()){ return; }
