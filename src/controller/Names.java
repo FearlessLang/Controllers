@@ -1,5 +1,7 @@
 package controller;
 
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -54,7 +56,7 @@ public final class Names{
   }
   private static boolean isFree(Path folder, String name, Set<String> taken){
     var moved= markers(folder).stream().limit(1).toList();
-    return !taken.contains(name) && list(folder).stream().filter(p -> !moved.contains(p)).map(p -> p.getFileName().toString()).noneMatch(f -> f.equalsIgnoreCase(name+ext) || f.equalsIgnoreCase(name));
+    return !taken.contains(name) && list(folder).stream().filter(p -> !moved.contains(p) && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).map(p -> p.getFileName().toString()).noneMatch(f -> f.equalsIgnoreCase(name+ext) || f.equalsIgnoreCase(name));
   }
   private static void nameAs(Path folder, String name){
     assert isName(name);

@@ -29,7 +29,7 @@ import utils.Bug;
 /// opens the item's menu when the icon is clicked; a click the desktop reports to the item instead
 /// (Activate, SecondaryActivate, ContextMenu) opens the manager's own menu at the point of the click.
 /// One thread reads the bus for the whole process life; the watcher leaving the bus, or
-/// the bus closing, stops the manager.
+/// the bus closing, is the tray going away (the 'tray icon window' of the manager window).
 final class Sni{
   private static final String bus= "org.freedesktop.DBus";
   private static final String watcher= "org.kde.StatusNotifierWatcher";

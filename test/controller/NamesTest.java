@@ -47,6 +47,13 @@ final class NamesTest{
     assertEquals("hello2", Names.free(project, "hello", Set.of("hello")));
     assertEquals("hello3", Names.free(project, "hello", Set.of("hello", "hello2")));
   }
+  @Test void aFileOfTheNameTakesTheNameAndAFolderOfTheNameDoesNot(@TempDir Path dir){
+    var project= folder(dir, "someProject");
+    folder(project, "hello");
+    assertEquals("hello", Names.free(project, "hello", Set.of()));
+    Fs.writeUtf8(project.resolve("readme"), "hi\n");
+    assertEquals("readme2", Names.free(project, "readme", Set.of()));
+  }
   @Test void aFreeNameIsKeptAndGetsAMarkerFile(@TempDir Path dir){
     var project= folder(dir, "someproject");
     assertEquals("someproject", Names.makeUnique(project, Set.of("other")));
