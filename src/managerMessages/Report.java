@@ -45,7 +45,6 @@ The arguments are:
   public static String brokenPath(String given){ return "Fearless was started to open "+disp(given)+",\nbut that is not a path of a file this system accepts."; }
 
   //-- the form of a message
-  public static String unreadableMessage(Path file){ return "The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\nThe bytes of\n"+path(file.toString())+"\ndo not form valid UTF-8 text."; }
   private static String refused(String verb, String name){ return "Refused request "+disp(verb)+" on project "+disp(name)+"."; }
   private static String refusedPath(String verb, Path p){ return "Refused request "+disp(verb)+" on path\n"+path(p.toString()); }
   private static String refusedOpen(Path p){ return "Refused request to open\n"+path(p.toString()); }

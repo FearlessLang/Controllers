@@ -141,11 +141,11 @@ public final class Manager{
   }
   private void take(Path msgDir) throws IOException{
     for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".msg")).toList()){
-      Runnable r;
-      try{ var text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Fs.readAllBytes(file))).toString(); r= () -> apply(text); }
-      catch (CharacterCodingException e){ r = () -> view.refuse(Report.unreadableMessage(file)); }
+      String text;
+      try{ text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Fs.readAllBytes(file))).toString(); }
+      catch (CharacterCodingException e){ throw Violation.messageNotUtf8(file); }
       Fs.deleteIfExists(file);
-      post(r);
+      post(() -> apply(text));
     }
     var old= Instant.now().minusSeconds(60);
     for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".tmp")).toList()){
@@ -374,10 +374,12 @@ public final class Manager{
     Thread.startVirtualThread(() -> await(f, l, child));
   }
   private void await(Path f, Live l, ChildJvm child){
-    int ec;
-    try{ ec= child.await(); }
-    catch (InterruptedException e){ throw Bug.of(e); }
+    var ec= code(child);
     post(() -> exited(f, l, child, ec));
+  }
+  private static int code(ChildJvm child){
+    try{ return child.await(); }
+    catch (InterruptedException e){ throw Bug.of(e); }
   }
   private void exited(Path f, Live l, ChildJvm child, int ec){
     if (live.get(f) != l || l.child != child){ return; }
@@ -450,7 +452,9 @@ public final class Manager{
     if (l.child == null){ return; }
     l.terminated = true;
     output(f, "--- terminating "+l.job+" ---\n");
-    l.child.kill();
+    var child= l.child;
+    child.kill();
+    exited(f, l, child, code(child));
   }
   private void deleteCache(Path f){
     idle(f, "DeleteCache");

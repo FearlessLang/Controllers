@@ -40,7 +40,7 @@ final class Follow{
       if (status.equals("Refused\n")){ return; }
       assert status.equals(applied);
       var buf= new char[8192];
-      for (int n; (n = in.read(buf)) != -1; ){ out.print(new String(buf, 0, n)); }
+      for (int n; (n = in.read(buf)) != -1 && followed.orElse(null) == this; ){ out.print(new String(buf, 0, n)); }
     }
     catch (SocketTimeoutException e){}
     catch (IOException e){ throw new UncheckedIOException(e); }

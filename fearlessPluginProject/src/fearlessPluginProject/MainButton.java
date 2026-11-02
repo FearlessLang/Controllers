@@ -66,21 +66,21 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   }
   @Override public Object execute(ExecutionEvent event){
     var alias= target(HandlerUtil.getActiveWorkbenchWindow(event)).orElseThrow();
-    if (Follow.followed().isPresent()){ ManagerLink.send("Terminate", alias); return null; }
+    if (Follow.followed().filter(f -> !f.compile && f.alias.equals(alias)).isPresent()){ ManagerLink.send("Terminate", alias); return null; }
     var s= of(alias, ManagerLink.projects());
     switch (s.action()){
       case check -> ManagerLink.send("Check", alias);
       case compile -> Follow.compile(alias);
-      case run -> run(alias, s.mains().size() == 1 ? s.mains() : chosen(s, HandlerUtil.getActiveShell(event)));
+      case run -> (s.mains().size() == 1 ? Optional.of(s.mains()) : chosen(s, HandlerUtil.getActiveShell(event))).ifPresent(ms -> Follow.run(alias, ms));
     }
     return null;
   }
-  private static void run(String alias, List<String> mains){ if (!mains.isEmpty()){ Follow.run(alias, mains); } }
-  private static List<String> chosen(State s, Shell shell){
+  /// The mains checked in the dialog; none when the dialog is cancelled.
+  private static Optional<List<String>> chosen(State s, Shell shell){
     var dialog= ListSelectionDialog.of(s.mains()).contentProvider(ArrayContentProvider.getInstance()).labelProvider(new LabelProvider()).title("Fearless").message("Mains to run:").create(shell);
     dialog.setInitialElementSelections(s.selected());
-    if (dialog.open() != Window.OK){ return List.of(); }
-    return Stream.of(dialog.getResult()).map(m -> (String)m).toList();
+    if (dialog.open() != Window.OK){ return Optional.empty(); }
+    return Optional.of(Stream.of(dialog.getResult()).map(m -> (String)m).toList());
   }
   @Override public void setEnabled(Object context){
     var window= ((IEvaluationContext)context).getVariable(ISources.ACTIVE_WORKBENCH_WINDOW_NAME);
@@ -102,7 +102,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var icon= terminate ? List.of("org.eclipse.debug.ui", "icons/full/elcl16/terminate_co.png") : switch (s.action()){
       case check -> List.of("org.eclipse.ui.ide", "icons/full/etool16/problem_category.png");
       case compile -> List.of("org.eclipse.ui.ide", "icons/full/etool16/build_exec.png");
-      case run -> List.of("org.eclipse.debug.ui", "icons/full/obj16/lrun_obj.png");
+      case run -> List.of("org.eclipse.debug.ui", s.mains().size() > 1 ? "icons/full/etool16/run_exc.png" : "icons/full/obj16/lrun_obj.png");
     };
     element.setIcon(ResourceLocator.imageDescriptorFromBundle(icon.get(0), icon.get(1)).orElseThrow());
     var verb= terminate ? "Terminate" : switch (s.action()){ case check -> "Check"; case compile -> "Compile"; case run -> s.mains().size() > 1 ? "Run V" : "Run"; };

@@ -41,7 +41,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
   public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check){
     if (!Fs.isDirectory(folder) || !Files.isReadable(folder)){ return Optional.empty(); }
     try{ return Optional.of(retried(() -> read(folder, alias, kind, check))); }
-    catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())))); }
+    catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
   }
   static <T> T retried(Supplier<T> read){
     for (var left= 10;; left -= 1){
@@ -65,7 +65,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     if (state instanceof Coordinator.State.Invalid(var why)){ problem = Optional.of(why); }
     var compiled= state instanceof Coordinator.State.Compiled c ? Optional.of(c) : Optional.<Coordinator.State.Compiled>empty();
     var stale= kind == Kind.code && problem.isEmpty() && compiled.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
-    return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, LogFiles.list(folder), problem);
+    return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, LogFiles.list(folder), problem.filter(_ -> kind != Kind.idle));
   }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));

@@ -188,6 +188,14 @@ The folder may have been removed, replaced, or disconnected, or the
 operating system may have stopped sending file-change notifications
 for it.""".formatted(managerFolderIntro(), path(msgDir.toString())));
   }
+  public static UserError messageNotUtf8(Path file){
+    return new UserError("""
+A message file of the manager folder does not hold what Fearless wrote there:
+its bytes do not form valid UTF-8 text.
+
+The message file is:
+%s""".formatted(path(file.toString())));
+  }
   public static UserError couldNotDrainMessageFolder(Path msgDir, Throwable cause){
     return new UserError("""
 Fearless could not list its manager folder, or could not read or

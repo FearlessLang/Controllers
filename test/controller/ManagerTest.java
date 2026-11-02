@@ -456,6 +456,18 @@ ran hello.Slow
     send(m, "Check", "hello");
     same("[###]\"hello.fearless\" is missing[###]", Fs.readUtf8(error));
   }
+  @Test void aRequestRightAfterATerminateFindsTheMainEnded(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    m.message("Terminate\nhello");
+    m.message("Check\nhello");
+    m.settle();
+    assertEquals(List.of(), view.refused);
+    assertEquals("The project \"hello\" is valid, and up to date.\n", view.out(hello));
+  }
   @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
     var m= manager(dir, "hello.Slow", "hello.Two");
     var hello= code(m, dir, "hello");
@@ -534,21 +546,12 @@ The projects are:
     same("In file: [###]projects.info\n\n[###]The character [Tab 0x09] is outside the safe character set of Fearless[###]", view.refused.get(0));
     same("[###]The character [U+00C4] is outside the safe character set of Fearless[###]", view.refused.get(1));
   }
-  @Test void aMessageFileThatIsNotUtf8IsRefusedAndRemovedAndTheNextStartDrainsNothing(@TempDir Path dir){
+  @Test void aMessageFileThatIsNotUtf8IsAFatalError(@TempDir Path dir){
     var m= manager(dir);
     var messages= folder(dir.resolve("manager"), "messages");
     Fs.ofV(() -> Files.write(messages.resolve("1.msg"), new byte[]{'R', 'u', 'n', '\n', (byte)0xFF}));
     Fs.writeUtf8(messages.resolve("2.msg"), "Show");
-    m.drain();
-    m.settle();
-    same("The manager refused a message, and removed its file: a message is UTF-8 text the manager can read.\n[###]1.msg[###]not form valid UTF-8 text.", view.refused.getFirst());
-    assertEquals(1, view.refused.size());
-    assertEquals(2, view.shown);
-    assertEquals(List.of(), Names.list(messages));
-    var again= manager(dir);
-    again.drain();
-    again.settle();
-    assertEquals(1, view.refused.size());
+    Errs.err("A message file of the manager folder does not hold what Fearless wrote there:\nits bytes do not form valid UTF-8 text.\n\nThe message file is:\n[###]1.msg", m::drain);
   }
   @Test void aFolderInsideARegisteredOneIsRefused(@TempDir Path dir){
     var m= manager(dir);
@@ -600,11 +603,14 @@ The projects are:
     assertEquals("The project \"data\" is valid, and up to date.\n", view.out(data));
     Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
     send(m, "Check", "data");
-    same("[###]Bad Name.txt[###]", view.out(data));
+    assertEquals("The project \"data\" is valid, and up to date.\n", view.out(data));
     var checkError= data.resolve(Facts.outDir).resolve("_error.txt");
-    same("[###]Bad Name.txt[###]", Fs.readUtf8(checkError));
+    assertFalse(Files.exists(checkError));
     assertEquals(Project.State.idle, project(m, data).state());
     send(m, "Kind", "data", "dataRead");
+    send(m, "Check", "data");
+    same("[###]Bad Name.txt[###]", view.out(data));
+    same("[###]Bad Name.txt[###]", Fs.readUtf8(checkError));
     assertEquals(Project.State.dataReadInvalid, project(m, data).state());
     send(m, "Kind", "data", "dataEdit");
     assertEquals(Project.State.dataEditInvalid, project(m, data).state());
@@ -931,6 +937,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
     view.visible = false;
     var marker= data.resolve("data.fearless");
     for (var request : List.of(List.of("Mount", "data", "other.Other other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Check", "data"))){
@@ -959,6 +966,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Register", TaggedText.of(readOnly.toString()));
     send(m, "Register", TaggedText.of(cached.toString()));
     send(m, "Register", TaggedText.of(partly.toString()));
+    send(m, "Kind", "partly", "dataRead");
     send(m, "ConnectEclipse", TaggedText.of(closed.toString()));
     same("""
 Refused request "Register" on path

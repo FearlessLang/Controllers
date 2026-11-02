@@ -84,7 +84,6 @@ public final class Tiles extends JPanel{
     @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focus){
       var p= (Project)value;
       var res= desktop((JLabel)super.getListCellRendererComponent(l, value, i, selected, focus), new Icons.Badge(images.get(p), iconSize, p.state()), p.alias());
-      res.setToolTipText(p.folder()+" - "+p.state().text);
       res.setBorder(selected ? BorderFactory.createLineBorder(l.getSelectionBackground().darker(), 3) : null);
       return res;
     }
