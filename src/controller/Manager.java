@@ -94,6 +94,7 @@ public final class Manager{
     StringBuilder compiled= new StringBuilder();
     ChildJvm child;
     boolean terminated;
+    boolean updated;
     List<String> todo= List.of();
     Optional<Path> input= Optional.empty();
     Registry.Grants grants;
@@ -386,7 +387,8 @@ public final class Manager{
     l.child = null;
     if (l.job.equals(Project.compiling)){ compiled(f, l, ec); return; }
     output(f, "--- "+l.job+" exited with "+ec+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
-    if (broken(f)){ l.terminated = true; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
+    if (l.updated || broken(f)){ l.terminated = true; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
+    l.updated = false;
     next(f);
   }
   /// What the manager does after Coordinator.compile: step 1 only after a compilation with no error, step 2 always, steps 3 and 4 only with no error.
@@ -535,7 +537,7 @@ public final class Manager{
     granted(next);
     if (!registry.extensions().equals(next.extensions())){ reconcile(Optional.empty(), next.extensions()); }
     var old= registry.content();
-    registry.save(next);
+    registry.save(next, text);
     live.keySet().stream().filter(f -> registry.of(f).isEmpty()).toList().forEach(this::drop);
     var added= registry.all().stream().filter(e -> !live.containsKey(e.path())).toList();
     added.forEach(e -> { uncached(e.path(), () -> Coordinator.deleteCache(e.path())); open(e); });
@@ -586,7 +588,7 @@ public final class Manager{
     var fresh= found.get();
     if (compiling){ return true; }
     if (!l.job.isEmpty()){
-      if (fresh.stale().isPresent() || fresh.problem().isPresent()){ l.terminated = true; l.child.kill(); }
+      if (fresh.stale().isPresent() || fresh.problem().isPresent()){ l.terminated = true; l.updated = true; l.child.kill(); }
       return true;
     }
     if (fresh.problem().isPresent()){ errorFile(f, fresh.problem().get()); }

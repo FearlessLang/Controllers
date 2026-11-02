@@ -52,6 +52,11 @@ public final class Cached{
     try{ return maps(packages(folder)).getOrDefault(pkg, Map.of()); }
     catch (Invalid e){ return Map.of(); }
   }
+  /// the text of the rank file of the package pkg, under any folder _pkg; empty for a project this class finds invalid
+  public static String rankText(Path folder, String pkg){
+    try{ return packages(folder).stream().filter(p -> p.name().equals(pkg)).flatMap(p -> p.files().stream()).filter(r -> r.name().startsWith("_rank_")).map(Ref::text).findFirst().orElse(""); }
+    catch (Invalid e){ return ""; }
+  }
   private static boolean others(Path out, List<Pkg> pkgs){
     if (!Files.isDirectory(out)){ return false; }
     var kept= Stream.concat(Stream.of("_error.txt", "_unfinished.txt", "icons"), pkgs.stream().flatMap(p -> Stream.of(".json", ".jar", ".html", ".txt").map(x -> p.name()+x))).toList();

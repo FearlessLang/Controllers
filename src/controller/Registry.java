@@ -112,9 +112,13 @@ public final class Registry{
   public static String text(Content c){ return Info.print(toInfo(c)); }
   public String text(){ return text(content); }
   public void save(Content c){
-    check.accept(c);
     var text= text(c);
     assert parse(text, infoFile(), p -> p, dir).equals(c);
+    save(c, text);
+  }
+  /// writes text, the text of an EditMetadata, which holds c
+  public void save(Content c, String text){
+    check.accept(c);
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     try{ Fs.writeString(tmp, text, CREATE_NEW); Fs.move(tmp, infoFile(), ATOMIC_MOVE); }
     catch (IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(), e); }

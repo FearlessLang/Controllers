@@ -824,6 +824,13 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(Map.of("hello.Notes", "data", "hello.Pub", "data", "hello.Old", "other"), project(m, hello).entry().mounts());
     assertEquals(Kind.dataRead, project(m, other).kind());
   }
+  @Test void anEditKeepsTheTextOfItsFile(@TempDir Path dir){
+    var m= manager(dir);
+    var text= "{ \"systemExtensions\": [ ],\n  \"projects\": { } }\n";
+    edit(m, dir, text);
+    assertEquals(List.of(), view.refused);
+    assertEquals(text, info(dir));
+  }
   @Test void theMetadataIsEditedWholeOrNotAtAll(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);

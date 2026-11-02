@@ -1,6 +1,5 @@
 package fearlessPluginProject;
 
-import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -69,12 +68,11 @@ public final class Assist implements IContentAssistProcessorExtension{
     var segments= List.of(file.getProjectRelativePath().removeLastSegments(1).segments());
     var at= IntStream.range(1, segments.size()).filter(i -> segments.get(i).startsWith("_") && !segments.get(i).contains(".")).boxed().toList();
     if (project == null || at.size() != 1){ return null; }
-    var folder= project.folder().resolve(String.join("/", segments.subList(1, at.getFirst()+1)));
     var pkg= segments.get(at.getFirst()).substring(1);
     var out= ManagerLink.out(project.folder());
     var unfinished= Files.exists(out.resolve("_unfinished.txt"));
     var text= viewer.getDocument().get();
-    var head= file.getName().startsWith("_rank_") ? text : head(folder);
+    var head= file.getName().startsWith("_rank_") ? text : Cached.rankText(project.folder(), pkg);
     var read= ManagerLink.jsons(out).toList();
     var types= Stream.concat(Stream.of(ManagerLink.baseCache.resolve("base.json")), read.stream()).flatMap(p -> types(p).stream()).toList();
     var api= new Api(types);
@@ -135,13 +133,6 @@ public final class Assist implements IContentAssistProcessorExtension{
   private static String simple(String name){ return name.substring(name.indexOf('.')+1); }
   private static Path txt(Path out, String pkg){
     return pkg.equals("base") ? ManagerLink.baseCache.resolve("base.txt") : out.resolve(pkg+".txt");
-  }
-  private static String head(Path pkgDir){
-    try (var files= Files.list(pkgDir)){
-      var heads= files.filter(p -> p.getFileName().toString().startsWith("_rank_")).toList();
-      return heads.size() == 1 ? ManagerLink.read(heads.get(0)) : "";
-    }
-    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static synchronized List<Type> types(Path json){
     var stamp= json.toFile().lastModified();

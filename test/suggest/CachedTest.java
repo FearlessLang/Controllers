@@ -153,6 +153,14 @@ final class CachedTest{
     at(out.resolve("zp.jar"), "", old+1000);
     same(State.compiled, project, base(dir));
   }
+  @Test void theRankFileOfAPackageIsFoundUnderAnyFolderOfThePackage(@TempDir Path dir){
+    var project= dir.resolve("p");
+    at(project.resolve("p.fearless"), "", old);
+    at(project.resolve("a").resolve("_app").resolve("sub").resolve("_rank_app.fear"), "use base.Str as Str;\n", old);
+    at(project.resolve("b").resolve("_app").resolve("x.fear"), "", old);
+    assertEquals("use base.Str as Str;\n", Cached.rankText(project, "app"));
+    assertEquals("", Cached.rankText(project, "lib"));
+  }
   @Test void theMapDirectivesOfAPackageAreThoseOfTheRankFileOfHighestRank(@TempDir Path dir){
     var project= project(dir);
     assertEquals(Map.of("y", "lib"), Cached.packages(project, "app"));
