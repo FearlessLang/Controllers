@@ -95,6 +95,7 @@ public final class Manager{
     ChildJvm child;
     boolean terminated;
     boolean updated;
+    boolean stopped;
     Optional<String> corruption= Optional.empty();
     List<String> todo= List.of();
     Optional<Path> input= Optional.empty();
@@ -202,6 +203,7 @@ public final class Manager{
     var l= live.get(f);
     if (l.child == null){ return; }
     l.terminated = true;
+    l.stopped = true;
     l.child.kill();
   }
   private Optional<String> reconcile(Optional<Path> compiled, List<String> extensions){
@@ -315,6 +317,7 @@ public final class Manager{
     selected = Optional.of(f);
     var l= live.get(f);
     l.terminated = false;
+    l.stopped = false;
     l.todo = mains;
     l.input = input;
     l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow(), l.mains.orElseThrow().dataEdit());
@@ -329,6 +332,7 @@ public final class Manager{
     if (!project(f).needsCompiling()){ upToDate(f, follow); return; }
     var l= live.get(f);
     l.terminated = false;
+    l.stopped = false;
     l.follow = follow;
     l.compiled.setLength(0);
     view.clear(f);
@@ -389,7 +393,7 @@ public final class Manager{
     l.child = null;
     if (l.job.equals(Project.compiling)){ compiled(f, l, ec); return; }
     output(f, "--- "+l.job+" exited with "+ec+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
-    if (l.updated || broken(f)){ l.terminated = true; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
+    if (!l.stopped && (l.updated || broken(f))){ l.terminated = true; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
     l.updated = false;
     next(f);
   }

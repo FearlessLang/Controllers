@@ -1479,6 +1479,20 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(List.of(".bar manager/icons/base.IconsConflict.png", ".fapp002 other/.fearless_out/icons/base.IconsConflict.png", ".foo other/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
   }
+  @Test void aMainTheCorruptionRuleEndsGetsNoFilesUpdatedLine(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    code(m, dir, "other");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    Fs.writeUtf8(mainsInfo(hello), "{");
+    send(m, "DeleteCache", "other");
+    idle(m);
+    same("[###]ran hello.Slow\n--- hello.Slow exited with [###]", view.out(hello));
+    assertFalse(view.out(hello).contains("were updated"));
+    same("Fearless crashed: either this project's compilation cache was corrupted[###]", compileError(hello));
+  }
   @Test void aStartUpRefusedACapturedExtensionIsFatal(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     code(m, dir, "hello");

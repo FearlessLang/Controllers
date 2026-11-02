@@ -148,7 +148,7 @@ Replace that file with a PNG image, or remove it.
   }
   public static String outOfDate(){ return "The compilation cache of this project is out of date."; }
   public static String filesUpdated(String name, String job){ return "Some files inside the project "+disp(name)+" were updated while "+(job.equals(Project.compiling) ? "the project was compiling." : "main "+disp(job)+" was running."); }
-  public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
+  public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of every program of the Fearless family, this manager included.\nNothing in the project folders changes."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
   public static String cacheNotDeleted(String why){ return "--- the compilation cache is not deleted: "+why+"\n---\n"; }
   public static String alreadyCompiled(String alias){ return "The project "+disp(alias)+" was already up to date and compiled."; }
