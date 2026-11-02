@@ -450,7 +450,11 @@ public final class Manager{
     var l= live.get(f);
     if (l.job.equals(Project.compiling)){ throw new Refused(Report.busy("Terminate", alias(f), l.job)); }
     selected = Optional.of(f);
-    if (l.child == null){ return; }
+    if (l.child != null){ endMain(f); }
+  }
+  /// Ends the running main of the project, and the run it belongs to, before the next request is applied.
+  private void endMain(Path f){
+    var l= live.get(f);
     l.terminated = true;
     output(f, "--- terminating "+l.job+" ---\n");
     var child= l.child;
@@ -578,7 +582,7 @@ public final class Manager{
     var l= live.get(f);
     var compiling= l.job.equals(Project.compiling);
     var found= compiling ? Optional.of(l.facts).filter(_ -> Fs.isDirectory(f)) : checked(f);
-    if (found.isEmpty()){ post(() -> unreachableLater(f)); return false; }
+    if (found.isEmpty()){ post(() -> unreachable(f)); return false; }
     var fresh= found.get();
     if (compiling){ return true; }
     if (!l.job.isEmpty()){
@@ -600,16 +604,15 @@ public final class Manager{
     var e= registry.of(f).orElseThrow();
     return Facts.of(f, e.alias(), e.kind(), tools::check);
   }
-  private void unreachableLater(Path f){
-    try{ unreachable(f); }
-    catch (Refused r){ view.refuse(r.getMessage()); }
-  }
-  /// The 'autoCheck' of a project folder the manager can not reach: the job of the project ends, a dialog says so, then the project is forgotten.
+  /// The 'autoCheck' of a project folder the manager can not reach: the job of the project ends, and so does every running main
+  /// of a project with a mount of that project; a dialog says so, then the project is forgotten.
   private void unreachable(Path f){
     var l= live.get(f);
     if (l == null){ return; }
     if (l.child != null){ l.terminated = true; l.child.kill(); }
     l.job = "";
+    var alias= alias(f);
+    registry.all().stream().filter(e -> e.mounts().containsValue(alias) && live.get(e.path()).child != null && !live.get(e.path()).job.equals(Project.compiling)).map(Entry::path).toList().forEach(this::endMain);
     view.refuse(Report.unreachable(alias(f), f));
     forget(f);
   }

@@ -752,6 +752,23 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(Optional.empty(), project(m, todo).problem());
     assertEquals(Project.State.dataRead, project(m, todo).state());
   }
+  @Test void aDataProjectThatIsGoneEndsTheRunningMainsMountingItThenIsForgotten(@TempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
+    var hello= code(m, dir, "hello");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Mount", "hello", "hello.Pub data");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    Fs.rmTree(data);
+    send(m, "Check", "data");
+    assertEquals(List.of("hello "+hello), listed(m));
+    assertFalse(project(m, hello).busy());
+    same("[###]ran hello.Slow\n--- terminating hello.Slow ---\n--- hello.Slow exited with [###]", view.out(hello));
+    assertEquals("The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getFirst());
+  }
   @Test void aKindChangeOfADataProjectMountedOnARunningMainIsRefused(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
     var hello= code(m, dir, "hello");
