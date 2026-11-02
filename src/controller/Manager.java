@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
@@ -193,7 +194,10 @@ public final class Manager{
   }
   private MainsInfo cached(Path f){
     try{ return new MainsInfo(Coordinator.cachedMains(f)); }
-    catch (UserError e){ corrupted(f, e.getMessage()); return Project.noClaims; }
+    catch (UserError e){
+      if (UserError.cacheCorrupted(e.getMessage())){ corrupted(f, e.getMessage()); }
+      return Project.noClaims;
+    }
   }
   /// The corruption rule: ends the job of the project, deletes its cache and writes the error.
   private void corrupted(Path f, String why){
@@ -457,6 +461,7 @@ public final class Manager{
   private void uncached(Path f, Runnable r){
     try{ r.run(); }
     catch (UncheckedIOException e){ output(f, Report.cacheNotDeleted(Report.fileFailure(e.getCause()))); }
+    catch (UserError e){ output(f, e.getMessage().stripTrailing()+"\n"); }
   }
   private void deleted(Path f){
     uncached(f, () -> Coordinator.deleteCache(f));
@@ -614,7 +619,7 @@ public final class Manager{
   private boolean scan(Path f){
     var l= live.get(f);
     var compiling= l.job.equals(Project.compiling);
-    var found= compiling ? Optional.of(l.facts).filter(_ -> Fs.isDirectory(f)) : checked(f);
+    var found= compiling ? Optional.of(l.facts).filter(_ -> Files.isDirectory(f, LinkOption.NOFOLLOW_LINKS)) : checked(f);
     if (found.isEmpty()){
       if (l.facts == null){ l.facts = Facts.invalid(Report.unreachable(alias(f), f)); }
       post(() -> unreachable(f));

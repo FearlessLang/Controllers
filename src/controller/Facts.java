@@ -64,6 +64,9 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     Optional<Icon> icon= Optional.empty();
     try{ icon = icon(folder); }
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
+    List<LogFiles.Entry> logs= List.of();
+    try{ logs = LogFiles.list(folder); }
+    catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
     if (kind == Kind.code && problem.isEmpty()){
       try{ state = check.apply(folder); }
       catch (UserError e){
@@ -74,7 +77,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     if (state instanceof Coordinator.State.Invalid(var why)){ problem = Optional.of(why); }
     var compiled= state instanceof Coordinator.State.Compiled c ? Optional.of(c) : Optional.<Coordinator.State.Compiled>empty();
     var stale= kind == Kind.code && problem.isEmpty() && compiled.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
-    return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, LogFiles.list(folder), problem.filter(_ -> kind != Kind.idle));
+    return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, logs, problem.filter(_ -> kind != Kind.idle));
   }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));
