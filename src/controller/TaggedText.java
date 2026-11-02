@@ -22,8 +22,8 @@ import tools.Fs;
 import tools.PathBytes;
 import utils.Range;
 
-/// A path as the files and messages of the manager write it: "Str:" then its text, when every
-/// character is in the Fearless character set and on one line; else "UStr:" then its text as
+/// A path as the files and messages of the manager write it: "Str:" then its text as Str.escape prints it, when every
+/// character is in the Fearless character set; else "UStr:" then its text as
 /// UStr.escape prints it; else "Base16:" then the units naming it, two uppercase hex digits each.
 /// The units of a name are its bytes on Linux and macOS, its 16 bit units on Windows, written little
 /// endian. The text of a path is the decoding of its units as UTF-8 (on Windows, as UTF-16): a path
@@ -31,13 +31,12 @@ import utils.Range;
 /// as the same units, whatever file name encoding the reading JVM has.
 public final class TaggedText{
   private static final Pattern uCodeText= Pattern.compile("[0-9A-F]{1,6}(?: [0-9A-F]{1,6})*");
-  public static String of(String text){ return text.codePoints().allMatch(TaggedText::safe) ? "Str:"+text : notStr(text); }
-  public static String line(String text){ return text.indexOf('\n') < 0 ? of(text) : notStr(text); }
-  private static String notStr(String text){ return "UStr:"+uStr(text.codePoints().toArray()); }
+  public static String of(String text){ return text.codePoints().allMatch(TaggedText::safe) ? "Str:"+strExpr(text) : "UStr:"+uStr(text.codePoints().toArray()); }
   public static String ofPath(Path p){
     var units= units(p);
-    return text(units).map(TaggedText::line).orElseGet(() -> "Base16:"+HexFormat.of().withUpperCase().formatHex(units));
+    return text(units).map(TaggedText::of).orElseGet(() -> "Base16:"+HexFormat.of().withUpperCase().formatHex(units));
   }
+  public static String base16(Path p){ return "Base16:"+HexFormat.of().withUpperCase().formatHex(units(p)); }
   static Path readPath(String tagged, Function<String,? extends RuntimeException> bad){
     if (!tagged.startsWith("Base16:")){ var text= read(tagged, bad); return pathOf(units(text), text, bad); }
     var hex= tagged.substring("Base16:".length());
@@ -45,8 +44,8 @@ public final class TaggedText{
     return pathOf(HexFormat.of().parseHex(hex), tagged, bad);
   }
   static String read(String text, Function<String,? extends RuntimeException> bad){
-    if (text.startsWith("Str:")){ return safeAfter("Str:", text, bad); }
-    if (text.startsWith("UStr:")){ return new Reader(safeAfter("UStr:", text, bad), bad).all(); }
+    if (text.startsWith("Str:")){ return new Reader("Str:", safeAfter("Str:", text, bad), bad).all(); }
+    if (text.startsWith("UStr:")){ return new Reader("UStr:", safeAfter("UStr:", text, bad), bad).all(); }
     throw bad.apply("\""+text+"\"\nis malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.");
   }
   private static String safeAfter(String tag, String text, Function<String,? extends RuntimeException> bad){
@@ -131,19 +130,20 @@ public final class TaggedText{
     return oneLiteral ? e : "("+e+")";
   }
   /// A Fearless string expression: "..." and `...` joined by +, | and ^ (between two strings, or
-  /// closing one), parentheses, .u, and .u"..." adding the characters with those code points.
+  /// closing one), parentheses, and after "UStr:" .u, and .u"..." adding the characters with those code points.
   private static final class Reader{
+    private final String tag;
     private final String s;
     private final Function<String,? extends RuntimeException> bad;
     private int i;
     private int depth;
-    Reader(String s, Function<String,? extends RuntimeException> bad){ this.s= s; this.bad= bad; }
+    Reader(String tag, String s, Function<String,? extends RuntimeException> bad){ this.tag= tag; this.s= s; this.bad= bad; }
     String all(){
       var res= expr();
       if (i != s.length()){ throw fail("the end of the text"); }
       return res;
     }
-    private RuntimeException fail(String expected){ return bad.apply("\"UStr:"+s+"\"\nis malformed: "+expected+" was expected at offset "+i+" after \"UStr:\"."); }
+    private RuntimeException fail(String expected){ return bad.apply("\""+tag+s+"\"\nis malformed: "+expected+" was expected at offset "+i+" after \""+tag+"\"."); }
     private String expr(){
       var sb= new StringBuilder(atom());
       while (true){
@@ -152,7 +152,7 @@ public final class TaggedText{
         var c= s.charAt(i);
         if (c == '+'){ i += 1; sb.append(atom()); continue; }
         if (c == '|' || c == '^'){ i += 1; sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
-        if (!s.startsWith(".u", i) || (i+2 < s.length() && Character.isLetterOrDigit(s.charAt(i+2)))){ return sb.toString(); }
+        if (tag.equals("Str:") || !s.startsWith(".u", i) || (i+2 < s.length() && Character.isLetterOrDigit(s.charAt(i+2)))){ return sb.toString(); }
         i += 2;
         if (atomNext()){ sb.append(codePoints(atom())); }
       }
@@ -165,7 +165,7 @@ public final class TaggedText{
       if (!atomNext()){ throw fail("a string \"...\", `...` or (...)"); }
       var open= s.charAt(i++);
       if (open == '('){
-        if (++depth > 100){ throw bad.apply("A \"UStr:\" text is malformed: its parentheses nest at most 100 deep, and the one at offset "+(i-1)+" after \"UStr:\" is deeper."); }
+        if (++depth > 100){ throw bad.apply("A \""+tag+"\" text is malformed: its parentheses nest at most 100 deep, and the one at offset "+(i-1)+" after \""+tag+"\" is deeper."); }
         var res= expr();
         depth -= 1;
         if (i == s.length() || s.charAt(i) != ')'){ throw fail("')'"); }

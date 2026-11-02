@@ -216,10 +216,10 @@ final class ConnectEclipseTest extends ManagerTest{
     assertEquals(-1L, Files.mismatch(shipped.resolve(jar), plugins.resolve(jar)));
     checkContent(files.resolve("ide/dropins/fearless/manager.info"), """
 {
-  "program": "Str:%s",
-  "launcher": "Str:%s",
-  "manager": "Str:%s",
-  "baseCache": "Str:%s"
+  "program": "Str:\\"%s\\"",
+  "launcher": "Str:\\"%s\\"",
+  "manager": "Str:\\"%s\\"",
+  "baseCache": "Str:\\"%s\\""
 }
 """.formatted(escaped(app), escaped(Fs.isWindows() ? app.resolve(app.getFileName()+"w.exe") : app.resolve("bin").resolve(app.getFileName())), escaped(filesIOFolder.resolve(data)), escaped(lib.resolve("stdLib").resolve("baseCache"))));
     okButtonConnected.go();

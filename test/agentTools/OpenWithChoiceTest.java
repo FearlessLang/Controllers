@@ -310,7 +310,7 @@ final class OpenWithChoiceTest extends ManagerTest{
 {
   "projects": {
     "choice": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": ["hello.Second"]
     }

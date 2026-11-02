@@ -44,14 +44,8 @@ no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new
   @Test void documentationThatIsNotThereIsSaidToTheManager(@TempDir Path dir){
     var said= new ArrayList<String>();
     var gen= dir.resolve(Facts.outDir);
-    Panel.openDocs(said::add, dir);
-    Fs.ensureDir(gen);
-    Panel.openDocs(said::add, dir);
-    Window.open(said::add, gen.resolve("index.html"));
-    assertEquals(List.of(
-      "The documentation is not opened: no .html file is in\n  "+gen,
-      "The documentation is not opened: no .html file is in\n  "+gen,
-      "Nothing is opened: nothing exists at\n  "+gen.resolve("index.html")), said);
+    Window.open(said::add, gen.resolve("hello.html"));
+    assertEquals(List.of("Nothing is opened: nothing exists at\n  "+gen.resolve("hello.html")), said);
   }
   private static Window window(Path dir){
     var app= dir.resolve("app");

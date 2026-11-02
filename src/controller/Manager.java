@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
-import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -104,21 +103,7 @@ public final class Manager{
     StringBuilder line= new StringBuilder();
   }
   private static final String conflict= "base.IconsConflict";
-  static final List<String> pathVerbs= List.of("Register", "ConnectEclipse", "EditMetadata", "OpenWithOrShortcut");
-  private static final Map<String,List<Integer>> verbs= verbs();
-  private static Map<String,List<Integer>> verbs(){
-    var res= new LinkedHashMap<String,List<Integer>>();
-    res.put("Show", List.of(0, 1));
-    Stream.of("Quit", "Reset").forEach(v -> res.put(v, List.of(0)));
-    Stream.of("Register", "ConnectEclipse", "EditMetadata", "OpenWithOrShortcut", "Check", "Terminate", "DeleteCache", "Forget").forEach(v -> res.put(v, List.of(1)));
-    res.put("OpenWithOrShortcut", List.of(1, 3));
-    res.put("Run", List.of(2));
-    res.put("Compile", List.of(1));
-    res.put("Kind", List.of(2));
-    res.put("Mount", List.of(2));
-    res.put("Attenuate", List.of(2));
-    return res;
-  }
+  private static final String fearless= "base.IconsFearless";
   private final ScheduledExecutorService core= Executors.newSingleThreadScheduledExecutor();
   public final Path dir;
   private final Tools tools;
@@ -180,7 +165,7 @@ public final class Manager{
   private void load(){
     registry.all().forEach(e -> live.put(e.path(), new Live()));
     registry.all().stream().filter(e -> e.kind() == Kind.code).forEach(e -> uncached(e.path(), () -> Coordinator.dropUnfinished(e.path())));
-    ClaimIcons.materialise(dir.resolve("icons"), conflict, Fs.of(() -> Fs.readAllBytes(tools.stdLibBase().resolve("icons").resolve("conflict.png"))));
+    Map.of(conflict, "conflict.png", fearless, "fearless.png").forEach((icon, png) -> ClaimIcons.materialise(dir.resolve("icons"), icon, Fs.of(() -> Fs.readAllBytes(tools.stdLibBase().resolve("icons").resolve(png)))));
     rebuild(Optional.empty());
     registry.all().forEach(e -> scan(e.path()));
   }
@@ -222,8 +207,10 @@ public final class Manager{
     var next= captured(claimed, extensions);
     try{ tools.associate(next, preloads().toList(), e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of()))); }
     catch (Refusal r){
-      var brought= compiled.stream().flatMap(f -> Project.claimants(f, alias(f), live.get(f).claims)).map(c -> "."+c.claim().extension()).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
+      var claims= compiled.stream().flatMap(f -> Project.claimants(f, alias(f), live.get(f).claims)).map(c -> "."+c.claim().extension());
+      var brought= Stream.concat(claims, extensions.stream().map(x -> "."+x)).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
       if (r.extensions.isEmpty() || r.extensions.contains(".fearless") || !brought.containsAll(r.extensions)){ throw r.error; }
+      if (compiled.isEmpty()){ throw new Refused(r.getMessage()); }
       var hit= r.extensions.stream().flatMap(e -> claimed.getOrDefault(e.substring(1), List.of()).stream()).map(Project.Claimant::folder).distinct().toList();
       for (var g : hit){
         endJob(g);
@@ -243,7 +230,9 @@ public final class Manager{
     var suffix= Fs.isWindows() ? ".ico" : ".png";
     var all= new TreeSet<>(claimed.keySet().stream().filter(e -> !Registry.isSystem(e)).toList());
     all.addAll(extensions);
-    return all.stream().map(e -> new Icon("."+e, icon(claimed.getOrDefault(e, List.of()), suffix), icon(claimed.getOrDefault(e, List.of()), ".png"))).toList();
+    var icons= dir.resolve("icons");
+    var own= new Icon(".fearless", icons.resolve(fearless+suffix), icons.resolve(fearless+".png"));
+    return Stream.concat(Stream.of(own), all.stream().map(e -> new Icon("."+e, icon(claimed.getOrDefault(e, List.of()), suffix), icon(claimed.getOrDefault(e, List.of()), ".png")))).toList();
   }
   private Path icon(List<Project.Claimant> cs, String suffix){ return cs.size() == 1 ? cs.getFirst().icon(suffix) : dir.resolve("icons").resolve(conflict+suffix); }
   private void apply(String message){
@@ -262,57 +251,38 @@ public final class Manager{
     }
     catch (Refused r){ follow.ifPresent(fl -> fl.refuse(r.getMessage())); view.refuse(r.getMessage()); }
   }
-  static void wellFormed(String message){
-    var lines= List.of(message.split("\n", -1));
-    var verb= lines.getFirst();
-    var port= lines.size() > 1 && lines.getLast().startsWith("Port:");
-    if (port && !Follow.isPort(lines.getLast())){ throw new Refused(Report.badPort(lines.getLast())); }
-    var args= lines.subList(1, lines.size()-(port ? 1 : 0));
-    var takes= verbs.get(verb);
-    if (takes == null){ throw new Refused(Report.unknownVerb(verb, List.copyOf(verbs.keySet()))); }
-    if (!takes.contains(args.size())){ throw new Refused(Report.wrongLines(verb, args, takes)); }
-    var root= pathVerbs.contains(verb) && path(verb, args.getFirst()).getFileName() == null;
-    if (root && verb.equals("Register")){ throw new Refused(Report.projectFolderIsRoot(path(verb, args.getFirst()))); }
-    var second= args.size() > 1 ? words(args.get(1)) : List.<String>of();
-    if (verb.equals("Kind") && Kind.of(args.get(1)).isEmpty()){ throw new Refused(Report.unknownKind(args.getFirst(), args.get(1))); }
-    if (verb.equals("Mount") && (second.isEmpty() || second.size() > 2)){ throw new Refused(Report.malformedMount(args.getFirst(), args.get(1))); }
-    if (verb.equals("Attenuate") && second.isEmpty()){ throw new Refused(Report.noMainAttenuated(args.getFirst())); }
-    if (verb.equals("Run") && second.isEmpty()){ throw new Refused(Report.noMainNamed(args.getFirst())); }
-  }
   private void request(String verb, List<String> args, Optional<Follow> follow){
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch (verb){
       case "Quit" -> exit.quit();
       case "Reset" -> exit.reset();
-      case "Register" -> register(path(verb, args.getFirst()));
-      case "ConnectEclipse" -> connect(path(verb, args.getFirst()));
-      case "EditMetadata" -> editMetadata(path(verb, args.getFirst()));
-      case "OpenWithOrShortcut" -> openWith(path(verb, args.getFirst()), args.subList(1, args.size()));
+      case "Register" -> register(path(args.getFirst()));
+      case "ConnectEclipse" -> connect(path(args.getFirst()));
+      case "EditMetadata" -> editMetadata(path(args.getFirst()));
+      case "OpenWithOrShortcut" -> openWith(path(args.getFirst()), args.subList(1, args.size()));
       default -> project(verb, args, follow);
     }
   }
-  private static Path path(String verb, String text){
-    Path res;
-    try{ res= TaggedText.readPath(text, m -> new Refused(Report.notTagged(verb, m))); }
-    catch (InvalidPathException e){ throw new Refused(e.getInput().isBlank() ? Report.blankPath(verb) : Report.notAPath(verb, e.getInput(), e.getReason())); }
-    if (res.toString().isBlank()){ throw new Refused(Report.blankPath(verb)); }
-    return res.normalize();
-  }
+  /// A path of a message, as the manager program wrote it.
+  private static Path path(String text){ return TaggedText.readPath(text, Bug::of).normalize(); }
   private void project(String verb, List<String> args, Optional<Follow> follow){
     var name= args.getFirst();
-    var f= registry.named(name).orElseThrow(() -> new Refused(Report.unknownProject(verb, name, registry.all().stream().map(Entry::alias).toList()))).path();
-    scan(f);
+    Supplier<Refused> unknown= () -> new Refused(Report.unknownProject(verb, name, registry.all().stream().map(Entry::alias).toList()));
+    var f= registry.named(name).orElseThrow(unknown).path();
+    if (!scan(f)){ unreachable(f); throw unknown.get(); }
     switch (verb){
       case "Show" -> { selected = Optional.of(f); view.show(); }
-      case "Run" -> run(f, args.get(1), follow, Optional.empty());
+      case "Run" -> run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty());
       case "Compile" -> compile(f, follow);
       case "Check" -> check(f);
       case "Terminate" -> terminate(f);
       case "DeleteCache" -> deleteCache(f);
       case "Kind" -> kind(f, args.get(1));
       case "Forget" -> forget(f);
-      case "Mount" -> mount(f, args.get(1));
-      case "Attenuate" -> attenuate(f, args.get(1));
+      case "Mount" -> mount(f, args.get(1), Optional.of(args.get(2)));
+      case "Unmount" -> mount(f, args.get(1), Optional.empty());
+      case "Attenuate" -> attenuate(f, args.get(1), args.subList(2, args.size()));
+      case "SelectMains" -> edit(f, e -> e.withMains(args.subList(1, args.size())));
       default -> throw Bug.unreachable();
     }
   }
@@ -326,14 +296,13 @@ public final class Manager{
     if (p.kind() != Kind.code){ throw new Refused(Report.notCode(verb, p.alias(), p.kind().text)); }
     p.problem().ifPresent(why -> { throw new Refused(Report.invalidContent(verb, p.alias(), why)); });
   }
-  private void run(Path f, String named, Optional<Follow> follow, Optional<Path> input){
+  private void run(Path f, List<String> mains, Optional<Follow> follow, Optional<Path> input){
     runnable(f, "Run");
     var p= project(f);
     if (p.needsCompiling()){ throw new Refused(Report.notCompiled(p.alias(), p.state().text)); }
     var all= p.knownMains();
-    var words= words(named);
-    words.stream().filter(w -> !all.contains(w)).findFirst().ifPresent(w -> { throw new Refused(Report.notAMain(p.alias(), w, all)); });
-    var mains= all.stream().filter(words::contains).toList();
+    if (mains.isEmpty()){ throw new Refused(Report.noMainSelected(p.alias(), all)); }
+    mains.stream().filter(m -> !all.contains(m)).findFirst().ifPresent(m -> { throw new Refused(Report.notAMain(p.alias(), m, all)); });
     var attenuated= p.entry().attenuators();
     attenuated.keySet().stream().filter(m -> !all.contains(m)).findFirst().ifPresent(m -> { throw new Refused(Report.attenuatedNotAMain(p.alias(), m, all)); });
     var attenuators= p.knownAttenuators();
@@ -342,7 +311,6 @@ public final class Manager{
     var mountProblems= p.mountProblems(projects());
     if (!mountProblems.isEmpty()){ throw new Refused(Report.mountsRefused(p.alias(), mountProblems)); }
     selected = Optional.of(f);
-    if (all.size() > 1){ registry.update(f, e -> e.withMains(mains)); }
     var l= live.get(f);
     l.terminated = false;
     l.todo = mains;
@@ -449,7 +417,6 @@ public final class Manager{
     }
     output(f, "--- compile "+(!failed ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
     scan(f);
-    if (l.mains.isPresent()){ forgetStale(f); }
     ended(f);
     if (!refused.isEmpty()){ allow(refused); }
   }
@@ -468,10 +435,7 @@ public final class Manager{
     uncached(f, () -> Coordinator.deleteCache(f));
     live.get(f).claims = Project.noClaims;
   }
-  private boolean broken(Path f){
-    var facts= facts(f);
-    return facts.stale().isPresent() || facts.problem().isPresent();
-  }
+  private boolean broken(Path f){ return facts(f).map(x -> x.stale().isPresent() || x.problem().isPresent()).orElse(true); }
   private void allow(List<Project.Claimant> refused){
     view.allow(Report.allowExtensions(refused), refused.stream().map(c -> c.claim().extension()).distinct().toList());
   }
@@ -488,10 +452,6 @@ public final class Manager{
     output(f, "--- terminating "+l.job+" ---\n");
     l.child.kill();
   }
-  private void forgetStale(Path f){
-    var known= project(f).knownMains();
-    registry.update(f, e -> e.withMains(e.mains().stream().filter(known::contains).toList()));
-  }
   private void deleteCache(Path f){
     idle(f, "DeleteCache");
     selected = Optional.of(f);
@@ -507,13 +467,9 @@ public final class Manager{
     var c= registry.content();
     edit(new Content(c.projects().stream().filter(e -> !e.path().equals(f)).toList(), c.extensions()));
   }
-  private void mount(Path f, String text){
-    var words= words(text);
-    edit(f, o -> o.withMounts(with(o.mounts(), words.getFirst(), words.stream().skip(1).findFirst())));
-  }
-  private void attenuate(Path f, String text){
-    var words= words(text);
-    edit(f, o -> o.withAttenuators(with(o.attenuators(), words.getFirst(), Optional.of(words.subList(1, words.size())).filter(as -> !as.isEmpty()))));
+  private void mount(Path f, String type, Optional<String> data){ edit(f, o -> o.withMounts(with(o.mounts(), type, data))); }
+  private void attenuate(Path f, String main, List<String> attenuators){
+    edit(f, o -> o.withAttenuators(with(o.attenuators(), main, Optional.of(attenuators).filter(as -> !as.isEmpty()))));
   }
   private void edit(Path f, UnaryOperator<Entry> op){
     var c= registry.content();
@@ -525,7 +481,6 @@ public final class Manager{
     value.ifPresentOrElse(v -> out.put(key, v), () -> out.remove(key));
     return out;
   }
-  private static List<String> words(String text){ return Stream.of(text.split(" +")).filter(w -> !w.isEmpty()).toList(); }
   static Path projectFolder(Path path, Path managerDir){
     if (!Files.exists(path)){ throw new Refused(Report.registerNothing(path)); }
     return Registry.placed(Registry.real(Files.isDirectory(path) ? path : path.getParent()), managerDir, Refused::new);
@@ -569,10 +524,7 @@ public final class Manager{
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
     granted(next);
-    if (!registry.extensions().equals(next.extensions())){
-      try{ reconcile(Optional.empty(), next.extensions()); }
-      catch (Refusal|UserError e){ throw new Refused(e.getMessage()); }
-    }
+    if (!registry.extensions().equals(next.extensions())){ reconcile(Optional.empty(), next.extensions()); }
     var old= registry.content();
     registry.save(next);
     live.keySet().stream().filter(f -> registry.of(f).isEmpty()).toList().forEach(this::drop);
@@ -585,10 +537,13 @@ public final class Manager{
     registry.all().forEach(e -> scan(e.path()));
   }
   private void kept(Entry o, Content next){
-    var job= live.get(o.path()).job;
+    var l= live.get(o.path());
     var e= OneOr.opt("project "+o.alias(), next.projects().stream().filter(n -> n.path().equals(o.path())));
-    if (e.isEmpty()){ throw new Refused(Report.removedWhileBusy(o.alias(), job)); }
-    if (e.get().kind() != o.kind()){ throw new Refused(Report.kindWhileBusy(o.alias(), e.get().kind().text, job)); }
+    if (e.isEmpty()){ throw new Refused(Report.removedWhileBusy(o.alias(), l.job)); }
+    if (e.get().kind() != o.kind()){ throw new Refused(Report.kindWhileBusy(o.alias(), e.get().kind().text, l.job)); }
+    var dropped= registry.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();
+    Project.claimants(o.path(), o.alias(), l.claims).map(c -> c.claim().extension()).filter(dropped::contains).findFirst()
+      .ifPresent(x -> { throw new Refused(Report.extensionWhileBusy(o.alias(), x, l.job)); });
   }
   private void openWith(Path file, List<String> chosen){
     if (!Files.isRegularFile(file)){ throw new Refused(Report.openNoFile(file)); }
@@ -602,8 +557,8 @@ public final class Manager{
     if (picked.isEmpty()){ throw new Refused(Report.notOpening(file, chosen.get(0), chosen.get(1), ext, cs.stream().map(Project.Claimant::label).toList())); }
     if (picked.size() > 1){ view.show(); view.choose(file, cs); return; }
     var c= picked.getFirst();
-    scan(c.folder());
-    run(c.folder(), c.main(), Optional.empty(), Optional.of(file));
+    if (!scan(c.folder())){ unreachable(c.folder()); openWith(file, chosen); return; }
+    run(c.folder(), List.of(c.main()), Optional.empty(), Optional.of(file));
   }
   private void drop(Path f){
     var l= live.remove(f);
@@ -611,27 +566,45 @@ public final class Manager{
     l.follow.ifPresent(Follow::end);
     if (selected.equals(Optional.of(f))){ selected = Optional.empty(); }
   }
-  private void scan(Path f){
+  /// The 'autoCheck' of the project: false for a project folder the manager can not reach, whose Forget is then posted.
+  private boolean scan(Path f){
     var l= live.get(f);
-    if (!l.job.isEmpty()){ inUse(f); return; }
-    Facts fresh;
-    try{ fresh= facts(f); }
-    catch (UserError err){ corrupted(f, err.getMessage()); rebuild(Optional.empty()); fresh= facts(f); }
-    if (fresh.problem().isPresent() && Fs.isDirectory(f)){ errorFile(f, fresh.problem().get()); }
-    if (fresh.equals(l.scanned)){ return; }
+    var compiling= l.job.equals(Project.compiling);
+    var found= compiling ? Optional.of(l.facts).filter(_ -> Fs.isDirectory(f)) : checked(f);
+    if (found.isEmpty()){ post(() -> unreachableLater(f)); return false; }
+    var fresh= found.get();
+    if (compiling){ return true; }
+    if (!l.job.isEmpty()){
+      if (fresh.stale().isPresent() || fresh.problem().isPresent()){ l.terminated = true; l.child.kill(); }
+      return true;
+    }
+    if (fresh.problem().isPresent()){ errorFile(f, fresh.problem().get()); }
+    if (fresh.equals(l.scanned)){ return true; }
     l.scanned = fresh;
     l.facts = fresh;
     l.mains = fresh.mains();
+    return true;
   }
-  private Facts facts(Path f){
+  private Optional<Facts> checked(Path f){
+    try{ return facts(f); }
+    catch (UserError err){ corrupted(f, err.getMessage()); rebuild(Optional.empty()); return facts(f); }
+  }
+  private Optional<Facts> facts(Path f){
     var e= registry.of(f).orElseThrow();
     return Facts.of(f, e.alias(), e.kind(), tools::check);
   }
-  private void inUse(Path f){
+  private void unreachableLater(Path f){
+    try{ unreachable(f); }
+    catch (Refused r){ view.refuse(r.getMessage()); }
+  }
+  /// The 'autoCheck' of a project folder the manager can not reach: the job of the project ends, a dialog says so, then the project is forgotten.
+  private void unreachable(Path f){
     var l= live.get(f);
-    if (l.job.equals(Project.compiling) || !broken(f)){ return; }
-    l.terminated = true;
-    l.child.kill();
+    if (l == null){ return; }
+    if (l.child != null){ l.terminated = true; l.child.kill(); }
+    l.job = "";
+    view.refuse(Report.unreachable(alias(f), f));
+    forget(f);
   }
   private void rotate(){
     if (!view.visible()){ return; }
@@ -641,15 +614,18 @@ public final class Manager{
     turn += 1;
     scan(all.get(turn % all.size()).path());
   }
+  /// Refuses a change of the mounts of a project with a running main, and of the kind or the folder of a data project mounted there.
   private void granted(Content next){
     for (var e : live.entrySet()){
       var job= e.getValue().job;
       if (job.isEmpty() || job.equals(Project.compiling)){ continue; }
-      var mounts= registry.of(e.getKey()).orElseThrow().mounts();
-      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey()))).filter(p -> !p.mounts().equals(mounts) || !Registry.grants(next, p, e.getValue().mains.orElseThrow().dataEdit()).equals(e.getValue().grants));
+      var now= registry.of(e.getKey()).orElseThrow();
+      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey())))
+        .filter(p -> !p.mounts().equals(now.mounts()) || now.mounts().values().stream().anyMatch(d -> !data(registry.content(), d).equals(data(next, d))));
       changed.ifPresent(p -> { throw new Refused(Report.grantsWhileRunning(p.alias(), job)); });
     }
   }
+  private static Optional<List<Object>> data(Content c, String name){ return OneOr.opt("project "+name, c.projects().stream().filter(p -> p.alias().equals(name))).map(p -> List.of(p.kind(), p.path())); }
   private Project project(Entry e){
     var l= live.get(e.path());
     return new Project(e, l.facts, l.mains, l.claims, l.job);

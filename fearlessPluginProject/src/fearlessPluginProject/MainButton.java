@@ -75,7 +75,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     }
     return null;
   }
-  private static void run(String alias, List<String> mains){ if (!mains.isEmpty()){ Follow.run(alias, mains.toArray(String[]::new)); } }
+  private static void run(String alias, List<String> mains){ if (!mains.isEmpty()){ Follow.run(alias, mains); } }
   private static List<String> chosen(State s, Shell shell){
     var dialog= ListSelectionDialog.of(s.mains()).contentProvider(ArrayContentProvider.getInstance()).labelProvider(new LabelProvider()).title("Fearless").message("Mains to run:").create(shell);
     dialog.setInitialElementSelections(s.selected());

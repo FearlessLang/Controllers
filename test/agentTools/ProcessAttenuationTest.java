@@ -503,7 +503,7 @@ final class ProcessAttenuationTest extends ManagerTest{
 {
   "projects": {
     "proc": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "%s"%s
     }
   },

@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,7 +28,7 @@ import userMessages.UserError;
 
 /// What the file system says about a project folder: its compilation cache under
 /// `.fearless_out` and why it is out of date, its icon, its logs, and why it is invalid if it is.
-public record Facts(Optional<String> stale, Optional<MainsInfo> mains, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
+public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<String> packages, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
   public static final String outDir= Coordinator.outDir;
   /// An icon is the same while its file is: the image is read from it once.
   public record Icon(Path file, long stamp, BufferedImage image){
@@ -36,11 +37,12 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, Optional<
   }
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
   /// A Coordinator.State that is Error.cacheCorrupted is raised: the manager applies the corruption rule.
-  public static Facts of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check){
-    try{ return retried(() -> read(folder, alias, kind, check)); }
-    catch (UncheckedIOException e){ return invalid(Report.folderUnreadable(folder, e.getCause())); }
+  /// None for a folder the manager can not reach.
+  public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check){
+    if (!Fs.isDirectory(folder) || !Files.isReadable(folder)){ return Optional.empty(); }
+    try{ return Optional.of(retried(() -> read(folder, alias, kind, check))); }
+    catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())))); }
   }
-  private static Facts invalid(String problem){ return new Facts(Optional.empty(), Optional.empty(), Optional.empty(), List.of(), Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
     for (var left= 10;; left -= 1){
       try{ return read.get(); }
@@ -48,7 +50,6 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, Optional<
     }
   }
   private static Facts read(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check){
-    if (!Fs.isDirectory(folder)){ return invalid(Report.folderMissing(folder)); }
     UserError.root = folder;
     Optional<String> problem;
     Coordinator.State state= new Coordinator.State.OutOfDate();
@@ -62,9 +63,9 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, Optional<
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
     if (kind == Kind.code && problem.isEmpty()){ state = check.apply(folder); }
     if (state instanceof Coordinator.State.Invalid(var why)){ problem = Optional.of(why); }
-    var mains= state instanceof Coordinator.State.Compiled c ? Optional.of(c.manifest()) : Optional.<MainsInfo>empty();
-    var stale= kind == Kind.code && problem.isEmpty() && mains.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
-    return new Facts(stale, mains, icon, LogFiles.list(folder), problem);
+    var compiled= state instanceof Coordinator.State.Compiled c ? Optional.of(c) : Optional.<Coordinator.State.Compiled>empty();
+    var stale= kind == Kind.code && problem.isEmpty() && compiled.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
+    return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, LogFiles.list(folder), problem);
   }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));

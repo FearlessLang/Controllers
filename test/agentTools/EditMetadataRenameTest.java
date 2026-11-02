@@ -196,7 +196,7 @@ final class EditMetadataRenameTest extends ManagerTest{
 {
   "projects": {
     "fresh": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
   },

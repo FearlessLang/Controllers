@@ -49,7 +49,7 @@ final class FactsTest{
     var base= project.getParent().resolve("baseCache");
     FakeCache.at(base.resolve("base.json"), FakeCache.json(FakeCache.manifest("{}")), 0);
     var c= new Coordinator(){ @Override public Optional<Path> baseCachePath(){ return Optional.of(base); } };
-    return Facts.of(project, alias, kind, c::check);
+    return Facts.of(project, alias, kind, c::check).orElseThrow();
   }
   static boolean upToDate(Facts f){ return f.stale().isEmpty(); }
   //A log or an Eclipse report lands after the build stamp, inside the project folder
@@ -102,11 +102,8 @@ final class FactsTest{
     var project= project(dir, "someProject");
     same("[###]\"other.fearless\" is missing[###]", facts(project, "other", Kind.code).problem().orElseThrow());
   }
-  @Test void aMissingFolderIsAProblemNotACrash(@TempDir Path dir){
-    same("""
-The folder of this project does not exist:
-[###]gone
-Restore it, or forget this project.""", facts(dir.resolve("gone"), "gone", Kind.code).problem().orElseThrow());
+  @Test void aMissingFolderIsUnreachable(@TempDir Path dir){
+    assertEquals(Optional.empty(), Facts.of(dir.resolve("gone"), "gone", Kind.code, _ -> new Coordinator.State.OutOfDate()));
   }
   @Test void aFolderDeletedWhileItIsCheckedIsMissing(@TempDir Path dir){
     assertTimeoutPreemptively(Duration.ofSeconds(60), () -> {
@@ -114,9 +111,9 @@ Restore it, or forget this project.""", facts(dir.resolve("gone"), "gone", Kind.
         var project= project(dir, "p"+i);
         IntStream.range(0, 300).forEach(j -> Fs.writeUtf8(project.resolve("_hello").resolve("f"+j+".fear"), ""));
         var gone= Thread.startVirtualThread(() -> Fs.rmTree(project));
-        facts(project, "p"+i, Kind.code);
+        Facts.of(project, "p"+i, Kind.code, _ -> new Coordinator.State.OutOfDate());
         gone.join();
-        same("The folder of this project does not exist:[###]", facts(project, "p"+i, Kind.code).problem().orElseThrow());
+        assertEquals(Optional.empty(), Facts.of(project, "p"+i, Kind.code, _ -> new Coordinator.State.OutOfDate()));
       }
     });
   }

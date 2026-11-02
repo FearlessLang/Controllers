@@ -128,7 +128,7 @@ final class OpenFearlessFileTest extends ManagerTest{
 {
   "projects": {
     "hello_world": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
   },

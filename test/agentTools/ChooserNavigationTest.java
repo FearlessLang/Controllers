@@ -297,7 +297,7 @@ final class ChooserNavigationTest extends ManagerTest{
 {
   "projects": {
     "inner": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
   },

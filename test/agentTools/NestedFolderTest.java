@@ -276,7 +276,7 @@ final class NestedFolderTest extends ManagerTest{
 {
   "projects": {
     "inner": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
   },

@@ -38,7 +38,7 @@ final class StaleMainTest extends ManagerTest{
 {
   "projects": {
     "menu": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": [%s]
     }

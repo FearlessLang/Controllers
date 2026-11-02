@@ -216,11 +216,11 @@ final class AliasClashTest extends ManagerTest{
 {
   "projects": {
     "twin": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     },
     "twin2": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
   },

@@ -680,11 +680,11 @@ Write: Main{s -> base.Block#
 {
   "projects": {
     "journal": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code"%s
     },
     "notes": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "%s"
     }
   },

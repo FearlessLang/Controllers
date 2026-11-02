@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -30,7 +31,7 @@ import suggest.Api;
 /// manager.info, next to the plugins folder holding this plugin, names the manager program,
 /// the manager folder and the compiled standard library. The plugin reads projects.info of
 /// the manager folder and the .fearless_out folder of each project, and commands the manager
-/// by running the manager program with the arguments FearlessCommand<Verb> and the arguments of the verb.
+/// by running the manager program with a call: FearlessCommand<Verb> and the arguments of the verb, separated by spaces.
 public final class ManagerLink{
   public record Project(Path folder, String kind, List<String> mains){}
   private static final Map<String,Object> link= Info.parse(FileLocator.getBundleFileLocation(FrameworkUtil.getBundle(ManagerLink.class)).orElseThrow().toPath().getParent().resolveSibling("manager.info"));
@@ -116,8 +117,9 @@ public final class ManagerLink{
     return bytes.length > 1 && bytes[bytes.length-1] == '/' ? Arrays.copyOf(bytes, bytes.length-1) : bytes;
   }
   private static Path path(Object text){ return Info.taggedPath(text); }
+  /// Runs the manager program with the call of the verb and its arguments, and waits for the end of that run.
   static void send(String verb, String... args){
-    var cmd= Stream.concat(Stream.of(launcher.toString(), "FearlessCommand"+verb), Stream.of(args)).toList();
+    var cmd= List.of(launcher.toString(), Stream.concat(Stream.of("FearlessCommand"+verb), Stream.of(args)).collect(Collectors.joining(" ")));
     try{ new ProcessBuilder(cmd).redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
     catch (InterruptedException e){ Thread.currentThread().interrupt(); throw new IllegalStateException(e); }

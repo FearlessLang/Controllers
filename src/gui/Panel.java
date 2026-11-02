@@ -15,7 +15,6 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +47,6 @@ import controller.Registry.Kind;
 import fileSupport.LogFiles;
 import managerMessages.Report;
 import tools.Fs;
-import tools.OpenPath;
 import utils.Push;
 
 /// The right half of the window: everything about one registered project, and the
@@ -72,8 +70,9 @@ final class Panel{
   private final Collapsible logs= new Collapsible("Logs", half(logList), false, small("Logs", this::openLogs));
   private final JButton openDocs= small("Open docs", this::openDocs);
   private final JButton action= named(small("Compile", this::act), "action");
-  private final JButton deleteCache= small("Delete cache", () -> Main.command("DeleteCache", this.project.alias()));
-  private final JButton forget= small("Forget", () -> Main.command("Forget", this.project.alias()));
+  private final JButton deleteCache= small("Delete cache", () -> Main.command("DeleteCache "+this.project.alias()));
+  private final JButton forget= small("Forget", () -> Main.command("Forget "+this.project.alias()));
+  private final JPanel selectedMains= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
   private Object shown= List.of();
@@ -98,7 +97,7 @@ final class Panel{
     header.add(deleteCache);
     var top= new JPanel();
     top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
-    Stream.of(header, shortcuts).forEach(top::add);
+    Stream.of(header, selectedMains, shortcuts).forEach(top::add);
     var areas= new JPanel();
     areas.setLayout(new BoxLayout(areas, BoxLayout.Y_AXIS));
     Stream.of(new Collapsible("Output", half(output), true, small("Clear", () -> output.setText(""))), attenuators, claims, data, logs).forEach(areas::add);
@@ -120,12 +119,10 @@ final class Panel{
       @Override public Dimension getMaximumSize(){ return new Dimension(Integer.MAX_VALUE, getPreferredSize().height); }
     };
   }
-  private void openDocs(){ openDocs(refuse, project.folder()); }
-  static void openDocs(Consumer<String> refuse, Path folder){
-    var out= folder.resolve(Facts.outDir);
-    var docs= Fs.isDirectory(out) ? Fs.walk(out, s -> s.filter(p -> p.toString().endsWith(".html")).toList()) : List.<Path>of();
-    if (docs.isEmpty()){ refuse.accept(Report.noDocs(out)); return; }
-    docs.forEach(OpenPath::open);
+  private void openDocs(){
+    var menu= new JPopupMenu();
+    project.facts().packages().forEach(pkg -> menu.add(Window.item(pkg, () -> Window.open(refuse, project.folder().resolve(Facts.outDir).resolve(pkg+".html")))));
+    menu.show(openDocs, 0, openDocs.getHeight());
   }
   private void openLogs(){ Window.open(refuse, project.folder().resolve(LogFiles.runDir).resolve("logs")); }
   void append(String text){
@@ -138,20 +135,23 @@ final class Panel{
   private void act(){
     var alias= project.alias();
     switch (project.action()){
-      case check -> Main.command("Check", alias);
-      case compile -> Main.command("Compile", alias);
-      case terminate -> Main.command("Terminate", alias);
+      case check -> Main.command("Check "+alias);
+      case compile -> Main.command("Compile "+alias);
+      case terminate -> Main.command("Terminate "+alias);
       case run -> run();
     }
   }
   private void run(){
+    var alias= project.alias();
     var mains= project.knownMains();
-    if (mains.size() == 1){ Main.command("Run", project.alias(), mains.getFirst()); return; }
+    if (mains.size() == 1){ Main.command("SelectMains "+alias+" "+mains.getFirst(), "Run "+alias); return; }
     var popup= new JPopupMenu();
-    var boxes= mains.stream().map(m -> named(new JCheckBox(m, project.selectedMains().contains(m)), m)).toList();
-    var run= named(small("Run", () -> { popup.setVisible(false); runTicked(boxes); }), "runTicked");
-    Runnable enable= () -> run.setEnabled(boxes.stream().anyMatch(JCheckBox::isSelected));
-    boxes.forEach(b -> b.addActionListener(_ -> enable.run()));
+    var ticked= new ArrayList<>(project.entry().mains());
+    var entries= Stream.concat(mains.stream(), ticked.stream()).distinct().toList();
+    var boxes= entries.stream().map(m -> named(new JCheckBox(m, ticked.contains(m)), m)).toList();
+    var run= named(small("Run", () -> { popup.setVisible(false); Main.command("Run "+alias); }), "runTicked");
+    Runnable enable= () -> run.setEnabled(!ticked.isEmpty() && mains.containsAll(ticked));
+    boxes.forEach(b -> b.addActionListener(_ -> tick(alias, ticked, b, enable)));
     enable.run();
     var list= new JPanel();
     list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
@@ -160,9 +160,12 @@ final class Panel{
     popup.add(list);
     popup.show(action, 0, action.getHeight());
   }
-  private void runTicked(List<JCheckBox> boxes){
-    var ticked= boxes.stream().filter(JCheckBox::isSelected).map(JCheckBox::getText);
-    Main.command("Run", Stream.concat(Stream.of(project.alias()), ticked).toArray(String[]::new));
+  /// Checking or unchecking an entry is a SelectMains naming the checked entries, in the order they were checked.
+  private static void tick(String alias, ArrayList<String> ticked, JCheckBox box, Runnable enable){
+    ticked.remove(box.getText());
+    if (box.isSelected()){ ticked.add(box.getText()); }
+    enable.run();
+    Main.command(ticked.stream().map(m -> " "+m).collect(Collectors.joining("", "SelectMains "+alias, "")));
   }
   void render(Project p, List<Project> all, int height){
     var claimed= Project.claimed(all);
@@ -183,6 +186,7 @@ final class Panel{
     deleteCache.setEnabled(!p.busy());
     forget.setEnabled(!p.busy());
     fillKinds(p);
+    fillSelected(p, several);
     fillShortcuts(p, claimed);
     fillAttenuators(p);
     fillClaims(p, claimed);
@@ -194,11 +198,19 @@ final class Panel{
     root.revalidate();
     root.repaint();
   }
+  private void fillSelected(Project p, boolean runV){
+    selectedMains.removeAll();
+    var mains= p.entry().mains();
+    selectedMains.setVisible(!runV && !mains.isEmpty());
+    if (!selectedMains.isVisible()){ return; }
+    selectedMains.add(new JLabel("Selected mains: "+String.join(", ", mains)));
+    selectedMains.add(small("Remove", () -> Main.command("SelectMains "+p.alias())));
+  }
   private void fillShortcuts(Project p, Map<String,List<Project.Claimant>> claimed){
     shortcuts.removeAll();
-    var mine= mine(p, claimed).filter(Project.Claimant::shortcut).toList();
+    var mine= mine(p, claimed).filter(c -> c.shortcut() && Fs.isRegularFile(c.shortcutFile())).toList();
     shortcuts.setVisible(!mine.isEmpty());
-    mine.forEach(c -> shortcuts.add(doubleClicked(named(shortcut(c), "shortcut "+c.main()+" "+c.claim().extension()), () -> Main.command("OpenWithOrShortcut", TaggedText.ofPath(c.shortcutFile())))));
+    mine.forEach(c -> shortcuts.add(doubleClicked(named(shortcut(c), "shortcut "+c.main()+" "+c.claim().extension()), () -> Main.command("OpenWithOrShortcut "+TaggedText.base16(c.shortcutFile())))));
   }
   private static JLabel shortcut(Project.Claimant c){
     return Tiles.desktop(new JLabel(), new ImageIcon(Icons.of(c, Tiles.iconSize)), c.shortcutFile().getFileName().toString());
@@ -246,7 +258,7 @@ final class Panel{
     var known= p.mains().isPresent();
     attenuatorsBox.add(row(0, label(main, !known || p.knownMains().contains(main))));
     IntStream.range(0, applied.size()).forEach(i -> attenuatorsBox.add(attenuator(p, main, applied, i)));
-    var choices= p.knownAttenuators().toArray(String[]::new);
+    var choices= p.knownAttenuators().stream().filter(a -> !applied.contains(a)).toArray(String[]::new);
     if (choices.length == 0){ return; }
     var combo= new JComboBox<>(choices);
     attenuatorsBox.add(row(16, combo, small("Add", () -> attenuate(p, main, Push.of(applied, (String)combo.getSelectedItem())))));
@@ -268,7 +280,7 @@ final class Panel{
     return res;
   }
   private static void attenuate(Project p, String main, List<String> applied){
-    Main.command("Attenuate", Stream.concat(Stream.of(p.alias(), main), applied.stream()).toArray(String[]::new));
+    Main.command(applied.stream().map(a -> " "+a).collect(Collectors.joining("", "Attenuate "+p.alias()+" "+main, "")));
   }
   private void fillKinds(Project p){
     kinds.removeAll();
@@ -278,7 +290,7 @@ final class Panel{
     if (p.kind() != Kind.code){ kinds.add(kindButton(p, "Become code", Kind.code)); }
   }
   private JButton kindButton(Project p, String text, Kind target){
-    var res= named(small(text, () -> Main.command("Kind", p.alias(), target.text)), target.text);
+    var res= named(small(text, () -> Main.command("Kind "+p.alias()+" "+target.text)), target.text);
     res.setEnabled(!p.busy());
     return res;
   }
@@ -298,7 +310,7 @@ final class Panel{
   }
   private void fillMount(Project p, String type, List<Project> all){
     var mounted= p.entry().mounts().get(type);
-    var remove= small("Remove", () -> Main.command("Mount", p.alias(), type));
+    var remove= small("Remove", () -> Main.command("Unmount "+p.alias()+" "+type));
     dataBox.add(mounted == null ? row(0, new JLabel(type), new JLabel("no mount")) : row(0, new JLabel(type), new JLabel("mounted: "+mounted), remove));
     var broken= mounted == null || p.mains().isEmpty() ? Optional.<String>empty() : p.brokenMount(type, all);
     broken.ifPresent(why -> dataBox.add(row(16, label(Report.brokenMount(type, mounted, why).replace('\n', ' '), false))));
@@ -306,10 +318,10 @@ final class Panel{
     var choices= all.stream().filter(o -> fits(p, type, o.kind()) && o.problem().isEmpty() && !o.alias().equals(mounted)).map(Project::alias).toArray(String[]::new);
     if (choices.length == 0){ return; }
     var combo= new JComboBox<>(choices);
-    dataBox.add(row(16, combo, small("Mount", () -> Main.command("Mount", p.alias(), type, (String)combo.getSelectedItem()))));
+    dataBox.add(row(16, combo, small("Mount", () -> Main.command("Mount "+p.alias()+" "+type+" "+combo.getSelectedItem()))));
   }
   private static boolean fits(Project code, String type, Kind data){ return data == Kind.dataEdit || data == Kind.dataRead && !code.mains().orElseThrow().dataEdit().contains(type); }
-  private static void mountFree(String[] codeAndType, String data){ Main.command("Mount", codeAndType[0], codeAndType[1], data); }
+  private static void mountFree(String[] codeAndType, String data){ Main.command("Mount "+codeAndType[0]+" "+codeAndType[1]+" "+data); }
   private static final class Arrow implements Icon{
     @Override public int getIconWidth(){ return 10; }
     @Override public int getIconHeight(){ return 6; }

@@ -65,10 +65,6 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
     var broken= entry.mounts().keySet().stream().flatMap(t -> brokenMount(t, all).map(why -> Report.brokenMount(t, entry.mounts().get(t), why)).stream());
     return Stream.concat(unmounted, broken).toList();
   }
-  public List<String> selectedMains(){
-    var known= knownMains();
-    return known.size() == 1 ? known : known.stream().filter(entry.mains()::contains).toList();
-  }
   static Stream<Claimant> claimants(Path folder, String alias, MainsInfo info){
     return info.mains().entrySet().stream()
       .flatMap(e -> Stream.concat(claimants(folder, alias, e.getKey(), e.getValue().shortcuts(), "Shortcut"), claimants(folder, alias, e.getKey(), e.getValue().openWiths(), "OpenWith")));

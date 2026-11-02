@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ final class PanelTest{
   private static Project project(Path folder, Kind kind, Map<String,String> mounts, Optional<MainsInfo> mains){
     var alias= folder.getFileName().toString();
     var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), mounts, Map.of());
-    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate()), mains, Project.noClaims, "");
+    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate()).orElseThrow(), mains, Project.noClaims, "");
   }
   private static Stream<Component> all(Component c){
     if (!(c instanceof Container k)){ return Stream.of(c); }
@@ -51,10 +52,10 @@ final class PanelTest{
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello, notes), 800);
     assertEquals(List.of(), brokenMounts(panel));
-    Fs.rmTree(notesFolder);
+    Fs.ofV(() -> Files.delete(notesFolder.resolve("notes.fearless")));
     var gone= project(notesFolder, Kind.dataRead, Map.of(), Optional.empty());
     panel.render(hello, List.of(hello, gone), 800);
     assertEquals(1, brokenMounts(panel).size());
-    Err.strCmp("The mount of \"notes\" on \"hello.Diary\" is broken: the content of project \"notes\" is invalid: The folder of this project does not exist:[###]Restore it, or forget this project.", brokenMounts(panel).getFirst());
+    Err.strCmp("The mount of \"notes\" on \"hello.Diary\" is broken: the content of project \"notes\" is invalid: The marker file \"notes.fearless\" is missing from[###]", brokenMounts(panel).getFirst());
   }
 }

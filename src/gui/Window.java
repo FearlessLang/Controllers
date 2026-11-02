@@ -179,7 +179,7 @@ public final class Window implements Manager.View{
     file.toFile().deleteOnExit();
     written.add(file);
     Fs.writeUtf8(file, content);
-    Main.command("EditMetadata", TaggedText.ofPath(file));
+    Main.command("EditMetadata "+TaggedText.base16(file));
     return file;
   }
   private void chooser(Path file, List<Project.Claimant> choices){
@@ -202,7 +202,7 @@ public final class Window implements Manager.View{
   private static void pick(JDialog dialog, JList<Project.Claimant> list, Path file){
     if (list.isSelectionEmpty()){ return; }
     dialog.dispose();
-    Main.command("OpenWithOrShortcut", TaggedText.ofPath(file), list.getSelectedValue().alias(), list.getSelectedValue().main());
+    Main.command("OpenWithOrShortcut "+TaggedText.base16(file)+" "+list.getSelectedValue().alias()+" "+list.getSelectedValue().main());
   }
   static JList<Project.Claimant> choices(List<Project.Claimant> choices){
     var icons= choices.stream().map(c -> new ImageIcon(Icons.of(c, 32))).toList();
@@ -249,9 +249,9 @@ public final class Window implements Manager.View{
     var res= new JMenuBar();
     var manager= new JMenu("Manager");
     manager.setMnemonic('M');
-    manager.add(item("Add folder...", () -> choose("Add a Fearless project folder", p -> Main.command("Register", TaggedText.ofPath(p)))));
+    manager.add(item("Add folder...", () -> choose("Add a Fearless project folder", p -> Main.command("Register "+TaggedText.base16(p)))));
     manager.add(item("Edit project metadata...", this::editMetadata));
-    manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse", TaggedText.ofPath(p)))));
+    manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse "+TaggedText.base16(p)))));
     manager.add(item("Base documentation", () -> open(this::say, Deployed.stdLib("baseCache").resolve("base.html"))));
     manager.addSeparator();
     manager.add(item("Reset", this::reset));
@@ -284,7 +284,7 @@ public final class Window implements Manager.View{
       }
       @Override public boolean importData(TransferSupport support){
         var paths= Drop.paths(support.getTransferable(), Window.this::say);
-        paths.forEach(p -> Main.command("Register", TaggedText.ofPath(p)));
+        Main.command(paths.stream().map(p -> "Register "+TaggedText.base16(p)).toArray(String[]::new));
         return !paths.isEmpty();
       }
     };

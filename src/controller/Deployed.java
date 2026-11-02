@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import coordinator.CapabilityEnvironment;
 import coordinator.Coordinator;
@@ -54,7 +53,7 @@ public final class Deployed implements Manager.Tools{
     if (Fs.isMac()){ return; }
     var launcher= Association.launcher();
     var windows= preloads.stream().map(Deployed::window).toList();
-    Association.reconcile(launcher, Stream.concat(Stream.of(new Icon(".fearless", launcher, Association.iconFile())), captured.stream()).toList(), windows, claimedBy);
+    Association.reconcile(launcher, captured, windows, claimedBy);
   }
   private static WindowIcon window(Project.Claimant c){
     return new WindowIcon(Association.deskId(c.folder(), c.main())+"-"+c.claim().icon(), c.main().substring(c.main().lastIndexOf('.')+1), c.folder(), c.icon(".png"));

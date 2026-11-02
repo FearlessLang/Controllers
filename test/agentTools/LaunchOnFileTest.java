@@ -159,7 +159,7 @@ final class LaunchOnFileTest extends ManagerTest{
 {
   "projects": {
     "hello_world": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
   },

@@ -359,7 +359,7 @@ Note: Consumer[mut Frame]{:: .title "chain" .content.pane{:: .label{:: .text "te
 {
   "projects": {
     "chain": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": ["chain.Show", "chain.Tell"]
     }

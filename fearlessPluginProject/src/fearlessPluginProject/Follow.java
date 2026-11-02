@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -19,7 +20,10 @@ final class Follow{
   static Optional<Follow> followed(){ return followed; }
   static boolean compiling(String alias){ return followed.filter(j -> j.compile && j.alias.equals(alias)).isPresent(); }
   static void compile(String alias){ follow(alias, true, "Compile", alias); }
-  static void run(String alias, String... mains){ follow(alias, false, "Run", Stream.concat(Stream.of(alias), Stream.of(mains)).toArray(String[]::new)); }
+  static void run(String alias, List<String> mains){
+    ManagerLink.send("SelectMains", Stream.concat(Stream.of(alias), mains.stream()).toArray(String[]::new));
+    follow(alias, false, "Run", alias);
+  }
   private static void follow(String alias, boolean compile, String verb, String... args){
     var job= new Follow(alias, compile);
     followed = Optional.of(job);

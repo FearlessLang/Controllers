@@ -36,13 +36,13 @@ final class RegistryTest{
   //-- the schema
   @Test void anEmptyFileIsNoProjects(){ assertEquals(List.of(), parse("{}")); }
   @Test void aMinimalProjectHasAPathAndAKindWithNoMainsReadsOrEdits(){
-    var e= parse("{\"someproject\":{\"path\":\"Str:"+root+"abs/someproject\",\"kind\":\"idle\"}}").getFirst();
+    var e= parse("{\"someproject\":{\"path\":\"Str:\\\""+root+"abs/someproject\\\"\",\"kind\":\"idle\"}}").getFirst();
     assertEquals(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.idle, List.of(), Map.of(), Map.of()), e);
   }
   @Test void aFullCodeProjectParsesEveryField(){
     var e= parse("""
 {"someproject":{
-  "path":"Str:%sabs/someproject",
+  "path":"Str:\\"%sabs/someproject\\"",
   "kind":"code",
   "mains":["some.Main1","some.Main2"],
   "mounts":{"some.Pub":"publicfiles","some.Diary":"publicdata"},
@@ -52,10 +52,10 @@ final class RegistryTest{
       List.of("some.Main1", "some.Main2"), Map.of("some.Pub", "publicfiles", "some.Diary", "publicdata"), Map.of("some.Main1", List.of("some.NoGui", "base.NoManager"))), e);
   }
   @Test void allFourKindsParse(){
-    assertEquals(Kind.idle, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"idle\"}}").getFirst().kind());
-    assertEquals(Kind.code, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\"}}").getFirst().kind());
-    assertEquals(Kind.dataRead, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"dataRead\"}}").getFirst().kind());
-    assertEquals(Kind.dataEdit, parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"dataEdit\"}}").getFirst().kind());
+    assertEquals(Kind.idle, parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"idle\"}}").getFirst().kind());
+    assertEquals(Kind.code, parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"code\"}}").getFirst().kind());
+    assertEquals(Kind.dataRead, parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"dataRead\"}}").getFirst().kind());
+    assertEquals(Kind.dataEdit, parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"dataEdit\"}}").getFirst().kind());
   }
   @Test void theWholeFileMustBeAnObjectWithProjectsAndSystemExtensions(){
     err("[###]The whole file must be an object {...} with \"projects\" and \"systemExtensions\".[###]", () -> content("\"not an object\""));
@@ -64,43 +64,43 @@ final class RegistryTest{
     err("[###]Unknown key \"other\": the keys are \"projects\" and \"systemExtensions\".[###]", () -> content("{\"projects\":{},\"systemExtensions\":[],\"other\":[]}"));
   }
   @Test void aProjectNameMustBeShapedLikeAFolderName(){
-    err("[###]\"Not Valid\" is not a valid project name[###]", () -> parse("{\"Not Valid\":{\"path\":\"Str:"+root+"a\"}}"));
+    err("[###]\"Not Valid\" is not a valid project name[###]", () -> parse("{\"Not Valid\":{\"path\":\"Str:\\\""+root+"a\\\"\"}}"));
   }
   @Test void anUnknownAttributeIsRejected(){
-    err("[###]Unknown project attribute \"bogus\": the attributes of a project are \"path\", \"kind\", \"mains\", \"mounts\", \"attenuators\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"bogus\":\"1\"}}"));
+    err("[###]Unknown project attribute \"bogus\": the attributes of a project are \"path\", \"kind\", \"mains\", \"mounts\", \"attenuators\".[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"bogus\":\"1\"}}"));
   }
   @Test void aMissingPathIsRejected(){
     err("[###]Project \"a\" is missing its \"path\"[###]", () -> parse("{\"a\":{\"kind\":\"idle\"}}"));
   }
   @Test void aRelativePathIsRejected(){
-    err("[###]\"path\" must be an absolute path[###]", () -> parse("{\"a\":{\"path\":\"Str:relative/path\"}}"));
+    err("[###]\"path\" must be an absolute path[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\"relative/path\\\"\"}}"));
   }
   @Test void aMissingKindIsRejected(){
-    err("[###]Project \"a\" is missing its \"kind\": one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\"}}"));
+    err("[###]Project \"a\" is missing its \"kind\": one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\".[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\"}}"));
   }
   @Test void anUnknownKindIsRejectedWithTheFourValidOptionsListed(){
-    err("[###]\"kind\" must be one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\", not \"nonsense\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"nonsense\"}}"));
+    err("[###]\"kind\" must be one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\", not \"nonsense\".[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"nonsense\"}}"));
   }
   @Test void repeatedMainsAreRejected(){
-    err("[###]\"a.Main1\" is repeated in \"mains\".[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"mains\":[\"a.Main1\",\"a.Main1\"]}}"));
+    err("[###]\"a.Main1\" is repeated in \"mains\".[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"mains\":[\"a.Main1\",\"a.Main1\"]}}"));
   }
   @Test void aMainMustBePackageThenType(){
-    err("[###]is not a Fearless main name[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"mains\":[\"Hello1\"]}}"));
-    err("[###]is not a Fearless main name[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"mains\":[\"Hello.Hello1\"]}}"));
-    err("[###]is not a Fearless main name[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"mains\":[\"hello.hello1\"]}}"));
+    err("[###]is not a Fearless main name[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"mains\":[\"Hello1\"]}}"));
+    err("[###]is not a Fearless main name[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"mains\":[\"Hello.Hello1\"]}}"));
+    err("[###]is not a Fearless main name[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"mains\":[\"hello.hello1\"]}}"));
   }
   @Test void mainsAreThePackageQualifiedNamesTheCompilerReports(){
-    assertEquals(List.of("hello.Hello1", "hello.Hello3"), parse("{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"mains\":[\"hello.Hello1\",\"hello.Hello3\"]}}").getFirst().mains());
+    assertEquals(List.of("hello.Hello1", "hello.Hello3"), parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"code\",\"mains\":[\"hello.Hello1\",\"hello.Hello3\"]}}").getFirst().mains());
   }
   @Test void mountsMapEachQualifiedDataReadTypeToAProjectName(){
-    var a= "{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"mounts\":";
+    var a= "{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"code\",\"mounts\":";
     err("[###]\"mounts\" must be an object {...} mapping the name of a DataRead type to the name of a data project.[###]", () -> parse(a+"[\"hello.Pub\"]}}"));
     err("[###]\"Pub\" in \"mounts\" is not a Fearless DataRead type name: a package name, a dot, then a type name, like \"hello.Diary\".[###]", () -> parse(a+"{\"Pub\":\"pub\"}}}"));
     err("[###]\"mounts\".\"hello.Pub\" must be a string \"...\".[###]", () -> parse(a+"{\"hello.Pub\":[\"pub\"]}}}"));
     err("[###]\"Not Valid\" in \"mounts\".\"hello.Pub\" is not a valid project name.[###]", () -> parse(a+"{\"hello.Pub\":\"Not Valid\"}}}"));
   }
   @Test void attenuatorsMapEachMainToTheAttenuatorNamesAppliedToIt(){
-    var a= "{\"a\":{\"path\":\"Str:"+root+"a\",\"kind\":\"code\",\"attenuators\":";
+    var a= "{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"code\",\"attenuators\":";
     err("[###]\"attenuators\" must be an object {...} mapping a main name to a list of attenuator names.[###]", () -> parse(a+"[\"hello.NoGui\"]}}"));
     err("[###]\"Hello1\" in \"attenuators\" is not a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\".[###]", () -> parse(a+"{\"Hello1\":[\"hello.NoGui\"]}}}"));
     err("[###]\"NoGui\" in \"attenuators\".\"hello.Hello1\" is not a Fearless attenuator name: a package name, a dot, then a type name, like \"hello.NoGui\".[###]", () -> parse(a+"{\"hello.Hello1\":[\"NoGui\"]}}}"));
@@ -109,14 +109,14 @@ final class RegistryTest{
     assertEquals(Map.of("hello.Old", List.of("other.NoGui", "hello.NoGui", "other.NoGui")), parse(a+"{\"hello.Old\":[\"other.NoGui\",\"hello.NoGui\",\"other.NoGui\"]}}}").getFirst().attenuators());
   }
   @Test void identicalOrNestedPathsAreRejected(){
-    err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"same\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"same\",\"kind\":\"idle\"}}"));
-    err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+root+"parent\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+root+"parent/child\",\"kind\":\"idle\"}}"));
+    err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"same\\\"\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:\\\""+root+"same\\\"\",\"kind\":\"idle\"}}"));
+    err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"parent\\\"\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:\\\""+root+"parent/child\\\"\",\"kind\":\"idle\"}}"));
   }
   @Test void aLinkNamesTheFolderItLinksTo(@TempDir Path dir){
     var real= Registry.real(folder(dir, "real"));
     var link= Disk.link(dir.resolve("link"), real);
-    err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:"+unix(real)+"\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}"));
-    assertEquals(real, parse("{\"a\":{\"path\":\"Str:"+unix(link)+"\",\"kind\":\"idle\"}}").getFirst().path());
+    err("[###]\"b\" has the same path as \"a\", or one is inside the other[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+unix(real)+"\\\"\",\"kind\":\"idle\"},\"b\":{\"path\":\"Str:\\\""+unix(link)+"\\\"\",\"kind\":\"idle\"}}"));
+    assertEquals(real, parse("{\"a\":{\"path\":\"Str:\\\""+unix(link)+"\\\"\",\"kind\":\"idle\"}}").getFirst().path());
   }
   @Test void printingThenParsingRoundTripsTheContent(){
     var c= new Content(List.of(new Entry("someproject", Path.of(root+"abs/someproject"), Kind.code, List.of("some.Main1"), Map.of("some.Pub", "publicfiles"), Map.of("some.Main1", List.of("some.NoGui")))), List.of("htm"));
@@ -179,13 +179,13 @@ final class RegistryTest{
   @Test void changingTheMountsKeepsTheirOrderInTheFile(@TempDir Path dir){
     var code= folder(dir, "code");
     var r= registry(dir);
-    r.save(content("{\"projects\": {\"code\": {\"path\": \"Str:"+unix(code)+"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}}, \"systemExtensions\": []}"));
+    r.save(content("{\"projects\": {\"code\": {\"path\": \"Str:\\\""+unix(code)+"\\\"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}}, \"systemExtensions\": []}"));
     r.update(code, e -> e.withMounts(remounted(e.mounts())));
     assertEquals("""
 {
   "projects": {
     "code": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code",
       "mounts": {
         "code.Zeta": "zeta",
@@ -221,23 +221,23 @@ final class RegistryTest{
     err("[###]\"systemExtensions\" must be a list [...] of strings.[###]", () -> content("{\"projects\":{},\"systemExtensions\":{}}"));
   }
   private static String inManager(Path folder, Path manager){
-    return "[###]\"path\": \"Str:"+unix(folder)+"\"[###]^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of this folder as a project.\n\nThe folder is:\n  "+folder+"\nThe manager folder of this Fearless is:\n  "+manager+"\n[###]";
+    return "[###]\"path\": \"Str:\\\""+unix(folder)+"\\\"\"[###]^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of this folder as a project.\n\nThe folder is:\n  "+folder+"\nThe manager folder of this Fearless is:\n  "+manager+"\n[###]";
   }
   private static void placedAt(Path manager, Path folder, String expected){
-    var text= "{\"projects\": {\n  \"x\": {\"path\": \"Str:"+unix(folder)+"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n";
+    var text= "{\"projects\": {\n  \"x\": {\"path\": \"Str:\\\""+unix(folder)+"\\\"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n";
     err(expected, () -> Registry.parse(text, file, Registry::real, manager));
   }
   @Test void anEditPlacingAProjectAtARootOrInOrAroundTheManagerFolderIsRefusedAtThePath(@TempDir Path dir){
     registry(dir);
     var manager= Registry.real(dir.resolve("manager"));
-    placedAt(manager, Path.of(root), "[###]\"path\": \"Str:"+root+"\"[###]^^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]");
+    placedAt(manager, Path.of(root), "[###]\"path\": \"Str:\\\""+root+"\\\"\"[###]^^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]");
     placedAt(manager, manager, inManager(manager, manager));
     placedAt(manager, folder(manager, "inside"), inManager(manager.resolve("inside"), manager));
     placedAt(manager, Registry.real(dir), inManager(Registry.real(dir), manager));
   }
   @Test void aProjectsInfoPlacingAProjectInTheManagerFolderIsAFatalErrorAtThePath(@TempDir Path dir){
     var manager= folder(dir, "manager");
-    Fs.writeUtf8(manager.resolve("projects.info"), "{\"projects\": {\n  \"x\": {\"path\": \"Str:"+unix(manager)+"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n");
+    Fs.writeUtf8(manager.resolve("projects.info"), "{\"projects\": {\n  \"x\": {\"path\": \"Str:\\\""+unix(manager)+"\\\"\", \"kind\": \"code\"}\n}, \"systemExtensions\": []}\n");
     err(inManager(Registry.real(manager), Registry.real(manager)), () -> registry(dir));
   }
   private static Entry entry(String alias, Kind kind, Map<String,String> mounts){ return new Entry(alias, Path.of(root+alias), kind, List.of(), mounts, Map.of()); }

@@ -294,7 +294,7 @@ final class SystemExtensionTest extends ManagerTest{
 {
   "projects": {
     "opens": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code"
     }
   },

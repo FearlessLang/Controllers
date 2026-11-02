@@ -287,7 +287,7 @@ final class ForgetRunningProjectTest extends ManagerTest{
 {
   "projects": {
     "start": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code"
     }
   },

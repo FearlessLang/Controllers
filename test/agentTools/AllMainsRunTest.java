@@ -302,7 +302,7 @@ final class AllMainsRunTest extends ManagerTest{
 {
   "projects": {
     "hello_world": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": ["hello.Hello1", "hello.Hello3", "hello.Hello4", "hello.Hello5", "hello.Hello6"]
     }

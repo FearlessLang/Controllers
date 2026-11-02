@@ -146,7 +146,7 @@ final class DropFolderTest extends ManagerTest{
 {
   "projects": {
     "dropped": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
   },

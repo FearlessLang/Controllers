@@ -238,7 +238,7 @@ final class TerminateTest extends ManagerTest{
 {
   "projects": {
     "start": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "code"
     }
   },

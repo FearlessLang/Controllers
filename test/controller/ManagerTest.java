@@ -59,6 +59,7 @@ import mainCoordinator.MakeDemo;
 import resources.LocalResources;
 import tools.ChildJvm;
 import tools.Fs;
+import utils.Push;
 import tools.PathBytes;
 import userMessages.Report;
 import userMessages.UserError;
@@ -221,7 +222,19 @@ public class Child{
     Fs.writeUtf8(res.resolve("readme.txt"), "hi\n");
     return res;
   }
+  /// The message of the lines; for Mount, Attenuate and Run each word is a line, a Mount with no data project is an Unmount,
+  /// and a Run naming mains is a SelectMains of those mains, then the Run.
   private static void send(Manager m, String... lines){
+    var verb= lines[0];
+    if (!List.of("Mount", "Attenuate", "Run").contains(verb) || lines.length < 2){ message(m, List.of(lines)); return; }
+    var words= Stream.of(lines).flatMap(l -> Stream.of(l.split(" "))).toList();
+    var port= words.getLast().startsWith("Port:") ? List.of(words.getLast()) : List.<String>of();
+    var args= words.subList(1, words.size()-port.size());
+    if (verb.equals("Mount") && args.size() == 2){ message(m, Push.of(List.of(List.of("Unmount"), args, port))); return; }
+    if (verb.equals("Run") && args.size() > 1){ message(m, Push.of("SelectMains", args)); }
+    message(m, Push.of(List.of(List.of(verb), verb.equals("Run") ? args.subList(0, 1) : args, port)));
+  }
+  private static void message(Manager m, List<String> lines){
     m.message(String.join("\n", lines));
     m.settle();
   }
@@ -280,7 +293,7 @@ public class Child{
     var odd= folder(dir, Fs.isWindows() ? "a\ud800b" : "a\nb");
     send(m, "Register", TaggedText.ofPath(odd));
     assertEquals(List.of("a_b "+odd), listed(m));
-    same(Fs.isWindows() ? "[###]\"path\": \"Base16:[###]610000D86200\",[###]" : "[###]\"path\": \"UStr:([###]/a\\\" | \\\"b\\\").u\",[###]", info(dir));
+    same(Fs.isWindows() ? "[###]\"path\": \"Base16:[###]610000D86200\",[###]" : "[###]\"path\": \"Str:\\\"[###]/a\\\" | \\\"b\\\"\",[###]", info(dir));
     var again= manager(dir);
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
@@ -353,7 +366,7 @@ ran hello.Hello
 --- hello.Hello exited with 0 after [###]s ---
 """, view.out(hello));
     assertEquals(List.of(hello, hello), view.cleared);
-    assertEquals(List.of(), project(m, hello).entry().mains());
+    assertEquals(List.of("hello.Hello"), project(m, hello).entry().mains());
     assertFalse(Files.exists(hello.resolve(Facts.outDir).resolve("_error.txt")));
   }
   @Test void aRunNeverCompiles(@TempDir Path dir){
@@ -447,29 +460,29 @@ ran hello.Slow
     var m= manager(dir, "hello.Slow", "hello.Two");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
-    send(m, "Run", "hello", "hello.Two hello.Slow");
+    send(m, "Run", "hello", "hello.Slow hello.Two");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     send(m, "Terminate", "hello");
     idle(m);
     assertFalse(view.out(hello).contains("hello.Two"));
   }
-  @Test void theNamedMainsRunInTheOrderOfTheMainsAndBecomeTheSelectedMains(@TempDir Path dir){
+  @Test void theSelectedMainsRunInTheirOrder(@TempDir Path dir){
     var m= manager(dir, "hello.One", "hello.Two", "hello.Three");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
-    assertEquals(List.of(), project(m, hello).selectedMains());
+    assertEquals(List.of(), project(m, hello).entry().mains());
     send(m, "Run", "hello", "hello.Three hello.One");
     idle(m);
     same("""
---- running hello.One ---
-ran hello.One
---- hello.One exited with 0 after [###]s ---
 --- running hello.Three ---
 ran hello.Three
 --- hello.Three exited with 0 after [###]s ---
+--- running hello.One ---
+ran hello.One
+--- hello.One exited with 0 after [###]s ---
 """, view.out(hello));
-    assertEquals(List.of("hello.One", "hello.Three"), project(m, hello).selectedMains());
-    same("[###]\"mains\": [\"hello.One\", \"hello.Three\"][###]", info(dir));
+    assertEquals(List.of("hello.Three", "hello.One"), project(m, hello).entry().mains());
+    same("[###]\"mains\": [\"hello.Three\", \"hello.One\"][###]", info(dir));
   }
   @Test void aRunNamingAnUnknownMainIsRefused(@TempDir Path dir){
     var m= manager(dir, "hello.One", "hello.Two");
@@ -478,7 +491,7 @@ ran hello.Three
     send(m, "Run", "hello", "hello.Nope hello.One");
     assertEquals(List.of("""
 Refused request "Run" on project "hello".
-The request names "hello.Nope", and "hello.Nope" is not a main of project "hello".
+The selected mains of project "hello" name "hello.Nope", and "hello.Nope" is not a main of project "hello".
 The mains are:
   hello.One
   hello.Two"""), view.refused);
@@ -730,6 +743,20 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(Optional.empty(), project(m, todo).problem());
     assertEquals(Project.State.dataRead, project(m, todo).state());
   }
+  @Test void aKindChangeOfADataProjectMountedOnARunningMainIsRefused(@TempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
+    var hello= code(m, dir, "hello");
+    send(m, "Register", TaggedText.of(data(dir).toString()));
+    send(m, "Kind", "data", "dataEdit");
+    send(m, "Mount", "hello", "hello.Pub data");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    send(m, "Kind", "data", "dataRead");
+    assertEquals(List.of("Refused request to change the data projects mounted on the DataRead types of project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".\nThe data projects of a main stay the same while the main runs."), view.refused);
+    send(m, "Terminate", "hello");
+    idle(m);
+  }
   @Test void aRunningMainKeepsTheDataProjectsOfItsMountsUntilItEnds(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Notes"), "hello.Slow"));
     var hello= code(m, dir, "hello");
@@ -765,7 +792,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
-    edit(m, dir, "{\"projects\": {\"data\": {\"path\": \"Str:nowhere\"}}, \"systemExtensions\": []}");
+    edit(m, dir, "{\"projects\": {\"data\": {\"path\": \"Str:\\\"nowhere\\\"\"}}, \"systemExtensions\": []}");
     same("In file: [###]edited.info[###]\"path\" must be an absolute path[###]", view.refused.getLast());
     assertEquals(List.of(), view.edited);
     var good= edit(m, dir, Registry.text(new Registry.Content(List.of(project(m, data).entry().withKind(Kind.dataEdit)), List.of())));
@@ -826,6 +853,33 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
   @Test void forgetOfABusyProjectIsEditMetadataWithTheProjectRemoved(@TempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> without(c, "hello"), "Forget", "hello");
   }
+  @Test void selectMainsIsEditMetadataWithTheSelectedMainsReplaced(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "hello", e -> e.withMains(List.of("hello.Old", "hello.Hello"))), "SelectMains", "hello", "hello.Old", "hello.Hello");
+  }
+  @Test void selectMainsNamingNoMainIsEditMetadataWithTheSelectedMainsRemoved(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> { withData(m, d); message(m, List.of("SelectMains", "hello", "hello.Hello")); }, c -> with(c, "hello", e -> e.withMains(List.of())), "SelectMains", "hello");
+  }
+  @Test void unmountIsEditMetadataWithTheMountRemoved(@TempDir Path dir){
+    sameAsEditMetadata(dir, none, (m, d) -> { withData(m, d); send(m, "Mount", "hello", "hello.Pub data"); }, c -> with(c, "hello", e -> e.withMounts(Map.of())), "Unmount", "hello", "hello.Pub");
+  }
+  @Test void aRunOfAProjectWithNoSelectedMainIsRefused(@TempDir Path dir){
+    var m= manager(dir, "hello.One", "hello.Two");
+    code(m, dir, "hello");
+    compiled(m, "hello");
+    message(m, List.of("Run", "hello"));
+    assertEquals(List.of("Refused request \"Run\" on project \"hello\".\nProject \"hello\" has no selected main.\nThe mains are:\n  hello.One\n  hello.Two"), view.refused);
+  }
+  @Test void aProjectWhoseFolderIsGoneWhileItsMainRunsEndsTheMainAndIsForgotten(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    Fs.rmTree(hello);
+    send(m, "Check", "hello");
+    until(m, s -> s.projects().isEmpty());
+    assertEquals("The project \"hello\" connects to the folder \""+hello+"\".\nThis folder is now unreachable.\nThe project \"hello\" has now been removed.", view.refused.getFirst());
+  }
   @Test void kindFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "data"), c -> with(c, "data", e -> e.withKind(Kind.dataRead)), "Kind", "data", "dataRead");
   }
@@ -859,17 +913,15 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
   @Test void mountWhileAMainRunsIsEditMetadataWithThatMount(@TempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withMounts(Map.of("hello.Old", "data"))), "Mount", "hello", "hello.Old data");
   }
-  @Test void aProjectWhoseFolderIsGoneIsInvalidAndCanBeForgotten(@TempDir Path dir){
+  @Test void aProjectWhoseFolderIsGoneIsForgottenAfterADialog(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     Fs.rmTree(data);
     send(m, "Show", "data");
-    assertEquals(Optional.of(data), m.state().selected());
-    assertEquals(List.of(), view.refused);
-    send(m, "Check", "data");
-    assertTrue(view.out(data).startsWith("The folder of this project does not exist:"));
-    send(m, "Forget", "data");
+    assertEquals(List.of(
+      "The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.",
+      "Refused request \"Show\" on project \"data\".\nNo project is named \"data\".\nNo project is registered."), view.refused);
     assertEquals(List.of(), listed(m));
     send(m, "Register", TaggedText.of(data.toString()));
     same("Refused request \"Register\" on path\n[###]data\nNothing exists at that path.", view.refused.getLast());
@@ -880,10 +932,11 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
     view.visible = false;
+    var marker= data.resolve("data.fearless");
     for (var request : List.of(List.of("Mount", "data", "other.Other other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Check", "data"))){
-      var valid= Files.exists(data);
-      if (valid){ Fs.rmTree(data); }
-      else{ data(dir); Fs.writeUtf8(data.resolve("data.fearless"), ""); }
+      var valid= Files.exists(marker);
+      if (valid){ Fs.ofV(() -> Files.delete(marker)); }
+      else{ Fs.writeUtf8(marker, ""); }
       send(m, request.toArray(String[]::new));
       assertEquals(valid, project(m, data).problem().isPresent());
     }
@@ -961,24 +1014,10 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     Errs.err("Fearless could not list its manager folder, or could not read or\nremove a message file in it.[###]1.msg[###]", m::drain);
     Disk.allow(msg);
   }
-  @Test void aRequestNamingNoProjectOrPathIsRefused(@TempDir Path dir){
+  @Test void aRequestNamingNoProjectIsRefused(@TempDir Path dir){
     var m= manager(dir);
-    send(m, "Run", "");
-    send(m, "Register", "");
-    send(m, "Register", "Str: ");
-    assertEquals(List.of(
-      "Refused request \"Run\" on project \"\".\nNo project is named \"\".\nNo project is registered.",
-      "Refused request \"Register\".\nThe path of the request is not a tagged text: \"\"\nis malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.",
-      "Refused request \"Register\".\nThe path of the request is empty."), view.refused);
-  }
-  @Test void aRegisterWhosePathIsNotATaggedTextOrNotAPathIsRefused(@TempDir Path dir){
-    var m= manager(dir);
-    send(m, "Register", dir.toString());
-    send(m, "Register", TaggedText.of("a\u0000b"));
-    assertEquals(2, view.refused.size());
-    assertEquals("Refused request \"Register\".\nThe path of the request is not a tagged text: \""+dir+"\"\nis malformed: it starts with \"Str:\", \"UStr:\" or \"Base16:\", then the text written that way.", view.refused.get(0));
-    same("Refused request \"Register\" on path \"a\" [Null 0x00] \"b\".\n\"a\" [Null 0x00] \"b\"\nis not a path this system accepts: "+(Fs.isWindows() ? "[###]" : "Nul character not allowed."), view.refused.get(1));
-    assertEquals(List.of(), listed(m));
+    send(m, "Run", "hello");
+    assertEquals(List.of("Refused request \"Run\" on project \"hello\".\nNo project is named \"hello\".\nNo project is registered."), view.refused);
   }
   @Test void aProjectsInfoThatIsNotValidIsFatal(@TempDir Path dir){
     var m= manager(dir);
@@ -987,7 +1026,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     Fs.writeUtf8(file, info(dir).replace("\"kind\": \"idle\"", "\"kind\": \"library\""));
     Errs.err("In file: [###]projects.info[###]\"kind\" must be one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\", not \"library\".[###]", () -> manager(dir));
   }
-  @Test void compilingForgetsSelectedMainsThatAreGone(@TempDir Path dir){
+  @Test void compilingKeepsSelectedMainsThatAreGone(@TempDir Path dir){
     var mains= new ArrayList<>(List.of("hello.One", "hello.Two", "hello.Old"));
     var m= manager(dir, f -> known(mains.toArray(String[]::new)).apply(f));
     var hello= code(m, dir, "hello");
@@ -998,7 +1037,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     mains.remove("hello.Old");
     FakeCache.write(hello, "hello", 1000);
     compiled(m, "hello");
-    assertEquals(List.of("hello.Two"), project(m, hello).entry().mains());
+    assertEquals(List.of("hello.Old", "hello.Two"), project(m, hello).entry().mains());
   }
   @Test void aCompileWhoseJvmDoesNotStartIsShownOnItsProject(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -1120,7 +1159,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
   private static String claiming(String main, String shortcut, String openWith){
     return info(main, claim("base.IconsConflict", "icons/conflict.png", "", "", shortcut), claim("hello.IconsFoo", "art/foo.png", "", "", openWith));
   }
-  private List<String> wanted(Path dir){ return associated.getLast().stream().map(i -> i.extension()+" "+shown(dir, i)).toList(); }
+  private List<String> wanted(Path dir){ return associated.getLast().stream().filter(i -> !i.extension().equals(".fearless")).map(i -> i.extension()+" "+shown(dir, i)).toList(); }
   private static String shown(Path dir, Icon i){
     assertEquals(i.png().toString().replaceAll("png$", Fs.isWindows() ? "ico" : "png"), i.ico().toString());
     return dir.relativize(i.png()).toString().replace('\\', '/');
@@ -1330,8 +1369,9 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     var m= manager(dir, "hello.Hello");
     code(m, dir, "hello");
     code(m, dir, "other");
-    assertEquals(List.of(), associated.getLast());
+    assertEquals(List.of(".fearless manager/icons/base.IconsFearless.png"), associated.getLast().stream().map(i -> i.extension()+" "+shown(dir, i)).toList());
     assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("conflict.png")), bytes(dir.resolve("manager").resolve("icons").resolve("base.IconsConflict.png")));
+    assertArrayEquals(bytes(LocalResources.stLibPath.resolve("icons").resolve("fearless.png")), bytes(dir.resolve("manager").resolve("icons").resolve("base.IconsFearless.png")));
     allow(m, dir, "foo");
     assertEquals(List.of(".foo manager/icons/base.IconsConflict.png"), wanted(dir));
     infos.put("hello", claiming("hello.Hello", "fapp010", "foo"));
@@ -1542,6 +1582,18 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(List.of(), view.choices);
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
   }
+  @Test void aFileOpenedLeavesTheSelectedMainsAsTheyAre(@TempDir Path dir){
+    var m= opening(dir);
+    var hello= code(m, dir, "hello");
+    allow(m, dir, "foo");
+    infos.put("hello", claiming("hello.Hello", "fapp001", "foo"));
+    compiled(m, "hello");
+    message(m, List.of("SelectMains", "hello", "hello.Gone"));
+    open(m, doc(dir, "a.foo"));
+    idle(m);
+    same(running("hello.Hello", " on a.foo"), view.out(hello));
+    assertEquals(List.of("hello.Gone"), project(m, hello).entry().mains());
+  }
   @Test void aFileWhoseExtensionSeveralMainsClaimListsThemSorted(@TempDir Path dir){
     var m= opening(dir);
     var other= code(m, dir, "other");
@@ -1649,6 +1701,28 @@ in place of the program opening them now. The project then needs compiling again
     allow(m, dir, view.offered.getLast().toArray(String[]::new));
     assertEquals(List.of("htm"), m.state().extensions());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
+  }
+  @Test void removingASystemExtensionClaimedByAProjectWithARunningMainIsRefused(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    allow(m, dir, "foo");
+    infos.put("hello", claiming("hello.Slow", "fapp001", "foo"));
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    var before= info(dir);
+    edit(m, dir, before.replace("\"foo\"", ""));
+    assertEquals(before, info(dir));
+    assertEquals("Refused request to remove \"foo\" from \"systemExtensions\": a main of project \"hello\" claims \"foo\".\nMain \"hello.Slow\" is currently running inside project \"hello\".", view.refused.getLast());
+    send(m, "Terminate", "hello");
+    idle(m);
+  }
+  @Test void anEditWhoseReconcileRefusesAnExtensionTheEditDoesNotBringIsFatal(@TempDir Path dir){
+    var m= manager(dir);
+    held.put(".fearless", List.of("fearlessBin0_003"));
+    allow(m, dir, "htm");
+    same(notOurs(".fearless -> fearlessBin0_003"), failures.getFirst().getMessage());
+    failures.clear();
   }
   @Test void removingASystemExtensionDeletesTheCompiledCacheOfTheProjectsOpeningIt(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");

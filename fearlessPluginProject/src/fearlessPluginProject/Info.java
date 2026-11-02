@@ -45,10 +45,11 @@ final class Info{
     var text= text(s);
     return windows ? Path.of(text) : path(text.getBytes(StandardCharsets.UTF_8), s);
   }
+  /// The text of a Str: or UStr: tagged text: a Fearless string expression.
   private static String text(String s){
-    if (s.startsWith("Str:")){ return s.substring("Str:".length()); }
-    if (!s.startsWith("UStr:")){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
-    var p= new Info("the text \""+s+"\"", s.substring("UStr:".length()));
+    var tag= s.startsWith("Str:") ? "Str:" : "UStr:";
+    if (!s.startsWith(tag)){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
+    var p= new Info("the text \""+s+"\"", s.substring(tag.length()));
     try{
       var res= p.expr();
       if (p.i != p.text.length()){ throw p.bad("the end of the text"); }

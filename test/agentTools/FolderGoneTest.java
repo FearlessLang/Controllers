@@ -200,7 +200,7 @@ final class FolderGoneTest extends ManagerTest{
 {
   "projects": {
     "gone": {
-      "path": "Str:%s",
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
   },
