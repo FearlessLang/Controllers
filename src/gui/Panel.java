@@ -17,6 +17,7 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -212,12 +213,12 @@ final class Panel{
   }
   private void fillShortcuts(Project p, Map<String,List<Project.Claimant>> claimed){
     shortcuts.removeAll();
-    var mine= mine(p, claimed).filter(c -> c.shortcut() && c.namedShortcutFile().filter(f -> Files.isRegularFile(f, LinkOption.NOFOLLOW_LINKS)).isPresent()).toList();
-    shortcuts.setVisible(!mine.isEmpty());
-    mine.forEach(c -> shortcuts.add(doubleClicked(named(shortcut(c), "shortcut "+c.main()+" "+c.claim().extension()), () -> Main.command("OpenWithOrShortcut "+TaggedText.base16(c.shortcutFile())))));
+    mine(p, claimed).filter(Project.Claimant::shortcut).forEach(c -> c.namedShortcutFile().filter(f -> Files.isRegularFile(f, LinkOption.NOFOLLOW_LINKS)).ifPresent(f -> shortcuts.add(shortcut(c, f))));
+    shortcuts.setVisible(shortcuts.getComponentCount() > 0);
   }
-  private static JLabel shortcut(Project.Claimant c){
-    return Tiles.desktop(new JLabel(), new ImageIcon(Icons.of(c, Tiles.iconSize)), c.shortcutFile().getFileName().toString());
+  private static JLabel shortcut(Project.Claimant c, Path file){
+    var tile= Tiles.desktop(new JLabel(), new ImageIcon(Icons.of(c, Tiles.iconSize)), file.getFileName().toString());
+    return doubleClicked(named(tile, "shortcut "+c.main()+" "+c.claim().extension()), () -> Main.command("OpenWithOrShortcut "+TaggedText.base16(file)));
   }
   private static Stream<Project.Claimant> mine(Project p, Map<String,List<Project.Claimant>> claimed){
     return claimed.values().stream().flatMap(List::stream).filter(c -> c.folder().equals(p.folder()));
