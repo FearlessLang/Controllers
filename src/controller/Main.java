@@ -236,7 +236,7 @@ public final class Main implements Manager.Exit{
     UserError.owner(window.frame);
     userMessages.Violation.running(() -> manager.state().running());
     window.tray();
-    window.show();
+    window.hide();
     manager.drain();
     Thread.startVirtualThread(() -> watch(watcher));
     manager.start();

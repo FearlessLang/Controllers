@@ -1511,8 +1511,8 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     var before= top(hello);
     var main= "[["+bar+"], [], ["+claim("base.IconsConflict", "icons/conflict.png", "", "", "")+"]]";
     for (var c : List.of(
-      Map.entry("{\"hello.Foo'\": "+main+"}\n", "Main \"hello.Foo'\" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
-      Map.entry("{\"hello.Foo_bar\": "+main+"}\n", "Main \"hello.Foo_bar\" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\"."),
+      Map.entry("{\"hello.Foo'\": "+main+"}\n", "Main \"hello.Foo'\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\"."),
+      Map.entry("{\"hello.Foo_bar\": "+main+"}\n", "Main \"hello.Foo_bar\" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\"."),
       Map.entry("{\"hello.Con\": "+main+"}\n", "Main \"hello.Con\" cannot have the shortcut file \"con.fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
       Map.entry("{\"b.Bar\": "+main+", \"a.Bar\": "+main+"}\n", "Mains \"a.Bar\" and \"b.Bar\" cannot both have the shortcut file \"bar.fapp010\": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension."))){
       infos.put("hello", c.getKey());
@@ -1605,7 +1605,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     var shown= view.shown;
     open(m, doc(dir, "a.foo"));
     assertEquals(List.of(List.of("a.foo", "hello::hello.Hello", "other::other.Hello")), view.choices);
-    assertEquals(shown+1, view.shown);
+    assertEquals(shown, view.shown);
     idle(m);
     assertEquals(List.of(other, hello), view.cleared);
     send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "other", "other.Hello");

@@ -88,8 +88,9 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   }
   private static boolean pressable(String alias){
     var followed= Follow.followed();
-    if (followed.isPresent()){ return !followed.get().compile && followed.get().alias.equals(alias); }
     var s= found.get(alias);
+    if (followed.isPresent() && followed.get().alias.equals(alias)){ return !followed.get().compile; }
+    if (followed.isPresent()){ return s.action() == Action.check; }
     return s.action() != Action.run || !s.mains().isEmpty();
   }
   @Override public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters){

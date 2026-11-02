@@ -25,7 +25,7 @@ import userMessages.Violation;
 public final class Deployed implements Manager.Tools{
   public static Path stdLib(String name){ return appDir().resolve("stdLib").resolve(name); }
   private static Path appDir(){ return JavacTool.reqAppDir(Violation::mustUseLauncher); }
-  static Coordinator coordinator(Path project){
+  public static Coordinator coordinator(Path project){
     return new Coordinator(){
       @Override public Optional<Path> baseCachePath(){ return Optional.of(stdLib("baseCache")); }
       @Override public BackendTools backendTools(String pkgName, SourceOracle oracle, OtherPackages other, List<Literal> core, CapabilityEnvironment capabilities){

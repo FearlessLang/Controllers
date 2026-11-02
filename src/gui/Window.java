@@ -120,7 +120,16 @@ public final class Window implements Manager.View{
   }
   public static Window create(Main main, Path managerDir){ return onEdt(() -> new Window(main, managerDir.resolve("projects.info"))); }
   public void tray(){ tray = onEdt(() -> Tray.install(this)); }
-  void fail(Throwable problem){ main.fail(problem); }
+  /// A tray that goes away gives the 'tray icon window' to a hidden manager window; a tray that comes back takes it away.
+  void trayed(boolean present){ SwingUtilities.invokeLater(() -> trayedNow(present)); }
+  private void trayedNow(boolean present){
+    tray = present;
+    if (frame.isVisible()){ return; }
+    if (present){ standIn.hide(); return; }
+    standIn.show();
+  }
+  /// The manager window at start: hidden, with the 'tray icon window' when there is no tray.
+  public void hide(){ SwingUtilities.invokeLater(this::close); }
   static <T> T onEdt(Supplier<T> make){
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
     var result= new AtomicReference<T>();
@@ -293,10 +302,8 @@ public final class Window implements Manager.View{
     var base= Fs.readUtf8(info);
     var area= mono(new JTextArea(base, 30, 100));
     var dialog= new JDialog(frame, "Edit project metadata", true);
-    var commit= new JButton("Commit");
-    var close= new JButton("Close");
-    commit.addActionListener(_ -> commit(dialog, base, area.getText()));
-    close.addActionListener(_ -> dialog.dispose());
+    var commit= small("Commit", () -> commit(dialog, base, area.getText()));
+    var close= small("Close", dialog::dispose);
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(commit);
     buttons.add(close);

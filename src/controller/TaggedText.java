@@ -129,61 +129,81 @@ public final class TaggedText{
     var oneLiteral= e.length() >= 2 && (e.charAt(0) == '"' || e.charAt(0) == '`') && e.indexOf(e.charAt(0), 1) == e.length()-1;
     return oneLiteral ? e : "("+e+")";
   }
-  /// A Fearless string expression: "..." and `...` joined by +, | and ^ (between two strings, or
+  /// A Fearless string expression of the grammar of taggedText: "..." and `...` joined by +, | and ^ (between two strings, or
   /// closing one), parentheses, and after "UStr:" .u, and .u"..." adding the characters with those code points.
   private static final class Reader{
     private final String tag;
     private final String s;
     private final Function<String,? extends RuntimeException> bad;
+    private final StringBuilder out= new StringBuilder();
     private int i;
     private int depth;
     Reader(String tag, String s, Function<String,? extends RuntimeException> bad){ this.tag= tag; this.s= s; this.bad= bad; }
     String all(){
-      var res= expr();
+      var u= expr();
       if (i != s.length()){ throw fail("the end of the text"); }
-      return res;
+      if (u == tag.equals("UStr:")){ return out.toString(); }
+      throw bad.apply("\""+tag+s+"\"\nis malformed: "+(u ? "after \"Str:\" no string is followed by .u." : "after \"UStr:\" every string is followed by .u, like \"caf\".u\"00E9\"."));
     }
     private RuntimeException fail(String expected){ return bad.apply("\""+tag+s+"\"\nis malformed: "+expected+" was expected at offset "+i+" after \""+tag+"\"."); }
-    private String expr(){
-      var sb= new StringBuilder(atom());
+    /// Appends the text of the expression: true for a uStr, false for a str.
+    private boolean expr(){
+      var u= term();
       while (true){
         ws();
-        if (i == s.length()){ return sb.toString(); }
+        if (i == s.length()){ return u; }
         var c= s.charAt(i);
-        if (c == '+'){ i += 1; sb.append(atom()); continue; }
-        if (c == '|' || c == '^'){ i += 1; sb.append(c == '|' ? "\n" : "\""); if (atomNext()){ sb.append(atom()); } continue; }
-        if (tag.equals("Str:") || !s.startsWith(".u", i) || (i+2 < s.length() && Character.isLetterOrDigit(s.charAt(i+2)))){ return sb.toString(); }
-        i += 2;
-        if (atomNext()){ sb.append(codePoints(atom())); }
+        if (c == '+'){ i += 1; same(u, term()); continue; }
+        if (c == '|' || c == '^'){ i += 1; out.append(c == '|' ? "\n" : "\""); if (atomNext()){ same(u, term()); } continue; }
+        if (!u || !dotU()){ return u; }
+        codePoints(true);
       }
+    }
+    private void same(boolean u, boolean other){ if (u != other){ throw fail(u ? "a string followed by .u" : "a string not followed by .u"); } }
+    private boolean term(){
+      var u= atom();
+      if (u || !dotU()){ return u; }
+      codePoints(false);
+      return true;
+    }
+    private boolean dotU(){
+      ws();
+      var at= s.startsWith(".u", i) && !(i+2 < s.length() && Character.isLetterOrDigit(s.charAt(i+2)));
+      if (at){ i += 2; }
+      return at;
     }
     private boolean atomNext(){
       ws();
       return i < s.length() && "\"`(".indexOf(s.charAt(i)) >= 0;
     }
-    private String atom(){
+    private boolean atom(){
       if (!atomNext()){ throw fail("a string \"...\", `...` or (...)"); }
       var open= s.charAt(i++);
-      if (open == '('){
-        if (++depth > 100){ throw bad.apply("A \""+tag+"\" text is malformed: its parentheses nest at most 100 deep, and the one at offset "+(i-1)+" after \""+tag+"\" is deeper."); }
-        var res= expr();
-        depth -= 1;
-        if (i == s.length() || s.charAt(i) != ')'){ throw fail("')'"); }
-        i += 1;
-        return res;
-      }
+      if (open != '('){ out.append(literal(open)); return false; }
+      if (++depth > 100){ throw bad.apply("A \""+tag+"\" text is malformed: its parentheses nest at most 100 deep, and the one at offset "+(i-1)+" after \""+tag+"\" is deeper."); }
+      var u= expr();
+      depth -= 1;
+      if (i == s.length() || s.charAt(i) != ')'){ throw fail("')'"); }
+      i += 1;
+      return u;
+    }
+    private String literal(char open){
       var end= s.indexOf(open, i);
-      if (end < 0){ throw fail("the closing "+open); }
+      if (end < 0 || s.substring(i, end).indexOf('\n') >= 0){ throw fail("the closing "+open+" on the same line"); }
       var res= s.substring(i, end);
       i = end+1;
       return res;
     }
-    private String codePoints(String body){
-      if (body.isEmpty()){ return ""; }
+    private void codePoints(boolean required){
+      ws();
+      var at= i < s.length() && "\"`".indexOf(s.charAt(i)) >= 0;
+      if (!at && required){ throw fail("code points \"...\""); }
+      if (!at){ return; }
+      var body= literal(s.charAt(i++));
       if (!uCodeText.matcher(body).matches()){ throw fail("code points, each as 1 to 6 uppercase hex digits, separated by single spaces,"); }
       var cps= Stream.of(body.split(" ")).mapToInt(h -> Integer.parseInt(h, 16)).toArray();
       if (Arrays.stream(cps).anyMatch(cp -> cp > 0x10FFFF || surrogate(cp))){ throw fail("Unicode scalars (no D800 to DFFF, nothing above 10FFFF)"); }
-      return new String(cps, 0, cps.length);
+      out.append(new String(cps, 0, cps.length));
     }
     private void ws(){ while (i < s.length() && s.charAt(i) == ' '){ i += 1; } }
   }

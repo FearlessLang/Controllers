@@ -39,7 +39,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-import controller.Facts;
+import controller.Deployed;
 import controller.Main;
 import controller.TaggedText;
 import controller.Project;
@@ -121,7 +121,8 @@ final class Panel{
   }
   private void openDocs(){
     var menu= new JPopupMenu();
-    project.facts().packages().forEach(pkg -> menu.add(Window.item(pkg, () -> Window.open(refuse, project.folder().resolve(Facts.outDir).resolve(pkg+".html")))));
+    var f= project.folder();
+    project.facts().packages().forEach(pkg -> menu.add(Window.item(pkg, () -> Window.open(refuse, Deployed.coordinator(f).docs(f, pkg)))));
     menu.show(openDocs, 0, openDocs.getHeight());
   }
   private void openLogs(){ Window.open(refuse, project.folder().resolve(LogFiles.runDir).resolve("logs")); }

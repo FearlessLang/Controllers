@@ -555,7 +555,7 @@ public final class Manager{
     if (cs.isEmpty()){ throw new Refused(Report.noMainOpens(file, ext)); }
     var picked= chosen.isEmpty() ? cs : cs.stream().filter(c -> c.label().equals(chosen.get(0)+"::"+chosen.get(1))).toList();
     if (picked.isEmpty()){ throw new Refused(Report.notOpening(file, chosen.get(0), chosen.get(1), ext, cs.stream().map(Project.Claimant::label).toList())); }
-    if (picked.size() > 1){ view.show(); view.choose(file, cs); return; }
+    if (picked.size() > 1){ view.choose(file, cs); return; }
     var c= picked.getFirst();
     if (!scan(c.folder())){ unreachable(c.folder()); openWith(file, chosen); return; }
     run(c.folder(), List.of(c.main()), Optional.empty(), Optional.of(file));

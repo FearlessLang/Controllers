@@ -298,16 +298,5 @@ Put the project in a folder inside it, and make that folder the project
 folder.
 """, Report.projectFolderIsRoot(Path.of("C:\\")));
   }
-  @Test void trayConnectionLost(){
-    same("""
-The desktop stopped talking to the Fearless icon in the system tray.
 
-The tray icon is how a closed manager window is brought back, and the
-connection to the system tray of this desktop failed.
-
-Reported reason:
-the session bus closed the connection
-Restore the system tray of this desktop, then start Fearless again.
-""", Violation.trayConnectionLost(new IOException("the session bus closed the connection")).getMessage());
-  }
 }

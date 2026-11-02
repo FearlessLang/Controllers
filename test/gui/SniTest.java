@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -28,13 +27,11 @@ import java.util.Locale;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
-import managerMessages.Violation;
 import gui.Sni.Msg;
 import gui.Sni.Reader;
 import gui.Sni.Writer;
 import tools.Fs;
 import utils.Bug;
-import userMessages.UserError;
 
 final class SniTest{
   @Test void aCallIsFramedAndParsedBack(){
@@ -155,7 +152,7 @@ final class SniTest{
     assertEquals(":1.5", m.fields()[6]);
     assertEquals("after", m.body().str());
   }
-  @Test void aFakeBusDrivesTheItemUntilTheWatcherLeaves() throws Exception{
+  @Test void aFakeBusDrivesTheItemAndTheWatcherLeavingIsTheTrayGoingAway() throws Exception{
     Assumptions.assumeTrue(Fs.isLinux());
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
@@ -165,10 +162,9 @@ final class SniTest{
       server.bind(UnixDomainSocketAddress.of(socket));
       var bus= new FutureTask<Void>(() -> { try (var c= server.accept()){ busScript(c, icon); } return null; });
       Thread.startVirtualThread(bus);
-      var e= assertThrows(UserError.class, () -> new Sni(socket, () -> log.add("activate"), () -> log.add("quit"), at -> log.add("menu "+at.x+","+at.y), icon).serve());
+      new Sni(socket, () -> log.add("activate"), () -> log.add("quit"), at -> log.add("menu "+at.x+","+at.y), present -> log.add("tray "+present), icon).serve();
       bus.get();
-      assertEquals(Violation.trayIconRemoved().getMessage(), e.getMessage());
-      assertEquals(List.of("activate", "activate", "activate", "menu 5,6", "menu 7,8", "quit"), log);
+      assertEquals(List.of("activate", "activate", "activate", "menu 5,6", "menu 7,8", "quit", "tray false", "tray false"), log);
     }
     finally{ Files.deleteIfExists(socket); Files.delete(dir); }
   }
@@ -232,7 +228,7 @@ final class SniTest{
       server.bind(UnixDomainSocketAddress.of(socket));
       var bus= new FutureTask<Void>(() -> { try (var c= server.accept()){ noWatcherScript(c); } return null; });
       Thread.startVirtualThread(bus);
-      var sni= new Sni(socket, () -> { throw Bug.unreachable(); }, () -> { throw Bug.unreachable(); }, _ -> { throw Bug.unreachable(); }, new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB));
+      var sni= new Sni(socket, () -> { throw Bug.unreachable(); }, () -> { throw Bug.unreachable(); }, _ -> { throw Bug.unreachable(); }, _ -> { throw Bug.unreachable(); }, new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB));
       bus.get();
       assertFalse(sni.tray);
     }

@@ -54,44 +54,10 @@ process that decorates windows (mutter-x11-frames) has died.
 Log out and log in again, then start Fearless again.
 """).bare();
   }
-  public static UserError noSystemTray(){
-    return new UserError("""
-Fearless could not add its icon to the system tray.
 
-The system tray of this desktop went away while Fearless was adding its
-icon, and the tray icon is how a closed manager window is brought back.
-Restore the system tray of this desktop, then start Fearless again.
-""");
-  }
-  public static UserError trayIconRemoved(){
-    return new UserError("""
-The desktop removed the Fearless icon from the system tray.
 
-The tray icon is how a closed manager window is brought back, and the
-desktop took it away: its system tray went away or rejected the icon.
-Restore the system tray of this desktop, then start Fearless again.
-""");
-  }
-  public static UserError trayConnectionLost(Throwable cause){
-    return new UserError("""
-The desktop stopped talking to the Fearless icon in the system tray.
 
-The tray icon is how a closed manager window is brought back, and the
-connection to the system tray of this desktop failed.
 
-%s
-Restore the system tray of this desktop, then start Fearless again.
-""".formatted(reported(cause)), cause);
-  }
-  public static UserError couldNotAddTrayIcon(Throwable cause){
-    return new UserError("""
-Fearless could not add its icon to the system tray.
-
-This desktop offers a system tray, and the tray icon is how a closed
-manager window is brought back, but adding the icon failed.
-
-%s""".formatted(reported(cause)), cause);
-  }
   public static UserError vmOrLinkageFailure(Throwable cause){
     return new UserError("""
 Fearless crashed because of a low-level JVM failure.

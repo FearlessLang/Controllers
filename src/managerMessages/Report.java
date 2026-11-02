@@ -198,7 +198,7 @@ Replace that file with a PNG image, or remove it.
   private static String claim(String kind, String icon, String ext){ return "\"base."+kind+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
   private static String claim(Project.Claimant c){ return claim(c.kind(), c.claim().icon(), c.claim().extension()); }
   public static UserError shortcutNoFileName(String main){
-    return new UserError("Main "+disp(main)+" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name, like \"FooBar\" can be mapped to \"foo_bar\".");
+    return new UserError("Main "+disp(main)+" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\".");
   }
   public static UserError shortcutBadFileName(String main, String file){
     return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
