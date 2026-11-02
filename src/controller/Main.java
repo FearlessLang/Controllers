@@ -96,10 +96,7 @@ public final class Main implements Manager.Exit{
     if (args.length > 1){ return "InvalidCall\n"+Report.tooManyArguments(List.of(args)); }
     if (!args[0].startsWith(prefix)){ return file(args[0]); }
     try{ return call(args[0]); }
-    catch (Refused e){
-      var last= args[0].substring(args[0].lastIndexOf(' ')+1);
-      return "InvalidCall\n"+Report.badCall(args[0], e.getMessage())+(Follow.isPort(last) ? "\n"+last : "");
-    }
+    catch (Refused e){ return "InvalidCall\n"+Report.badCall(args[0], e.getMessage()); }
   }
   /// The arguments of each command of the grammar of a call: p a projectName, t a typeName, b a base16, k a kind; a last * is typeName1..typeNamen.
   private static final Map<String,List<String>> commands= Map.ofEntries(

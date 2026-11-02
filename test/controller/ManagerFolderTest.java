@@ -80,7 +80,7 @@ final class ManagerFolderTest{
   @Test void anArgumentThatIsNotACallIsAnInvalidCall(){
     same(invalid("FearlessCommandbuild hello", "\"FearlessCommandbuild\" is not a command; the commands are \"FearlessCommandAttenuate\", [###], \"FearlessCommandUnmount\"."), Main.message("FearlessCommandbuild hello"));
     assertEquals(invalid("FearlessCommandForget hello now", "the calls of that command are\n  FearlessCommandForget projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535."), Main.message("FearlessCommandForget hello now"));
-    assertEquals(invalid("FearlessCommandForget hello now Port:42", "the calls of that command are\n  FearlessCommandForget projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535.")+"\nPort:42", Main.message("FearlessCommandForget hello now Port:42"));
+    assertEquals(invalid("FearlessCommandForget hello now Port:42", "the calls of that command are\n  FearlessCommandForget projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535."), Main.message("FearlessCommandForget hello now Port:42"));
     assertEquals(invalid("FearlessCommandShow a b", "the calls of that command are\n  FearlessCommandShow\n  FearlessCommandShow projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535."), Main.message("FearlessCommandShow a b"));
     same(invalid("FearlessCommandRun", "the calls of that command are\n  FearlessCommandRun projectName\n[###]"), Main.message("FearlessCommandRun"));
     same(invalid("FearlessCommandRun hello hello.Hello", "the calls of that command are\n  FearlessCommandRun projectName\n[###]"), Main.message("FearlessCommandRun hello hello.Hello"));

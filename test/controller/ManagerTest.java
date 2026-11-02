@@ -76,6 +76,7 @@ public class Child{
   public static void main(String[] a) throws Exception{
     if (a[0].equals("take")){ take(a); return; }
     System.out.print(a[0]+"\\n");
+    while (a[0].contains("Chatty")){ System.out.print("chat\\n"); System.out.flush(); }
     System.out.flush();
     Thread.sleep(Long.parseLong(a[2]));
     System.exit(Integer.parseInt(a[1]));
@@ -125,7 +126,7 @@ public class Child{
     }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
       granted.add(grants);
-      return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse("")+(attenuators.isEmpty() ? "" : " under "+String.join(" ", attenuators)), "0", main.endsWith("Slow") ? "60000" : "0");
+      return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse("")+(attenuators.isEmpty() ? "" : " under "+String.join(" ", attenuators)), "0", main.contains("Slow") ? "60000" : "0");
     }
     @Override public Coordinator.State check(Path folder){ return FakeCache.check(folder, read); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
@@ -480,6 +481,17 @@ ran hello.Slow
     send(m, "Terminate", "hello");
     idle(m);
     assertFalse(view.out(hello).contains("hello.Two"));
+  }
+  @Test void whatAMainPrintsIsBeforeItsEndMark(@TempDir Path dir){
+    var m= manager(dir, "hello.SlowChatty");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.SlowChatty");
+    until(m, _ -> view.out(hello).contains("chat\nchat\n"));
+    send(m, "Terminate", "hello");
+    idle(m);
+    var out= view.out(hello);
+    same("--- hello.SlowChatty exited with 143 after [###]s ---\n", out.substring(out.lastIndexOf("--- hello.SlowChatty exited")));
   }
   @Test void theSelectedMainsRunInTheirOrder(@TempDir Path dir){
     var m= manager(dir, "hello.One", "hello.Two", "hello.Three");
@@ -1208,16 +1220,6 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
   }
   private static CompletableFuture<String> follower(ServerSocket server){ return CompletableFuture.supplyAsync(() -> listen(server)); }
   private static ServerSocket port(){ return Fs.of(() -> new ServerSocket(0, 1, InetAddress.getLoopbackAddress())); }
-  @Test void anInvalidCallWithAPortIsRefusedOnThatPortToo(@TempDir Path dir){
-    var m= manager(dir);
-    try (var server= port()){
-      var refused= follower(server);
-      message(m, List.of("InvalidCall", "the call is bad", "Port:"+server.getLocalPort()));
-      assertEquals("Refused\nthe call is bad", refused.join());
-      assertEquals(List.of("the call is bad"), view.refused);
-    }
-    catch (IOException e){ throw new UncheckedIOException(e); }
-  }
   @Test void aRunWithAMountedDataProjectThatIsGoneIsRefusedAsABrokenMount(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
     var hello= code(m, dir, "hello");

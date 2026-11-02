@@ -265,7 +265,7 @@ final class Panel{
     var known= p.mains().isPresent();
     attenuatorsBox.add(row(0, label(main, !known || p.knownMains().contains(main))));
     IntStream.range(0, applied.size()).forEach(i -> attenuatorsBox.add(attenuator(p, main, applied, i)));
-    var choices= p.knownAttenuators().stream().filter(a -> !applied.contains(a)).toArray(String[]::new);
+    var choices= p.knownAttenuators().toArray(String[]::new);
     if (choices.length == 0){ return; }
     var combo= new JComboBox<>(choices);
     attenuatorsBox.add(row(16, combo, small("Add", () -> attenuate(p, main, Push.of(applied, (String)combo.getSelectedItem())))));

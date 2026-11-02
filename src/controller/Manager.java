@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -105,6 +106,7 @@ public final class Manager{
     Optional<Follow> follow= Optional.empty();
     Set<String> answered= new HashSet<>();
     StringBuilder line= new StringBuilder();
+    ConcurrentLinkedQueue<String> printed= new ConcurrentLinkedQueue<>();
   }
   private static final String conflict= "base.IconsConflict";
   private static final String fearless= "base.IconsFearless";
@@ -251,7 +253,7 @@ public final class Manager{
     var lines= List.of(message.split("\n", -1));
     var verb= lines.getFirst();
     var args= lines.subList(1, lines.size());
-    if (verb.equals("InvalidCall")){ invalidCall(args); return; }
+    if (verb.equals("InvalidCall")){ view.refuse(String.join("\n", args)); return; }
     if (verb.equals("FatalError")){ throw Violation.fatalFromRun(String.join("\n", args)); }
     var port= !args.isEmpty() && args.getLast().startsWith("Port:");
     var follow= Optional.<Follow>empty();
@@ -262,15 +264,6 @@ public final class Manager{
       if (!List.of("Run", "Compile").contains(verb)){ follow.ifPresent(Follow::end); }
     }
     catch (Refused r){ follow.ifPresent(fl -> fl.refuse(r.getMessage())); view.refuse(r.getMessage()); }
-  }
-  /// the details of an InvalidCall, and its port when the call ended with one: the caller waits on that port
-  private void invalidCall(List<String> lines){
-    var port= lines.size() > 1 && Follow.isPort(lines.getLast());
-    var details= String.join("\n", port ? lines.subList(0, lines.size()-1) : lines);
-    view.refuse(details);
-    if (!port){ return; }
-    try{ Follow.to(lines.getLast()).refuse(details); }
-    catch (Refused r){ view.refuse(r.getMessage()); }
   }
   private void request(String verb, List<String> args, Optional<Follow> follow){
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
@@ -489,7 +482,9 @@ public final class Manager{
     output(f, "--- terminating "+l.job+" ---\n");
     var child= l.child;
     child.kill();
-    exited(f, l, child, code(child));
+    var ec= code(child);
+    drain(f, l);
+    exited(f, l, child, ec);
   }
   private void deleteCache(Path f){
     idle(f, "DeleteCache");
@@ -697,7 +692,10 @@ public final class Manager{
   }
   private Consumer<String> out(Path f){
     var l= live.get(f);
-    return s -> post(() -> late(f, l, s));
+    return s -> { l.printed.add(s); post(() -> drain(f, l)); };
+  }
+  private void drain(Path f, Live l){
+    for (var s= l.printed.poll(); s != null; s = l.printed.poll()){ late(f, l, s); }
   }
   private void late(Path f, Live l, String text){
     if (live.get(f) != l){ return; }
