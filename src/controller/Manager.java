@@ -14,11 +14,13 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -35,6 +37,7 @@ import java.util.stream.Stream;
 import controller.Registry.Content;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
+import coordinator.Coordinator;
 import coordinator.MainsInfo;
 import fileAssociations.Icon;
 import mainCoordinator.MakeDemo;
@@ -64,9 +67,9 @@ public final class Manager{
     void edited(Path file);
   }
   public interface Tools{
-    ChildJvm compile(Path folder, Consumer<String> out);
+    ChildJvm compile(Path folder, String alias, Consumer<String> out);
     ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out);
-    Optional<MainsInfo> mains(Path folder);
+    Coordinator.State check(Path folder);
     Path stdLibBase();
     Path baseCache();
     void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy);
@@ -97,6 +100,8 @@ public final class Manager{
     Registry.Grants grants;
     Map<String,List<String>> attenuators= Map.of();
     Optional<Follow> follow= Optional.empty();
+    Set<String> answered= new HashSet<>();
+    StringBuilder line= new StringBuilder();
   }
   private static final String conflict= "base.IconsConflict";
   static final List<String> pathVerbs= List.of("Register", "ConnectEclipse", "EditMetadata", "OpenWithOrShortcut");
@@ -122,7 +127,7 @@ public final class Manager{
   private final Registry registry;
   private final Map<Path,Live> live= new HashMap<>();
   private Optional<Path> selected= Optional.empty();
-  private List<?> wanted= List.of();
+  private Set<String> captured= Set.of();
   private int turn;
   private volatile State state= new State(List.of(), Optional.empty(), List.of());
   public Manager(Path dir, Tools tools, View view, Exit exit){
@@ -169,55 +174,74 @@ public final class Manager{
   }
   private void post(Runnable r){ core.execute(() -> step(r)); }
   private void step(Runnable r){
-    try{ r.run(); associate(registry.extensions()); publish(); }
+    try{ r.run(); publish(); }
     catch (Throwable t){ exit.fail(t); }
   }
   private void load(){
     registry.all().forEach(e -> live.put(e.path(), new Live()));
-    registry.all().forEach(e -> live.get(e.path()).claims = read(e.path()));
-    registry.all().forEach(e -> { claim(e.path()); scan(e.path()); });
+    registry.all().stream().filter(e -> e.kind() == Kind.code).forEach(e -> uncached(e.path(), () -> Coordinator.dropUnfinished(e.path())));
     ClaimIcons.materialise(dir.resolve("icons"), conflict, Fs.of(() -> Fs.readAllBytes(tools.stdLibBase().resolve("icons").resolve("conflict.png"))));
+    rebuild(Optional.empty());
+    registry.all().forEach(e -> scan(e.path()));
   }
   private void open(Entry e){
     live.put(e.path(), new Live());
-    claim(e.path());
     scan(e.path());
   }
-  private void claim(Path f){
-    var l= live.get(f);
-    try{
-      var claims= accepted(f);
-      l.claims = Project.noClaims;
-      if (Project.claimants(f, alias(f), claims).allMatch(this::allowed)){ l.claims = claims; return; }
-      uncache(f).ifPresent(w -> output(f, Report.cacheNotDeleted(w)));
-    }
-    catch (Refused e){ l.claims = Project.noClaims; failed(f, 0, e.getMessage()); }
-  }
-  private MainsInfo read(Path f){
-    if (registry.of(f).orElseThrow().kind() != Kind.code){ return Project.noClaims; }
-    try{ return MainsInfo.read(f).orElse(Project.noClaims); }
-    catch (UserError|UncheckedIOException e){ return Project.noClaims; }
-  }
   private boolean allowed(Project.Claimant c){ return !Registry.isSystem(c.claim().extension()) || registry.extensions().contains(c.claim().extension()); }
-  private void associate(List<String> extensions){
-    Stream.concat(Project.claimed(projects()).values().stream().flatMap(List::stream), preloads()).filter(c -> !Fs.isRegularFile(c.icon(".png")))
-      .gather(DistinctBy.of(Project.Claimant::folder)).toList().forEach(this::iconGone);
+  /// Rebuilds the in memory map, then reconciles; gives the error of compiled when a new extension of compiled is refused.
+  private Optional<String> rebuild(Optional<Path> compiled){
+    for (var e : registry.all()){
+      var l= live.get(e.path());
+      if (e.kind() != Kind.code){ l.claims = Project.noClaims; continue; }
+      if (l.job.equals(Project.compiling)){ continue; }
+      l.claims = cached(e.path());
+    }
+    return reconcile(compiled, registry.extensions());
+  }
+  private MainsInfo cached(Path f){
+    try{ return new MainsInfo(Coordinator.cachedMains(f)); }
+    catch (UserError e){ corrupted(f, e.getMessage()); return Project.noClaims; }
+  }
+  /// The corruption rule: ends the job of the project, deletes its cache and writes the error.
+  private void corrupted(Path f, String why){
+    if (!UserError.cacheCorrupted(why)){ throw new UserError(why); }
+    endJob(f);
+    deleted(f);
+    errorFile(f, why);
+    output(f, why.stripTrailing()+"\n");
+  }
+  private void endJob(Path f){
+    var l= live.get(f);
+    if (l.child == null){ return; }
+    l.terminated = true;
+    l.child.kill();
+  }
+  private Optional<String> reconcile(Optional<Path> compiled, List<String> extensions){
     var claimed= Project.claimed(projects());
     var next= captured(claimed, extensions);
-    var preloads= preloads().toList();
-    List<?> known= List.of(next, preloads, Stream.concat(next.stream().map(Icon::png), preloads.stream().map(c -> c.icon(".png"))).map(Fs::lastModified).toList());
-    if (wanted.equals(known)){ return; }
-    tools.associate(next, preloads, e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of())));
-    wanted = known;
+    try{ tools.associate(next, preloads().toList(), e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of()))); }
+    catch (Refusal r){
+      var brought= compiled.stream().flatMap(f -> Project.claimants(f, alias(f), live.get(f).claims)).map(c -> "."+c.claim().extension()).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
+      if (r.extensions.isEmpty() || r.extensions.contains(".fearless") || !brought.containsAll(r.extensions)){ throw r.error; }
+      var hit= r.extensions.stream().flatMap(e -> claimed.getOrDefault(e.substring(1), List.of()).stream()).map(Project.Claimant::folder).distinct().toList();
+      for (var g : hit){
+        endJob(g);
+        deleted(g);
+        errorFile(g, r.error.getMessage());
+        output(g, r.error.getMessage().stripTrailing()+"\n");
+      }
+      var again= rebuild(Optional.empty());
+      assert again.isEmpty();
+      return compiled.filter(hit::contains).map(_ -> r.error.getMessage());
+    }
+    captured = next.stream().map(Icon::extension).collect(Collectors.toSet());
+    return Optional.empty();
   }
-  private Stream<Project.Claimant> preloads(){ return projects().stream().flatMap(p -> Project.preloads(p.folder(), p.alias(), p.claims())); }
-  private void iconGone(Project.Claimant c){
-    live.get(c.folder()).claims = Project.noClaims;
-    output(c.folder(), Report.iconGone(c.icon(".png")));
-  }
+  private Stream<Project.Claimant> preloads(){ return projects().stream().filter(p -> !p.job().equals(Project.compiling)).flatMap(p -> Project.preloads(p.folder(), p.alias(), p.claims())); }
   private List<Icon> captured(Map<String,List<Project.Claimant>> claimed, List<String> extensions){
     var suffix= Fs.isWindows() ? ".ico" : ".png";
-    var all= new TreeSet<>(claimed.keySet());
+    var all= new TreeSet<>(claimed.keySet().stream().filter(e -> !Registry.isSystem(e)).toList());
     all.addAll(extensions);
     return all.stream().map(e -> new Icon("."+e, icon(claimed.getOrDefault(e, List.of()), suffix), icon(claimed.getOrDefault(e, List.of()), ".png"))).toList();
   }
@@ -339,14 +363,14 @@ public final class Manager{
     l.compiled.setLength(0);
     view.clear(f);
     output(f, "--- compiling "+alias(f)+" ---\n");
-    start(f, Project.compiling, () -> tools.compile(f, out(f)));
+    start(f, Project.compiling, () -> tools.compile(f, alias(f), out(f)));
   }
   private void check(Path f){
+    idle(f, "Check");
     selected = Optional.of(f);
     var p= project(f);
     view.clear(f);
     output(f, p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias())).stripTrailing()+"\n");
-    if (Fs.isDirectory(f)){ errorFile(f, "check_error.txt", p.problem()); }
   }
   private void next(Path f){
     var l= live.get(f);
@@ -387,85 +411,54 @@ public final class Manager{
     l.child = null;
     if (l.job.equals(Project.compiling)){ compiled(f, l, ec); return; }
     output(f, "--- "+l.job+" exited with "+ec+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
-    if (broken(f)){ l.terminated = true; output(f, uncached(f, Report.filesUpdated(alias(f), l.job))+"\n"); }
+    if (broken(f)){ l.terminated = true; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
     next(f);
   }
+  /// What the manager does after Coordinator.compile: step 1 only after a compilation with no error, step 2 always, steps 3 and 4 only with no error.
   private void compiled(Path f, Live l, int ec){
-    var previous= l.claims;
-    var refused= List.<Project.Claimant>of();
-    Optional<String> failure;
-    try{
-      if (ec != 0){ throw new Refused(l.compiled.toString()); }
-      var claims= accepted(f);
-      if (stale(f).isPresent()){ throw new Refused(uncached(f, Report.filesUpdated(alias(f), l.job))); }
-      refused = Project.claimants(f, alias(f), claims).filter(c -> !allowed(c)).toList();
-      if (!refused.isEmpty()){ throw new Refused(Report.extensionsNotAllowed(refused)); }
-      l.claims = claims;
-      associate(registry.extensions());
-      failure= Optional.empty();
-    }
-    catch (Refused e){ failure = Optional.of(e.getMessage()); }
-    catch (UserError e){ l.claims = previous; failure = Optional.of(e.getMessage()); }
-    failure.ifPresentOrElse(why -> failed(f, ec, why), () -> succeeded(f, l));
-    output(f, "--- compile "+(failure.isEmpty() ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
+    flushLine(f, l);
     l.job = "";
+    l.answered.clear();
+    var failed= ec != 0;
+    if (ec == ChildMain.cacheCorrupted){
+      var why= Fs.readUtf8(f.resolve(Facts.outDir).resolve("_error.txt"));
+      deleted(f);
+      errorFile(f, why);
+    }
+    var refused= List.<Project.Claimant>of();
+    if (!failed){
+      var claims= cached(f);
+      try{
+        Project.shortcuts(Project.claimants(f, alias(f), claims));
+        refused = Project.claimants(f, alias(f), claims).filter(c -> !allowed(c)).toList();
+        if (!refused.isEmpty()){ throw new UserError(Report.extensionsNotAllowed(refused)); }
+      }
+      catch (UserError e){ failed = true; errorFile(f, e.getMessage()); output(f, e.getMessage().stripTrailing()+"\n"); }
+    }
+    var refusedHere= rebuild(Optional.of(f));
+    failed |= refusedHere.isPresent();
+    if (!failed){
+      Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).forEach(p -> shortcut(f, p));
+      uncached(f, () -> Coordinator.finish(f));
+    }
+    output(f, "--- compile "+(!failed ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
     scan(f);
     if (l.mains.isPresent()){ forgetStale(f); }
     ended(f);
     if (!refused.isEmpty()){ allow(refused); }
   }
-  private MainsInfo accepted(Path f){
-    var read= read(f);
-    try{
-      var icons= ClaimIcons.read(tools.stdLibBase(), Stream.concat(Project.claimants(f, alias(f), read), Project.preloads(f, alias(f), read)), e -> unreadable(f, e));
-      var others= live.entrySet().stream().filter(e -> !e.getKey().equals(f)).map(e -> e.getValue().claims);
-      var filled= Project.filled(read, live.get(f).claims, alias(f), others);
-      Project.shortcuts(Project.claimants(f, alias(f), filled));
-      icons.forEach((icon,bytes) -> ClaimIcons.materialise(f.resolve(Facts.outDir).resolve("icons"), icon, bytes));
-      if (!filled.equals(read)){ MainsInfo.write(f, filled); }
-      return filled;
-    }
-    catch (UserError e){ throw new Refused(e.getMessage()); }
-    catch (UncheckedIOException e){ throw new Refused(Report.claimsNotSaved(e.getCause())); }
+  private void errorFile(Path f, String why){ uncached(f, () -> Coordinator.writeError(f, why)); }
+  private void uncached(Path f, Runnable r){
+    try{ r.run(); }
+    catch (UncheckedIOException e){ output(f, Report.cacheNotDeleted(Report.fileFailure(e.getCause()))); }
   }
-  private Refused unreadable(Path f, RuntimeException e){
-    var stale= stale(f);
-    var job= live.get(f).job;
-    if (stale.isPresent() && job.isEmpty()){ return new Refused(stale.get()); }
-    return new Refused(uncached(f, stale.isPresent() ? Report.filesUpdated(alias(f), job) : UserError.cacheCorruptedOrCrash(e).getMessage()));
-  }
-  private String uncached(Path f, String why){
-    uncache(f).ifPresent(w -> output(f, Report.cacheNotDeleted(w)));
+  private void deleted(Path f){
+    uncached(f, () -> Coordinator.deleteCache(f));
     live.get(f).claims = Project.noClaims;
-    view.show();
-    return why;
   }
-  private Optional<String> stale(Path f){ return Facts.of(f, alias(f), Kind.code, tools.baseCache()).stale(); }
   private boolean broken(Path f){
-    var facts= Facts.of(f, alias(f), Kind.code, tools.baseCache());
+    var facts= facts(f);
     return facts.stale().isPresent() || facts.problem().isPresent();
-  }
-  private void succeeded(Path f, Live l){
-    Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).forEach(p -> shortcut(f, p));
-    unclaimedIcons(f, l.claims);
-    errorFile(f, "compile_error.txt", Optional.empty());
-  }
-  private void failed(Path f, int ec, String why){
-    if (ec == 0){ output(f, why.stripTrailing()+"\n"); }
-    for (var p : MainsInfo.files(f)){
-      try{ Fs.deleteIfExists(p); }
-      catch (IOException e){ output(f, Report.notWritten(p.getFileName().toString(), e)); }
-    }
-    errorFile(f, "compile_error.txt", Optional.of(why));
-  }
-  private void errorFile(Path f, String name, Optional<String> why){
-    var file= f.resolve(Facts.outDir).resolve(name);
-    try{
-      if (why.isEmpty()){ Fs.deleteIfExists(file); return; }
-      Fs.createDirectories(file.getParent());
-      Fs.writeString(file, why.get());
-    }
-    catch (IOException e){ output(f, Report.notWritten(name, e)); }
   }
   private void allow(List<Project.Claimant> refused){
     view.allow(Report.allowExtensions(refused), refused.stream().map(c -> c.claim().extension()).distinct().toList());
@@ -473,12 +466,6 @@ public final class Manager{
   private void shortcut(Path f, Path file){
     try{ Fs.writeString(file, MakeDemo.markerContent, StandardOpenOption.CREATE_NEW); }
     catch (IOException e){ output(f, Report.notWritten(file.getFileName().toString(), e)); }
-  }
-  private void unclaimedIcons(Path f, MainsInfo claims){
-    var kept= Stream.concat(Project.claimants(f, alias(f), claims), Project.preloads(f, alias(f), claims)).flatMap(c -> Stream.of(c.icon(".png"), c.icon(Fs.isWindows() ? ".ico" : ".png"))).toList();
-    try (var s= Fs.list(f.resolve(Facts.outDir).resolve("icons"))){ for (var p : s.filter(p -> !kept.contains(p)).toList()){ Fs.delete(p); } }
-    catch (NoSuchFileException e){}
-    catch (IOException e){ output(f, Report.notWritten("icons", e)); }
   }
   private void terminate(Path f){
     selected = Optional.of(f);
@@ -495,13 +482,9 @@ public final class Manager{
   private void deleteCache(Path f){
     idle(f, "DeleteCache");
     selected = Optional.of(f);
-    uncache(f).ifPresent(w -> output(f, Report.cacheNotDeleted(w)));
-    live.get(f).claims = Project.noClaims;
+    deleted(f);
+    rebuild(Optional.empty());
     scan(f);
-  }
-  private static Optional<String> uncache(Path f){
-    try{ Fs.rmTree(f.resolve(Facts.outDir)); return Optional.empty(); }
-    catch (UncheckedIOException e){ return Optional.of(Report.fileFailure(e.getCause())); }
   }
   private void kind(Path f, String text){
     var kind= Kind.of(text).orElseThrow();
@@ -539,13 +522,12 @@ public final class Manager{
     if (!live.containsKey(folder)){ add(folder); }
     selected = Optional.of(folder);
     scan(folder);
-    view.show();
   }
   private void add(Path folder){
     registry.overlapping(folder).ifPresent(o -> { throw new Refused(Report.folderNestedWithRegistered(folder, o)); });
     String alias;
     try{
-      Fs.rmTree(folder.resolve(Facts.outDir));
+      Coordinator.deleteCache(folder);
       alias= Names.makeUnique(folder, registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
     }
     catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder, e.getCause())); }
@@ -573,17 +555,20 @@ public final class Manager{
     try{ next= Registry.parse(text, file, Registry::real, dir); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
-    if (!registry.extensions().containsAll(next.extensions())){
-      try{ associate(next.extensions()); }
-      catch (UserError e){ throw new Refused(e.getMessage()); }
+    granted(next);
+    if (!registry.extensions().equals(next.extensions())){
+      try{ reconcile(Optional.empty(), next.extensions()); }
+      catch (Refusal|UserError e){ throw new Refused(e.getMessage()); }
     }
     var old= registry.content();
     registry.save(next);
     live.keySet().stream().filter(f -> registry.of(f).isEmpty()).toList().forEach(this::drop);
-    registry.all().stream().filter(e -> !live.containsKey(e.path())).forEach(this::open);
+    var added= registry.all().stream().filter(e -> !live.containsKey(e.path())).toList();
+    added.forEach(e -> { uncached(e.path(), () -> Coordinator.deleteCache(e.path())); open(e); });
     var dropped= old.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();
-    old.projects().stream().filter(o -> registry.of(o.path()).filter(e -> e.kind() != o.kind()).isPresent()).forEach(o -> claim(o.path()));
-    live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList().forEach(this::claim);
+    old.projects().stream().filter(o -> registry.of(o.path()).filter(e -> e.kind() != o.kind()).isPresent()).forEach(o -> deleted(o.path()));
+    live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList().forEach(this::deleted);
+    rebuild(Optional.empty());
     registry.all().forEach(e -> scan(e.path()));
   }
   private void kept(Entry o, Content next){
@@ -616,18 +601,18 @@ public final class Manager{
   private void scan(Path f){
     var l= live.get(f);
     if (!l.job.isEmpty()){ inUse(f); return; }
-    var e= registry.of(f).orElseThrow();
-    var fresh= Facts.of(f, e.alias(), e.kind(), tools.baseCache());
+    Facts fresh;
+    try{ fresh= facts(f); }
+    catch (UserError err){ corrupted(f, err.getMessage()); rebuild(Optional.empty()); fresh= facts(f); }
     if (fresh.equals(l.scanned)){ return; }
     l.scanned = fresh;
     l.facts = fresh;
-    l.mains = Optional.empty();
-    if (e.kind() != Kind.code || fresh.stale().isPresent() || fresh.problem().isPresent()){ return; }
-    Optional<String> error= Optional.empty();
-    try{ l.mains = tools.mains(f); }
-    catch (UserError err){ error = Optional.of(err.getMessage()); }
-    catch (UncheckedIOException err){ error = Optional.of(Report.fileFailure(err.getCause())); }
-    if (l.mains.isEmpty()){ l.facts = fresh.outOfDate(error.orElse(Report.packagesToCompile())); }
+    l.mains = fresh.mains();
+    if (fresh.problem().isPresent() && Fs.isDirectory(f)){ errorFile(f, fresh.problem().get()); }
+  }
+  private Facts facts(Path f){
+    var e= registry.of(f).orElseThrow();
+    return Facts.of(f, e.alias(), e.kind(), tools::check);
   }
   private void inUse(Path f){
     var l= live.get(f);
@@ -675,7 +660,27 @@ public final class Manager{
   }
   private void late(Path f, Live l, String text){
     if (live.get(f) != l){ return; }
-    if (l.job.equals(Project.compiling)){ l.compiled.append(text); }
-    output(f, text);
+    if (!l.job.equals(Project.compiling)){ output(f, text); return; }
+    l.line.append(text);
+    for (var nl= l.line.indexOf("\n"); nl >= 0; nl = l.line.indexOf("\n")){
+      var line= l.line.substring(0, nl+1);
+      l.line.delete(0, nl+1);
+      if (line.startsWith(ChildMain.takeFreeExtension)){ answer(l, List.of(line.substring(ChildMain.takeFreeExtension.length()).strip().split(" "))); continue; }
+      l.compiled.append(line);
+      output(f, line);
+    }
+  }
+  private void flushLine(Path f, Live l){
+    if (l.line.isEmpty()){ return; }
+    l.compiled.append(l.line);
+    output(f, l.line.toString());
+    l.line.setLength(0);
+  }
+  /// takeFreeExtension: the first candidate no claim of the map uses and no call answered for a compilation that has not ended yet.
+  private void answer(Live l, List<String> candidates){
+    var used= live.values().stream().flatMap(o -> Stream.concat(o.answered.stream(), o.claims.mains().values().stream().flatMap(m -> Stream.concat(m.shortcuts().stream(), m.openWiths().stream())).map(MainsInfo.Claim::extension))).collect(Collectors.toSet());
+    var free= candidates.stream().filter(c -> !used.contains(c)).findFirst();
+    free.ifPresent(l.answered::add);
+    if (l.child != null){ l.child.send(free.orElse("")); }
   }
 }

@@ -122,9 +122,9 @@ final class Panel{
   }
   private void openDocs(){ openDocs(refuse, project.folder()); }
   static void openDocs(Consumer<String> refuse, Path folder){
-    var gen= folder.resolve(Facts.outDir).resolve("gen_java");
-    var docs= Fs.isDirectory(gen) ? Fs.walk(gen, s -> s.filter(p -> p.toString().endsWith(".html")).toList()) : List.<Path>of();
-    if (docs.isEmpty()){ refuse.accept(Report.noDocs(gen)); return; }
+    var out= folder.resolve(Facts.outDir);
+    var docs= Fs.isDirectory(out) ? Fs.walk(out, s -> s.filter(p -> p.toString().endsWith(".html")).toList()) : List.<Path>of();
+    if (docs.isEmpty()){ refuse.accept(Report.noDocs(out)); return; }
     docs.forEach(OpenPath::open);
   }
   private void openLogs(){ Window.open(refuse, project.folder().resolve(LogFiles.runDir).resolve("logs")); }
@@ -180,7 +180,6 @@ final class Panel{
     action.setHorizontalTextPosition(JButton.LEADING);
     action.setEnabled(a != Project.Action.run || !p.knownMains().isEmpty());
     openDocs.setEnabled(p.mains().isPresent());
-    deleteCache.setVisible(p.kind() == Kind.code);
     deleteCache.setEnabled(!p.busy());
     forget.setEnabled(!p.busy());
     fillKinds(p);

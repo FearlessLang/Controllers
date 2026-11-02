@@ -37,7 +37,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   }
   public enum State{
     codeInvalid("code: invalid content"), dataReadInvalid("dataRead: invalid content"), dataEditInvalid("dataEdit: invalid content"), idle("idle"), dataRead("dataRead"), dataEdit("dataEdit"),
-    codeNoCache("code: not compiled (no cache)"), codeOutdated("code: not compiled (cache out of date)"), codeCompiled("code: compiled"), busy("code: busy");
+    codeOutdated("code: compilation cache out of date"), codeCompiled("code: compiled"), busy("code: busy");
     public final String text;
     State(String text){ this.text= text; }
   }
@@ -82,32 +82,6 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
       .sorted(Comparator.comparing(Claimant::label))
       .collect(Collectors.groupingBy(c -> c.claim().extension(), TreeMap::new, Collectors.toUnmodifiableList()));
   }
-  static MainsInfo filled(MainsInfo info, MainsInfo previous, String alias, Stream<MainsInfo> all){
-    var fill= new Fill(previous, alias, extensions(Stream.concat(Stream.of(info), all)), extensions(Stream.of(info)));
-    return new MainsInfo(info.mains().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> fill.main(e.getKey(), e.getValue()))), info.attenuators(), info.dataRead(), info.dataEdit());
-  }
-  private static HashSet<String> extensions(Stream<MainsInfo> infos){
-    return infos.flatMap(i -> i.mains().values().stream())
-      .flatMap(m -> Stream.concat(m.shortcuts().stream(), m.openWiths().stream()))
-      .map(MainsInfo.Claim::extension).collect(Collectors.toCollection(HashSet::new));
-  }
-  private record Fill(MainsInfo previous, String alias, HashSet<String> used, Set<String> explicit){
-    MainsInfo.Main main(String main, MainsInfo.Main m){ return new MainsInfo.Main(m.file(), claims(main, m.shortcuts(), true), claims(main, m.openWiths(), false), m.icons()); }
-    List<MainsInfo.Claim> claims(String main, List<MainsInfo.Claim> cs, boolean shortcut){ return cs.stream().map(c -> claim(main, c, shortcut)).toList(); }
-    MainsInfo.Claim claim(String main, MainsInfo.Claim c, boolean shortcut){
-      if (!c.extension().isEmpty()){ return c; }
-      var prefix= shortcut ? "fapp" : "ffile";
-      var start= Math.floorMod((alias+"::"+main+"::"+c.icon()).hashCode(), 1000);
-      var ext= Stream.ofNullable(previous.mains().get(main))
-        .flatMap(m -> (shortcut ? m.shortcuts() : m.openWiths()).stream())
-        .filter(p -> p.icon().equals(c.icon())).map(MainsInfo.Claim::extension)
-        .filter(e -> e.matches(prefix+"[0-9]{3}") && !explicit.contains(e)).findFirst()
-        .or(() -> IntStream.range(0, 1000).mapToObj(i -> prefix+String.format(Locale.ROOT, "%03d", (start+i)%1000)).filter(e -> !used.contains(e)).findFirst())
-        .orElseThrow(() -> Report.noFreeExtension(main, shortcut, c.icon()));
-      used.add(ext);
-      return new MainsInfo.Claim(c.icon(), c.diskPath(), c.zipSteps(), c.zipEntry(), ext);
-    }
-  }
   static List<String> shortcuts(Stream<Claimant> cs){
     var files= new LinkedHashMap<String,String>();
     for (var c : cs.filter(Claimant::shortcut).toList()){
@@ -133,7 +107,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
       case idle -> State.idle;
       case dataRead -> State.dataRead;
       case dataEdit -> State.dataEdit;
-      case code -> !needsCompiling() ? State.codeCompiled : facts.hasCache() ? State.codeOutdated : State.codeNoCache;
+      case code -> !needsCompiling() ? State.codeCompiled : State.codeOutdated;
     };
   }
   public enum Action{ check, compile, run, terminate }

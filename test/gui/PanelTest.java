@@ -28,11 +28,11 @@ import utils.Err;
 /// What the project area shows, from the projects handed to it.
 final class PanelTest{
   static{ Err.setUp(AssertionFailedError.class, Assertions::assertEquals, Assertions::assertTrue); }
-  private static final MainsInfo diary= new MainsInfo(Map.of("hello.Hello", new MainsInfo.Main("_hello/_rank_app.fear", List.of(), List.of(), List.of())), List.of(), List.of("hello.Diary"), List.of());
+  private static final MainsInfo diary= new MainsInfo(Map.of("hello.Hello", new MainsInfo.Main(List.of(), List.of(), List.of())), List.of(), List.of("hello.Diary"), List.of());
   private static Project project(Path folder, Kind kind, Map<String,String> mounts, Optional<MainsInfo> mains){
     var alias= folder.getFileName().toString();
     var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), mounts, Map.of());
-    return new Project(entry, Facts.of(entry.path(), alias, kind, folder.resolveSibling("unused")), mains, Project.noClaims, "");
+    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate()), mains, Project.noClaims, "");
   }
   private static Stream<Component> all(Component c){
     if (!(c instanceof Container k)){ return Stream.of(c); }

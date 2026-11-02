@@ -286,7 +286,7 @@ final class SystemExtensionTest extends ManagerTest{
     var center= region;
     changed(before, center);
     stabilize();
-    checkContent(files.resolve("opens/.fearless_out/compile_error.txt"), "The system extension \"fzz\" of [###] of main \"hello.Hello\" is not in \"systemExtensions\" of projects.info.");
+    checkContent(files.resolve("opens/.fearless_out/_error.txt"), "The system extension \"fzz\" of [###] of main \"hello.Hello\" is not in \"systemExtensions\" of projects.info.");
     yesButton.go();
     allowed.go();
     stabilize();

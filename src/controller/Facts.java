@@ -11,12 +11,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.imageio.ImageIO;
 
 import controller.Registry.Kind;
 import coordinator.Coordinator;
+import coordinator.MainsInfo;
 import fileSupport.LogFiles;
 import realSourceOracle.RealSourceOracleWithZip;
 import tools.Fs;
@@ -25,7 +27,7 @@ import userMessages.UserError;
 
 /// What the file system says about a project folder: its compilation cache under
 /// `.fearless_out` and why it is out of date, its icon, its logs, and why it is invalid if it is.
-public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
+public record Facts(Optional<String> stale, Optional<MainsInfo> mains, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
   public static final String outDir= Coordinator.outDir;
   /// An icon is the same while its file is: the image is read from it once.
   public record Icon(Path file, long stamp, BufferedImage image){
@@ -33,40 +35,37 @@ public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> ico
     @Override public int hashCode(){ return file.hashCode(); }
   }
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
-  public static Facts of(Path folder, String alias, Kind kind, Path baseCache){
-    try{ return retried(() -> read(folder, alias, kind, baseCache)); }
+  /// A Coordinator.State that is Error.cacheCorrupted is raised: the manager applies the corruption rule.
+  public static Facts of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check){
+    try{ return retried(() -> read(folder, alias, kind, check)); }
     catch (UncheckedIOException e){ return invalid(Report.folderUnreadable(folder, e.getCause())); }
   }
-  private static Facts invalid(String problem){ return new Facts(false, Optional.empty(), Optional.empty(), List.of(), Optional.of(problem)); }
+  private static Facts invalid(String problem){ return new Facts(Optional.empty(), Optional.empty(), Optional.empty(), List.of(), Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
     for (var left= 10;; left -= 1){
       try{ return read.get(); }
       catch (UncheckedIOException e){ if (left == 0 || !(e.getCause() instanceof NoSuchFileException)){ throw e; } }
     }
   }
-  private static Facts read(Path folder, String alias, Kind kind, Path baseCache){
+  private static Facts read(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check){
     if (!Fs.isDirectory(folder)){ return invalid(Report.folderMissing(folder)); }
     UserError.root = folder;
-    Map<String,Boolean> built= Map.of();
     Optional<String> problem;
+    Coordinator.State state= new Coordinator.State.OutOfDate();
     try{
-      if (kind == Kind.code){ built = Coordinator.pkgsBuilt(folder, baseCache); }
-      else{ new RealSourceOracleWithZip(folder); }
       problem= Names.markerProblem(folder, alias);
+      if (kind != Kind.code){ new RealSourceOracleWithZip(folder); }
     }
     catch (UserError e){ problem = Optional.of(e.getMessage()); }
     Optional<Icon> icon= Optional.empty();
     try{ icon = icon(folder); }
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
-    var out= folder.resolve(outDir);
-    var hasCache= Fs.isDirectory(out) && Names.list(out).stream().anyMatch(p -> p.getFileName().toString().endsWith(".built"));
-    var stalePkgs= built.entrySet().stream().filter(e -> !e.getValue()).map(Map.Entry::getKey).toList();
-    var stale= kind != Kind.code || stalePkgs.isEmpty() ? Optional.<String>empty()
-      : !hasCache ? Optional.of(Report.noCache())
-      : Optional.of(Report.stalePackages(stalePkgs));
-    return new Facts(hasCache, stale, icon, LogFiles.list(folder), problem);
+    if (kind == Kind.code && problem.isEmpty()){ state = check.apply(folder); }
+    if (state instanceof Coordinator.State.Invalid(var why)){ problem = Optional.of(why); }
+    var mains= state instanceof Coordinator.State.Compiled c ? Optional.of(c.manifest()) : Optional.<MainsInfo>empty();
+    var stale= kind == Kind.code && problem.isEmpty() && mains.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
+    return new Facts(stale, mains, icon, LogFiles.list(folder), problem);
   }
-  Facts outOfDate(String why){ return new Facts(hasCache, Optional.of(why), icon, logs, problem); }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));
     if (dir.isEmpty()){ return Optional.empty(); }

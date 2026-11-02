@@ -155,10 +155,8 @@ The icon of a project is the only .png file in its folder ".config/icon".
 Replace that file with a PNG image, or remove it.
 """.formatted(path(icon.toString())));
   }
-  public static String noCache(){ return "This project has no compilation cache."; }
-  public static String stalePackages(List<String> pkgs){ return "The compilation cache of the package"+(pkgs.size() == 1 ? " " : "s ")+quoted(pkgs)+" is out of date."; }
+  public static String outOfDate(){ return "The compilation cache of this project is out of date."; }
   public static String filesUpdated(String name, String job){ return "Some files inside the project "+disp(name)+" were updated while "+(job.equals(Project.compiling) ? "the project was compiling." : "main "+disp(job)+" was running."); }
-  public static String packagesToCompile(){ return "The compilation cache does not contain the mains of this project."; }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of the manager.\nNothing in the project folders changes."; }
   public static String checkFine(String name){ return "The project "+disp(name)+" is valid, and up to date."; }
   public static String cacheNotDeleted(String why){ return "--- the compilation cache is not deleted: "+why+"\n---\n"; }

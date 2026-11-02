@@ -62,7 +62,7 @@ public final class Main implements Manager.Exit{
     NativeLocaleForcer.forceEnglish();
     Fs.onSymbolicLink= Report::symbolicLink;
     var exitCode= 0;
-    try{ NativeLocaleForcer.requireUtf8FileNames(); run(message(fileAsArg(args))); }
+    try{ NativeLocaleForcer.requireUtf8FileNames(); run(messages(fileAsArg(args))); }
     catch (UserError e){ exitCode = 1; fatal(e); }
     catch (VirtualMachineError|LinkageError e){ exitCode = 2; fatal(Violation.vmOrLinkageFailure(e)); }
     catch (Throwable t){ exitCode = 3; fatal(UserError.crashed(t)); }
@@ -77,6 +77,11 @@ public final class Main implements Manager.Exit{
     if (args.length != 1 || args[0].startsWith(prefix) || args[0].isBlank()){ return args; }
     try{ return new String[]{PathClassLoader.argOf(PathBytes.arg(args, 0).toAbsolutePath())}; }
     catch (InvalidPathException e){ return args; }
+  }
+  /// A folder or a .fearless file opened with the manager program is Register, then Show.
+  static List<String> messages(String... args){
+    var m= message(args);
+    return args.length == 1 && !args[0].startsWith(prefix) && m.startsWith("Register\n") ? List.of(m, "Show") : List.of(m);
   }
   static String message(String... args){
     if (args.length == 0){ return "Show"; }
@@ -144,12 +149,12 @@ public final class Main implements Manager.Exit{
     try{ e.display(); }
     catch (InterruptedException ie){ e.displayStderr(ie); }
   }
-  private static void run(String message) throws Throwable{
+  private static void run(List<String> messages) throws Throwable{
     var main= new Main(programDir().resolveSibling(JavacTool.dataDirNameFor(versionId())));
     started = Optional.of(main);
     try{ Fs.createDirectories(main.msgDir()); }
     catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotCreateManagerFolder(main.managerDir, e); }
-    leave(main.msgDir(), message);
+    messages.forEach(m -> leave(main.msgDir(), m));
     var lockFile= main.managerDir.resolve("instance.lock");
     try{ lock = Fs.openChannel(lockFile, CREATE, WRITE).tryLock(); }
     catch (OverlappingFileLockException e){ throw Bug.unreachable(); }

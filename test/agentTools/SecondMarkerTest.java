@@ -227,7 +227,7 @@ final class SecondMarkerTest extends ManagerTest{
     var output= region;
     changed(valid, output);
     stabilize();
-    var error= files.resolve("twice/.fearless_out/check_error.txt");
+    var error= files.resolve("twice/.fearless_out/_error.txt");
     checkContent(error, "More than one .fearless marker file was found in[###]keep only \"twice.fearless\".");
     var invalid= look();
     Files.delete(second);

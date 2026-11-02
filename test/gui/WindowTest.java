@@ -43,7 +43,7 @@ no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new
   }
   @Test void documentationThatIsNotThereIsSaidToTheManager(@TempDir Path dir){
     var said= new ArrayList<String>();
-    var gen= dir.resolve(Facts.outDir).resolve("gen_java");
+    var gen= dir.resolve(Facts.outDir);
     Panel.openDocs(said::add, dir);
     Fs.ensureDir(gen);
     Panel.openDocs(said::add, dir);

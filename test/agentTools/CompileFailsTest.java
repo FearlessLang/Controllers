@@ -204,7 +204,7 @@ final class CompileFailsTest extends ManagerTest{
     compile.go();
     compileFailed.go();
     stabilize();
-    checkContent(files.resolve("broken/.fearless_out/compile_error.txt"), """
+    checkContent(files.resolve("broken/.fearless_out/_error.txt"), """
 In file: fear:/_broken/_rank_app.fear
 
 003| Hello:Main{s->Nope.nope}
@@ -220,8 +220,8 @@ Error 7 WellFormedness
     compileFixed.go();
     fixedCompiled.go();
     stabilize();
-    assertFalse(Files.exists(broken.resolve(".fearless_out").resolve("compile_error.txt")));
-    checkContent(files.resolve("broken/.fearless_out/broken_manifest.info"), "[###]\"broken.Hello\"[###]");
+    assertFalse(Files.exists(broken.resolve(".fearless_out").resolve("_error.txt")));
+    checkContent(files.resolve("broken/.fearless_out/broken.json"), "[###]\\\"broken.Hello\\\"[###]");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

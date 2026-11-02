@@ -38,9 +38,9 @@ public final class Association{
   static void reconcile(Path launcher, List<Icon> extensions, List<WindowIcon> windows, Function<String,String> claimedBy){
     FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, windows, launcher, iconFile(),
       c -> JavacTool.managerFolderOf(c).ifPresent(Fs::rmTree),
-      reported -> Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations", Association::eradicateAll),
-      locked -> Fs.isWindows() ? Violation.associationUserLocked(locked, claimedBy) : Violation.associationChosenDefault(locked, claimedBy),
-      held -> Violation.associationNotOurs(held, claimedBy),
+      reported -> new Refusal(Violation.associationsAmbiguous(reported), List.of()),
+      locked -> new Refusal(Fs.isWindows() ? Violation.associationUserLocked(locked, claimedBy) : Violation.associationChosenDefault(locked, claimedBy), locked),
+      held -> new Refusal(Violation.associationNotOurs(held, claimedBy), List.copyOf(held.keySet())),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
   }

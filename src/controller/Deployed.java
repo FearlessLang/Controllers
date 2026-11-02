@@ -9,13 +9,11 @@ import java.util.stream.Stream;
 
 import coordinator.CapabilityEnvironment;
 import coordinator.Coordinator;
-import coordinator.MainsInfo;
 import core.E.Literal;
 import core.OtherPackages;
 import fileAssociations.Icon;
 import fileAssociations.WindowIcon;
 import naiveBackend.BackendTools;
-import realSourceOracle.RealSourceOracleWithZip;
 import tools.ChildJvm;
 import tools.Fs;
 import tools.JavacTool;
@@ -36,7 +34,7 @@ public final class Deployed implements Manager.Tools{
       }
     };
   }
-  @Override public ChildJvm compile(Path folder, Consumer<String> out){
+  @Override public ChildJvm compile(Path folder, String alias, Consumer<String> out){
     return ChildJvm.start(List.of(
       "-Djava.awt.headless=true",
       "-D"+JavacTool.appDirKey+"="+appDir(),
@@ -45,7 +43,7 @@ public final class Deployed implements Manager.Tools{
       "--enable-native-access=Commons,Coordinator",
       "-p", appDir().resolve(JavacTool.deployedModsDirName).toString(),
       "-m", "Controller/controller.ChildMain",
-      PathClassLoader.argOf(folder)), out);
+      PathClassLoader.argOf(folder), alias), out);
   }
   @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
     return Coordinator.startMain(folder, stdLib("base"), main, input, grants.reads(), grants.edits(), attenuators, Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
@@ -64,8 +62,5 @@ public final class Deployed implements Manager.Tools{
   @Override public void connect(Path eclipse, Path managerDir){
     Eclipse.connect(eclipse, appDir().resolve("eclipsePlugin"), Main.programDir(), Association.launcher(), managerDir, stdLib("baseCache"));
   }
-  @Override public Optional<MainsInfo> mains(Path folder){
-    var c= coordinator(folder);
-    return c.mains(folder, RealSourceOracleWithZip.stdLib(stdLib("base")));
-  }
+  @Override public Coordinator.State check(Path folder){ return coordinator(folder).check(folder); }
 }
