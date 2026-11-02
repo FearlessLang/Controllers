@@ -134,6 +134,19 @@ access denied: [###]_hello
 Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
     Disk.allow(hidden);
   }
+  @Test void anUnreadableSourceOfAProjectWithACacheIsAProblemNotACorruptedCache(@TempDir Path dir){
+    var project= project(dir, "someProject");
+    FakeCache.write(project, "hello", System.currentTimeMillis()-1_000_000);
+    var source= project.resolve("_hello").resolve("_rank_app.fear");
+    Disk.noRead(source);
+    Assumptions.assumeFalse(Files.isReadable(source));
+    same("""
+The folder of this project cannot be read:
+[###]someProject
+access denied: [###]_rank_app.fear
+Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
+    Disk.allow(source);
+  }
   @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
     var project= project(dir, "someProject");
     var png= project.resolve(".config").resolve("icon").resolve("a.png");

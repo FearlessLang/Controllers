@@ -51,7 +51,7 @@ public final class ManagerLink{
   }
   static Path out(Path folder){ return folder.resolve(".fearless_out"); }
   static List<String> mains(Path folder){
-    return jsons(out(folder)).flatMap(f -> Info.obj(Info.parse(f.toString(), Api.parse(read(f)).manifest()).get("mains")).keySet().stream()).toList();
+    return jsons(out(folder)).flatMap(f -> present(f).stream()).flatMap(json -> Info.obj(Info.parse(json.getKey().toString(), Api.parse(json.getValue()).manifest()).get("mains")).keySet().stream()).toList();
   }
   static Stream<Path> jsons(Path out){
     if (!Files.isDirectory(out)){ return Stream.of(); }
@@ -61,8 +61,15 @@ public final class ManagerLink{
   /// the error of _error.txt, while _error.txt is not a stale error file (see ControllersDesign, Eclipse)
   static Optional<String> error(Path folder){
     var file= out(folder).resolve("_error.txt");
-    if (!Files.exists(file)){ return Optional.empty(); }
-    return stale(folder, stamp(file)) ? Optional.empty() : Optional.of(read(file));
+    var time= stamp(file);
+    if (time.isEmpty() || stale(folder, time.get())){ return Optional.empty(); }
+    return present(file).map(Map.Entry::getValue);
+  }
+  /// the file and its text; none for a file that the manager deleted meanwhile (a compilation, a DeleteCache)
+  private static Optional<Map.Entry<Path,String>> present(Path file){
+    try{ return Optional.of(Map.entry(file, Files.readString(file))); }
+    catch (NoSuchFileException e){ return Optional.empty(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static boolean stale(Path folder, long time){
     var now= System.currentTimeMillis();
@@ -95,8 +102,9 @@ public final class ManagerLink{
   private static boolean visible(Path folder, Path p){
     return StreamSupport.stream(folder.relativize(p).spliterator(), false).noneMatch(n -> n.toString().startsWith("."));
   }
-  private static long stamp(Path file){
-    try{ return Files.getLastModifiedTime(file).toMillis(); }
+  private static Optional<Long> stamp(Path file){
+    try{ return Optional.of(Files.getLastModifiedTime(file).toMillis()); }
+    catch (NoSuchFileException e){ return Optional.empty(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
   //As controller.TaggedText: the bytes of a name on Linux and macOS are the ones its file URI escapes.
