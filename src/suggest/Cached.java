@@ -61,6 +61,7 @@ public final class Cached{
     if (!Files.isDirectory(out)){ return false; }
     var kept= Stream.concat(Stream.of("_error.txt", "_unfinished.txt", "icons"), pkgs.stream().flatMap(p -> Stream.of(".json", ".jar", ".html", ".txt").map(x -> p.name()+x))).toList();
     try (var s= Files.list(out)){ return s.anyMatch(f -> !kept.contains(f.getFileName().toString())); }
+    catch (NoSuchFileException e){ return false; }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static boolean upToDate(Pkg p, List<Pkg> pkgs, Map<String,Map<String,String>> maps, Path out, Path baseCache){
@@ -68,7 +69,7 @@ public final class Cached{
     var jar= stamp(out.resolve(p.name()+".jar"));
     if (!Files.exists(json) || jar < 0){ return false; }
     try{ return Api.parse(Files.readString(json)).inputsSnapshot().equals(snapshot(p, pkgs, maps, out, baseCache)) && jar >= p.files().stream().mapToLong(Ref::stamp).max().getAsLong(); }
-    catch (IllegalArgumentException e){ return false; }
+    catch (IllegalArgumentException|NoSuchFileException e){ return false; }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static String snapshot(Pkg p, List<Pkg> pkgs, Map<String,Map<String,String>> maps, Path out, Path baseCache){

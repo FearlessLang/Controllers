@@ -20,10 +20,14 @@ final class UnitTests{
     if (!Files.isDirectory(logs)){ return Optional.empty(); }
     try (var all= Files.walk(logs)){
       var newest= all.filter(p -> p.getParent().equals(logs.resolve("_base")) && p.getFileName().toString().matches("unit_test_log(\\$.*)?\\.log")).max(Comparator.comparing(p -> p.getFileName().toString()));
-      return newest.map(log -> document(name, complete(log)));
+      return newest.flatMap(UnitTests::complete).map(log -> document(name, log));
     }
     catch (NoSuchFileException e){ return Optional.empty(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
+    catch (UncheckedIOException e){
+      if (!(e.getCause() instanceof NoSuchFileException)){ throw e; }
+      return Optional.empty();
+    }
   }
   private static String document(String name, String log){
     var body= disabled.matcher(log).replaceAll(UnitTests::skipped).replaceAll("(?m)^PLAN\\|RUN\\|.*$\\r?\\n?", "");
@@ -35,7 +39,8 @@ final class UnitTests{
 </testsuites>
 """.formatted(name, count(body, "<testcase "), count(body, "<failure>"), body);
   }
-  private static String complete(Path log){
+  /// none for a log that the running main moved away meanwhile
+  private static Optional<String> complete(Path log){
     String text;
     try{
       var bytes= Files.readAllBytes(log);
@@ -44,14 +49,15 @@ final class UnitTests{
       text= StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes, 0, end)).toString();
     }
     catch (CharacterCodingException e){ throw new IllegalStateException("The unit test log "+log+" is not UTF-8 text.", e); }
+    catch (NoSuchFileException e){ return Optional.empty(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
     var done= 0;
     while (done < text.length()){
       var close= text.startsWith("<testcase ", done) ? text.indexOf("</testcase>\n", done) : done;
-      if (close < 0){ return text.substring(0, done); }
+      if (close < 0){ return Optional.of(text.substring(0, done)); }
       done = text.indexOf('\n', close)+1;
     }
-    return text;
+    return Optional.of(text);
   }
   private static int count(String body, String what){ return body.split(what, -1).length-1; }
   private static String skipped(MatchResult mr){

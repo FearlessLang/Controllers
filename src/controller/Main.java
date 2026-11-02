@@ -148,7 +148,7 @@ public final class Main implements Manager.Exit{
     try{ path= (arg.startsWith("file:") ? PathClassLoader.pathOf(arg) : Path.of(arg)).toAbsolutePath().normalize(); }
     catch (IllegalArgumentException e){ return "InvalidCall\n"+Report.brokenPath(arg); }
     if (arg.isBlank() || path.getFileName() == null){ return "InvalidCall\n"+Report.brokenPath(arg); }
-    var project= Files.isDirectory(path) || path.getFileName().toString().endsWith(Names.ext);
+    var project= Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Names.ext);
     var verb= project ? "Register" : "OpenWithOrShortcut";
     return verb+"\n"+TaggedText.ofPath(path);
   }

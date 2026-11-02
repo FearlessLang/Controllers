@@ -56,6 +56,7 @@ public final class ManagerLink{
   static Stream<Path> jsons(Path out){
     if (!Files.isDirectory(out)){ return Stream.of(); }
     try (var files= Files.list(out)){ return files.filter(p -> p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
+    catch (NoSuchFileException e){ return Stream.of(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
   /// the error of _error.txt, while _error.txt is not a stale error file (see ControllersDesign, Eclipse)
