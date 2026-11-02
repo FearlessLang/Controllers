@@ -15,6 +15,8 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -212,7 +214,7 @@ final class Panel{
   }
   private void fillShortcuts(Project p, Map<String,List<Project.Claimant>> claimed){
     shortcuts.removeAll();
-    var mine= mine(p, claimed).filter(c -> c.shortcut() && c.namedShortcutFile().filter(Fs::isRegularFile).isPresent()).toList();
+    var mine= mine(p, claimed).filter(c -> c.shortcut() && c.namedShortcutFile().filter(f -> Files.isRegularFile(f, LinkOption.NOFOLLOW_LINKS)).isPresent()).toList();
     shortcuts.setVisible(!mine.isEmpty());
     mine.forEach(c -> shortcuts.add(doubleClicked(named(shortcut(c), "shortcut "+c.main()+" "+c.claim().extension()), () -> Main.command("OpenWithOrShortcut "+TaggedText.base16(c.shortcutFile())))));
   }

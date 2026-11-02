@@ -113,8 +113,8 @@ Put the project in a folder inside it, and make that folder the project
 folder.
 """.formatted(path(root.toString()));
   }
-  public static String registerRefused(Path folder, IOException e){
-    return refusedPath("Register", folder)+"\nThe folder cannot be read or changed: "+fileFailure(e);
+  public static String registerRefused(Path folder, String why){
+    return refusedPath("Register", folder)+"\nThe folder cannot be read or changed: "+why;
   }
 
   //-- the content of a project folder
@@ -188,7 +188,7 @@ Replace that file with a PNG image, or remove it.
     return "Eclipse is not connected: no Eclipse folder, a folder holding the file \".eclipseproduct\", is found from\n"+path(chosen.toString())+"\nSelect the Eclipse folder, a file in it, a file in a folder of it, or a folder holding only the Eclipse folder.";
   }
   public static String eclipseConnected(Path eclipse){ return "Eclipse is connected:\n"+path(eclipse.toString())+"\nRestart Eclipse if it is running: Eclipse loads the Fearless plugin when it starts.\nThen open the Fearless perspective: Window > Perspective > Open Perspective > Other... > Fearless."; }
-  public static String eclipseNotConnected(Path chosen, IOException e){ return "Eclipse is not connected from\n"+path(chosen.toString())+"\n"+fileFailure(e); }
+  public static String eclipseNotConnected(Path chosen, String why){ return "Eclipse is not connected from\n"+path(chosen.toString())+"\n"+why; }
 
   //-- opening a file
   public static String openNoFile(Path file){ return refusedOpen(file)+"\nNo file is at that path."; }

@@ -1,7 +1,6 @@
 package fearlessPluginProject;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -124,6 +123,6 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     try (var s= Files.list(folder)){
       return s.filter(f -> f.getFileName().toString().endsWith(".fearless") && Files.isRegularFile(f)).map(f -> f.getFileName().toString()).toList().equals(List.of(alias+".fearless"));
     }
-    catch (IOException e){ throw new UncheckedIOException(e); }
+    catch (IOException e){ return false; }
   }
 }

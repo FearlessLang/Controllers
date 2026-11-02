@@ -518,7 +518,8 @@ public final class Manager{
       Coordinator.deleteCache(folder);
       alias= Names.makeUnique(folder, registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
     }
-    catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder, e.getCause())); }
+    catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder, Report.fileFailure(e.getCause()))); }
+    catch (UserError e){ throw new Refused(Report.registerRefused(folder, e.getMessage())); }
     registry.add(alias, folder);
     open(registry.of(folder).orElseThrow());
   }
@@ -528,7 +529,8 @@ public final class Manager{
       eclipse= Eclipse.find(chosen).orElseThrow(() -> new Refused(Report.noEclipse(chosen)));
       tools.connect(eclipse, dir);
     }
-    catch (UncheckedIOException e){ throw new Refused(Report.eclipseNotConnected(chosen, e.getCause())); }
+    catch (UncheckedIOException e){ throw new Refused(Report.eclipseNotConnected(chosen, Report.fileFailure(e.getCause()))); }
+    catch (UserError e){ throw new Refused(Report.eclipseNotConnected(chosen, e.getMessage())); }
     view.tell(Report.eclipseConnected(eclipse));
   }
   private void editMetadata(Path file){
@@ -698,6 +700,9 @@ public final class Manager{
     var used= live.values().stream().flatMap(o -> Stream.concat(o.answered.stream(), o.claims.mains().values().stream().flatMap(m -> Stream.concat(m.shortcuts().stream(), m.openWiths().stream())).map(MainsInfo.Claim::extension))).collect(Collectors.toSet());
     var free= candidates.stream().filter(c -> !used.contains(c)).findFirst();
     free.ifPresent(l.answered::add);
-    if (l.child != null){ l.child.send(free.orElse("")); }
+    if (l.child == null){ return; }
+    //A compile JVM that died meanwhile does not read the answer: its end is reported when its exit is processed.
+    try{ l.child.send(free.orElse("")); }
+    catch (UncheckedIOException e){}
   }
 }

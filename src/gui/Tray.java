@@ -22,7 +22,6 @@ import javax.swing.event.PopupMenuListener;
 
 import controller.Main;
 import tools.Fs;
-import utils.OneOr;
 
 /// The icon is the way back to a closed window: with no tray the window shows its StandIn
 /// instead, also when adding the icon fails or the desktop later takes the icon away.
@@ -63,7 +62,9 @@ public final class Tray{
   }
   //A desktop takes the pointer input over its panels, also where a window covers them: the menu stays inside the usable area of the screen holding the click.
   private static void open(JWindow anchor, JPopupMenu menu, Point at){
-    var screen= OneOr.of("one screen holds the click", Stream.of(GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices()).map(GraphicsDevice::getDefaultConfiguration).filter(c -> c.getBounds().contains(at)));
+    var env= GraphicsEnvironment.getLocalGraphicsEnvironment();
+    var screen= Stream.of(env.getScreenDevices()).map(GraphicsDevice::getDefaultConfiguration).filter(c -> c.getBounds().contains(at)).findFirst()
+      .orElse(env.getDefaultScreenDevice().getDefaultConfiguration());
     var b= screen.getBounds();
     var in= Toolkit.getDefaultToolkit().getScreenInsets(screen);
     var size= menu.getPreferredSize();

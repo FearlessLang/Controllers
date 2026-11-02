@@ -36,7 +36,11 @@ public final class ChildMain{
       var error= compile(project, args[1]);
       if (error.isPresent()){ exitCode = UserError.cacheCorrupted(error.get().getMessage()) ? cacheCorrupted : 1; System.err.print(error.get().getMessage().stripTrailing()+"\n"); }
     }
-    catch (UserError e){ exitCode = UserError.cacheCorrupted(e.getMessage()) ? cacheCorrupted : 1; System.err.print(e.getMessage().stripTrailing()+"\n"); }
+    catch (UserError e){
+      exitCode = UserError.cacheCorrupted(e.getMessage()) ? cacheCorrupted : 1;
+      if (exitCode == cacheCorrupted){ Coordinator.writeError(project, e.getMessage()); }
+      System.err.print(e.getMessage().stripTrailing()+"\n");
+    }
     catch (VirtualMachineError|LinkageError e){ exitCode = 2; System.err.print(Violation.vmOrLinkageFailure(e).getMessage().stripTrailing()+"\n"); }
     catch (Throwable t2){ exitCode = 3; System.err.print(UserError.crash(t2)); }
     System.out.flush();

@@ -1091,6 +1091,22 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     Errs.err("Fearless could not list its manager folder, or could not read or\nremove a message file in it.[###]1.msg[###]", m::drain);
     Disk.allow(msg);
   }
+  @Test void aFolderHoldingASymbolicLinkIsRefusedOrInvalidNeverFatal(@TempDir Path dir){
+    var before= Fs.onSymbolicLink;
+    Fs.onSymbolicLink= managerMessages.Report::symbolicLink;
+    try{ symbolicLinks(dir); }
+    finally{ Fs.onSymbolicLink= before; }
+  }
+  private void symbolicLinks(Path dir){
+    var m= manager(dir);
+    var linked= folder(dir, "linked");
+    Disk.link(linked.resolve("current"), folder(dir, "elsewhere"));
+    send(m, "Register", TaggedText.of(linked.toString()));
+    same("Refused request \"Register\" on path\n[###]linked\nThe folder cannot be read or changed: This path is a symbolic link[###]", view.refused.getLast());
+    send(m, "ConnectEclipse", TaggedText.of(linked.toString()));
+    same("Eclipse is not connected from\n[###]linked\nThis path is a symbolic link[###]", view.refused.getLast());
+    assertEquals(List.of(), failures);
+  }
   @Test void aRequestNamingNoProjectIsRefused(@TempDir Path dir){
     var m= manager(dir);
     send(m, "Run", "hello");

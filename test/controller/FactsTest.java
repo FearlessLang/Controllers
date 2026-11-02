@@ -147,6 +147,17 @@ access denied: [###]_rank_app.fear
 Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
     Disk.allow(source);
   }
+  @Test void aSymbolicLinkInACodeProjectIsAProblemNotACrash(@TempDir Path dir){
+    var before= Fs.onSymbolicLink;
+    Fs.onSymbolicLink= managerMessages.Report::symbolicLink;
+    try{
+      var project= project(dir, "someProject");
+      Disk.link(project.resolve("_hello").resolve("current"), dir);
+      same("This path is a symbolic link[###]", facts(project, "someproject", Kind.code).problem().orElseThrow());
+      assertEquals(Optional.empty(), Facts.of(Disk.link(dir.resolve("moved"), project), "someproject", Kind.code, _ -> new Coordinator.State.OutOfDate()));
+    }
+    finally{ Fs.onSymbolicLink= before; }
+  }
   @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
     var project= project(dir, "someProject");
     var png= project.resolve(".config").resolve("icon").resolve("a.png");

@@ -90,10 +90,7 @@ public final class ManagerLink{
         if (!visible(folder, file) && !file.getParent().equals(icon)){ return FileVisitResult.CONTINUE; }
         return seen(a);
       }
-      @Override public FileVisitResult visitFileFailed(Path file, IOException e) throws IOException{
-        if (e instanceof NoSuchFileException){ return FileVisitResult.CONTINUE; }
-        throw e;
-      }
+      @Override public FileVisitResult visitFileFailed(Path file, IOException e){ return FileVisitResult.CONTINUE; }
     };
     try{ Files.walkFileTree(folder, visitor); }
     catch (IOException e){ throw new UncheckedIOException(e); }

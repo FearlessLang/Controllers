@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.LinkOption;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +40,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
   /// A Coordinator.State that is Error.cacheCorrupted is raised: the manager applies the corruption rule.
   /// None for a folder the manager can not reach.
   public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check){
-    if (!Fs.isDirectory(folder) || !Files.isReadable(folder)){ return Optional.empty(); }
+    if (!Files.isDirectory(folder, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(folder)){ return Optional.empty(); }
     try{ return Optional.of(retried(() -> read(folder, alias, kind, check))); }
     catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
   }
@@ -63,7 +64,13 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     Optional<Icon> icon= Optional.empty();
     try{ icon = icon(folder); }
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
-    if (kind == Kind.code && problem.isEmpty()){ state = check.apply(folder); }
+    if (kind == Kind.code && problem.isEmpty()){
+      try{ state = check.apply(folder); }
+      catch (UserError e){
+        if (UserError.cacheCorrupted(e.getMessage())){ throw e; }
+        problem = Optional.of(e.getMessage());
+      }
+    }
     if (state instanceof Coordinator.State.Invalid(var why)){ problem = Optional.of(why); }
     var compiled= state instanceof Coordinator.State.Compiled c ? Optional.of(c) : Optional.<Coordinator.State.Compiled>empty();
     var stale= kind == Kind.code && problem.isEmpty() && compiled.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
