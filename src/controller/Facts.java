@@ -43,6 +43,8 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     try{ return Optional.of(retried(() -> read(folder, alias, kind, check))); }
     catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
   }
+  /// the facts of a project shown as 'invalid' with that problem, until its Forget: the folder of the project can not be reached
+  static Facts invalid(String problem){ return new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
     for (var left= 10;; left -= 1){
       try{ return read.get(); }

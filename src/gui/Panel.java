@@ -212,7 +212,7 @@ final class Panel{
   }
   private void fillShortcuts(Project p, Map<String,List<Project.Claimant>> claimed){
     shortcuts.removeAll();
-    var mine= mine(p, claimed).filter(c -> c.shortcut() && Fs.isRegularFile(c.shortcutFile())).toList();
+    var mine= mine(p, claimed).filter(c -> c.shortcut() && c.namedShortcutFile().filter(Fs::isRegularFile).isPresent()).toList();
     shortcuts.setVisible(!mine.isEmpty());
     mine.forEach(c -> shortcuts.add(doubleClicked(named(shortcut(c), "shortcut "+c.main()+" "+c.claim().extension()), () -> Main.command("OpenWithOrShortcut "+TaggedText.base16(c.shortcutFile())))));
   }

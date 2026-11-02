@@ -977,6 +977,17 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
   @Test void mountWhileAMainRunsIsEditMetadataWithThatMount(@TempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withMounts(Map.of("hello.Old", "data"))), "Mount", "hello", "hello.Old data");
   }
+  @Test void aProjectWhoseFolderIsGoneAtStartIsForgottenAfterADialog(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    Fs.rmTree(data);
+    var again= manager(dir);
+    again.settle();
+    again.settle();
+    assertEquals(List.of(), listed(again));
+    same("The project \"data\" connects to the folder [###]\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getLast());
+  }
   @Test void aProjectWhoseFolderIsGoneIsForgottenAfterADialog(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);

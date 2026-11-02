@@ -426,7 +426,7 @@ public final class Manager{
     if (!failed){
       try{ Coordinator.finish(f); }
       catch (UncheckedIOException e){ failed = true; stepFailed(f, Report.cacheNotFinished(Report.fileFailure(e.getCause()))); }
-      catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); }
+      catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); rebuild(Optional.empty()); }
     }
     output(f, "--- compile "+(!failed ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
     scan(f);
@@ -466,6 +466,7 @@ public final class Manager{
   private void endMain(Path f){
     var l= live.get(f);
     l.terminated = true;
+    l.stopped = true;
     output(f, "--- terminating "+l.job+" ---\n");
     var child= l.child;
     child.kill();
@@ -595,7 +596,11 @@ public final class Manager{
     var l= live.get(f);
     var compiling= l.job.equals(Project.compiling);
     var found= compiling ? Optional.of(l.facts).filter(_ -> Fs.isDirectory(f)) : checked(f);
-    if (found.isEmpty()){ post(() -> unreachable(f)); return false; }
+    if (found.isEmpty()){
+      if (l.facts == null){ l.facts = Facts.invalid(Report.unreachable(alias(f), f)); }
+      post(() -> unreachable(f));
+      return false;
+    }
     var fresh= found.get();
     if (compiling){ return true; }
     if (!l.job.isEmpty()){

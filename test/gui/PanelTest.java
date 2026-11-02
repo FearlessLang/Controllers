@@ -42,6 +42,17 @@ final class PanelTest{
   private static List<String> brokenMounts(Panel panel){
     return all(panel.root).filter(c -> c instanceof JLabel).map(c -> ((JLabel)c).getText()).filter(t -> t != null && t.startsWith("The mount of")).toList();
   }
+  @Test void aShortcutWithNoValidFileNameShowsNoShortcutFile(@TempDir Path dir){
+    var folder= dir.resolve("hello");
+    Fs.writeUtf8(folder.resolve("hello.fearless"), "");
+    var claim= new MainsInfo.Claim("base.IconsConflict", "icons/conflict.png", "", "", "", "fapp010");
+    var claims= new MainsInfo(Map.of("hello.Foo'", new MainsInfo.Main(List.of(claim), List.of(), List.of(claim))), List.of(), List.of(), List.of());
+    var p= project(folder, Kind.code, Map.of(), Optional.of(claims));
+    var withClaims= new Project(p.entry(), p.facts(), p.mains(), claims, "");
+    var panel= new Panel(_ -> {});
+    panel.render(withClaims, List.of(withClaims), 800);
+    assertEquals(List.of(), all(panel.root).filter(c -> c.getName() != null && c.getName().startsWith("shortcut ")).toList());
+  }
   @Test void theDataAreaShowsTheMountBrokenOnceTheMountedDataProjectBecomesInvalid(@TempDir Path dir){
     var notesFolder= dir.resolve("notes");
     Fs.writeUtf8(notesFolder.resolve("notes.fearless"), "");

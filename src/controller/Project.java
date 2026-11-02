@@ -34,6 +34,11 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
     public String label(){ return alias+"::"+main; }
     public Path icon(String suffix){ return folder.resolve(Facts.outDir).resolve("icons").resolve(claim.icon()+suffix); }
     public Path shortcutFile(){ return folder.resolve(Project.shortcutFile(folder, main, claim.extension())); }
+    /// none for a main whose Shortcut gives no valid file name: its compilation failed
+    public Optional<Path> namedShortcutFile(){
+      try{ return Optional.of(shortcutFile()); }
+      catch (UserError e){ return Optional.empty(); }
+    }
   }
   public enum State{
     codeInvalid("code: invalid content"), dataReadInvalid("dataRead: invalid content"), dataEditInvalid("dataEdit: invalid content"), idle("idle"), dataRead("dataRead"), dataEdit("dataEdit"),
