@@ -656,10 +656,10 @@ public final class Manager{
   private void rotate(){
     if (!view.visible()){ return; }
     selected.ifPresent(this::scan);
-    var all= registry.all();
-    if (all.isEmpty()){ return; }
+    var others= registry.all().stream().map(Entry::path).filter(f -> !selected.equals(Optional.of(f))).toList();
+    if (others.isEmpty()){ return; }
     turn += 1;
-    scan(all.get(turn % all.size()).path());
+    scan(others.get(turn % others.size()));
   }
   /// Refuses a change of the mounts of a project with a running main, and of the kind or the folder of a data project mounted there.
   private void granted(Content next){
