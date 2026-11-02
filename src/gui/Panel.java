@@ -77,7 +77,6 @@ final class Panel{
   private final JPanel selectedMains= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
-  private final JLabel path= new JLabel();
   private Object shown= List.of();
   private Project project;
   Panel(Consumer<String> refuse){
@@ -93,7 +92,6 @@ final class Panel{
     header.add(icon);
     name.setFont(name.getFont().deriveFont(Font.BOLD, 18f));
     header.add(name);
-    header.add(path);
     header.add(action);
     header.add(openDocs);
     header.add(kinds);
@@ -182,7 +180,6 @@ final class Panel{
     project = p;
     icon.setIcon(new ImageIcon(Icons.of(p, iconSize).getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
     name.setText(p.alias());
-    path.setText(p.folder().toString());
     var a= p.action();
     var several= a == Project.Action.run && p.knownMains().size() > 1;
     action.setText(switch (a){ case check -> "Check"; case compile -> "Compile"; case run -> "Run"; case terminate -> "Terminate"; });
