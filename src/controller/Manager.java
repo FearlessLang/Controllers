@@ -278,7 +278,7 @@ public final class Manager{
       case "DeleteCache" -> deleteCache(f);
       case "Kind" -> kind(f, args.get(1));
       case "Forget" -> forget(f);
-      case "Mount" -> mount(f, args.get(1), Optional.of(args.get(2)));
+      case "Mount" -> mount(f, args.get(1), Optional.of(registry.named(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(name, args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
       case "Unmount" -> mount(f, args.get(1), Optional.empty());
       case "Attenuate" -> attenuate(f, args.get(1), args.subList(2, args.size()));
       case "SelectMains" -> edit(f, e -> e.withMains(args.subList(1, args.size())));

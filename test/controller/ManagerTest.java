@@ -625,6 +625,14 @@ The projects are:
     send(m, "Check", "hello");
     assertEquals("The compilation cache of this project is out of date.\n", view.out(hello));
   }
+  @Test void aMountOfAProjectThatIsNotRegisteredIsRefused(@TempDir Path dir){
+    var m= manager(dir);
+    code(m, dir, "hello");
+    var before= info(dir);
+    send(m, "Mount", "hello", "hello.Pub diary");
+    assertEquals(List.of("Refused request \"Mount\" on project \"hello\".\nNo project is named \"diary\".\nThe projects are:\n  hello"), view.refused);
+    assertEquals(before, info(dir));
+  }
   @Test void mountsAreEditedByRequestAndABrokenMountOrADataReadTypeWithNoMountStopsTheRun(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Diary"), "hello.Hello"));
     var hello= code(m, dir, "hello");
@@ -647,7 +655,9 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
   The mount of "data" on "hello.Old" is broken: "hello.Old" is not a DataRead type of project "hello".""", view.refused.getLast());
     send(m, "Kind", "data", "idle");
     send(m, "Mount", "hello", "hello.Old");
+    registered(m, dir, "nope");
     send(m, "Mount", "hello", "hello.Pub nope");
+    send(m, "Forget", "nope");
     send(m, "Run", "hello", "hello.Hello");
     assertEquals("""
 Refused request "Run" on project "hello".
@@ -1018,12 +1028,12 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     var hello= code(m, dir, "hello");
     var managerDir= dir.resolve("manager");
     var before= info(dir);
-    send(m, "Mount", "hello", "Lower data");
+    send(m, "Mount", "hello", "Lower hello");
     same("[###]\"Lower\" in \"mounts\" is not a Fearless DataRead type name[###]", view.refused.getLast());
     assertEquals(before, info(dir));
     Disk.noWrite(managerDir);
     Assumptions.assumeFalse(Files.isWritable(managerDir));
-    send(m, "Mount", "hello", "hello.Data data");
+    send(m, "Mount", "hello", "hello.Data hello");
     send(m, "Kind", "hello", "idle");
     edit(m, dir, "{\"projects\": {}, \"systemExtensions\": []}");
     Disk.allow(managerDir);
