@@ -95,6 +95,7 @@ public final class Manager{
     ChildJvm child;
     boolean terminated;
     boolean updated;
+    Optional<String> corruption= Optional.empty();
     List<String> todo= List.of();
     Optional<Path> input= Optional.empty();
     Registry.Grants grants;
@@ -195,6 +196,7 @@ public final class Manager{
     endJob(f);
     deleted(f);
     errorFile(f, why);
+    live.get(f).corruption = Optional.of(why);
   }
   private void endJob(Path f){
     var l= live.get(f);
@@ -412,13 +414,15 @@ public final class Manager{
       }
       catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); }
     }
-    var refusedHere= rebuild(Optional.of(f));
+    l.corruption = Optional.empty();
+    var refusedHere= rebuild(Optional.of(f)).or(() -> l.corruption);
     refusedHere.ifPresent(why -> output(f, why.stripTrailing()+"\n"));
     failed |= refusedHere.isPresent();
     if (!failed){ failed = !Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).allMatch(p -> shortcut(f, p)); }
     if (!failed){
       try{ Coordinator.finish(f); }
       catch (UncheckedIOException e){ failed = true; stepFailed(f, Report.cacheNotFinished(Report.fileFailure(e.getCause()))); }
+      catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); }
     }
     output(f, "--- compile "+(!failed ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
     scan(f);
