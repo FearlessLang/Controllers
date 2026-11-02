@@ -431,10 +431,13 @@ ran hello.Slow
   @Test void aRunningCompilationRefusesTerminate(@TempDir Path dir){
     var m= manager(dir);
     var slow= code(m, dir, "slowcompile");
+    var other= registered(m, dir, "other");
     send(m, "Compile", "slowcompile");
     until(m, _ -> view.out(slow).contains("compiling\n"));
+    send(m, "Show", "other");
     send(m, "Terminate", "slowcompile");
     assertEquals(List.of("Refused request \"Terminate\" on project \"slowcompile\".\nA compilation of project \"slowcompile\" is currently running."), view.refused);
+    assertEquals(Optional.of(other), m.state().selected());
     idle(m);
     same("[###]compiling\n--- compile failed with 1 ---\n", view.out(slow));
   }

@@ -194,7 +194,6 @@ public final class Manager{
     endJob(f);
     deleted(f);
     errorFile(f, why);
-    output(f, why.stripTrailing()+"\n");
   }
   private void endJob(Path f){
     var l= live.get(f);
@@ -216,7 +215,6 @@ public final class Manager{
         endJob(g);
         deleted(g);
         errorFile(g, r.error.getMessage());
-        output(g, r.error.getMessage().stripTrailing()+"\n");
       }
       var again= rebuild(Optional.empty());
       assert again.isEmpty();
@@ -411,6 +409,7 @@ public final class Manager{
       catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); }
     }
     var refusedHere= rebuild(Optional.of(f));
+    refusedHere.ifPresent(why -> output(f, why.stripTrailing()+"\n"));
     failed |= refusedHere.isPresent();
     if (!failed){ failed = !Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).allMatch(p -> shortcut(f, p)); }
     if (!failed){
@@ -424,9 +423,9 @@ public final class Manager{
   }
   /// A failing step after Coordinator.compile: the corruption rule for a corrupted cache, else the error in _error.txt and in the Output.
   private void stepFailed(Path f, String why){
+    output(f, why.stripTrailing()+"\n");
     if (UserError.cacheCorrupted(why)){ corrupted(f, why); return; }
     errorFile(f, why);
-    output(f, why.stripTrailing()+"\n");
   }
   private void errorFile(Path f, String why){ uncached(f, () -> Coordinator.writeError(f, why)); }
   private void uncached(Path f, Runnable r){
@@ -446,9 +445,9 @@ public final class Manager{
     catch (IOException e){ stepFailed(f, Report.notWritten(file.getFileName().toString(), e)); return false; }
   }
   private void terminate(Path f){
-    selected = Optional.of(f);
     var l= live.get(f);
     if (l.job.equals(Project.compiling)){ throw new Refused(Report.busy("Terminate", alias(f), l.job)); }
+    selected = Optional.of(f);
     if (l.child == null){ return; }
     l.terminated = true;
     output(f, "--- terminating "+l.job+" ---\n");

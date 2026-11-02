@@ -168,7 +168,11 @@ public final class Window implements Manager.View{
   private void say(String text){ JOptionPane.showMessageDialog(frame, text, "Fearless", JOptionPane.PLAIN_MESSAGE); }
   @Override public void choose(Path file, List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(file, choices)); }
   @Override public void allow(String question, List<String> extensions){
-    SwingUtilities.invokeLater(() -> { if (JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ capture(extensions); } });
+    SwingUtilities.invokeLater(() -> ask(question, extensions));
+  }
+  private void ask(String question, List<String> extensions){
+    showNow();
+    if (JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ capture(extensions); }
   }
   private void capture(List<String> extensions){
     Registry.Content now;
