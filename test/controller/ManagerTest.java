@@ -1200,6 +1200,40 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
   }
   private static CompletableFuture<String> follower(ServerSocket server){ return CompletableFuture.supplyAsync(() -> listen(server)); }
   private static ServerSocket port(){ return Fs.of(() -> new ServerSocket(0, 1, InetAddress.getLoopbackAddress())); }
+  @Test void anInvalidCallWithAPortIsRefusedOnThatPortToo(@TempDir Path dir){
+    var m= manager(dir);
+    try (var server= port()){
+      var refused= follower(server);
+      message(m, List.of("InvalidCall", "the call is bad", "Port:"+server.getLocalPort()));
+      assertEquals("Refused\nthe call is bad", refused.join());
+      assertEquals(List.of("the call is bad"), view.refused);
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+  }
+  @Test void aRunWithAMountedDataProjectThatIsGoneIsRefusedAsABrokenMount(@TempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
+    var hello= code(m, dir, "hello");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Mount", "hello", "hello.Pub data");
+    compiled(m, "hello");
+    Fs.rmTree(data);
+    send(m, "Run", "hello", "hello.Hello");
+    same("Refused request \"Run\" on project \"hello\".\n[###]The mount of \"data\" on \"hello.Pub\" is broken: no project \"data\" is registered.", view.refused.getLast());
+    assertFalse(view.out(hello).contains("running hello.Hello"));
+  }
+  @Test void anEditOfTheSystemExtensionsReadsTheClaimsAgain(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    allow(m, dir, "foo");
+    infos.put("hello", claiming("hello.Hello", "fapp001", "foo"));
+    compiled(m, "hello");
+    Fs.rmTree(hello.resolve(Facts.outDir));
+    allow(m, dir, "htm");
+    assertEquals(List.of(".foo manager/icons/base.IconsConflict.png", ".htm manager/icons/base.IconsConflict.png"), wanted(dir));
+    assertEquals(List.of(), failures);
+  }
   @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEndAndAnyOtherRequestUntilItIsApplied(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");

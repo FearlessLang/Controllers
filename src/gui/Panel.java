@@ -83,6 +83,7 @@ final class Panel{
   Panel(Consumer<String> refuse){
     this.refuse= refuse;
     output.setEditable(false);
+    output.setDropTarget(null);
     dataBox.setLayout(new BoxLayout(dataBox, BoxLayout.Y_AXIS));
     claimsBox.setLayout(new BoxLayout(claimsBox, BoxLayout.Y_AXIS));
     attenuatorsBox.setLayout(new BoxLayout(attenuatorsBox, BoxLayout.Y_AXIS));

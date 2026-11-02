@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -94,7 +96,10 @@ public final class Main implements Manager.Exit{
     if (args.length > 1){ return "InvalidCall\n"+Report.tooManyArguments(List.of(args)); }
     if (!args[0].startsWith(prefix)){ return file(args[0]); }
     try{ return call(args[0]); }
-    catch (Refused e){ return "InvalidCall\n"+Report.badCall(args[0], e.getMessage()); }
+    catch (Refused e){
+      var last= args[0].substring(args[0].lastIndexOf(' ')+1);
+      return "InvalidCall\n"+Report.badCall(args[0], e.getMessage())+(Follow.isPort(last) ? "\n"+last : "");
+    }
   }
   /// The arguments of each command of the grammar of a call: p a projectName, t a typeName, b a base16, k a kind; a last * is typeName1..typeNamen.
   private static final Map<String,List<String>> commands= Map.ofEntries(
@@ -147,8 +152,10 @@ public final class Main implements Manager.Exit{
     var verb= project ? "Register" : "OpenWithOrShortcut";
     return verb+"\n"+TaggedText.ofPath(path);
   }
-  /// Runs the manager program with each call in turn, each once the run before has ended, so the messages arrive in that order.
-  public static void command(String... calls){ Thread.startVirtualThread(() -> Stream.of(calls).forEach(Main::send)); }
+  private static final ExecutorService sender= Executors.newSingleThreadExecutor(Thread.ofVirtual().factory());
+  /// Runs the manager program with each call in turn, each once the process before has ended, also across the calls of
+  /// several GUI operations, so the messages arrive in that order.
+  public static void command(String... calls){ sender.execute(() -> Stream.of(calls).forEach(Main::send)); }
   private static void send(String call){
     var pb= new ProcessBuilder(Association.launcher().toString(), prefix+call).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD);
     //The launcher marks the process it starts with _JPACKAGE_ variables; a launcher started by

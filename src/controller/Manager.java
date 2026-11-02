@@ -179,13 +179,17 @@ public final class Manager{
   private boolean allowed(Project.Claimant c){ return !Registry.isSystem(c.claim().extension()) || registry.extensions().contains(c.claim().extension()); }
   /// Rebuilds the in memory map, then reconciles; gives the error of compiled when a new extension of compiled is refused.
   private Optional<String> rebuild(Optional<Path> compiled){
+    refresh();
+    return reconcile(compiled, registry.extensions());
+  }
+  /// the claims of the in memory map, read again from the caches
+  private void refresh(){
     for (var e : registry.all()){
       var l= live.get(e.path());
       if (e.kind() != Kind.code){ l.claims = Project.noClaims; continue; }
       if (l.job.equals(Project.compiling)){ continue; }
       l.claims = cached(e.path());
     }
-    return reconcile(compiled, registry.extensions());
   }
   private MainsInfo cached(Path f){
     try{ return new MainsInfo(Coordinator.cachedMains(f)); }
@@ -243,7 +247,7 @@ public final class Manager{
     var lines= List.of(message.split("\n", -1));
     var verb= lines.getFirst();
     var args= lines.subList(1, lines.size());
-    if (verb.equals("InvalidCall")){ view.refuse(String.join("\n", args)); return; }
+    if (verb.equals("InvalidCall")){ invalidCall(args); return; }
     if (verb.equals("FatalError")){ throw Violation.fatalFromRun(String.join("\n", args)); }
     var port= !args.isEmpty() && args.getLast().startsWith("Port:");
     var follow= Optional.<Follow>empty();
@@ -254,6 +258,15 @@ public final class Manager{
       if (!List.of("Run", "Compile").contains(verb)){ follow.ifPresent(Follow::end); }
     }
     catch (Refused r){ follow.ifPresent(fl -> fl.refuse(r.getMessage())); view.refuse(r.getMessage()); }
+  }
+  /// the details of an InvalidCall, and its port when the call ended with one: the caller waits on that port
+  private void invalidCall(List<String> lines){
+    var port= lines.size() > 1 && Follow.isPort(lines.getLast());
+    var details= String.join("\n", port ? lines.subList(0, lines.size()-1) : lines);
+    view.refuse(details);
+    if (!port){ return; }
+    try{ Follow.to(lines.getLast()).refuse(details); }
+    catch (Refused r){ view.refuse(r.getMessage()); }
   }
   private void request(String verb, List<String> args, Optional<Follow> follow){
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
@@ -311,7 +324,8 @@ public final class Manager{
     attenuated.keySet().stream().filter(m -> !all.contains(m)).findFirst().ifPresent(m -> { throw new Refused(Report.attenuatedNotAMain(p.alias(), m, all)); });
     var attenuators= p.knownAttenuators();
     attenuated.forEach((m, as) -> as.stream().filter(a -> !attenuators.contains(a)).findFirst().ifPresent(a -> { throw new Refused(Report.notAnAttenuator(p.alias(), m, a, attenuators)); }));
-    p.entry().mounts().values().stream().flatMap(d -> registry.named(d).stream()).forEach(e -> scan(e.path()));
+    var mounted= p.entry().mounts().values().stream().flatMap(d -> registry.named(d).stream()).map(Entry::path).toList();
+    mounted.stream().filter(d -> !scan(d)).toList().forEach(this::unreachable);
     var mountProblems= p.mountProblems(projects());
     if (!mountProblems.isEmpty()){ throw new Refused(Report.mountsRefused(p.alias(), mountProblems)); }
     selected = Optional.of(f);
@@ -546,7 +560,10 @@ public final class Manager{
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
     granted(next);
-    if (!registry.extensions().equals(next.extensions())){ reconcile(Optional.empty(), next.extensions()); }
+    if (!registry.extensions().equals(next.extensions())){
+      refresh();
+      reconcile(Optional.empty(), next.extensions());
+    }
     var old= registry.content();
     registry.save(next, text);
     var removed= old.projects().stream().filter(o -> same(o, next).isEmpty()).toList();
