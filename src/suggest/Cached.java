@@ -60,7 +60,7 @@ public final class Cached{
   private static boolean others(Path out, List<Pkg> pkgs){
     if (!Files.isDirectory(out)){ return false; }
     var kept= Stream.concat(Stream.of("_error.txt", "_unfinished.txt", "_compile_start.txt", "icons"), pkgs.stream().flatMap(p -> Stream.of(".json", ".jar", ".html", ".txt").map(x -> p.name()+x))).toList();
-    try (var s= Files.list(out)){ return s.anyMatch(f -> !kept.contains(f.getFileName().toString())); }
+    try (var s= Files.list(out)){ return s.anyMatch(f -> !f.getFileName().toString().startsWith(".") && !kept.contains(f.getFileName().toString())); }
     catch (NoSuchFileException e){ return false; }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }

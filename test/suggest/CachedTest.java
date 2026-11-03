@@ -96,6 +96,7 @@ final class CachedTest{
     at(project.resolve(".fearless_out").resolve("_error.txt"), "broken", old);
     at(project.resolve(".fearless_out").resolve("icons").resolve("a.png"), "", old);
     at(project.resolve(".fearless_out").resolve("app.html"), "", old);
+    at(project.resolve(".fearless_out").resolve(".app.html.swp"), "", old);
     same(State.compiled, project, base(dir));
   }
   @Test void aChangedMapDirectiveWithAnOldTimeMakesTheProjectOutOfDate(@TempDir Path dir){
