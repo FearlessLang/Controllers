@@ -17,6 +17,7 @@ final class Names{
     return problem(container.removeFirstSegments(2).append(name).toString(), file);
   }
   static Optional<String> problem(String path, boolean file){
+    if (path.length() > 200){ return Optional.of("\""+path+"\" is longer than 200 characters: a path inside a Fearless project is at most 200 characters long."); }
     var segments= List.of(path.split("/", -1));
     for (int i= 0; i < segments.size(); i += 1){
       var p= segment(segments.get(i), file && i == segments.size()-1);
@@ -36,7 +37,7 @@ final class Names{
   private static Optional<String> segment(String s, boolean file){
     if (s.isEmpty()){ return Optional.of("A name is empty: the path has \"/\" at its start or end, or twice in a row."); }
     if (s.startsWith(".")){ return hidden(s); }
-    var dot= s.indexOf('.');
+    var dot= file ? s.indexOf('.') : -1;
     var atom= dot < 0 ? s : s.substring(0, dot);
     var c0= atom.charAt(0);
     if (!(c0 == '_' || (c0 >= 'a' && c0 <= 'z'))){ return Optional.of("\""+s+"\" starts with \""+c0+"\": a Fearless name starts with a lowercase letter or \"_\"."); }

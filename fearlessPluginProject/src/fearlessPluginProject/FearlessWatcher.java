@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -85,6 +86,8 @@ public final class FearlessWatcher extends Job implements IStartup{
       description.setNatureIds(new String[]{Nature.id});
       project.setDescription(description, monitor);
     }
+    var closedOther= !project.isOpen() && !List.of(project.getWorkspace().loadProjectDescription(project.getLocation().append(".project")).getNatureIds()).contains(Nature.id);
+    if (closedOther){ clash(project.getName()); return false; }
     project.open(monitor);
     if (!Nature.marks(project)){ clash(project.getName()); return false; }
     clashes.remove(project.getName());
