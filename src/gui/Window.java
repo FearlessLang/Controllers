@@ -363,7 +363,7 @@ public final class Window implements Manager.View{
   /// xdg-open ends with an error when no program of the desktop opens the file
   private static void said(Consumer<String> refuse, Path path, Process opener){
     if (!Fs.isLinux()){ return; }
-    Thread.startVirtualThread(() -> { if (ended(opener) != 0){ refuse.accept(Report.noProgramOpens(path)); } });
+    Thread.startVirtualThread(() -> { if (ended(opener) != 0){ SwingUtilities.invokeLater(() -> refuse.accept(Report.noProgramOpens(path))); } });
   }
   private static int ended(Process p){
     try{ return p.waitFor(); }

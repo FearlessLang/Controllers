@@ -1709,6 +1709,24 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertFalse(view.out(hello).contains("were updated"));
     same("Fearless crashed: either this project's compilation cache was corrupted[###]", compileError(hello));
   }
+  @Test void aCorruptedCacheThatCanNotBeDeletedMakesTheProjectInvalid(@TempDir Path dir){
+    var broken= new java.util.concurrent.atomic.AtomicBoolean();
+    var m= manager(dir, f -> {
+      if (broken.get()){ throw userMessages.UserError.cacheCorruptedOrCrash(new IllegalStateException("damaged")); }
+      return known("hello.Hello").apply(f);
+    });
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    broken.set(true);
+    var out= hello.resolve(Facts.outDir);
+    Disk.noWrite(out);
+    try{
+      send(m, "Check", "hello");
+      assertTrue(project(m, hello).problem().isPresent());
+      assertEquals(List.of(), failures);
+    }
+    finally{ Disk.allow(out); }
+  }
   @Test void aStartUpRefusedACapturedExtensionIsFatal(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     code(m, dir, "hello");

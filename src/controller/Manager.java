@@ -659,7 +659,9 @@ public final class Manager{
   }
   private Optional<Facts> checked(Path f){
     try{ return facts(f); }
-    catch (UserError err){ corrupted(f, err.getMessage()); rebuild(Optional.empty()); return facts(f); }
+    catch (UserError err){ corrupted(f, err.getMessage()); rebuild(Optional.empty()); }
+    try{ return facts(f); }
+    catch (UserError err){ return Optional.of(Facts.invalid(err.getMessage())); }
   }
   private Optional<Facts> facts(Path f){
     var e= registry.of(f).orElseThrow();
