@@ -319,6 +319,26 @@ public class Child{
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
   }
+  @Test void anEditOfOneProjectKeepsThePathOfAnotherWhoseFolderBecameALink(@TempDir Path dir){
+    var m= manager(dir);
+    registered(m, dir, "a");
+    var b= registered(m, dir, "b");
+    var c= folder(dir, "c");
+    Fs.rmTree(b);
+    Disk.link(b, c);
+    send(m, "Kind", "a", "dataRead");
+    assertEquals(List.of(b), m.state().projects().stream().map(Project::folder).filter(f -> f.endsWith("b") || f.endsWith("c")).toList());
+  }
+  @Test void aProjectFolderReplacedByALinkToAnotherProjectWhileTheManagerIsOffIsNotFatal(@TempDir Path dir){
+    var m= manager(dir);
+    var a= registered(m, dir, "a");
+    var b= registered(m, dir, "b");
+    Fs.rmTree(b);
+    Disk.link(b, a);
+    var again= manager(dir);
+    again.settle();
+    assertEquals(List.of(), failures);
+  }
   @Test void registeringAFolderMakesItAnIdleProjectNamedByItsMarker(@TempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir, "hello");
@@ -860,7 +880,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     same("[###]ran hello.Slow\n--- terminating hello.Slow ---\n--- hello.Slow was terminated[###]", view.out(hello));
     assertEquals("The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getFirst());
   }
-  @Test void aRefusedForgetOfAnUnreachableProjectIsShownNotFatal(@TempDir Path dir) throws IOException{
+  @Test void anUnreachableProjectIsForgottenWhileAProjectWhoseFolderBecameALinkRunsAMain(@TempDir Path dir) throws IOException{
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir.resolve("a"), "hello");
     var data= data(dir);
@@ -872,7 +892,8 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     Disk.link(dir.resolve("a"), dir.resolve("b"));
     Fs.rmTree(data);
     send(m, "Check", "data");
-    same("[###]The project \"data\" connects to the folder [###]\nThis folder is now unreachable.\nThe project \"data\" has now been removed.\nRefused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".[###]", String.join("\n", view.refused));
+    same("[###]The project \"data\" connects to the folder [###]\nThis folder is now unreachable.\nThe project \"data\" has now been removed.\nRefused request \"Check\" on project \"data\".\nNo project is named \"data\".[###]", String.join("\n", view.refused));
+    assertEquals(List.of("hello "+hello), listed(m));
     send(m, "Terminate", "hello");
     assertEquals(List.of(), failures);
   }

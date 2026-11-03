@@ -531,7 +531,7 @@ public final class Manager{
     var c= registry.content();
     edit(new Content(c.projects().stream().map(e -> e.path().equals(f) ? op.apply(e) : e).toList(), c.extensions()));
   }
-  private void edit(Content next){ edit(Registry.text(next), registry.infoFile()); }
+  private void edit(Content next){ edit(Registry.text(next), registry.infoFile(), p -> p); }
   private static <T> Map<String,T> with(Map<String,T> map, String key, Optional<T> value){
     var out= new LinkedHashMap<>(map);
     value.ifPresentOrElse(v -> out.put(key, v), () -> out.remove(key));
@@ -572,14 +572,14 @@ public final class Manager{
   }
   private void editMetadata(Path file){
     if (!Files.isRegularFile(file)){ throw new Refused(Report.metadataNoFile(file)); }
-    try{ edit(UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(), file); }
+    try{ edit(UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(), file, Registry::real); }
     catch (CharacterCodingException e){ throw new Refused(Report.metadataNotUtf8(file)); }
     catch (IOException e){ throw new Refused(Report.metadataUnreadable(file, e)); }
     view.edited(file);
   }
-  private void edit(String text, Path file){
+  private void edit(String text, Path file, UnaryOperator<Path> identity){
     Content next;
-    try{ next= Registry.inferred(Registry.parse(text, file, Registry::real, dir), registry.content()); }
+    try{ next= Registry.inferred(Registry.parse(text, file, identity, dir), registry.content()); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
     granted(next);
