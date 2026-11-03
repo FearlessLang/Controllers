@@ -292,12 +292,12 @@ final class SystemExtensionTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "opens": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "code"
     }
-  },
+  ],
   "systemExtensions": ["fzz"]
 }
 """.formatted(slashed(opens)));

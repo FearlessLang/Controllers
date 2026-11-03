@@ -272,7 +272,7 @@ public class Child{
     send(m, "Show");
     assertEquals(1, view.shown);
     assertEquals(List.of(), listed(m));
-    assertEquals("{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n", info(dir));
+    assertEquals("{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n", info(dir));
   }
   @Test void quitAndResetAreForTheProcess(@TempDir Path dir){
     var m= manager(dir);
@@ -332,6 +332,66 @@ public class Child{
     send(m, "Register", TaggedText.of(second.toString()));
     assertEquals(List.of("com "+first, "com10 "+second), listed(m));
     assertTrue(Files.isRegularFile(second.resolve("com10.fearless")));
+    assertEquals(List.of(), view.refused);
+  }
+  @Test void aMarkerRenamedByHandRenamesTheProject(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    registered(m, dir, "other");
+    Fs.ofV(() -> Files.move(hello.resolve("hello.fearless"), hello.resolve("hi.fearless")));
+    send(m, "Show", "hi");
+    assertEquals(Optional.of(hello), m.state().selected());
+    send(m, "Show", "hello");
+    assertEquals(List.of("""
+Refused request "Show" on project "hello".
+No project is named "hello".
+The projects are:
+  hi
+  other"""), view.refused);
+  }
+  @Test void aRequestNamingTheOldNameOfAProjectRenamedByHandIsRefused(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    Fs.ofV(() -> Files.move(hello.resolve("hello.fearless"), hello.resolve("hi.fearless")));
+    send(m, "Kind", "hello", "dataRead");
+    assertEquals(List.of("Refused request \"Kind\" on project \"hello\".\nNo project is named \"hello\".\nThe projects are:\n  hi"), view.refused);
+    assertEquals(Kind.idle, project(m, hello).kind());
+  }
+  @Test void aMissingMarkerIsWrittenAgainAtTheNextAutoCheck(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    send(m, "Kind", "hello", "dataRead");
+    Fs.ofV(() -> Files.delete(hello.resolve("hello.fearless")));
+    send(m, "Register", TaggedText.of(hello.toString()));
+    assertEquals(MakeDemo.markerContent, Fs.readUtf8(hello.resolve("hello.fearless")));
+    assertEquals(List.of("hello "+hello), listed(m));
+    assertEquals(Project.State.dataRead, project(m, hello).state());
+    assertEquals(List.of(), view.refused);
+  }
+  @Test void aFolderLaterInProjectsInfoWithTheMarkerNameOfAnEarlierFolderGetsItsMarkerRenamed(@TempDir Path dir){
+    var m= manager(dir);
+    var first= registered(m, dir, "first");
+    var second= registered(m, dir, "second");
+    Fs.ofV(() -> Files.move(first.resolve("first.fearless"), first.resolve("second.fearless")));
+    send(m, "Register", TaggedText.of(first.toString()));
+    assertEquals(List.of("second "+first, "second2 "+second), listed(m));
+    assertTrue(Files.isRegularFile(first.resolve("second.fearless")));
+    assertTrue(Files.isRegularFile(second.resolve("second2.fearless")));
+    assertFalse(Files.exists(second.resolve("second.fearless")));
+    assertEquals(List.of(), view.refused);
+  }
+  @Test void aFolderWithSeveralMarkersKeepsItsNameAndIsInvalid(@TempDir Path dir){
+    var m= manager(dir);
+    var several= folder(dir, "several");
+    Fs.writeUtf8(several.resolve("beta.fearless"), "");
+    Fs.writeUtf8(several.resolve("alpha.fearless"), "");
+    send(m, "Register", TaggedText.of(several.toString()));
+    send(m, "Kind", "alpha", "dataRead");
+    send(m, "Check", "alpha");
+    send(m, "Check", "alpha");
+    assertEquals(List.of("alpha "+several), listed(m));
+    same("More than one .fearless marker file was found in\n[###]several\nA project folder holds exactly one, and its name is the project name: keep only \"alpha.fearless\".", project(m, several).problem().orElseThrow());
+    assertTrue(Files.isRegularFile(several.resolve("beta.fearless")));
     assertEquals(List.of(), view.refused);
   }
   @Test void aFileRegistersTheFolderItIsInAndRegisteringAgainSelects(@TempDir Path dir){
@@ -452,13 +512,13 @@ ran hello.Slow
   @Test void everyCheckOfAnInvalidProjectWritesItsErrorFile(@TempDir Path dir){
     var m= manager(dir);
     var hello= code(m, dir, "hello");
-    Fs.ofV(() -> Files.delete(hello.resolve("hello.fearless")));
+    Fs.writeUtf8(hello.resolve("other.fearless"), "");
     send(m, "Check", "hello");
     var error= hello.resolve(Facts.outDir).resolve("_error.txt");
-    same("[###]\"hello.fearless\" is missing[###]", Fs.readUtf8(error));
+    same("More than one .fearless marker file was found in[###]keep only \"hello.fearless\".[###]", Fs.readUtf8(error));
     Fs.ofV(() -> Files.delete(error));
     send(m, "Check", "hello");
-    same("[###]\"hello.fearless\" is missing[###]", Fs.readUtf8(error));
+    same("More than one .fearless marker file was found in[###]keep only \"hello.fearless\".[###]", Fs.readUtf8(error));
   }
   @Test void aRequestRightAfterATerminateFindsTheMainEnded(@TempDir Path dir){
     var m= manager(dir, "hello.Slow");
@@ -822,6 +882,18 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     }
     finally{ Disk.allow(cache); }
   }
+  @Test void aFolderWhoseMarkerCanNotBeRenamedGetsNoNameAndIsForgotten(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    Fs.ofV(() -> Files.move(hello.resolve("hello.fearless"), hello.resolve("1bad.fearless")));
+    Disk.noWrite(hello);
+    try{
+      send(m, "Check", "hello");
+      assertEquals(List.of(), listed(m));
+      assertEquals(List.of(), failures);
+    }
+    finally{ Disk.allow(hello); }
+  }
   @Test void aKindChangeOfADataProjectMountedOnARunningMainIsRefused(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
     var hello= code(m, dir, "hello");
@@ -867,22 +939,26 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(Map.of("hello.Notes", "data", "hello.Pub", "data", "hello.Old", "other"), project(m, hello).entry().mounts());
     assertEquals(Kind.dataRead, project(m, other).kind());
   }
-  @Test void anEditRenamingAProjectRemovesItAndAddsAProjectWithNoCache(@TempDir Path dir){
+  @Test void anEditChangingThePathOfAProjectRemovesItAndAddsAProjectWithNoCache(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
-    edit(m, dir, info(dir).replace("\"hello\": {", "\"hello2\": {"));
-    assertEquals(List.of("hello2 "+hello), listed(m));
-    assertFalse(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
+    var other= folder(dir, "other");
+    Fs.writeUtf8(other.resolve(Facts.outDir).resolve("other.built"), "");
+    edit(m, dir, info(dir).replace(hello.toString(), other.toString()));
+    assertEquals(List.of("other "+other), listed(m));
+    assertEquals(Kind.code, project(m, other).kind());
+    assertFalse(Files.exists(other.resolve(Facts.outDir).resolve("other.built")));
+    assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
   }
-  @Test void anEditRenamingAProjectWithARunningMainIsRefused(@TempDir Path dir){
+  @Test void anEditChangingThePathOfAProjectWithARunningMainIsRefused(@TempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     var before= info(dir);
-    edit(m, dir, before.replace("\"hello\": {", "\"hello2\": {"));
+    edit(m, dir, before.replace(hello.toString(), folder(dir, "other").toString()));
     assertEquals(before, info(dir));
     same("Refused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".", view.refused.getLast());
     send(m, "Terminate", "hello");
@@ -890,7 +966,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
   }
   @Test void anEditKeepsTheTextOfItsFile(@TempDir Path dir){
     var m= manager(dir);
-    var text= "{ \"systemExtensions\": [ ],\n  \"projects\": { } }\n";
+    var text= "{ \"systemExtensions\": [ ],\n  \"projects\": [ ] }\n";
     edit(m, dir, text);
     assertEquals(List.of(), view.refused);
     assertEquals(text, info(dir));
@@ -899,13 +975,13 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
-    edit(m, dir, "{\"projects\": {\"data\": {\"path\": \"Str:\\\"nowhere\\\"\"}}, \"systemExtensions\": []}");
+    edit(m, dir, "{\"projects\": [{\"path\": \"Str:\\\"nowhere\\\"\"}], \"systemExtensions\": []}");
     same("In file: [###]edited.info[###]\"path\" must be an absolute path[###]", view.refused.getLast());
     assertEquals(List.of(), view.edited);
     var good= edit(m, dir, Registry.text(new Registry.Content(List.of(project(m, data).entry().withKind(Kind.dataEdit)), List.of())));
     assertEquals(List.of(good), view.edited);
     assertEquals(Kind.dataEdit, project(m, data).kind());
-    edit(m, dir, "{\"projects\": {}, \"systemExtensions\": []}");
+    edit(m, dir, "{\"projects\": [], \"systemExtensions\": []}");
     assertEquals(List.of(), listed(m));
     send(m, "EditMetadata", TaggedText.of(dir.resolve("none.info").toString()));
     same("Refused request \"EditMetadata\" on path\n[###]none.info\nNo file is at that path.", view.refused.getLast());
@@ -931,7 +1007,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     b.view.refused.clear();
     send(a.m, verb);
     var managerDir= b.dir.resolve("manager");
-    edit(b.m, b.dir, edited.apply(Registry.parse(info(b.dir), managerDir.resolve("projects.info"), p -> p, managerDir)));
+    edit(b.m, b.dir, edited.apply(Registry.inferred(Registry.parse(info(b.dir), managerDir.resolve("projects.info"), p -> p, managerDir))));
     var outcomes= List.of(outcome(a), outcome(b));
     for (var t : List.of(a, b)){
       t.m.state().projects().stream().filter(Project::busy).forEach(p -> send(t.m, "Terminate", p.alias()));
@@ -1044,7 +1120,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     again.settle();
     again.settle();
     assertEquals(List.of(), listed(again));
-    same("The project \"data\" connects to the folder [###]\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getLast());
+    same("The project connects to the folder [###]\nThis folder is now unreachable.\nThe project has now been removed.", view.refused.getLast());
   }
   @Test void aProjectWhoseFolderIsGoneIsForgottenAfterADialog(@TempDir Path dir){
     var m= manager(dir);
@@ -1066,10 +1142,10 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Register", TaggedText.of(data.toString()));
     send(m, "Kind", "data", "dataRead");
     view.visible = false;
-    var marker= data.resolve("data.fearless");
+    var marker= data.resolve("other.fearless");
     for (var request : List.of(List.of("Mount", "data", "other.Other other"), List.of("Show", "data"), List.of("Terminate", "data"), List.of("Check", "data"))){
-      var valid= Files.exists(marker);
-      if (valid){ Fs.ofV(() -> Files.delete(marker)); }
+      var valid= !Files.exists(marker);
+      if (!valid){ Fs.ofV(() -> Files.delete(marker)); }
       else{ Fs.writeUtf8(marker, ""); }
       send(m, request.toArray(String[]::new));
       assertEquals(valid, project(m, data).problem().isPresent());
@@ -1132,7 +1208,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     Assumptions.assumeFalse(Files.isWritable(managerDir));
     send(m, "Mount", "hello", "hello.Data hello");
     send(m, "Kind", "hello", "idle");
-    edit(m, dir, "{\"projects\": {}, \"systemExtensions\": []}");
+    edit(m, dir, "{\"projects\": [], \"systemExtensions\": []}");
     Disk.allow(managerDir);
     assertEquals(3, failures.size());
     failures.forEach(f -> same("Fearless could not save the file \"projects.info\" of its manager folder.[###]", f.getMessage()));
@@ -1530,13 +1606,13 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
-  @Test void aMarkerDeletedWhileAMainRunsTerminatesTheMain(@TempDir Path dir){
+  @Test void aSecondMarkerWrittenWhileAMainRunsTerminatesTheMain(@TempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
-    Fs.ofV(() -> Files.delete(hello.resolve("hello.fearless")));
+    Fs.writeUtf8(hello.resolve("other.fearless"), "");
     send(m, "Show", "hello");
     idle(m);
     same("""

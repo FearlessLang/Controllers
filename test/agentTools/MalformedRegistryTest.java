@@ -177,12 +177,12 @@ final class MalformedRegistryTest extends ManagerTest{
     var project= project("helloWorld");
     var remembered= """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project));
@@ -216,7 +216,7 @@ final class MalformedRegistryTest extends ManagerTest{
     startAlone();
     freshShown.go();
     stabilize();
-    checkContent(info, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    checkContent(info, "{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n");
     managerMenu.go();
     quitManager.go();
     freshQuit.go();

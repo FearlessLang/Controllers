@@ -182,7 +182,7 @@ final class AddFolderTest extends ManagerTest{
     chooserGone.go();
     same(empty, center);
     stabilize();
-    checkContent(info, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    checkContent(info, "{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n");
     managerMenu.go();
     addFolder.go();
     chooserShownAgain.go();
@@ -196,12 +196,12 @@ final class AddFolderTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project)));

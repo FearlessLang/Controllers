@@ -357,13 +357,13 @@ Note: Consumer[mut Frame]{:: .title "chain" .content.pane{:: .label{:: .text "te
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "chain": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": ["chain.Show", "chain.Tell"]
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(chain)));

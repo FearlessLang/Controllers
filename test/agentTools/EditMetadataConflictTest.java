@@ -18,16 +18,16 @@ final class EditMetadataConflictTest extends ManagerTest{
     on("omarchy_hyprland", () -> region(val(null), val(null), val(null), val(null))));
   static final String two= """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "%s"
     },
-    "start": {
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """;

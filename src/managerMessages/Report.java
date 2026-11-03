@@ -119,9 +119,11 @@ folder.
 
   //-- the content of a project folder
   public static String folderUnreadable(Path folder, IOException e){ return "The folder of this project cannot be read:\n"+path(folder.toString())+"\n"+fileFailure(e)+"\nGive Fearless access to it, or forget this project."; }
-  public static String unreachable(String name, Path folder){ return "The project "+disp(name)+" connects to the folder "+disp(folder.toString())+".\nThis folder is now unreachable.\nThe project "+disp(name)+" has now been removed."; }
+  public static String unreachable(String name, Path folder){
+    var project= name.isEmpty() ? "The project" : "The project "+disp(name);
+    return project+" connects to the folder "+disp(folder.toString())+".\nThis folder is now unreachable.\n"+project+" has now been removed.";
+  }
   public static String markersMany(Path folder, String marker){ return "More than one .fearless marker file was found in\n"+path(folder.toString())+"\nA project folder holds exactly one, and its name is the project name: keep only \""+marker+"\"."; }
-  public static String markerMissing(Path folder, String marker){ return "The marker file \""+marker+"\" is missing from\n"+path(folder.toString())+"\nRestore it, or forget and register this project folder again."; }
   public static UserError projectIconsMany(Path dir, List<Path> found){
     return new UserError("""
 More than one .png file was found for this project's icon.
@@ -159,16 +161,15 @@ Replace that file with a PNG image, or remove it.
   public static String infoNotObject(){ return "The whole file must be an object {...} with \"projects\" and \"systemExtensions\"."; }
   public static String infoUnknownKey(String key){ return "Unknown key \""+key+"\": the keys are \"projects\" and \"systemExtensions\"."; }
   public static String infoMissing(String key){ return "The key \""+key+"\" is missing: the keys are \"projects\" and \"systemExtensions\"."; }
-  public static String infoProjectsNotObject(){ return "\"projects\" must be an object {...} mapping each project name to the metadata of that project."; }
-  public static String infoBadName(String name){ return "\""+name+"\" is not a valid project name: a project name uses only lowercase letters, digits and underscores, starts with a letter or an underscore, and is not a name the file system reserves (\"con\", \"prn\", \"aux\", \"nul\", \"com1\" to \"com9\", \"lpt1\" to \"lpt9\")."; }
-  public static String infoOverlap(String name, String other){ return "\""+name+"\" has the same path as \""+other+"\", or one is inside the other; every file belongs to exactly one project."; }
-  public static String infoProjectNotObject(String name){ return "The metadata of \""+name+"\" must be an object {...}."; }
+  public static String infoProjectsNotList(){ return "\"projects\" must be a list [...] of the registered projects, each an object {...} with the metadata of that project."; }
+  public static String infoOverlap(int n, int other){ return "Project "+n+" of \"projects\" has the same path as project "+other+", or one is inside the other; every file belongs to exactly one project."; }
+  public static String infoProjectNotObject(){ return "Every entry in \"projects\" must be an object {...} with the metadata of a project."; }
   public static String infoUnknownAttribute(String key, List<String> keys){ return "Unknown project attribute \""+key+"\": the attributes of a project are "+quoted(keys)+"."; }
-  public static String infoMissingPath(String name){ return "Project \""+name+"\" is missing its \"path\": the absolute path of the project folder."; }
+  public static String infoMissingPath(int n){ return "Project "+n+" of \"projects\" is missing its \"path\": the absolute path of the project folder."; }
   public static String infoEmptyPath(){ return "\"path\" cannot be empty: it is the absolute path of the project folder."; }
   public static String infoNotAPath(String why){ return "\"path\" is not a path this system accepts: "+why; }
   public static String infoNotAbsolute(String given){ return "\"path\" must be an absolute path, not \""+given+"\"."; }
-  public static String infoMissingKind(String name, String kinds){ return "Project \""+name+"\" is missing its \"kind\": one of "+kinds+"."; }
+  public static String infoMissingKind(int n, String kinds){ return "Project "+n+" of \"projects\" is missing its \"kind\": one of "+kinds+"."; }
   public static String infoBadKind(String given, String kinds){ return "\"kind\" must be one of "+kinds+", not \""+given+"\"."; }
   public static String infoNotString(String label){ return label+" must be a string \"...\"."; }
   public static String infoNotList(String label){ return label+" must be a list [...] of strings."; }

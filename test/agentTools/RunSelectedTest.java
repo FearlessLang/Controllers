@@ -270,13 +270,13 @@ final class RunSelectedTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": ["hello.Hello1", "hello.Hello4"]
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project)));

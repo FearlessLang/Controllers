@@ -157,12 +157,12 @@ final class LaunchOnFileTest extends ManagerTest{
     var project= project("helloWorld");
     var remembered= """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project));

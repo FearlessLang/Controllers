@@ -236,12 +236,12 @@ final class TerminateTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "start": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "code"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(gui)));

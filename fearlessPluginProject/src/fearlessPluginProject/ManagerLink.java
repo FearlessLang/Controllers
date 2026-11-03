@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -41,8 +42,14 @@ public final class ManagerLink{
   static final Path baseCache= path(link.get("baseCache"));
   static Map<String,Project> projects(){
     var res= new LinkedHashMap<String,Project>();
-    Info.obj(Info.parse(manager.resolve("projects.info")).get("projects")).forEach((alias,p) -> res.put(alias, project(Info.obj(p))));
+    Info.lst(Info.parse(manager.resolve("projects.info")).get("projects")).stream().map(p -> project(Info.obj(p))).forEach(p -> marker(p.folder()).ifPresent(name -> res.putIfAbsent(name, p)));
     return res;
+  }
+  private static Optional<String> marker(Path folder){
+    if (!Files.isDirectory(folder, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(folder)){ return Optional.empty(); }
+    try (var files= Files.list(folder)){ return files.filter(p -> p.getFileName().toString().endsWith(".fearless") && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).map(p -> p.getFileName().toString()).sorted().findFirst().map(n -> n.substring(0, n.length()-".fearless".length())); }
+    catch (NoSuchFileException e){ return Optional.empty(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   static Project project(String alias){ return Objects.requireNonNull(projects().get(alias)); }
   private static Project project(Map<String,Object> o){

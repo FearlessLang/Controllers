@@ -5,10 +5,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.CharacterCodingException;
-import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.LinkOption;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -46,7 +44,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
   /// None for a folder the manager can not reach.
   /// The tests are the unit test logs written since `since`, oldest first, or else the newest unit test log.
   public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check, Instant since){
-    if (!Files.isDirectory(folder, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(folder)){ return Optional.empty(); }
+    if (!Names.reachable(folder)){ return Optional.empty(); }
     try{ return Optional.of(retried(() -> read(folder, alias, kind, check, since))); }
     catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
   }

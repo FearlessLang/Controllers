@@ -98,9 +98,10 @@ final class FactsTest{
     assertEquals(Optional.empty(), facts.problem());
     assertEquals(Optional.empty(), facts.stale());
   }
-  @Test void aFolderWithoutItsMarkerIsInvalid(@TempDir Path dir){
+  @Test void aFolderWithTwoMarkersIsInvalid(@TempDir Path dir){
     var project= project(dir, "someProject");
-    same("[###]\"other.fearless\" is missing[###]", facts(project, "other", Kind.code).problem().orElseThrow());
+    Fs.writeUtf8(project.resolve("other.fearless"), "");
+    same("More than one .fearless marker file was found in[###]keep only \"someproject.fearless\".", facts(project, "someproject", Kind.code).problem().orElseThrow());
   }
   @Test void aMissingFolderIsUnreachable(@TempDir Path dir){
     assertEquals(Optional.empty(), Facts.of(dir.resolve("gone"), "gone", Kind.code, _ -> new Coordinator.State.OutOfDate(), java.time.Instant.MAX));

@@ -1,10 +1,13 @@
 package agentTools;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.nio.file.Files;
+import java.util.List;
 
 import tools.Fs;
 
-final class EditMetadataRenameTest extends ManagerTest{
+final class MarkerRenameTest extends ManagerTest{
   final Action tileArea= action("tileArea",
     on("ubuntu_gnome", () -> region(val(69), val(95), val(128), val(85))),
     on("kubuntu_plasma", () -> region(val(3), val(54), val(128), val(85))),
@@ -80,66 +83,6 @@ final class EditMetadataRenameTest extends ManagerTest{
     on("arch_sway", () -> waitAfter(val(null))),
     on("void_i3", () -> waitAfter(val(null))),
     on("omarchy_hyprland", () -> waitAfter(val(null))));
-  final Action editorShown= action("editorShown",
-    on("ubuntu_gnome", () -> waitAfter(val(5500))),
-    on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(2000))),//the manager opens the editor window of the metadata
-    on("opensuse_plasma", () -> waitAfter(val(null))),
-    on("debian_cinnamon", () -> waitAfter(val(null))),
-    on("lubuntu_lxqt", () -> waitAfter(val(null))),
-    on("fedora_gnome", () -> waitAfter(val(null))),
-    on("debian_gnome_x11", () -> waitAfter(val(null))),
-    on("fedora_cosmic", () -> waitAfter(val(null))),
-    on("debian_mate", () -> waitAfter(val(null))),
-    on("xubuntu_xfce", () -> waitAfter(val(7000))),
-    on("arch_sway", () -> waitAfter(val(null))),
-    on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
-  final Action nameOld= action("nameOld",
-    on("ubuntu_gnome", () -> waitDoubleClick(val(0), val(646), val(342))),
-    on("kubuntu_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("windows", () -> waitDoubleClick(val(100), val(296), val(105))),
-    on("opensuse_plasma", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("debian_cinnamon", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("lubuntu_lxqt", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("fedora_gnome", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("debian_gnome_x11", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("fedora_cosmic", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("debian_mate", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("xubuntu_xfce", () -> waitDoubleClick(val(0), val(613), val(339))),
-    on("arch_sway", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("void_i3", () -> waitDoubleClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitDoubleClick(val(null), val(null), val(null))));
-  final Action commit= action("commit",
-    on("ubuntu_gnome", () -> waitClick(val(0), val(1278), val(830))),
-    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(100), val(924), val(619))),
-    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
-    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
-    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
-    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
-    on("xubuntu_xfce", () -> waitClick(val(0), val(1245), val(827))),
-    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
-    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
-  final Action renamed= action("renamed",
-    on("ubuntu_gnome", () -> waitAfter(val(10000))),
-    on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(4000))),//the manager saves the metadata and renames the project
-    on("opensuse_plasma", () -> waitAfter(val(null))),
-    on("debian_cinnamon", () -> waitAfter(val(null))),
-    on("lubuntu_lxqt", () -> waitAfter(val(null))),
-    on("fedora_gnome", () -> waitAfter(val(null))),
-    on("debian_gnome_x11", () -> waitAfter(val(null))),
-    on("fedora_cosmic", () -> waitAfter(val(null))),
-    on("debian_mate", () -> waitAfter(val(null))),
-    on("xubuntu_xfce", () -> waitAfter(val(12500))),
-    on("arch_sway", () -> waitAfter(val(null))),
-    on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
   final Action markerSeen= action("markerSeen",
     on("ubuntu_gnome", () -> waitAfter(val(10000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -180,34 +123,26 @@ final class EditMetadataRenameTest extends ManagerTest{
     openOld.go();
     openOldMarker.go();
     projectShown.go();
-    var valid= look();
-    managerMenu.go();
-    editMetadata.go();
-    editorShown.go();
-    nameOld.go();
-    type("fresh");
-    commit.go();
-    renamed.go();
     tileArea.go();
     var tile= region;
-    changed(valid, tile);
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "fresh": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(old)));
-    var invalid= look();
+    var named= look();
     Files.move(old.resolve("old.fearless"), old.resolve("fresh.fearless"));
     stabilize();
     markerSeen.go();
-    changed(invalid, tile);
+    changed(named, tile);
+    assertEquals(List.of(old.resolve("fresh.fearless")), Fs.walk(old, s -> s.filter(p -> p.getFileName().toString().endsWith(".fearless")).toList()));
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

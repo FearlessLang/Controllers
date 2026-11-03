@@ -287,7 +287,7 @@ final class ChooserNavigationTest extends ManagerTest{
     openAttic.go();
     atticShown.go();
     stabilize();
-    checkContent(info, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    checkContent(info, "{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n");
     assertEquals(atticFiles, Fs.walk(attic, s -> s.sorted().toList()));
     pickInner.go();
     open.go();
@@ -295,12 +295,12 @@ final class ChooserNavigationTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "inner": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(inner)));

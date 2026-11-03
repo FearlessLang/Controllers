@@ -124,7 +124,7 @@ final class RefusedFolderTest extends ManagerTest{
     var center= region;
     changed(before, center);
     stabilize();
-    checkContent(info, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    checkContent(info, "{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n");
     okButton.go();
     managerMenu.go();
     quitManager.go();

@@ -323,12 +323,12 @@ final class NothingTickedTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "code"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project)));

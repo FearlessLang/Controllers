@@ -146,10 +146,10 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello, notes), 800);
     assertEquals(List.of(), brokenMounts(panel));
-    Fs.ofV(() -> Files.delete(notesFolder.resolve("notes.fearless")));
+    Fs.writeUtf8(notesFolder.resolve("other.fearless"), "");
     var gone= project(notesFolder, Kind.dataRead, Map.of(), Optional.empty());
     panel.render(hello, List.of(hello, gone), 800);
     assertEquals(1, brokenMounts(panel).size());
-    Err.strCmp("The mount of \"notes\" on \"hello.Diary\" is broken: the content of project \"notes\" is invalid: The marker file \"notes.fearless\" is missing from[###]", brokenMounts(panel).getFirst());
+    Err.strCmp("The mount of \"notes\" on \"hello.Diary\" is broken: the content of project \"notes\" is invalid: More than one .fearless marker file was found in[###]", brokenMounts(panel).getFirst());
   }
 }

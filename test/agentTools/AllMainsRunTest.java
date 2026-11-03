@@ -300,13 +300,13 @@ final class AllMainsRunTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": ["hello.Hello1", "hello.Hello3", "hello.Hello4", "hello.Hello5", "hello.Hello6"]
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project)));

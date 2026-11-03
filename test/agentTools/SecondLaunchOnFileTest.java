@@ -141,16 +141,16 @@ final class SecondLaunchOnFileTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     },
-    "start": {
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project), slashed(other)));

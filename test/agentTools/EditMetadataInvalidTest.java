@@ -200,12 +200,12 @@ final class EditMetadataInvalidTest extends ManagerTest{
     var project= project("helloWorld");
     var idle= """
 {
-  "projects": {
-    "hello_world": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project));

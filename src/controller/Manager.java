@@ -284,7 +284,7 @@ public final class Manager{
   private void project(String verb, List<String> args, Optional<Follow> follow){
     var name= args.getFirst();
     Supplier<Refused> unknown= () -> new Refused(Report.unknownProject(verb, name, registry.all().stream().map(Entry::alias).toList()));
-    var f= registry.named(name).orElseThrow(unknown).path();
+    var f= lookedUp(name).orElseThrow(unknown).path();
     if (!scan(f)){ unreachable(f); throw unknown.get(); }
     switch (verb){
       case "Show" -> { selected = Optional.of(f); view.show(); }
@@ -295,12 +295,24 @@ public final class Manager{
       case "DeleteCache" -> deleteCache(f);
       case "Kind" -> kind(f, args.get(1));
       case "Forget" -> forget(f);
-      case "Mount" -> mount(f, args.get(1), Optional.of(registry.named(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(name, args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
+      case "Mount" -> mount(f, args.get(1), Optional.of(lookedUp(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(name, args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
       case "Unmount" -> mount(f, args.get(1), Optional.empty());
       case "Attenuate" -> attenuate(f, args.get(1), args.subList(2, args.size()));
       case "SelectMains" -> edit(f, e -> e.withMains(args.subList(1, args.size())));
       default -> throw Bug.unreachable();
     }
+  }
+  private Optional<Entry> lookedUp(String name){
+    var res= renaming(() -> registry.lookedUp(name));
+    registry.all().stream().filter(e -> e.alias().isEmpty()).map(Entry::path).toList().forEach(this::unreachable);
+    return res;
+  }
+  /// rebuilds the in memory map when the names of the projects change
+  private <T> T renaming(Supplier<T> look){
+    var before= registry.all().stream().map(Entry::alias).toList();
+    var res= look.get();
+    if (!before.equals(registry.all().stream().map(Entry::alias).toList())){ rebuild(Optional.empty()); }
+    return res;
   }
   private void idle(Path f, String verb){
     var job= live.get(f).job;
@@ -534,7 +546,8 @@ public final class Manager{
     String alias;
     try{
       Coordinator.deleteCache(folder);
-      alias= Names.makeUnique(folder, registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
+      alias= Names.infer(folder, registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
+      Names.nameAs(folder, alias);
     }
     catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder, Report.fileFailure(e.getCause()))); }
     catch (UserError e){ throw new Refused(Report.registerRefused(folder, e.getMessage())); }
@@ -560,7 +573,7 @@ public final class Manager{
   }
   private void edit(String text, Path file){
     Content next;
-    try{ next= Registry.parse(text, file, Registry::real, dir); }
+    try{ next= Registry.inferred(Registry.parse(text, file, Registry::real, dir)); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
     granted(next);
@@ -579,11 +592,12 @@ public final class Manager{
     var claiming= live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList();
     Stream.concat(kinds.stream(), claiming.stream()).distinct().forEach(this::deleted);
     var removedCode= removed.stream().anyMatch(o -> o.kind() == Kind.code);
-    if (removedCode || !added.isEmpty() || !kinds.isEmpty() || !claiming.isEmpty()){ rebuild(Optional.empty()); }
+    var renamed= registry.all().stream().anyMatch(e -> same(e, old).filter(o -> !o.alias().equals(e.alias())).isPresent());
+    if (removedCode || renamed || !added.isEmpty() || !kinds.isEmpty() || !claiming.isEmpty()){ rebuild(Optional.empty()); }
     registry.all().forEach(e -> scan(e.path()));
   }
-  /// the entry of c with the name and the folder of e: a project whose name or folder changes is removed and added
-  private static Optional<Entry> same(Entry e, Content c){ return OneOr.opt("project "+e.alias(), c.projects().stream().filter(n -> n.alias().equals(e.alias()) && n.path().equals(e.path()))); }
+  /// the entry of c with the folder of e: a project whose folder changes is removed and added
+  private static Optional<Entry> same(Entry e, Content c){ return OneOr.opt("project "+e.path(), c.projects().stream().filter(n -> n.path().equals(e.path()))); }
   private void kept(Entry o, Content next){
     var l= live.get(o.path());
     var e= same(o, next);
@@ -599,6 +613,7 @@ public final class Manager{
     var name= file.getFileName().toString();
     var dot= name.lastIndexOf('.');
     var ext= dot < 0 ? "" : name.substring(dot+1).toLowerCase(Locale.ROOT);
+    if (!chosen.isEmpty()){ lookedUp(chosen.getFirst()); }
     var cs= Project.claimed(projects()).getOrDefault(ext, List.of());
     if (cs.isEmpty()){ throw new Refused(Report.noMainOpens(file, ext)); }
     var picked= chosen.isEmpty() ? cs : cs.stream().filter(c -> c.label().equals(chosen.get(0)+"::"+chosen.get(1))).toList();
@@ -616,9 +631,11 @@ public final class Manager{
   }
   /// The 'autoCheck' of the project: false for a project folder the manager can not reach, whose Forget is then posted.
   private boolean scan(Path f){
+    renaming(() -> registry.nameCheck(f));
     var l= live.get(f);
     var compiling= l.job.equals(Project.compiling);
-    var found= compiling ? Optional.of(l.facts).filter(_ -> Files.isDirectory(f, LinkOption.NOFOLLOW_LINKS)) : checked(f);
+    var named= !alias(f).isEmpty();
+    var found= !named ? Optional.<Facts>empty() : compiling ? Optional.of(l.facts).filter(_ -> Files.isDirectory(f, LinkOption.NOFOLLOW_LINKS)) : checked(f);
     if (found.isEmpty()){
       if (l.facts == null){ l.facts = Facts.invalid(Report.unreachable(alias(f), f)); }
       post(() -> unreachable(f));
@@ -653,13 +670,16 @@ public final class Manager{
     var l= live.get(f);
     if (l == null){ return; }
     if (l.child != null && !l.job.equals(Project.compiling)){ endMain(f); }
+    registry.all().stream().map(Entry::path).filter(g -> mounts(g, f)).toList().forEach(this::endMain);
     if (l.child != null){ l.terminated = true; l.child.kill(); }
     l.job = "";
-    var alias= alias(f);
-    registry.all().stream().filter(e -> e.mounts().containsValue(alias) && live.get(e.path()).child != null && !live.get(e.path()).job.equals(Project.compiling)).map(Entry::path).toList().forEach(this::endMain);
     view.refuse(Report.unreachable(alias(f), f));
     try{ forget(f); }
     catch (Refused r){ view.refuse(r.getMessage()); }
+  }
+  private boolean mounts(Path g, Path f){
+    var l= live.get(g);
+    return l.child != null && !l.job.equals(Project.compiling) && Stream.of(l.grants.reads(), l.grants.edits()).anyMatch(m -> m.containsValue(f));
   }
   private void rotate(){
     if (!view.visible()){ return; }

@@ -678,16 +678,16 @@ Write: Main{s -> base.Block#
   static String registry(Path journal, Path notes, String notesKind, String mounts){
     return """
 {
-  "projects": {
-    "journal": {
+  "projects": [
+    {
       "path": "Str:\\"%s\\"",
       "kind": "code"%s
     },
-    "notes": {
+    {
       "path": "Str:\\"%s\\"",
       "kind": "%s"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(journal), mounts, slashed(notes), notesKind);
