@@ -26,7 +26,7 @@ public final class Association{
     if (app == null){ throw Violation.mustUseLauncher(); }
     return Path.of(app);
   }
-  ///The launcher names us: one identity per Fearless, and the manager's own is not the portable one.
+  ///The launcher names us: one identity per launcher, and the manager's own is not the portable one.
   static String identity(Path launcher){
     var file= launcher.getFileName().toString();
     var dot= file.lastIndexOf('.');
