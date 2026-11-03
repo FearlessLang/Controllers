@@ -47,6 +47,7 @@ import managerMessages.Violation;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.UserError;
+import utils.Push;
 import utils.Bug;
 import utils.DistinctBy;
 import utils.OneOr;
@@ -106,6 +107,7 @@ public final class Manager{
     Optional<Follow> follow= Optional.empty();
     Set<String> answered= new HashSet<>();
     StringBuilder line= new StringBuilder();
+    List<Project.Ran> ran= List.of();
     ConcurrentLinkedQueue<String> printed= new ConcurrentLinkedQueue<>();
   }
   private static final String conflict= "base.IconsConflict";
@@ -330,6 +332,7 @@ public final class Manager{
     l.terminated = false;
     l.stopped = false;
     l.todo = mains;
+    l.ran = List.of();
     l.input = input;
     l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow(), l.mains.orElseThrow().dataEdit());
     l.attenuators = attenuated;
@@ -369,6 +372,7 @@ public final class Manager{
     var main= l.todo.getFirst();
     l.todo = l.todo.subList(1, l.todo.size());
     output(f, "--- running "+main+" ---\n");
+    l.ran = Push.of(l.ran, new Project.Ran(main, Instant.now()));
     start(f, main, () -> tools.run(f, main, l.input, l.grants, l.attenuators.getOrDefault(main, List.of()), out(f)));
   }
   private void ended(Path f){
@@ -641,7 +645,7 @@ public final class Manager{
   }
   private Optional<Facts> facts(Path f){
     var e= registry.of(f).orElseThrow();
-    return Facts.of(f, e.alias(), e.kind(), tools::check);
+    return Facts.of(f, e.alias(), e.kind(), tools::check, live.get(f).ran.stream().findFirst().map(Project.Ran::since).orElse(Instant.MAX));
   }
   /// The 'autoCheck' of a project folder the manager can not reach: the job of the project ends, and so does every running main
   /// of a project with a mount of that project; a dialog says so, then the project is forgotten.
@@ -679,7 +683,7 @@ public final class Manager{
   private static Optional<List<Object>> data(Content c, String name){ return OneOr.opt("project "+name, c.projects().stream().filter(p -> p.alias().equals(name))).map(p -> List.of(p.kind(), p.path())); }
   private Project project(Entry e){
     var l= live.get(e.path());
-    return new Project(e, l.facts, l.mains, l.claims, l.job);
+    return new Project(e, l.facts, l.mains, l.claims, l.job, l.ran);
   }
   private Project project(Path f){ return project(registry.of(f).orElseThrow()); }
   private List<Project> projects(){ return registry.all().stream().map(this::project).toList(); }

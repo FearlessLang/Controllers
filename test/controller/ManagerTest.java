@@ -994,11 +994,12 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     compiled(m, "hello");
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
-    Fs.writeUtf8(hello.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$20261103_000000_000Z.log"), "<testcase classname=\"A\" name=\"A at line: 1\"></testcase>\n");
+    Fs.writeUtf8(hello.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$29991231_000000_000Z.log"), "<testcase classname=\"A\" name=\"A at line: 1\"></testcase>\n");
     send(m, "Show", "hello");
     assertTrue(project(m, hello).busy());
     assertEquals(1, project(m, hello).facts().logs().size());
-    same("[###]<testcase classname=\"A\" name=\"A at line: 1\"></testcase>[###]", project(m, hello).facts().tests());
+    same("[###]<testcase classname=\"A\" name=\"A at line: 1\"></testcase>[###]", project(m, hello).facts().tests().getLast().xml());
+    assertEquals(List.of("hello.Slow"), project(m, hello).ran().stream().map(Project.Ran::main).toList());
     send(m, "Terminate", "hello");
   }
   @Test void kindFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){

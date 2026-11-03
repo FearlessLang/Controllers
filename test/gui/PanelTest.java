@@ -33,7 +33,7 @@ final class PanelTest{
   private static Project project(Path folder, Kind kind, Map<String,String> mounts, Optional<MainsInfo> mains){
     var alias= folder.getFileName().toString();
     var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), mounts, Map.of());
-    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate()).orElseThrow(), mains, Project.noClaims, "");
+    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate(), java.time.Instant.MAX).orElseThrow(), mains, Project.noClaims, "", List.of());
   }
   private static Stream<Component> all(Component c){
     if (!(c instanceof Container k)){ return Stream.of(c); }
@@ -48,15 +48,12 @@ final class PanelTest{
     var claim= new MainsInfo.Claim("base.IconsConflict", "icons/conflict.png", "", "", "", "fapp010");
     var claims= new MainsInfo(Map.of("hello.Foo'", new MainsInfo.Main(List.of(claim), List.of(), List.of(claim))), List.of(), List.of(), List.of());
     var p= project(folder, Kind.code, Map.of(), Optional.of(claims));
-    var withClaims= new Project(p.entry(), p.facts(), p.mains(), claims, "");
+    var withClaims= new Project(p.entry(), p.facts(), p.mains(), claims, "", List.of());
     var panel= new Panel(_ -> {});
     panel.render(withClaims, List.of(withClaims), 800);
     assertEquals(List.of(), all(panel.root).filter(c -> c.getName() != null && c.getName().startsWith("shortcut ")).toList());
   }
-  @Test void theTestsAreaShowsTheCountsAndEachTestCaseOfTheNewestUnitTestLog(@TempDir Path dir){
-    var folder= dir.resolve("hello");
-    Fs.writeUtf8(folder.resolve("hello.fearless"), "");
-    Fs.writeUtf8(folder.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$20261103_000000_000Z.log"), """
+  private static final String goodBadLater= """
 PLAN|RUN|_hello/_rank_app.fear|Good|Good at line: 3|3
 <testcase classname="Good" name="Good at line: 3" file="_hello/_rank_app.fear" line="3"></testcase>
 <testcase classname="Bad" name="Bad at line: 5" file="_hello/_rank_app.fear" line="5">
@@ -64,21 +61,50 @@ PLAN|RUN|_hello/_rank_app.fear|Good|Good at line: 3|3
 <expected>7</expected>
 <actual>6</actual>
 Expected: 7 Actual: 6 &lt;here&gt;
+second line
 </failure>
 </testcase>
 PLAN|DISABLED|_hello/_rank_app.fear|Later|Later at line: 9|9
-""");
+""";
+  @Test void theTestsAreaShowsTheNewestUnitTestLogWithAMarkOnEachTestCase(@TempDir Path dir){
+    var folder= dir.resolve("hello");
+    Fs.writeUtf8(folder.resolve("hello.fearless"), "");
+    Fs.writeUtf8(folder.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$20261103_000000_000Z.log"), goodBadLater);
     var hello= project(folder, Kind.code, Map.of(), Optional.empty());
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello), 800);
-    var text= all(panel.root).filter(c -> "tests".equals(c.getName())).map(c -> ((javax.swing.JTextArea)c).getText()).toList();
-    assertEquals(List.of("""
-1 passed, 1 failed, 1 disabled
-passed   Good at line: 3
-FAILED   Bad at line: 5
-    Expected: 7 Actual: 6 <here>
-disabled Later at line: 9
-"""), text);
+    assertEquals("""
+failed unit test log of 2026-11-03T00:00:00Z: 1 passed, 1 failed, 1 disabled
+  passed Good at line: 3
+  failed Bad at line: 5
+     Expected: 7 Actual: 6 <here>
+     second line
+  disabled Later at line: 9
+""", tests(panel));
+  }
+  @Test void theTestsAreaShowsEachUnitTestLogOfTheRunUnderTheMainThatWroteIt(@TempDir Path dir){
+    var folder= dir.resolve("hello");
+    Fs.writeUtf8(folder.resolve("hello.fearless"), "");
+    var logs= folder.resolve(".out").resolve("logs").resolve("_base");
+    Fs.writeUtf8(logs.resolve("unit_test_log$20261103_000001_000Z.log"), "<testcase classname=\"A\" name=\"A at line: 1\"></testcase>\n");
+    Fs.writeUtf8(logs.resolve("unit_test_log$20261103_000003_000Z.log"), goodBadLater);
+    var entry= new Entry("hello", folder.toAbsolutePath().normalize(), Kind.code, List.of(), Map.of(), Map.of());
+    var start= java.time.Instant.parse("2026-11-03T00:00:00Z");
+    var facts= Facts.of(entry.path(), "hello", Kind.code, _ -> new coordinator.Coordinator.State.OutOfDate(), start).orElseThrow();
+    var ran= List.of(new Project.Ran("hello.Auto", start), new Project.Ran("hello.Mine", start.plusSeconds(2)));
+    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, "", ran);
+    var panel= new Panel(_ -> {});
+    panel.render(hello, List.of(hello), 800);
+    assertEquals("""
+passed hello.Auto: 1 passed, 0 failed, 0 disabled
+  passed A at line: 1
+failed hello.Mine: 1 passed, 1 failed, 1 disabled
+  passed Good at line: 3
+  failed Bad at line: 5
+     Expected: 7 Actual: 6 <here>
+     second line
+  disabled Later at line: 9
+""", tests(panel));
   }
   @Test void aDamagedUnitTestLogStillShowsInTheTestsArea(@TempDir Path dir){
     var folder= dir.resolve("hello");
@@ -88,14 +114,21 @@ disabled Later at line: 9
     var hello= project(folder, Kind.code, Map.of(), Optional.empty());
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello), 800);
-    assertEquals(List.of("0 passed, 1 failed, 0 disabled\nFAILED   Bad at line: 5\n    cut short\n"), tests(panel));
+    assertEquals("failed unit test log of 2026-11-03T00:00:00Z: 0 passed, 1 failed, 0 disabled\n  failed Bad at line: 5\n     cut short\n", tests(panel));
     Fs.ofV(() -> Files.write(logs.resolve("unit_test_log$20261103_000000_001Z.log"), new byte[]{(byte)0xFF, '\n'}));
     var again= project(folder, Kind.code, Map.of(), Optional.empty());
     assertEquals(Optional.empty(), again.facts().problem());
     panel.render(again, List.of(again), 800);
-    assertEquals(List.of("0 passed, 0 failed, 0 disabled\n"), tests(panel));
+    assertEquals("passed unit test log of 2026-11-03T00:00:00.001Z: 0 passed, 0 failed, 0 disabled\n", tests(panel));
   }
-  private static List<String> tests(Panel panel){ return all(panel.root).filter(c -> "tests".equals(c.getName())).map(c -> ((javax.swing.JTextArea)c).getText()).toList(); }
+  /// every row of the Tests tree, expanded or not, with its mark
+  private static String tests(Panel panel){ return rows((javax.swing.tree.DefaultMutableTreeNode)panel.testTree.getModel().getRoot(), -1); }
+  private static String rows(javax.swing.tree.DefaultMutableTreeNode n, int depth){
+    var row= (Panel.TestRow)n.getUserObject();
+    var mark= row.mark().map(c -> c == Panel.passed ? "passed " : c == Panel.failed ? "failed " : "disabled ").orElse(" ");
+    var own= depth < 0 ? "" : "  ".repeat(depth)+mark+row.text()+"\n";
+    return own+java.util.Collections.list(n.children()).stream().map(c -> rows((javax.swing.tree.DefaultMutableTreeNode)c, depth+1)).collect(java.util.stream.Collectors.joining());
+  }
   @Test void aMountOfAProjectThatIsNotRegisteredIsMarkedAlsoBeforeACompilation(@TempDir Path dir){
     Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
     var hello= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.empty());

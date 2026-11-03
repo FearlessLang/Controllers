@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,8 +43,14 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTree;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 
 import controller.Deployed;
+import controller.Facts;
 import controller.Main;
 import controller.TaggedText;
 import controller.Project;
@@ -69,8 +76,14 @@ final class Panel{
   private final Collapsible claims= new Collapsible("Extensions", half(claimsBox), true);
   private final JPanel dataBox= new JPanel();
   private final Collapsible data= new Collapsible("Data", half(dataBox), false);
-  private final JTextArea testList= mono(named(new JTextArea(), "tests"));
-  private final Collapsible tests= new Collapsible("Tests", half(testList), true);
+  static final Color passed= new Color(0x2E7D32);
+  static final Color failed= new Color(0xC62828);
+  static final Color disabled= Color.GRAY;
+  /// a row of the Tests tree: its text, and its mark (none for a line of a failure)
+  record TestRow(String text, Optional<Color> mark){ @Override public String toString(){ return text; } }
+  final JTree testTree= named(new JTree(new DefaultMutableTreeNode(new TestRow("", Optional.empty()))), "tests");
+  private final Collapsible tests= new Collapsible("Tests", half(testTree), true);
+  private Object shownTests= List.of();
   private static final Pattern testCase= Pattern.compile("(?s)<testcase classname=\"[^\"]*\" name=\"([^\"]*)\"[^>]*>(.*?)</testcase>");
   private final JList<LogFiles.Entry> logList= new JList<>();
   private final Collapsible logs= new Collapsible("Logs", half(logList), false, small("Logs", this::openLogs));
@@ -86,7 +99,9 @@ final class Panel{
   Panel(Consumer<String> refuse){
     this.refuse= refuse;
     output.setEditable(false);
-    testList.setEditable(false);
+    testTree.setRootVisible(false);
+    testTree.setShowsRootHandles(true);
+    testTree.setCellRenderer(new TestMarks());
     output.setDropTarget(null);
     dataBox.setLayout(new BoxLayout(dataBox, BoxLayout.Y_AXIS));
     claimsBox.setLayout(new BoxLayout(claimsBox, BoxLayout.Y_AXIS));
@@ -148,18 +163,43 @@ final class Panel{
       .forEach(k -> menu.add(named(Window.item(k == Kind.idle ? "Back to idle" : "Become "+k.text, () -> Main.command("Kind "+alias+" "+k.text)), k.text)));
     menu.show(kind, 0, kind.getHeight());
   }
-  /// the counts, then one line per test case of the newest unit test log, a failed one followed by its failure
-  private static String tests(String suite){
-    var cases= testCase.matcher(suite).results().map(r -> testLine(r.group(1), r.group(2))).toList();
-    var failed= cases.stream().filter(c -> c.startsWith("FAILED")).count();
-    var disabled= cases.stream().filter(c -> c.startsWith("disabled")).count();
-    return (cases.size()-failed-disabled)+" passed, "+failed+" failed, "+disabled+" disabled\n"+String.join("", cases);
+  /// one node per unit test log, named after the main of the Run that wrote it; the nodes with a failure start expanded
+  private void showTests(Project p){
+    var root= new DefaultMutableTreeNode(new TestRow("", Optional.empty()));
+    p.facts().tests().forEach(s -> root.add(suiteNode(s, p.ran())));
+    ((DefaultTreeModel)testTree.getModel()).setRoot(root);
+    Collections.list(root.depthFirstEnumeration()).stream().map(n -> (DefaultMutableTreeNode)n).filter(n -> !n.isLeaf() && mark(n) == failed).forEach(n -> testTree.expandPath(new TreePath(n.getPath())));
   }
-  private static String testLine(String name, String body){
-    if (body.contains("<skipped/>")){ return "disabled "+xmlText(name)+"\n"; }
-    if (!body.contains("<failure>")){ return "passed   "+xmlText(name)+"\n"; }
+  private static DefaultMutableTreeNode suiteNode(Facts.Suite s, List<Project.Ran> ran){
+    var cases= testCase.matcher(s.xml()).results().map(r -> caseNode(r.group(1), r.group(2))).toList();
+    var bad= cases.stream().filter(c -> mark(c) == failed).count();
+    var off= cases.stream().filter(c -> mark(c) == disabled).count();
+    var main= ran.stream().filter(r -> !r.since().isAfter(s.when())).reduce((_, b) -> b).map(Project.Ran::main).orElse("unit test log of "+s.when());
+    var res= new DefaultMutableTreeNode(new TestRow(main+": "+(cases.size()-bad-off)+" passed, "+bad+" failed, "+off+" disabled", Optional.of(bad > 0 ? failed : passed)));
+    cases.forEach(res::add);
+    return res;
+  }
+  private static DefaultMutableTreeNode caseNode(String name, String body){
+    if (body.contains("<skipped/>")){ return new DefaultMutableTreeNode(new TestRow(xmlText(name), Optional.of(disabled))); }
+    if (!body.contains("<failure>")){ return new DefaultMutableTreeNode(new TestRow(xmlText(name), Optional.of(passed))); }
+    var res= new DefaultMutableTreeNode(new TestRow(xmlText(name), Optional.of(failed)));
     var failure= body.substring(body.indexOf("<failure>")+"<failure>".length()).replaceFirst("(?s)</failure>.*", "").replaceAll("(?s)<expected>.*?</expected>|<actual>.*?</actual>", "").strip();
-    return "FAILED   "+xmlText(name)+"\n"+xmlText(failure).indent(4);
+    xmlText(failure).lines().forEach(l -> res.add(new DefaultMutableTreeNode(new TestRow(l, Optional.empty()))));
+    return res;
+  }
+  private static Color mark(DefaultMutableTreeNode n){ return ((TestRow)n.getUserObject()).mark().orElse(null); }
+  @SuppressWarnings("serial")
+  private static final class TestMarks extends DefaultTreeCellRenderer{
+    @Override public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean focus){
+      super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, focus);
+      setIcon(((TestRow)((DefaultMutableTreeNode)value).getUserObject()).mark().map(Dot::new).orElse(null));
+      return this;
+    }
+  }
+  private record Dot(Color color) implements Icon{
+    @Override public int getIconWidth(){ return 10; }
+    @Override public int getIconHeight(){ return 10; }
+    @Override public void paintIcon(Component c, Graphics g, int x, int y){ g.setColor(color); g.fillOval(x, y, 10, 10); }
   }
   private static String xmlText(String s){ return s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&amp;", "&"); }
   private void openLogs(){ Window.open(refuse, project.folder().resolve(LogFiles.runDir).resolve("logs")); }
@@ -230,8 +270,8 @@ final class Panel{
     fillData(p, all);
     logs.setVisible(p.kind() == Kind.code);
     tests.setVisible(p.kind() == Kind.code);
-    var testText= tests(p.facts().tests());
-    if (!testText.equals(testList.getText())){ testList.setText(testText); testList.setCaretPosition(0); }
+    var testKey= List.of(p.facts().tests(), p.ran());
+    if (!testKey.equals(shownTests)){ shownTests = testKey; showTests(p); }
     var log= logList.getSelectedValue();
     logList.setListData(p.facts().logs().toArray(LogFiles.Entry[]::new));
     logList.setSelectedValue(log, false);

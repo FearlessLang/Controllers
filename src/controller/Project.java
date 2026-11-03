@@ -1,6 +1,7 @@
 package controller;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -26,8 +27,10 @@ import tools.Fs;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
 /// folder holds, its mains once known, and its job, if any.
-public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, String job){
+public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, String job, List<Project.Ran> ran){
   public static final String compiling= "compiling";
+  /// a main of the last Run of the project, and when it started
+  public record Ran(String main, Instant since){}
   public static final MainsInfo noClaims= new MainsInfo(Map.of());
   public record Claimant(Path folder, String alias, String main, String kind, MainsInfo.Claim claim){
     public boolean shortcut(){ return kind.equals("Shortcut"); }
