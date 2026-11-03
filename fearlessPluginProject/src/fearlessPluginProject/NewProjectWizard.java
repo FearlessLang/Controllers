@@ -126,7 +126,7 @@ use base.Slots as Slots;
 use base.WidthNat as WidthNat;
 use base.HeightNat as HeightNat;
 use base.CapInputCursor as CapInputCursor;
-use base.BadStrUnitRecover as BadStrUnitRecover;
+use base.StrCleaners as StrCleaners;
 
 ByShortcut: Main, Shortcut[IconsApp] { sys -> sys.gui.name "Shortcut" .run ShortcutFrame }
 ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.name "OpenWith" .icon IconsFile .run{f -> Block#
@@ -152,11 +152,10 @@ ShortcutFrame: Consumer[mut Frame]{::
 ShowFiles: {#(at: mut Var[mut CapInputCursor], lines: mut Pane): Void -> at.get#.match{
   .empty -> Void;
   .some file -> Block#
-    .do{(file.readStrUtf8 NoCr).split("" | "").flow.for{l -> Block#(lines.label{:: .text l .topInset 0 .bottomInset 0}, Void)}}
+    .do{(file.readStr(StrCleaners.softText)).split("" | "").flow.for{l -> Block#(lines.label{:: .text l .topInset 0 .bottomInset 0}, Void)}}
     .do{at.set(at.get.next)}
     .return{this#(at, lines)}
   }}
-NoCr: BadStrUnitRecover{reason, byteOffset, byteLength, rejectedValue -> (rejectedValue == 13).if{.then -> ""; .else -> "?"}}
 """;
   private static final class Page extends WizardPage{
     private Text folder;
