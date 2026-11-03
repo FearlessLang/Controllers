@@ -157,7 +157,6 @@ public final class Registry{
     try{ Fs.writeString(tmp, text, CREATE_NEW); Fs.move(tmp, infoFile(), ATOMIC_MOVE); }
     catch (IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(), e); }
     content = c;
-    lookup();
   }
   public static Content parse(String source, Path file, UnaryOperator<Path> identity, Path managerDir){
     var root= Info.parse(source, file.toUri());

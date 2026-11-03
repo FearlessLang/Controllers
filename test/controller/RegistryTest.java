@@ -177,10 +177,12 @@ Every entry in "projects" must be an object {...} with the metadata of a project
   }
   @Test void aFolderNamedWithABackslashANewlineOrNotUnicodeSurvivesAReRead(@TempDir Path dir){
     var r= registry(dir);
-    r.add("slash", folder(dir, Fs.isWindows() ? "aéb" : "a\\b"));
-    r.add("line", folder(dir, Fs.isWindows() ? "c\ud800d" : "c\nd"));
+    added(r, "slash", folder(dir, Fs.isWindows() ? "aéb" : "a\\b"));
+    added(r, "line", folder(dir, Fs.isWindows() ? "c\ud800d" : "c\nd"));
     assertEquals(r.all(), registry(dir).all());
   }
+  /// registers the folder as the manager does: its marker is written first
+  private static void added(Registry r, String alias, Path folder){ Names.nameAs(folder, alias); r.add(alias, folder); }
   private static Map<String,String> remounted(Map<String,String> mounts){
     var res= new LinkedHashMap<>(mounts);
     res.put("code.Alpha", "other");
@@ -326,7 +328,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
   @Test void aNameCheckFindsAMarkerRenamedByHandAndAMissingMarker(@TempDir Path dir){
     var hello= folder(dir, "hello");
     var r= registry(dir);
-    r.add("hello", hello);
+    added(r, "hello", hello);
     Fs.ofV(() -> Files.move(hello.resolve("hello.fearless"), hello.resolve("hi.fearless")));
     assertEquals("hello", r.of(hello).orElseThrow().alias());
     r.nameCheck(hello);
