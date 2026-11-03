@@ -105,19 +105,21 @@ public final class Registry{
     return differs;
   }
   /// a folder whose marker can not be written gets no name
-  public void lookup(){ content = new Content(inferred(content, content).projects().stream().map(Registry::marked).toList(), extensions()); }
+  public void lookup(){ content = inferred(content, content, Registry::marked); }
   private static Entry marked(Entry e){
     if (e.alias().isEmpty() || !Names.reachable(e.path()) || Names.marker(e.path()).equals(e.alias())){ return e; }
     try{ Names.nameAs(e.path(), e.alias()); return e; }
     catch (UncheckedIOException _){ return new Entry("", e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()); }
   }
-  public static Content inferred(Content c, Content known){
+  public static Content inferred(Content c, Content known){ return inferred(c, known, e -> e); }
+  private static Content inferred(Content c, Content known, UnaryOperator<Entry> mark){
     var taken= new HashSet<String>();
     var res= new ArrayList<Entry>();
     for (var e : c.projects()){
       var name= Names.reachable(e.path()) ? Names.infer(e.path(), taken) : known.projects().stream().filter(k -> k.path().equals(e.path())).map(Entry::alias).findFirst().orElse("");
-      taken.add(name);
-      res.add(new Entry(name, e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()));
+      var named= mark.apply(new Entry(name, e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()));
+      taken.add(named.alias());
+      res.add(named);
     }
     return new Content(res, c.extensions());
   }

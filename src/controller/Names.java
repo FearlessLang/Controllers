@@ -51,7 +51,7 @@ public final class Names{
   }
   private static boolean isFree(Path folder, String name, Set<String> taken){
     var moved= markers(folder).stream().limit(1).toList();
-    return !taken.contains(name) && list(folder).stream().filter(p -> !moved.contains(p)).noneMatch(p -> clashes(p, name));
+    return !taken.contains(name) && entries(folder).stream().filter(p -> !moved.contains(p)).noneMatch(p -> clashes(p, name));
   }
   private static boolean clashes(Path p, String name){
     var f= p.getFileName().toString();
@@ -70,8 +70,10 @@ public final class Names{
   static List<Path> list(Path dir){ return Fs.of(() -> { try (var s= Fs.list(dir)){ return s.sorted(Comparator.comparing(p -> p.getFileName().toString())).toList(); } }); }
   static Optional<Path> child(Path dir, String name){ return OneOr.opt(name, list(dir).stream().filter(p -> p.getFileName().toString().equals(name))); }
   static Optional<Path> folder(Path dir, String name){ return child(dir, name).filter(Fs::isDirectory); }
+  /// the top level of a project folder, symbolic links included: a link makes the project 'invalid', not unnamed
+  private static List<Path> entries(Path dir){ return Fs.of(() -> { try (var s= Files.list(dir)){ return s.sorted(Comparator.comparing(p -> p.getFileName().toString())).toList(); } }); }
   private static List<Path> markers(Path folder){
-    return list(folder).stream().filter(p -> p.getFileName().toString().endsWith(ext) && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).toList();
+    return entries(folder).stream().filter(p -> p.getFileName().toString().endsWith(ext) && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).toList();
   }
   private static String stem(Path file){
     var name= file.getFileName().toString();

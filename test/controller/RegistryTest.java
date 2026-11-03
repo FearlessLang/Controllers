@@ -4,6 +4,7 @@ import static controller.Errs.err;
 import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Files;
@@ -353,5 +354,15 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     r.lookup();
     assertEquals("gone", r.of(gone).orElseThrow().alias());
     assertFalse(Files.exists(gone));
+  }
+  @Test void aProjectWhoseMarkerCanNotBeWrittenLeavesItsNameToTheProjectsAfterIt(@TempDir Path dir){
+    var first= folder(dir, "hello");
+    var second= folder(dir, "second");
+    Fs.writeUtf8(second.resolve("hello.fearless"), "\n");
+    Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), listed(first, second));
+    Disk.noWrite(first);
+    try{ assertEquals(List.of("", "hello"), registry(dir).all().stream().map(Entry::alias).toList()); }
+    finally{ Disk.allow(first); }
+    assertTrue(Files.exists(second.resolve("hello.fearless")));
   }
 }

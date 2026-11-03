@@ -1236,7 +1236,8 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     var linked= folder(dir, "linked");
     Disk.link(linked.resolve("current"), folder(dir, "elsewhere"));
     send(m, "Register", TaggedText.of(linked.toString()));
-    same("Refused request \"Register\" on path\n[###]linked\nThe folder cannot be read or changed: This path is a symbolic link[###]", view.refused.getLast());
+    send(m, "Kind", "linked", "code");
+    same("This path is a symbolic link[###]", project(m, linked).problem().orElseThrow());
     send(m, "ConnectEclipse", TaggedText.of(linked.toString()));
     same("Eclipse is not connected from\n[###]linked\nThis path is a symbolic link[###]", view.refused.getLast());
     var logged= folder(dir, "logged");
@@ -1247,6 +1248,12 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("This path is a symbolic link[###]", project(m, logged).problem().orElseThrow());
     send(m, "DeleteCache", "logged");
     same("[###]This path is a symbolic link[###]", view.out(logged));
+    var top= folder(dir, "top");
+    send(m, "Register", TaggedText.of(top.toString()));
+    send(m, "Kind", "top", "code");
+    Disk.link(top.resolve("pics"), folder(dir, "elsewhere"));
+    send(m, "Check", "top");
+    same("This path is a symbolic link[###]", project(m, top).problem().orElseThrow());
     assertEquals(List.of(), failures);
   }
   @Test void aRequestNamingNoProjectIsRefused(@TempDir Path dir){
