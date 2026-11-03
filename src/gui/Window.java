@@ -309,7 +309,7 @@ public final class Window implements Manager.View{
   private void editMetadata(){
     var base= Fs.readUtf8(info);
     var area= mono(new JTextArea(base, 30, 100));
-    var dialog= new JDialog(frame, "Edit project metadata", true);
+    var dialog= new JDialog(frame, "projects.info", true);
     var commit= small("Commit", () -> commit(dialog, base, area.getText()));
     var close= small("Close", dialog::dispose);
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
