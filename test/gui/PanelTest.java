@@ -106,6 +106,18 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
   disabled Later at line: 9
 """, tests(panel));
   }
+  @Test void aRunWritingNoUnitTestLogShowsNoTest(@TempDir Path dir){
+    var folder= dir.resolve("hello");
+    Fs.writeUtf8(folder.resolve("hello.fearless"), "");
+    Fs.writeUtf8(folder.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$20261103_000001_000Z.log"), goodBadLater);
+    var entry= new Entry("hello", folder.toAbsolutePath().normalize(), Kind.code, List.of(), Map.of(), Map.of());
+    var start= java.time.Instant.parse("2026-11-03T00:00:05Z");
+    var facts= Facts.of(entry.path(), "hello", Kind.code, _ -> new coordinator.Coordinator.State.OutOfDate(), start).orElseThrow();
+    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, "", List.of(new Project.Ran("hello.Hello", start)));
+    var panel= new Panel(_ -> {});
+    panel.render(hello, List.of(hello), 800);
+    assertEquals("", tests(panel));
+  }
   @Test void aDamagedUnitTestLogStillShowsInTheTestsArea(@TempDir Path dir){
     var folder= dir.resolve("hello");
     Fs.writeUtf8(folder.resolve("hello.fearless"), "");

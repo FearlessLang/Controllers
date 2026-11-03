@@ -42,7 +42,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
   /// A Coordinator.State that is Error.cacheCorrupted is raised: the manager applies the corruption rule.
   /// None for a folder the manager can not reach.
-  /// The tests are the unit test logs written since `since`, oldest first, or else the newest unit test log.
+  /// The tests are the unit test logs written since `since`, oldest first; with no `since` (Instant.MAX), the newest unit test log.
   public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check, Instant since){
     if (!Names.reachable(folder)){ return Optional.empty(); }
     try{ return Optional.of(retried(() -> read(folder, alias, kind, check, since))); }
@@ -86,8 +86,8 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
   }
   private static List<Suite> suites(Path folder, Instant since){
     var all= JUnitReport.unitTestLogs(folder);
-    var recent= all.stream().filter(e -> !e.when().isBefore(since)).toList();
-    return (recent.isEmpty() ? all.stream().limit(1).toList() : recent).reversed().stream().map(e -> new Suite(e.when(), suite(e.path()))).toList();
+    var shown= since.equals(Instant.MAX) ? all.stream().limit(1).toList() : all.stream().filter(e -> !e.when().isBefore(since)).toList();
+    return shown.reversed().stream().map(e -> new Suite(e.when(), suite(e.path()))).toList();
   }
   /// a unit test log that is not UTF-8 text shows no test case
   private static String suite(Path log){
