@@ -74,11 +74,10 @@ final class Panel{
   private static final Pattern testCase= Pattern.compile("(?s)<testcase classname=\"[^\"]*\" name=\"([^\"]*)\"[^>]*>(.*?)</testcase>");
   private final JList<LogFiles.Entry> logList= new JList<>();
   private final Collapsible logs= new Collapsible("Logs", half(logList), false, small("Logs", this::openLogs));
-  private final JButton openDocs= small("Open docs", this::openDocs);
+  private final JButton openDocs= small("Docs", this::openDocs);
   private final JButton kind= named(small("Kind", this::kinds), "kind");
   private final JButton action= named(small("Compile", this::act), "action");
-  private final JButton deleteCache= small("Delete cache", () -> Main.command("DeleteCache "+this.project.alias()));
-  private final JButton forget= small("Forget", () -> Main.command("Forget "+this.project.alias()));
+  private final JButton projectMenu= named(small("Project", this::projectMenu), "project");
   private final JPanel selectedMains= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
@@ -100,12 +99,9 @@ final class Panel{
     header.add(name);
     header.add(action);
     header.add(openDocs);
-    kind.setIcon(new Arrow());
-    kind.setHorizontalTextPosition(JButton.LEADING);
     header.add(kind);
-    header.add(small("Browse", () -> Window.open(refuse, project.folder())));
-    header.add(forget);
-    header.add(deleteCache);
+    Stream.of(openDocs, kind, projectMenu).forEach(b -> { b.setIcon(new Arrow()); b.setHorizontalTextPosition(JButton.LEADING); });
+    header.add(projectMenu);
     var top= new JPanel();
     top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
     Stream.of(header, selectedMains, shortcuts).forEach(top::add);
@@ -136,6 +132,14 @@ final class Panel{
     var f= project.folder();
     project.facts().packages().forEach(pkg -> menu.add(Window.item(pkg, () -> Window.open(refuse, Deployed.coordinator(f).docs(f, pkg)))));
     menu.show(openDocs, 0, openDocs.getHeight());
+  }
+  private void projectMenu(){
+    var menu= new JPopupMenu();
+    var alias= project.alias();
+    menu.add(Window.item("Browse", () -> Window.open(refuse, project.folder())));
+    Stream.of(named(Window.item("Forget", () -> Main.command("Forget "+alias)), "forget"), named(Window.item("Delete cache", () -> Main.command("DeleteCache "+alias)), "deleteCache"))
+      .forEach(i -> { i.setEnabled(!project.busy()); menu.add(i); });
+    menu.show(projectMenu, 0, projectMenu.getHeight());
   }
   private void kinds(){
     var menu= new JPopupMenu();
@@ -217,8 +221,6 @@ final class Panel{
     action.setHorizontalTextPosition(JButton.LEADING);
     action.setEnabled(!p.job().equals(Project.compiling) && (a != Project.Action.run || !p.knownMains().isEmpty()));
     openDocs.setEnabled(p.mains().isPresent());
-    deleteCache.setEnabled(!p.busy());
-    forget.setEnabled(!p.busy());
     kind.setText("Kind: "+p.kind().text);
     kind.setEnabled(!p.busy());
     fillSelected(p, several);
