@@ -20,7 +20,7 @@ import org.eclipse.ui.actions.CompoundContributionItem;
 public final class PopupItems extends CompoundContributionItem{
   @Override protected IContributionItem[] getContributionItems(){
     var selection= (IStructuredSelection)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getSelectionService().getSelection();
-    var alias= Adapters.adapt(selection.getFirstElement(), IResource.class).getProject().getName();
+    var alias= FearlessWatcher.alias(Adapters.adapt(selection.getFirstElement(), IResource.class).getProject());
     var p= ManagerLink.projects().get(alias);
     var res= new ArrayList<IContributionItem>();
     if (p == null){ return new IContributionItem[0]; }

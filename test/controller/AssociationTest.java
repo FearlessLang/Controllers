@@ -22,10 +22,10 @@ final class AssociationTest{
     assertEquals(identity, Association.identity(Path.of("fearlessManaged0_001.exe")));
     assertNotEquals(Association.identity(Path.of(linuxLauncher)), Association.identity(Path.of("/home/me/fearlessBin0_001/bin/fearlessBin0_001")));
   }
-  @Test void theTwoLaunchersOfOneFearlessAreOneIdentity(){
+  @Test void theTwoLaunchersOfOneFearlessAreTwoIdentitiesWithOneManagerFolder(){
     assertEquals(JavacTool.managerFolderOf(Path.of(linuxLauncher)), JavacTool.managerFolderOf(Path.of(linuxLauncher+"w")));
-    assertEquals(Association.identity(Path.of(linuxLauncher)), Association.identity(Path.of(linuxLauncher+"w")));
-    assertEquals(Association.identity(Path.of("fearlessManaged0_001.exe")), Association.identity(Path.of("fearlessManaged0_001w.exe")));
+    assertEquals(identity+"w", Association.identity(Path.of(linuxLauncher+"w")));
+    assertEquals(identity+"w", Association.identity(Path.of("fearlessManaged0_001w.exe")));
     assertEquals(JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001.exe")), JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001w.exe")));
     assertTrue(JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001.exe")).isPresent());
   }

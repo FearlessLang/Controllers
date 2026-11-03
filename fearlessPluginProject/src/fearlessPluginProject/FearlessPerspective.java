@@ -26,7 +26,6 @@ public final class FearlessPerspective implements IPerspectiveFactory{
     layout.addShowViewShortcut(Output.id);
     layout.addShowViewShortcut(junitView);
     layout.addNewWizardShortcut("fearlessPluginProject.newProject");
-    layout.addNewWizardShortcut("fearlessPluginProject.newFolder");
     layout.addNewWizardShortcut("fearlessPluginProject.newFile");
   }
 }

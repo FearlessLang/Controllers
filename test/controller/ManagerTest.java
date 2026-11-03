@@ -111,8 +111,8 @@ public class Child{
       Fs.ofV(() -> Files.deleteIfExists(outDir.resolve("_error.txt")));
       var stamp= FakeCache.after(folder);
       FakeCache.at(outDir.resolve(alias+".jar"), "", stamp);
-      Pattern.compile("\\[\"([a-z][a-z0-9_]*\\.[A-Za-z0-9_]+)\", \"").matcher(mains).results().map(r -> r.group(1)).distinct()
-        .forEach(i -> image(outDir.resolve("icons").resolve(i+".png"), 64, 64, "png"));
+      Pattern.compile("\\[\"([a-z][a-z0-9_]*\\.[A-Za-z0-9_]+)\", \"([^\"]*)\", \"([^\"]*)\", \"([^\"]*)\"").matcher(mains).results().map(r -> new MainsInfo.Claim(r.group(1), r.group(2), r.group(3), r.group(4), "", "")).distinct()
+        .forEach(c -> image(Coordinator.iconFiles(folder, c).getFirst(), 64, 64, "png"));
       if (folder.getFileName().toString().equals("edited")){ touch(folder); }
       if (folder.getFileName().toString().equals("slowcompile")){ return jvm(out, "compiling", "1", "3000"); }
       var previous= outDir.resolve(alias+".json");
@@ -274,11 +274,22 @@ public class Child{
     assertEquals(List.of(), listed(m));
     assertEquals("{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n", info(dir));
   }
-  @Test void quitAndResetAreForTheProcess(@TempDir Path dir){
+  @Test void everyRequestAfterAQuitIsRefused(@TempDir Path dir){
     var m= manager(dir);
+    var hello= registered(m, dir, "hello");
     send(m, "Quit");
+    send(m, "Forget", "hello");
     send(m, "Reset");
-    assertEquals(List.of("quit", "reset"), exits);
+    assertEquals(List.of("quit"), exits);
+    assertEquals(List.of("hello "+hello), listed(m));
+    assertEquals(List.of("Refused request \"Forget\": the manager is quitting.", "Refused request \"Reset\": the manager is quitting."), view.refused);
+  }
+  @Test void everyRequestAfterAResetIsRefused(@TempDir Path dir){
+    var m= manager(dir);
+    send(m, "Reset");
+    send(m, "Quit");
+    assertEquals(List.of("reset"), exits);
+    assertEquals(List.of("Refused request \"Quit\": the manager is quitting."), view.refused);
   }
   @Test void anInvalidCallIsShownAndAFatalErrorIsFatal(@TempDir Path dir){
     var m= manager(dir);
@@ -309,6 +320,33 @@ public class Child{
     var again= manager(dir);
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
+  }
+  @Test void registeringASymbolicLinkIsRefused(@TempDir Path dir){
+    var m= manager(dir);
+    var link= Disk.link(dir.resolve("link"), folder(dir, "target"));
+    send(m, "Register", TaggedText.of(link.toString()));
+    same("Refused request \"Register\" on path\n[###]link\nThis path is a symbolic link, and Fearless does not follow symbolic links.", view.refused.getLast());
+    assertEquals(List.of(), listed(m));
+  }
+  @Test void anEditOfOneProjectKeepsThePathOfAnotherWhoseFolderBecameALink(@TempDir Path dir){
+    var m= manager(dir);
+    registered(m, dir, "a");
+    var b= registered(m, dir, "b");
+    var c= folder(dir, "c");
+    Fs.rmTree(b);
+    Disk.link(b, c);
+    send(m, "Kind", "a", "dataRead");
+    assertEquals(List.of(b), m.state().projects().stream().map(Project::folder).filter(f -> f.endsWith("b") || f.endsWith("c")).toList());
+  }
+  @Test void aProjectFolderReplacedByALinkToAnotherProjectWhileTheManagerIsOffIsNotFatal(@TempDir Path dir){
+    var m= manager(dir);
+    var a= registered(m, dir, "a");
+    var b= registered(m, dir, "b");
+    Fs.rmTree(b);
+    Disk.link(b, a);
+    var again= manager(dir);
+    again.settle();
+    assertEquals(List.of(), failures);
   }
   @Test void registeringAFolderMakesItAnIdleProjectNamedByItsMarker(@TempDir Path dir){
     var m= manager(dir);
@@ -635,18 +673,17 @@ The projects are:
     same("Refused request \"Register\" on path\n[###]One of the two folders is inside the other[###]", view.refused.getFirst());
     assertEquals(List.of("hello "+hello), listed(m));
   }
-  @Test void aLinkToARegisteredFolderOnlySelectsItAndALinkIntoOneIsRefused(@TempDir Path dir){
+  @Test void aLinkToARegisteredFolderOrIntoOneIsRefusedAsALink(@TempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     var other= registered(m, dir, "other");
     var link= Disk.link(dir.resolve("link"), hello);
     var inner= Disk.link(dir.resolve("inner"), folder(hello, "inner"));
     send(m, "Register", TaggedText.of(link.toString()));
-    assertEquals(Optional.of(hello), m.state().selected());
     send(m, "Register", TaggedText.of(inner.toString()));
+    assertEquals(Optional.of(other), m.state().selected());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
-    assertEquals(1, view.refused.size());
-    same("[###]A registered project has the folder\n[###]hello\nOne of the two folders is inside the other[###]", view.refused.getFirst());
+    same("[###]link\nThis path is a symbolic link, and Fearless does not follow symbolic links.\n[###]inner\nThis path is a symbolic link, and Fearless does not follow symbolic links.", String.join("\n", view.refused));
   }
   @Test void kindsChangeToAnyKind(@TempDir Path dir){
     var m= manager(dir);
@@ -851,7 +888,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     same("[###]ran hello.Slow\n--- terminating hello.Slow ---\n--- hello.Slow was terminated[###]", view.out(hello));
     assertEquals("The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getFirst());
   }
-  @Test void aRefusedForgetOfAnUnreachableProjectIsShownNotFatal(@TempDir Path dir) throws IOException{
+  @Test void anUnreachableProjectIsForgottenWhileAProjectWhoseFolderBecameALinkRunsAMain(@TempDir Path dir) throws IOException{
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir.resolve("a"), "hello");
     var data= data(dir);
@@ -863,7 +900,8 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     Disk.link(dir.resolve("a"), dir.resolve("b"));
     Fs.rmTree(data);
     send(m, "Check", "data");
-    same("[###]The project \"data\" connects to the folder [###]\nThis folder is now unreachable.\nThe project \"data\" has now been removed.\nRefused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".[###]", String.join("\n", view.refused));
+    same("[###]The project \"data\" connects to the folder [###]\nThis folder is now unreachable.\nThe project \"data\" has now been removed.\nRefused request \"Check\" on project \"data\".\nNo project is named \"data\".[###]", String.join("\n", view.refused));
+    assertEquals(List.of("hello "+hello), listed(m));
     send(m, "Terminate", "hello");
     assertEquals(List.of(), failures);
   }
@@ -1378,7 +1416,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("Refused request \"Run\" on project \"hello\".\n[###]The mount of \"data\" on \"hello.Pub\" is broken: no project \"data\" is registered.", view.refused.getLast());
     assertFalse(view.out(hello).contains("running hello.Hello"));
   }
-  @Test void anEditOfTheSystemExtensionsReadsTheClaimsAgain(@TempDir Path dir){
+  @Test void anEditOfTheSystemExtensionsReconcilesTheMapInMemoryAndAMissingClaimIconIsFatal(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -1386,8 +1424,8 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     compiled(m, "hello");
     Fs.rmTree(hello.resolve(Facts.outDir));
     allow(m, dir, "htm");
-    assertEquals(List.of(".foo manager/icons/base.IconsConflict.png", ".htm manager/icons/base.IconsConflict.png"), wanted(dir));
-    assertEquals(List.of(), failures);
+    same("[###]NoSuchFileException: [###]hello/.fearless_out/icons/[###].png", failures.getFirst().toString());
+    failures.clear();
   }
   @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEndAndAnyOtherRequestUntilItIsApplied(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -1476,7 +1514,7 @@ What stood in the way:
   private static String merged(String... infos){ return Stream.of(infos).map(i -> i.strip().substring(1, i.strip().length()-1)).collect(Collectors.joining(", ", "{", "}\n")); }
   /// The preloaded icons are the icons of the claims, as the Coordinator records them.
   private static String info(String main, String shortcuts, String openWiths){
-    var icons= Pattern.compile("\\[\"([^\"]+)\", ").matcher(shortcuts+openWiths).results().map(r -> claim(r.group(1), "", "", "", "").replace("\"@@\"", "\"\"")).distinct().collect(Collectors.joining(", "));
+    var icons= Pattern.compile("\\[\"([^\"]+)\", \"([^\"]*)\", \"([^\"]*)\", \"([^\"]*)\", ").matcher(shortcuts+openWiths).results().map(r -> claim(r.group(1), r.group(2), r.group(3), r.group(4), "").replace("\"@@\"", "\"\"")).distinct().collect(Collectors.joining(", "));
     return "{\""+main+"\": [["+shortcuts.replace("@@\"", "@@fapp\"")+"], ["+openWiths.replace("@@\"", "@@ffile\"")+"], ["+icons+"]]}\n";
   }
   /// An empty ext is an autoselected extension: the fake compile asks the manager for it.
@@ -1659,17 +1697,17 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     infos.put("hello", claiming("hello.Hello", "fapp010", "foo"));
     infos.put("other", claiming("other.Other", "fapp004", "foo"));
     compiled(m, "hello");
-    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png", ".foo hello/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/_base/icons/conflict.png", ".foo hello/.fearless_out/icons/art/foo.png"), wanted(dir));
     compiled(m, "other");
     assertEquals(List.of(
-      ".fapp004 other/.fearless_out/icons/base.IconsConflict.png",
-      ".fapp010 hello/.fearless_out/icons/base.IconsConflict.png",
+      ".fapp004 other/.fearless_out/icons/_base/icons/conflict.png",
+      ".fapp010 hello/.fearless_out/icons/_base/icons/conflict.png",
       ".foo manager/icons/base.IconsConflict.png"), wanted(dir));
     send(m, "Show", "hello");
     touch(dir.resolve("hello"));
     compiled(m, "hello");
     send(m, "DeleteCache", "hello");
-    assertEquals(List.of(".fapp004 other/.fearless_out/icons/base.IconsConflict.png", ".foo other/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
+    assertEquals(List.of(".fapp004 other/.fearless_out/icons/_base/icons/conflict.png", ".foo other/.fearless_out/icons/art/foo.png"), wanted(dir));
     send(m, "Forget", "other");
     assertEquals(List.of(".foo manager/icons/base.IconsConflict.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
@@ -1692,7 +1730,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertTrue(project(m, hello).needsCompiling());
     assertFalse(Files.exists(mainsInfo(hello)));
     assertEquals(Project.noClaims, project(m, hello).claims());
-    assertEquals(List.of(".bar manager/icons/base.IconsConflict.png", ".fapp002 other/.fearless_out/icons/base.IconsConflict.png", ".foo other/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
+    assertEquals(List.of(".bar manager/icons/base.IconsConflict.png", ".fapp002 other/.fearless_out/icons/_base/icons/conflict.png", ".foo other/.fearless_out/icons/art/foo.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
   }
   @Test void aMainTheCorruptionRuleEndsGetsNoFilesUpdatedLine(@TempDir Path dir){
@@ -1788,7 +1826,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     var notWritten= "--- hello.fapp010 is not written: access denied: "+hello.resolve("hello.fapp010")+"\n---\n";
     assertEquals("--- compiling hello ---\ncompiled\n"+notWritten+"--- compile failed ---\n", view.out(hello));
     assertEquals(notWritten, Fs.readUtf8(hello.resolve(Facts.outDir).resolve("_error.txt")));
-    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"), wanted(dir));
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/_base/icons/conflict.png"), wanted(dir));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
   private static List<String> top(Path project){ return Names.list(project).stream().map(p -> p.getFileName().toString()).toList(); }
@@ -2001,7 +2039,7 @@ Add these system extensions to "systemExtensions" of projects.info?
 The manager becomes the program opening every file with these extensions,
 in place of the program opening them now. The project then needs compiling again.""", String.join("\n", view.asked));
     assertEquals(List.of("fapp001", "htm"), claimed(m).keySet().stream().sorted().toList());
-    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png"), wanted(dir));
+    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/_base/icons/conflict.png"), wanted(dir));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
     assertEquals(List.of(List.of("htm")), view.offered);
     allow(m, dir, view.offered.getLast().toArray(String[]::new));
@@ -2073,6 +2111,6 @@ in place of the program opening them now. The project then needs compiling again
     assertFalse(Files.exists(hello.resolve(Facts.outDir)));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
     assertEquals(Project.State.codeCompiled, project(m, other).state());
-    assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png", ".qux other/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
+    assertEquals(List.of(".fapp002 other/.fearless_out/icons/_base/icons/conflict.png", ".qux other/.fearless_out/icons/art/foo.png"), wanted(dir));
   }
 }

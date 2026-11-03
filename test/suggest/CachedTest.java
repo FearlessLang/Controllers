@@ -45,6 +45,7 @@ final class CachedTest{
   }
   static void compiled(Path project){
     var out= project.resolve(".fearless_out");
+    at(out.resolve("_compile_start.txt"), "", old+500);
     at(out.resolve("lib.json"), json("fear:/_lib/_rank_core.fear\n---\nbase 1000\n---\n"), old+1000);
     at(out.resolve("lib.jar"), "", old+1000);
     at(out.resolve("app.json"), json("fear:/_app/_rank_app.fear\nfear:/_app/a.fear\n---\nbase 1000\nlib "+(old+1000)+"\n---\ny lib"), old+2000);
@@ -71,7 +72,7 @@ final class CachedTest{
     at(project.resolve("p.fearless"), "", old);
     same(State.compiled, project, base(dir));
   }
-  @Test void aFileNewerThanTheJarOfItsPackageMakesTheProjectOutOfDate(@TempDir Path dir){
+  @Test void aFileNewerThanTheStartOfTheLastCompileMakesTheProjectOutOfDate(@TempDir Path dir){
     var project= project(dir);
     compiled(project);
     at(project.resolve("_app").resolve("a.fear"), "", old+3000);
@@ -95,6 +96,7 @@ final class CachedTest{
     at(project.resolve(".fearless_out").resolve("_error.txt"), "broken", old);
     at(project.resolve(".fearless_out").resolve("icons").resolve("a.png"), "", old);
     at(project.resolve(".fearless_out").resolve("app.html"), "", old);
+    at(project.resolve(".fearless_out").resolve(".app.html.swp"), "", old);
     same(State.compiled, project, base(dir));
   }
   @Test void aChangedMapDirectiveWithAnOldTimeMakesTheProjectOutOfDate(@TempDir Path dir){
@@ -149,6 +151,7 @@ final class CachedTest{
     Fs.ofV(() -> Files.write(file, bytes.toByteArray()));
     Fs.ofV(() -> Files.setLastModifiedTime(file, FileTime.fromMillis(old)));
     var out= project.resolve(".fearless_out");
+    at(out.resolve("_compile_start.txt"), "", old+500);
     at(out.resolve("zp.json"), json("fear:/extra/_zp/_rank_core.fear\n---\nbase 1000\n---\n"), old+1000);
     at(out.resolve("zp.jar"), "", old+1000);
     same(State.compiled, project, base(dir));

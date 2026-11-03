@@ -73,7 +73,7 @@ public final class Registry{
     this.check= check;
     if (!Fs.exists(infoFile())){ save(content); return; }
     var text= StringFiles.read(infoFile(), UserError.onFileError());
-    content = parse(text, infoFile(), Registry::real, dir);
+    content = parse(text, infoFile(), p -> p, dir);
     lookup();
   }
   public static Path real(Path folder){

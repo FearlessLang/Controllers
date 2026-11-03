@@ -5,7 +5,6 @@ import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.text.BadLocationException;
@@ -41,7 +40,7 @@ final class Links implements IPatternMatchListener{
     m.matches();
     var frame= m.group(1) != null;
     var file= m.group(frame ? 2 : 3);
-    var f= ResourcesPlugin.getWorkspace().getRoot().getProject(Output.alias).getFolder(FearlessWatcher.srcName).getFile(new Path(file));
+    var f= FearlessWatcher.mirror(Output.alias).getFolder(FearlessWatcher.srcName).getFile(new Path(file));
     if (!f.exists()){ return; }
     IntSupplier line= frame ? () -> Integer.parseInt(m.group(1)) : () -> markedLineAfter(console.getDocument(), offset);
     console.addHyperlink(new Link(f, line), offset+m.start(frame ? 2 : 3), file.length());

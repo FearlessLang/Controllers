@@ -37,7 +37,7 @@ public final class ManagerLink{
   public record Project(Path folder, String kind, List<String> mains){}
   private static final Map<String,Object> link= Info.parse(FileLocator.getBundleFileLocation(FrameworkUtil.getBundle(ManagerLink.class)).orElseThrow().toPath().getParent().resolveSibling("manager.info"));
   private static final Path launcher= path(link.get("launcher"));
-  private static final Path manager= path(link.get("manager"));
+  static final Path manager= path(link.get("manager"));
   static final Path baseCache= path(link.get("baseCache"));
   static Map<String,Project> projects(){
     var res= new LinkedHashMap<String,Project>();

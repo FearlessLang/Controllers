@@ -17,6 +17,7 @@ import java.util.Locale;
 
 import controller.Registry.Entry;
 import controller.Registry.Kind;
+import coordinator.Coordinator;
 import coordinator.MainsInfo;
 import realSourceOracle.BuildWithZip;
 import realSourceOracle.PathEntry;
@@ -35,7 +36,10 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public record Claimant(Path folder, String alias, String main, String kind, MainsInfo.Claim claim){
     public boolean shortcut(){ return kind.equals("Shortcut"); }
     public String label(){ return alias+"::"+main; }
-    public Path icon(String suffix){ return folder.resolve(Facts.outDir).resolve("icons").resolve(claim.icon()+suffix); }
+    public Path icon(String suffix){
+      var files= Coordinator.iconFiles(folder, claim);
+      return suffix.equals(".png") ? files.getFirst() : files.getLast();
+    }
     public Path shortcutFile(){ return folder.resolve(Project.shortcutFile(folder, main, claim.extension())); }
     /// none for a main whose Shortcut gives no valid file name: its compilation failed
     public Optional<Path> namedShortcutFile(){

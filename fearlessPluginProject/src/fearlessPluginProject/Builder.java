@@ -14,10 +14,10 @@ public final class Builder extends IncrementalProjectBuilder{
   public static final String id= "fearlessPluginProject.builder";
   @Override protected IProject[] build(int kind, Map<String,String> args, IProgressMonitor monitor){
     if (kind != INCREMENTAL_BUILD){ return null; }
-    var alias= getProject().getName();
+    var alias= FearlessWatcher.alias(getProject());
     if (MainButton.of(alias, ManagerLink.projects()).action() == MainButton.Action.check){ ManagerLink.send("Check", alias); return null; }
     if (Follow.followed().isEmpty()){ Follow.compile(alias); }
     return null;
   }
-  @Override protected void clean(IProgressMonitor monitor){ ManagerLink.send("DeleteCache", getProject().getName()); }
+  @Override protected void clean(IProgressMonitor monitor){ ManagerLink.send("DeleteCache", FearlessWatcher.alias(getProject())); }
 }

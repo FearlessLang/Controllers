@@ -14,7 +14,7 @@ public final class Save extends AbstractHandler{
   @Override public Object execute(ExecutionEvent event){
     var editor= HandlerUtil.getActiveEditor(event);
     var project= Adapters.adapt(editor.getEditorInput(), IResource.class).getProject();
-    var alias= project.getName();
+    var alias= FearlessWatcher.alias(project);
     var p= ManagerLink.projects().get(alias);
     if (p == null || !p.kind().equals("code")){ editor.doSave(new NullProgressMonitor()); return null; }
     if (Follow.compiling(alias)){ return null; }

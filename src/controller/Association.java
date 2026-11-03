@@ -26,12 +26,11 @@ public final class Association{
     if (app == null){ throw Violation.mustUseLauncher(); }
     return Path.of(app);
   }
-  ///The launcher names us: one identity per Fearless, and the manager's own is not the portable one.
+  ///The launcher names us: one identity per launcher, and the manager's own is not the portable one.
   static String identity(Path launcher){
     var file= launcher.getFileName().toString();
     var dot= file.lastIndexOf('.');
-    var name= dot < 0 ? file : file.substring(0, dot);
-    return name.endsWith(JavacTool.winKey) ? name.substring(0, name.length()-1) : name;
+    return dot < 0 ? file : file.substring(0, dot);
   }
   public static Path iconFile(){ return JavacTool.reqAppDir(Violation::mustUseLauncher).resolve("icon.png"); }
   static String deskId(Path folder, String main){ return identity(launcher())+"-"+LinuxAssociations.hash((folder+"\n"+main).getBytes(StandardCharsets.UTF_8)); }

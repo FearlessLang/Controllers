@@ -123,6 +123,7 @@ public final class Manager{
   private Set<String> captured= Set.of();
   private int turn;
   private volatile State state= new State(List.of(), Optional.empty(), List.of());
+  private boolean ending;
   public Manager(Path dir, Tools tools, View view, Exit exit){
     this.dir= dir;
     this.tools= tools;
@@ -268,10 +269,11 @@ public final class Manager{
     catch (Refused r){ follow.ifPresent(fl -> fl.refuse(r.getMessage())); view.refuse(r.getMessage()); }
   }
   private void request(String verb, List<String> args, Optional<Follow> follow){
+    if (ending){ throw new Refused(Report.quitting(verb)); }
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch (verb){
-      case "Quit" -> exit.quit();
-      case "Reset" -> exit.reset();
+      case "Quit" -> { ending = true; exit.quit(); }
+      case "Reset" -> { ending = true; exit.reset(); }
       case "Register" -> register(path(args.getFirst()));
       case "ConnectEclipse" -> connect(path(args.getFirst()));
       case "EditMetadata" -> editMetadata(path(args.getFirst()));
@@ -529,7 +531,7 @@ public final class Manager{
     var c= registry.content();
     edit(new Content(c.projects().stream().map(e -> e.path().equals(f) ? op.apply(e) : e).toList(), c.extensions()));
   }
-  private void edit(Content next){ edit(Registry.text(next), registry.infoFile()); }
+  private void edit(Content next){ edit(Registry.text(next), registry.infoFile(), p -> p); }
   private static <T> Map<String,T> with(Map<String,T> map, String key, Optional<T> value){
     var out= new LinkedHashMap<>(map);
     value.ifPresentOrElse(v -> out.put(key, v), () -> out.remove(key));
@@ -537,7 +539,9 @@ public final class Manager{
   }
   static Path projectFolder(Path path, Path managerDir){
     if (!Files.exists(path)){ throw new Refused(Report.registerNothing(path)); }
-    return Registry.placed(Registry.real(Files.isDirectory(path) ? path : path.getParent()), managerDir, Refused::new);
+    var folder= Files.isDirectory(path) ? path : path.getParent();
+    if (Files.isSymbolicLink(folder)){ throw new Refused(Report.registerLink(folder)); }
+    return Registry.placed(Registry.real(folder), managerDir, Refused::new);
   }
   private void register(Path path){
     var folder= projectFolder(path, dir);
@@ -570,21 +574,18 @@ public final class Manager{
   }
   private void editMetadata(Path file){
     if (!Files.isRegularFile(file)){ throw new Refused(Report.metadataNoFile(file)); }
-    try{ edit(UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(), file); }
+    try{ edit(UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(), file, Registry::real); }
     catch (CharacterCodingException e){ throw new Refused(Report.metadataNotUtf8(file)); }
     catch (IOException e){ throw new Refused(Report.metadataUnreadable(file, e)); }
     view.edited(file);
   }
-  private void edit(String text, Path file){
+  private void edit(String text, Path file, UnaryOperator<Path> identity){
     Content next;
-    try{ next= Registry.inferred(Registry.parse(text, file, Registry::real, dir), registry.content()); }
+    try{ next= Registry.inferred(Registry.parse(text, file, identity, dir), registry.content()); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
     granted(next);
-    if (!registry.extensions().equals(next.extensions())){
-      refresh();
-      reconcile(Optional.empty(), next.extensions());
-    }
+    if (!registry.extensions().equals(next.extensions())){ reconcile(Optional.empty(), next.extensions()); }
     var old= registry.content();
     registry.save(next, text);
     var removed= old.projects().stream().filter(o -> same(o, next).isEmpty()).toList();

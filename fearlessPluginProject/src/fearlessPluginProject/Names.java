@@ -1,6 +1,7 @@
 package fearlessPluginProject;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -17,11 +18,15 @@ final class Names{
     return problem(container.removeFirstSegments(2).append(name).toString(), file);
   }
   static Optional<String> problem(String path, boolean file){
+    var limit= Stream.of(path.split("/")).anyMatch(s -> s.startsWith(".")) ? 250 : 200;
+    if (path.length() > limit){ return Optional.of("\""+path+"\" is longer than "+limit+" characters: a path inside a Fearless project is at most 200 characters long, or 250 inside a hidden folder."); }
     var segments= List.of(path.split("/", -1));
     for (int i= 0; i < segments.size(); i += 1){
-      var p= segment(segments.get(i), file && i == segments.size()-1);
+      var inHidden= segments.subList(0, i).stream().anyMatch(s -> s.startsWith(".")) && !segments.get(i).isEmpty();
+      var p= inHidden ? hidden(segments.get(i)) : segment(segments.get(i), file && i == segments.size()-1);
       if (p.isPresent()){ return p; }
     }
+    if (segments.stream().anyMatch(s -> s.startsWith("."))){ return Optional.empty(); }
     var pkgs= segments.stream().filter(s -> s.startsWith("_") && !s.contains(".")).toList();
     if (pkgs.size() > 1){ return Optional.of("\""+path+"\" is inside two package folders, \""+pkgs.get(0)+"\" and \""+pkgs.get(1)+"\": a package folder cannot hold another package folder."); }
     var outside= file && pkgs.isEmpty() && path.endsWith(".fear");
@@ -31,12 +36,13 @@ final class Names{
   private static Stream<String> pkg(String folder){
     var name= folder.substring(1);
     if (name.equals("base") || name.equals("rank")){ return Stream.of("\""+folder+"\" is a reserved package name: \"base\" and \"rank\" belong to the standard library."); }
+    if (windows.contains(name)){ return Stream.of("\""+folder+"\" is not a valid package folder: \""+name+"\" is named like a Windows device, and Windows cannot hold it."); }
     return name.matches("[a-z][a-z0-9_]*") ? Stream.of() : Stream.of("\""+folder+"\" is not a valid package folder: after \"_\" a package name starts with a lowercase letter.");
   }
   private static Optional<String> segment(String s, boolean file){
     if (s.isEmpty()){ return Optional.of("A name is empty: the path has \"/\" at its start or end, or twice in a row."); }
     if (s.startsWith(".")){ return hidden(s); }
-    var dot= s.indexOf('.');
+    var dot= file ? s.indexOf('.') : -1;
     var atom= dot < 0 ? s : s.substring(0, dot);
     var c0= atom.charAt(0);
     if (!(c0 == '_' || (c0 >= 'a' && c0 <= 'z'))){ return Optional.of("\""+s+"\" starts with \""+c0+"\": a Fearless name starts with a lowercase letter or \"_\"."); }
@@ -52,6 +58,9 @@ final class Names{
     return ext.matches("[a-z0-9]{1,16}") ? Optional.empty() : Optional.of("\""+s+"\" has the extension \""+ext+"\": an extension is 1 to 16 lowercase letters and digits.");
   }
   private static Optional<String> hidden(String s){
+    var dot= s.indexOf('.');
+    var device= s.substring(0, dot < 0 ? s.length() : dot).toLowerCase(Locale.ROOT);
+    if (windows.contains(device)){ return Optional.of("\""+s+"\" is named like the Windows device \""+device+"\": Windows cannot hold it."); }
     var bad= s.endsWith(".") || s.endsWith(" ") || s.chars().anyMatch(c -> c < 32 || c == 127 || "<>:\"\\|?*".indexOf(c) >= 0);
     return bad ? Optional.of("\""+s+"\" is not a valid hidden name: it cannot end with \".\" or a space, nor hold a control character or one of <>:\"\\|?*") : Optional.empty();
   }
