@@ -623,7 +623,9 @@ public final class Manager{
     var fresh= found.get();
     if (compiling){ return true; }
     if (!l.job.isEmpty()){
-      if (fresh.stale().isPresent() || fresh.problem().isPresent()){ l.terminated = true; l.updated = true; l.child.kill(); }
+      if (fresh.stale().isPresent() || fresh.problem().isPresent()){ l.terminated = true; l.updated = true; l.child.kill(); return true; }
+      l.scanned = fresh;
+      l.facts = fresh;
       return true;
     }
     if (fresh.problem().isPresent()){ errorFile(f, fresh.problem().get()); }
@@ -646,6 +648,7 @@ public final class Manager{
   private void unreachable(Path f){
     var l= live.get(f);
     if (l == null){ return; }
+    if (l.child != null && !l.job.equals(Project.compiling)){ endMain(f); }
     if (l.child != null){ l.terminated = true; l.child.kill(); }
     l.job = "";
     var alias= alias(f);

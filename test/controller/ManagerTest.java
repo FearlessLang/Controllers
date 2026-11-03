@@ -986,6 +986,20 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Check", "hello");
     until(m, s -> s.projects().isEmpty());
     assertEquals("The project \"hello\" connects to the folder \""+hello+"\".\nThis folder is now unreachable.\nThe project \"hello\" has now been removed.", view.refused.getFirst());
+    same("[###]--- terminating hello.Slow ---\n--- hello.Slow was terminated after [###]s ---\n", view.out(hello));
+  }
+  @Test void theLogsOfARunningMainShowAtTheNextAutoCheck(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    Fs.writeUtf8(hello.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$20261103_000000_000Z.log"), "<testcase classname=\"A\" name=\"A at line: 1\"></testcase>\n");
+    send(m, "Show", "hello");
+    assertTrue(project(m, hello).busy());
+    assertEquals(1, project(m, hello).facts().logs().size());
+    same("[###]<testcase classname=\"A\" name=\"A at line: 1\"></testcase>[###]", project(m, hello).facts().tests());
+    send(m, "Terminate", "hello");
   }
   @Test void kindFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "data"), c -> with(c, "data", e -> e.withKind(Kind.dataRead)), "Kind", "data", "dataRead");

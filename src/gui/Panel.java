@@ -147,7 +147,6 @@ final class Panel{
   /// the counts, then one line per test case of the newest unit test log, a failed one followed by its failure
   private static String tests(String suite){
     var cases= testCase.matcher(suite).results().map(r -> testLine(r.group(1), r.group(2))).toList();
-    if (cases.isEmpty()){ return "No unit test log yet."; }
     var failed= cases.stream().filter(c -> c.startsWith("FAILED")).count();
     var disabled= cases.stream().filter(c -> c.startsWith("disabled")).count();
     return (cases.size()-failed-disabled)+" passed, "+failed+" failed, "+disabled+" disabled\n"+String.join("", cases);
@@ -220,6 +219,7 @@ final class Panel{
     openDocs.setEnabled(p.mains().isPresent());
     deleteCache.setEnabled(!p.busy());
     forget.setEnabled(!p.busy());
+    kind.setText("Kind: "+p.kind().text);
     kind.setEnabled(!p.busy());
     fillSelected(p, several);
     fillShortcuts(p, claimed);
