@@ -1007,7 +1007,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     b.view.refused.clear();
     send(a.m, verb);
     var managerDir= b.dir.resolve("manager");
-    edit(b.m, b.dir, edited.apply(Registry.inferred(Registry.parse(info(b.dir), managerDir.resolve("projects.info"), p -> p, managerDir))));
+    edit(b.m, b.dir, edited.apply(Registry.inferred(Registry.parse(info(b.dir), managerDir.resolve("projects.info"), p -> p, managerDir), new Registry.Content(List.of(), List.of()))));
     var outcomes= List.of(outcome(a), outcome(b));
     for (var t : List.of(a, b)){
       t.m.state().projects().stream().filter(Project::busy).forEach(p -> send(t.m, "Terminate", p.alias()));

@@ -164,4 +164,14 @@ final class NamesTest{
     assertEquals("someproject", Names.infer(project, Set.of("start")));
     assertEquals(List.of(project.resolve("start.fearless")), Names.list(project));
   }
+  @Test void aFolderNamedLikeTheMarkerTakesTheNameAndAFolderNamedLikeTheNameDoesNot(@TempDir Path dir){
+    var proj= dir.resolve("proj");
+    Fs.ensureDir(proj.resolve("proj.fearless"));
+    Fs.ensureDir(proj.resolve("proj2"));
+    Fs.writeUtf8(proj.resolve("Proj.fearless"), "");
+    var name= Names.infer(proj, java.util.Set.of());
+    assertEquals("proj2", name);
+    Names.nameAs(proj, name);
+    assertTrue(Files.isRegularFile(proj.resolve("proj2.fearless")));
+  }
 }

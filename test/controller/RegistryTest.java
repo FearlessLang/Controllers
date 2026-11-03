@@ -305,7 +305,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     Fs.writeUtf8(first.resolve("same.fearless"), "1\n");
     Fs.writeUtf8(second.resolve("same.fearless"), "2\n");
     Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), listed(second, first));
-    var inferred= Registry.inferred(content(listed(second, first)));
+    var inferred= Registry.inferred(content(listed(second, first)), content(listed(second, first)));
     assertEquals(List.of("same", "first"), inferred.projects().stream().map(Entry::alias).toList());
     assertEquals(List.of(first.resolve("same.fearless")), Names.list(first));
     var r= registry(dir);
@@ -343,6 +343,15 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     var hello= folder(dir, "hello");
     Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), listed(gone, hello));
     assertEquals(List.of("", "hello"), registry(dir).all().stream().map(Entry::alias).toList());
+    assertFalse(Files.exists(gone));
+  }
+  @Test void aLookupKeepsTheNameOfAFolderThatBecameUnreachable(@TempDir Path dir){
+    var gone= folder(dir, "gone");
+    var r= registry(dir);
+    added(r, "gone", gone);
+    Fs.rmTree(gone);
+    r.lookup();
+    assertEquals("gone", r.of(gone).orElseThrow().alias());
     assertFalse(Files.exists(gone));
   }
 }

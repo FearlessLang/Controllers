@@ -573,7 +573,7 @@ public final class Manager{
   }
   private void edit(String text, Path file){
     Content next;
-    try{ next= Registry.inferred(Registry.parse(text, file, Registry::real, dir)); }
+    try{ next= Registry.inferred(Registry.parse(text, file, Registry::real, dir), registry.content()); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
     granted(next);
