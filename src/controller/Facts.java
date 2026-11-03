@@ -21,6 +21,7 @@ import javax.imageio.ImageIO;
 import controller.Registry.Kind;
 import coordinator.Coordinator;
 import coordinator.MainsInfo;
+import fileSupport.JUnitReport;
 import fileSupport.LogFiles;
 import realSourceOracle.RealSourceOracleWithZip;
 import tools.Fs;
@@ -29,7 +30,7 @@ import userMessages.UserError;
 
 /// What the file system says about a project folder: its compilation cache under
 /// `.fearless_out` and why it is out of date, its icon, its logs, and why it is invalid if it is.
-public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<String> packages, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
+public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<String> packages, Optional<Icon> icon, List<LogFiles.Entry> logs, String tests, Optional<String> problem){
   public static final String outDir= Coordinator.outDir;
   /// An icon is the same while its file is: the image is read from it once.
   public record Icon(Path file, long stamp, BufferedImage image){
@@ -42,10 +43,10 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
   public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check){
     if (!Files.isDirectory(folder, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(folder)){ return Optional.empty(); }
     try{ return Optional.of(retried(() -> read(folder, alias, kind, check))); }
-    catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
+    catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), "", Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
   }
   /// the facts of a project shown as 'invalid' with that problem, until its Forget: the folder of the project can not be reached
-  static Facts invalid(String problem){ return new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), Optional.of(problem)); }
+  static Facts invalid(String problem){ return new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), "", Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
     for (var left= 10;; left -= 1){
       try{ return read.get(); }
@@ -65,7 +66,8 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     try{ icon = icon(folder); }
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
     List<LogFiles.Entry> logs= List.of();
-    try{ logs = LogFiles.list(folder); }
+    var tests= "";
+    try{ logs = LogFiles.list(folder); tests = JUnitReport.suite("", folder); }
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
     if (kind == Kind.code && problem.isEmpty()){
       try{ state = check.apply(folder); }
@@ -77,7 +79,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     if (state instanceof Coordinator.State.Invalid(var why)){ problem = Optional.of(why); }
     var compiled= state instanceof Coordinator.State.Compiled c ? Optional.of(c) : Optional.<Coordinator.State.Compiled>empty();
     var stale= kind == Kind.code && problem.isEmpty() && compiled.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
-    return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, logs, problem.filter(_ -> kind != Kind.idle));
+    return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, logs, tests, problem.filter(_ -> kind != Kind.idle));
   }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));

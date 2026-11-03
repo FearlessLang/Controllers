@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -68,6 +69,9 @@ final class Panel{
   private final Collapsible claims= new Collapsible("Extensions", half(claimsBox), true);
   private final JPanel dataBox= new JPanel();
   private final Collapsible data= new Collapsible("Data", half(dataBox), false);
+  private final JTextArea testList= mono(named(new JTextArea(), "tests"));
+  private final Collapsible tests= new Collapsible("Tests", half(testList), true);
+  private static final Pattern testCase= Pattern.compile("(?s)<testcase classname=\"[^\"]*\" name=\"([^\"]*)\"[^>]*>(.*?)</testcase>");
   private final JList<LogFiles.Entry> logList= new JList<>();
   private final Collapsible logs= new Collapsible("Logs", half(logList), false, small("Logs", this::openLogs));
   private final JButton openDocs= small("Open docs", this::openDocs);
@@ -83,6 +87,7 @@ final class Panel{
   Panel(Consumer<String> refuse){
     this.refuse= refuse;
     output.setEditable(false);
+    testList.setEditable(false);
     output.setDropTarget(null);
     dataBox.setLayout(new BoxLayout(dataBox, BoxLayout.Y_AXIS));
     claimsBox.setLayout(new BoxLayout(claimsBox, BoxLayout.Y_AXIS));
@@ -106,7 +111,7 @@ final class Panel{
     Stream.of(header, selectedMains, shortcuts).forEach(top::add);
     var areas= new JPanel();
     areas.setLayout(new BoxLayout(areas, BoxLayout.Y_AXIS));
-    Stream.of(new Collapsible("Output", half(output), true, small("Clear", () -> output.setText(""))), attenuators, claims, data, logs).forEach(areas::add);
+    Stream.of(new Collapsible("Output", half(output), true, small("Clear", () -> output.setText(""))), tests, attenuators, claims, data, logs).forEach(areas::add);
     areas.add(new JPanel());
     root.add(top, BorderLayout.NORTH);
     root.add(areas, BorderLayout.CENTER);
@@ -120,7 +125,8 @@ final class Panel{
         var d= super.getPreferredSize();
         var wide= getViewport().getWidth() > 0 && view.getPreferredSize().width > getViewport().getWidth();
         var bar= wide ? getHorizontalScrollBar().getPreferredSize().height : 0;
-        return new Dimension(d.width, Math.max(40, Math.min(d.height+bar, root.getHeight()/2)));
+        var content= view.getPreferredSize().height+getInsets().top+getInsets().bottom;
+        return new Dimension(d.width, Math.max(40, Math.min(content+bar, root.getHeight()/2)));
       }
       @Override public Dimension getMaximumSize(){ return new Dimension(Integer.MAX_VALUE, getPreferredSize().height); }
     };
@@ -138,6 +144,21 @@ final class Panel{
       .forEach(k -> menu.add(named(Window.item(k == Kind.idle ? "Back to idle" : "Become "+k.text, () -> Main.command("Kind "+alias+" "+k.text)), k.text)));
     menu.show(kind, 0, kind.getHeight());
   }
+  /// the counts, then one line per test case of the newest unit test log, a failed one followed by its failure
+  private static String tests(String suite){
+    var cases= testCase.matcher(suite).results().map(r -> testLine(r.group(1), r.group(2))).toList();
+    if (cases.isEmpty()){ return "No unit test log yet."; }
+    var failed= cases.stream().filter(c -> c.startsWith("FAILED")).count();
+    var disabled= cases.stream().filter(c -> c.startsWith("disabled")).count();
+    return (cases.size()-failed-disabled)+" passed, "+failed+" failed, "+disabled+" disabled\n"+String.join("", cases);
+  }
+  private static String testLine(String name, String body){
+    if (body.contains("<skipped/>")){ return "disabled "+xmlText(name)+"\n"; }
+    if (!body.contains("<failure>")){ return "passed   "+xmlText(name)+"\n"; }
+    var failure= body.substring(body.indexOf("<failure>")+"<failure>".length(), body.indexOf("</failure>")).replaceAll("(?s)<expected>.*?</expected>|<actual>.*?</actual>", "").strip();
+    return "FAILED   "+xmlText(name)+"\n"+xmlText(failure).indent(4);
+  }
+  private static String xmlText(String s){ return s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&amp;", "&"); }
   private void openLogs(){ Window.open(refuse, project.folder().resolve(LogFiles.runDir).resolve("logs")); }
   void append(String text){
     var bar= ((JScrollPane)output.getParent().getParent()).getVerticalScrollBar();
@@ -206,6 +227,9 @@ final class Panel{
     fillClaims(p, claimed);
     fillData(p, all);
     logs.setVisible(p.kind() == Kind.code);
+    tests.setVisible(p.kind() == Kind.code);
+    var testText= tests(p.facts().tests());
+    if (!testText.equals(testList.getText())){ testList.setText(testText); testList.setCaretPosition(0); }
     var log= logList.getSelectedValue();
     logList.setListData(p.facts().logs().toArray(LogFiles.Entry[]::new));
     logList.setSelectedValue(log, false);

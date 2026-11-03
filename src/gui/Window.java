@@ -62,6 +62,7 @@ import controller.Manager.State;
 import controller.Project;
 import controller.Registry;
 import managerMessages.Report;
+import metaParser.PrettyFileName;
 import managerMessages.Violation;
 import tools.Fs;
 import tools.OpenPath;
@@ -163,7 +164,10 @@ public final class Window implements Manager.View{
   @Override public void state(State s){ SwingUtilities.invokeLater(() -> render(s)); }
   @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(() -> panel(folder).append(text)); }
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(() -> panel(folder).output.setText("")); }
-  @Override public void refuse(String text){ SwingUtilities.invokeLater(() -> { showNow(); say(text); }); }
+  @Override public void refuse(String text){ SwingUtilities.invokeLater(() -> { showNow(); say(editorText(written, text)); }); }
+  static String editorText(Set<Path> written, String text){
+    return written.stream().reduce(text, (t, f) -> t.replace("In file: "+PrettyFileName.displayFileName(f.toUri()), "In the text of the editor:"), (a, _) -> a);
+  }
   @Override public void tell(String text){ refuse(text); }
   private void say(String text){ JOptionPane.showMessageDialog(frame, text, "Fearless", JOptionPane.PLAIN_MESSAGE); }
   @Override public void choose(Path file, List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(file, choices)); }

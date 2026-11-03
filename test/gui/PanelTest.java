@@ -53,6 +53,33 @@ final class PanelTest{
     panel.render(withClaims, List.of(withClaims), 800);
     assertEquals(List.of(), all(panel.root).filter(c -> c.getName() != null && c.getName().startsWith("shortcut ")).toList());
   }
+  @Test void theTestsAreaShowsTheCountsAndEachTestCaseOfTheNewestUnitTestLog(@TempDir Path dir){
+    var folder= dir.resolve("hello");
+    Fs.writeUtf8(folder.resolve("hello.fearless"), "");
+    Fs.writeUtf8(folder.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$20261103_000000_000Z.log"), """
+PLAN|RUN|_hello/_rank_app.fear|Good|Good at line: 3|3
+<testcase classname="Good" name="Good at line: 3" file="_hello/_rank_app.fear" line="3"></testcase>
+<testcase classname="Bad" name="Bad at line: 5" file="_hello/_rank_app.fear" line="5">
+<failure>
+<expected>7</expected>
+<actual>6</actual>
+Expected: 7 Actual: 6 &lt;here&gt;
+</failure>
+</testcase>
+PLAN|DISABLED|_hello/_rank_app.fear|Later|Later at line: 9|9
+""");
+    var hello= project(folder, Kind.code, Map.of(), Optional.empty());
+    var panel= new Panel(_ -> {});
+    panel.render(hello, List.of(hello), 800);
+    var text= all(panel.root).filter(c -> "tests".equals(c.getName())).map(c -> ((javax.swing.JTextArea)c).getText()).toList();
+    assertEquals(List.of("""
+1 passed, 1 failed, 1 disabled
+passed   Good at line: 3
+FAILED   Bad at line: 5
+    Expected: 7 Actual: 6 <here>
+disabled Later at line: 9
+"""), text);
+  }
   @Test void aMountOfAProjectThatIsNotRegisteredIsMarkedAlsoBeforeACompilation(@TempDir Path dir){
     Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
     var hello= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.empty());
