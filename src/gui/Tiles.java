@@ -74,7 +74,6 @@ public final class Tiles extends JPanel{
     var rows= s.projects().stream().sorted(Comparator.comparing(Project::alias)).toList();
     list.setListData(rows.toArray(Project[]::new));
     var at= s.selected().map(f -> rows.stream().map(Project::folder).toList().indexOf(f)).orElse(-1);
-    if (at >= 0){ list.setSelectedIndex(at); }
     if (at >= 0 && moved){ list.ensureIndexIsVisible(at); }
     var anyBusy= rows.stream().anyMatch(Project::busy);
     if (anyBusy && !spinner.isRunning()){ spinner.start(); }
@@ -83,8 +82,9 @@ public final class Tiles extends JPanel{
   private final class Tile extends DefaultListCellRenderer{
     @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focus){
       var p= (Project)value;
-      var res= desktop((JLabel)super.getListCellRendererComponent(l, value, i, selected, focus), new Icons.Badge(images.get(p), iconSize, p.state()), p.alias());
-      res.setBorder(selected ? BorderFactory.createLineBorder(l.getSelectionBackground().darker(), 3) : null);
+      var shown= state.selected().equals(Optional.of(p.folder()));
+      var res= desktop((JLabel)super.getListCellRendererComponent(l, value, i, shown, focus), new Icons.Badge(images.get(p), iconSize, p.state()), p.alias());
+      res.setBorder(shown ? BorderFactory.createLineBorder(l.getSelectionBackground().darker(), 3) : null);
       return res;
     }
   }
