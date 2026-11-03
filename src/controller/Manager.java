@@ -583,10 +583,7 @@ public final class Manager{
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
     granted(next);
-    if (!registry.extensions().equals(next.extensions())){
-      refresh();
-      reconcile(Optional.empty(), next.extensions());
-    }
+    if (!registry.extensions().equals(next.extensions())){ reconcile(Optional.empty(), next.extensions()); }
     var old= registry.content();
     registry.save(next, text);
     var removed= old.projects().stream().filter(o -> same(o, next).isEmpty()).toList();

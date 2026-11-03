@@ -59,7 +59,7 @@ public final class Cached{
   }
   private static boolean others(Path out, List<Pkg> pkgs){
     if (!Files.isDirectory(out)){ return false; }
-    var kept= Stream.concat(Stream.of("_error.txt", "_unfinished.txt", "icons"), pkgs.stream().flatMap(p -> Stream.of(".json", ".jar", ".html", ".txt").map(x -> p.name()+x))).toList();
+    var kept= Stream.concat(Stream.of("_error.txt", "_unfinished.txt", "_compile_start.txt", "icons"), pkgs.stream().flatMap(p -> Stream.of(".json", ".jar", ".html", ".txt").map(x -> p.name()+x))).toList();
     try (var s= Files.list(out)){ return s.anyMatch(f -> !kept.contains(f.getFileName().toString())); }
     catch (NoSuchFileException e){ return false; }
     catch (IOException e){ throw new UncheckedIOException(e); }
@@ -68,7 +68,7 @@ public final class Cached{
     var json= out.resolve(p.name()+".json");
     var jar= stamp(out.resolve(p.name()+".jar"));
     if (!Files.exists(json) || jar < 0){ return false; }
-    try{ return Api.parse(Files.readString(json)).inputsSnapshot().equals(snapshot(p, pkgs, maps, out, baseCache)) && jar >= p.files().stream().mapToLong(Ref::stamp).max().getAsLong(); }
+    try{ return Api.parse(Files.readString(json)).inputsSnapshot().equals(snapshot(p, pkgs, maps, out, baseCache)) && stamp(out.resolve("_compile_start.txt")) >= p.files().stream().mapToLong(Ref::stamp).max().getAsLong(); }
     catch (IllegalArgumentException|NoSuchFileException e){ return false; }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }

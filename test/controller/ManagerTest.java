@@ -1408,7 +1408,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("Refused request \"Run\" on project \"hello\".\n[###]The mount of \"data\" on \"hello.Pub\" is broken: no project \"data\" is registered.", view.refused.getLast());
     assertFalse(view.out(hello).contains("running hello.Hello"));
   }
-  @Test void anEditOfTheSystemExtensionsReadsTheClaimsAgain(@TempDir Path dir){
+  @Test void anEditOfTheSystemExtensionsReconcilesTheMapInMemoryAndAMissingClaimIconIsFatal(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -1416,8 +1416,8 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     compiled(m, "hello");
     Fs.rmTree(hello.resolve(Facts.outDir));
     allow(m, dir, "htm");
-    assertEquals(List.of(".foo manager/icons/base.IconsConflict.png", ".htm manager/icons/base.IconsConflict.png"), wanted(dir));
-    assertEquals(List.of(), failures);
+    same("[###]NoSuchFileException: [###]hello/.fearless_out/icons/[###].png", failures.getFirst().toString());
+    failures.clear();
   }
   @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEndAndAnyOtherRequestUntilItIsApplied(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
