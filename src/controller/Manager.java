@@ -586,7 +586,8 @@ public final class Manager{
     var removed= old.projects().stream().filter(o -> same(o, next).isEmpty()).toList();
     var added= next.projects().stream().filter(e -> same(e, old).isEmpty()).toList();
     removed.forEach(o -> drop(o.path()));
-    added.forEach(e -> { live.put(e.path(), new Live()); uncached(e.path(), () -> Coordinator.deleteCache(e.path())); scan(e.path()); });
+    added.forEach(e -> live.put(e.path(), new Live()));
+    added.forEach(e -> { uncached(e.path(), () -> Coordinator.deleteCache(e.path())); scan(e.path()); });
     var dropped= old.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();
     var kinds= old.projects().stream().filter(o -> same(o, next).filter(e -> e.kind() != o.kind()).isPresent()).map(Entry::path).toList();
     var claiming= live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList();
@@ -709,7 +710,7 @@ public final class Manager{
   private List<Project> projects(){ return registry.all().stream().map(this::project).toList(); }
   private String alias(Path f){ return registry.of(f).orElseThrow().alias(); }
   private void publish(){
-    var next= new State(projects(), selected, registry.extensions());
+    var next= new State(projects().stream().filter(p -> !p.alias().isEmpty()).toList(), selected, registry.extensions());
     if (next.equals(state)){ return; }
     state = next;
     view.state(next);

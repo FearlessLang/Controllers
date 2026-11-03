@@ -894,6 +894,22 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     }
     finally{ Disk.allow(hello); }
   }
+  @Test void anEditAddingTwoProjectsTheFirstWithAMarkerThatCanNotBeWrittenIsNotFatal(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var text= info(dir);
+    var locked= folder(dir, "locked");
+    var other= folder(dir, "other");
+    Disk.noWrite(locked);
+    try{
+      edit(m, dir, text.replace("  ]", "  ,\n    {\"path\": "+quoted(locked)+", \"kind\": \"idle\"},\n    {\"path\": "+quoted(other)+", \"kind\": \"idle\"}\n  ]"));
+      until(m, s -> s.projects().size() == 2);
+      assertEquals(List.of("hello "+hello, "other "+other), listed(m));
+      assertEquals(List.of(), failures);
+    }
+    finally{ Disk.allow(locked); }
+  }
+  private static String quoted(Path p){ return "\""+TaggedText.of(p.toString()).replace("\\", "\\\\").replace("\"", "\\\"")+"\""; }
   @Test void aKindChangeOfADataProjectMountedOnARunningMainIsRefused(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
     var hello= code(m, dir, "hello");

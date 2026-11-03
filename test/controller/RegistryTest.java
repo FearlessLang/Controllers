@@ -365,4 +365,15 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     finally{ Disk.allow(first); }
     assertTrue(Files.exists(second.resolve("hello.fearless")));
   }
+  @Test void anUnreachableFolderLosesItsNameToAnEarlierProjectTakingIt(@TempDir Path dir){
+    var a= folder(dir, "a");
+    var b= folder(dir, "b");
+    var r= registry(dir);
+    added(r, "a", a);
+    added(r, "b", b);
+    Fs.rmTree(b);
+    Fs.ofV(() -> Files.move(a.resolve("a.fearless"), a.resolve("b.fearless")));
+    r.lookup();
+    assertEquals(List.of("b", ""), r.all().stream().map(Entry::alias).toList());
+  }
 }

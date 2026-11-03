@@ -116,7 +116,7 @@ public final class Registry{
     var taken= new HashSet<String>();
     var res= new ArrayList<Entry>();
     for (var e : c.projects()){
-      var name= Names.reachable(e.path()) ? Names.infer(e.path(), taken) : known.projects().stream().filter(k -> k.path().equals(e.path())).map(Entry::alias).findFirst().orElse("");
+      var name= Names.reachable(e.path()) ? Names.infer(e.path(), taken) : known.projects().stream().filter(k -> k.path().equals(e.path())).map(Entry::alias).filter(n -> !taken.contains(n)).findFirst().orElse("");
       var named= mark.apply(new Entry(name, e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()));
       taken.add(named.alias());
       res.add(named);
