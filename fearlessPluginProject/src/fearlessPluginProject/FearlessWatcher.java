@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -39,6 +40,9 @@ import org.osgi.framework.FrameworkUtil;
 /// project that is not its mirror is an error shown once; any other error stops the job and is shown.
 public final class FearlessWatcher extends Job implements IStartup{
   static final String srcName= "src";
+  static final String mirrorPrefix= "fearless_";
+  static IProject mirror(String alias){ return ResourcesPlugin.getWorkspace().getRoot().getProject(mirrorPrefix+alias); }
+  static String alias(IProject p){ return p.getName().startsWith(mirrorPrefix) ? p.getName().substring(mirrorPrefix.length()) : ""; }
   private static final String problemType= "fearlessPluginProject.problem";
   private static final Pattern at= Pattern.compile("(?m)^In file: fear:/(\\S+)\\n(?:.*\\n)*?(\\d+)\\| .*\\n *\\| [ ^~-]*\\^");
   private static final Pattern named= Pattern.compile("fear:/([^\\s\"]+)");
@@ -66,12 +70,15 @@ public final class FearlessWatcher extends Job implements IStartup{
   private void tick(IProgressMonitor monitor) throws CoreException{
     var projects= ManagerLink.projects();
     var root= ResourcesPlugin.getWorkspace().getRoot();
+    var workspace= real(root.getLocation().toFile().toPath());
+    var around= Stream.concat(Stream.of(ManagerLink.manager), projects.values().stream().map(ManagerLink.Project::folder)).filter(f -> f.startsWith(workspace) || workspace.startsWith(f)).findFirst();
+    if (around.isPresent()){ shown("The Eclipse workspace \""+workspace+"\" and the folder \""+around.get()+"\" are inside one another: Fearless mirrors no project until the workspace is outside every Fearless project folder and the manager folder."); return; }
     for (var p : root.getProjects()){
-      if (Nature.marks(p) && !projects.containsKey(p.getName())){ p.delete(false, true, monitor); }
+      if (Nature.marks(p) && !projects.containsKey(alias(p))){ p.delete(false, true, monitor); }
     }
     marks.keySet().retainAll(projects.keySet());
     for (var e : projects.entrySet()){
-      var project= root.getProject(e.getKey());
+      var project= mirror(e.getKey());
       if (mirror(project, e.getValue(), monitor)){ reflect(project, e.getValue()); }
     }
     MainButton.look(projects);
@@ -79,7 +86,7 @@ public final class FearlessWatcher extends Job implements IStartup{
   /// False for a workspace project that is not the mirror of the registered project of that name.
   private boolean mirror(IProject project, ManagerLink.Project p, IProgressMonitor monitor) throws CoreException{
     if (!project.exists()){
-      marks.remove(project.getName());
+      marks.remove(alias(project));
       project.create(monitor);
       project.open(monitor);
       var description= project.getDescription();
@@ -87,10 +94,10 @@ public final class FearlessWatcher extends Job implements IStartup{
       project.setDescription(description, monitor);
     }
     var closedOther= !project.isOpen() && !List.of(project.getWorkspace().loadProjectDescription(project.getLocation().append(".project")).getNatureIds()).contains(Nature.id);
-    if (closedOther){ clash(project.getName()); return false; }
+    if (closedOther){ clash(project); return false; }
     project.open(monitor);
-    if (!Nature.marks(project)){ clash(project.getName()); return false; }
-    clashes.remove(project.getName());
+    if (!Nature.marks(project)){ clash(project); return false; }
+    clashes.remove(clashText(project));
     var src= project.getFolder(srcName);
     //TO DECIDE AND TEST: a Windows folder whose name holds an unpaired surrogate is linked by its
     //exact path, but Eclipse saves the link in .project as UTF-8, where that unit becomes '?':
@@ -100,12 +107,18 @@ public final class FearlessWatcher extends Job implements IStartup{
     src.refreshLocal(IResource.DEPTH_INFINITE, monitor);
     return true;
   }
-  private void clash(String name){
-    if (!clashes.add(name)){ return; }
-    StatusManager.getManager().handle(Status.error("The workspace has a project named \""+name+"\" that is not the Fearless project of that name: rename it or delete it."), StatusManager.SHOW|StatusManager.LOG);
+  private void clash(IProject project){ shown(clashText(project)); }
+  private static String clashText(IProject project){ return "The workspace has a project named \""+project.getName()+"\" that is not the mirror of the Fearless project \""+alias(project)+"\": rename it or delete it."; }
+  private void shown(String error){
+    if (!clashes.add(error)){ return; }
+    StatusManager.getManager().handle(Status.error(error), StatusManager.SHOW|StatusManager.LOG);
+  }
+  private static java.nio.file.Path real(java.nio.file.Path p){
+    try{ return p.toRealPath(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private void reflect(IProject project, ManagerLink.Project p) throws CoreException{
-    var alias= project.getName();
+    var alias= alias(project);
     var problem= ManagerLink.error(p.folder()).orElse("");
     var m= at.matcher(problem);
     var lined= m.find();

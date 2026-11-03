@@ -64,7 +64,7 @@ public final class Assist implements IContentAssistProcessorExtension{
   /// the resolver of the edited text; null for a file of no mirrored project or outside a package folder
   private static At _at(ITextViewer viewer){
     var file= file(viewer);
-    var project= ManagerLink.projects().get(file.getProject().getName());
+    var project= ManagerLink.projects().get(FearlessWatcher.alias(file.getProject()));
     var segments= List.of(file.getProjectRelativePath().removeLastSegments(1).segments());
     var at= IntStream.range(1, segments.size()).filter(i -> segments.get(i).startsWith("_") && !segments.get(i).contains(".")).boxed().toList();
     if (project == null || at.size() != 1){ return null; }
@@ -77,7 +77,7 @@ public final class Assist implements IContentAssistProcessorExtension{
     var types= Stream.concat(Stream.of(ManagerLink.baseCache.resolve("base.json")), read.stream()).flatMap(p -> types(p).stream()).toList();
     var api= new Api(types);
     var r= Resolver.of(api, pkg, Cached.packages(project.folder(), pkg), head, text);
-    return new At(file.getProject().getName(), out, api, r, unfinished, read);
+    return new At(FearlessWatcher.alias(file.getProject()), out, api, r, unfinished, read);
   }
   @Override public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset){
     try{
@@ -89,7 +89,7 @@ public final class Assist implements IContentAssistProcessorExtension{
         return proposals(a, offset, false);
       }
     }
-    catch (Broken e){ return new ICompletionProposal[]{ clean(file(viewer).getProject().getName(), e.getMessage()) }; }
+    catch (Broken e){ return new ICompletionProposal[]{ clean(FearlessWatcher.alias(file(viewer).getProject()), e.getMessage()) }; }
   }
   private static IFile file(ITextViewer viewer){ return ResourcesPlugin.getWorkspace().getRoot().getFile(FileBuffers.getTextFileBufferManager().getTextFileBuffer(viewer.getDocument()).getLocation()); }
   /// _unfinished.txt was there before the files were read, or is there now, or a <pkg>.json that was read is gone

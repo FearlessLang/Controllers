@@ -85,7 +85,7 @@ public final class NewSource extends AbstractHandler{
       var root= new Composite(area, SWT.NONE);
       root.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
       root.setLayout(new GridLayout(2, false));
-      new Label(root, SWT.NONE).setText("Path in "+project.getName()+":");
+      new Label(root, SWT.NONE).setText("Path in "+FearlessWatcher.alias(project)+":");
       path = new Text(root, SWT.BORDER);
       path.setText(start);
       var wide= new GridData(SWT.FILL, SWT.CENTER, true, false);
