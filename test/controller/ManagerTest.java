@@ -274,7 +274,7 @@ public class Child{
     assertEquals(List.of(), listed(m));
     assertEquals("{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n", info(dir));
   }
-  @Test void noRequestAfterAQuitIsApplied(@TempDir Path dir){
+  @Test void everyRequestAfterAQuitIsRefused(@TempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     send(m, "Quit");
@@ -282,12 +282,14 @@ public class Child{
     send(m, "Reset");
     assertEquals(List.of("quit"), exits);
     assertEquals(List.of("hello "+hello), listed(m));
+    assertEquals(List.of("Refused request \"Forget\": the manager is quitting.", "Refused request \"Reset\": the manager is quitting."), view.refused);
   }
-  @Test void noRequestAfterAResetIsApplied(@TempDir Path dir){
+  @Test void everyRequestAfterAResetIsRefused(@TempDir Path dir){
     var m= manager(dir);
     send(m, "Reset");
     send(m, "Quit");
     assertEquals(List.of("reset"), exits);
+    assertEquals(List.of("Refused request \"Quit\": the manager is quitting."), view.refused);
   }
   @Test void anInvalidCallIsShownAndAFatalErrorIsFatal(@TempDir Path dir){
     var m= manager(dir);

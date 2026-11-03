@@ -47,6 +47,7 @@ The arguments are:
   //-- the form of a message
   private static String refused(String verb, String name){ return "Refused request "+disp(verb)+" on project "+disp(name)+"."; }
   private static String refusedPath(String verb, Path p){ return "Refused request "+disp(verb)+" on path\n"+path(p.toString()); }
+  public static String quitting(String verb){ return "Refused request "+disp(verb)+": the manager is quitting."; }
   private static String refusedOpen(Path p){ return "Refused request to open\n"+path(p.toString()); }
   public static String unknownData(String name, String data, List<String> names){
     return refused("Mount", name)+"\nNo project is named "+disp(data)+"."+Join.of(names.stream().map(n -> "\n  "+n), "\nThe projects are:", "", "", "\nNo project is registered.");

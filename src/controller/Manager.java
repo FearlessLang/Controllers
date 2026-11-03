@@ -253,7 +253,6 @@ public final class Manager{
   }
   private Path icon(List<Project.Claimant> cs, String suffix){ return cs.size() == 1 ? cs.getFirst().icon(suffix) : dir.resolve("icons").resolve(conflict+suffix); }
   private void apply(String message){
-    if (ending){ return; }
     var lines= List.of(message.split("\n", -1));
     var verb= lines.getFirst();
     var args= lines.subList(1, lines.size());
@@ -270,6 +269,7 @@ public final class Manager{
     catch (Refused r){ follow.ifPresent(fl -> fl.refuse(r.getMessage())); view.refuse(r.getMessage()); }
   }
   private void request(String verb, List<String> args, Optional<Follow> follow){
+    if (ending){ throw new Refused(Report.quitting(verb)); }
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch (verb){
       case "Quit" -> { ending = true; exit.quit(); }
