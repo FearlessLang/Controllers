@@ -25,7 +25,7 @@ import suggest.Tokens.Item;
 import suggest.Tokens.Kind;
 
 /// The compilation cache of a project as Coordinator.check finds it, from the files of the project folder,
-/// of its .fearless_out folder and of the base cache: the rules of coordinator.Cache.check, with the causes of
+/// of its .fearless_out folder and of the base cache: the rules of coordinator.Project.check, with the causes of
 /// an invalid project this class reads; a project invalid for another cause is found out of date.
 /// The map directives of the project are read from the rank files with the tokens of the compiler.
 public final class Cached{

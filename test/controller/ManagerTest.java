@@ -274,11 +274,20 @@ public class Child{
     assertEquals(List.of(), listed(m));
     assertEquals("{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n", info(dir));
   }
-  @Test void quitAndResetAreForTheProcess(@TempDir Path dir){
+  @Test void noRequestAfterAQuitIsApplied(@TempDir Path dir){
     var m= manager(dir);
+    var hello= registered(m, dir, "hello");
     send(m, "Quit");
+    send(m, "Forget", "hello");
     send(m, "Reset");
-    assertEquals(List.of("quit", "reset"), exits);
+    assertEquals(List.of("quit"), exits);
+    assertEquals(List.of("hello "+hello), listed(m));
+  }
+  @Test void noRequestAfterAResetIsApplied(@TempDir Path dir){
+    var m= manager(dir);
+    send(m, "Reset");
+    send(m, "Quit");
+    assertEquals(List.of("reset"), exits);
   }
   @Test void anInvalidCallIsShownAndAFatalErrorIsFatal(@TempDir Path dir){
     var m= manager(dir);

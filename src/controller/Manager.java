@@ -123,6 +123,7 @@ public final class Manager{
   private Set<String> captured= Set.of();
   private int turn;
   private volatile State state= new State(List.of(), Optional.empty(), List.of());
+  private boolean ending;
   public Manager(Path dir, Tools tools, View view, Exit exit){
     this.dir= dir;
     this.tools= tools;
@@ -252,6 +253,7 @@ public final class Manager{
   }
   private Path icon(List<Project.Claimant> cs, String suffix){ return cs.size() == 1 ? cs.getFirst().icon(suffix) : dir.resolve("icons").resolve(conflict+suffix); }
   private void apply(String message){
+    if (ending){ return; }
     var lines= List.of(message.split("\n", -1));
     var verb= lines.getFirst();
     var args= lines.subList(1, lines.size());
@@ -270,8 +272,8 @@ public final class Manager{
   private void request(String verb, List<String> args, Optional<Follow> follow){
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch (verb){
-      case "Quit" -> exit.quit();
-      case "Reset" -> exit.reset();
+      case "Quit" -> { ending = true; exit.quit(); }
+      case "Reset" -> { ending = true; exit.reset(); }
       case "Register" -> register(path(args.getFirst()));
       case "ConnectEclipse" -> connect(path(args.getFirst()));
       case "EditMetadata" -> editMetadata(path(args.getFirst()));
