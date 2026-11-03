@@ -180,12 +180,12 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
     var selected= look();
     var remembered= """
 {
-  "projects": {
-    "hello_world": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "code"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project));

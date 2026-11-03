@@ -23,8 +23,9 @@ final class Info{
   private final String text;
   private int i;
   private Info(String file, String text){ this.file= file; this.text= text; }
-  static Map<String,Object> parse(Path file){
-    var p= new Info(file.toString(), ManagerLink.read(file));
+  static Map<String,Object> parse(Path file){ return parse(file.toString(), ManagerLink.read(file)); }
+  static Map<String,Object> parse(String file, String text){
+    var p= new Info(file, text);
     try{
       var res= p.obj();
       p.ws();
@@ -44,10 +45,11 @@ final class Info{
     var text= text(s);
     return windows ? Path.of(text) : path(text.getBytes(StandardCharsets.UTF_8), s);
   }
+  /// The text of a Str: or UStr: tagged text: a Fearless string expression.
   private static String text(String s){
-    if (s.startsWith("Str:")){ return s.substring("Str:".length()); }
-    if (!s.startsWith("UStr:")){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
-    var p= new Info("the text \""+s+"\"", s.substring("UStr:".length()));
+    var tag= s.startsWith("Str:") ? "Str:" : "UStr:";
+    if (!s.startsWith(tag)){ throw new IllegalStateException("The manager wrote the malformed text \""+s+"\"."); }
+    var p= new Info("the text \""+s+"\"", s.substring(tag.length()));
     try{
       var res= p.expr();
       if (p.i != p.text.length()){ throw p.bad("the end of the text"); }

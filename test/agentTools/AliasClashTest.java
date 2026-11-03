@@ -214,16 +214,16 @@ final class AliasClashTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "twin": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     },
-    "twin2": {
-      "path": "Str:%s",
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(first), slashed(second)));

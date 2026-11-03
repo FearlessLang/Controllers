@@ -285,12 +285,12 @@ final class ForgetRunningProjectTest extends ManagerTest{
     compiled.go();
     var code= """
 {
-  "projects": {
-    "start": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "code"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(gui));
@@ -313,7 +313,7 @@ final class ForgetRunningProjectTest extends ManagerTest{
     forget.go();
     forgotten.go();
     stabilize();
-    checkContent(info, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    checkContent(info, "{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();

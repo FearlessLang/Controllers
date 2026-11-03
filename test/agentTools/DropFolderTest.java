@@ -144,12 +144,12 @@ final class DropFolderTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "dropped": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(dropped)));

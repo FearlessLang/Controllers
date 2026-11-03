@@ -7,8 +7,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -17,14 +16,14 @@ final class Follow{
   private static final String applied= "Applied\n";
   final String alias;
   final boolean compile;
-  final Instant since= Instant.now();
   private Follow(String alias, boolean compile){ this.alias= alias; this.compile= compile; }
   static Optional<Follow> followed(){ return followed; }
-  static boolean compilingFor(String alias, Duration longer){
-    return followed.filter(j -> j.compile && j.alias.equals(alias) && j.since.plus(longer).isBefore(Instant.now())).isPresent();
-  }
+  static boolean compiling(String alias){ return followed.filter(j -> j.compile && j.alias.equals(alias)).isPresent(); }
   static void compile(String alias){ follow(alias, true, "Compile", alias); }
-  static void run(String alias, String... mains){ follow(alias, false, "Run", Stream.concat(Stream.of(alias), Stream.of(mains)).toArray(String[]::new)); }
+  static void run(String alias, List<String> mains){
+    ManagerLink.send("SelectMains", Stream.concat(Stream.of(alias), mains.stream()).toArray(String[]::new));
+    follow(alias, false, "Run", alias);
+  }
   private static void follow(String alias, boolean compile, String verb, String... args){
     var job= new Follow(alias, compile);
     followed = Optional.of(job);
@@ -36,12 +35,14 @@ final class Follow{
     ManagerLink.send(verb, Stream.concat(Stream.of(args), Stream.of("Port:"+server.getLocalPort())).toArray(String[]::new));
   }
   private void follow(ServerSocket server){
-    try (server; var out= Output.start(alias); var s= server.accept(); var raw= s.getInputStream(); var in= new InputStreamReader(raw, StandardCharsets.UTF_8)){
+    try (server; var s= server.accept(); var raw= s.getInputStream(); var in= new InputStreamReader(raw, StandardCharsets.UTF_8)){
       var status= new String(raw.readNBytes(applied.length()), StandardCharsets.UTF_8);
       if (status.equals("Refused\n")){ return; }
       assert status.equals(applied);
-      var buf= new char[8192];
-      for (int n; (n = in.read(buf)) != -1; ){ out.print(new String(buf, 0, n)); }
+      try (var out= Output.start(alias)){
+        var buf= new char[8192];
+        for (int n; (n = in.read(buf)) != -1 && followed.orElse(null) == this; ){ out.print(new String(buf, 0, n)); }
+      }
     }
     catch (SocketTimeoutException e){}
     catch (IOException e){ throw new UncheckedIOException(e); }

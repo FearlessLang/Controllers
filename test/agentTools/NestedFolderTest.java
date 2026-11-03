@@ -274,12 +274,12 @@ final class NestedFolderTest extends ManagerTest{
     var tree= tree();
     var remembered= """
 {
-  "projects": {
-    "inner": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(inner));

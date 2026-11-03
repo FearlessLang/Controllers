@@ -2,7 +2,10 @@ package controller;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -37,12 +40,19 @@ public final class Association{
   }
   static void reconcile(Path launcher, List<Icon> extensions, List<WindowIcon> windows, Function<String,String> claimedBy){
     FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, windows, launcher, iconFile(),
-      c -> JavacTool.managerFolderOf(c).ifPresent(Fs::rmTree),
-      reported -> Violation.associationsAmbiguous(reported).withRecovery("Remove all Fearless registrations", Association::eradicateAll),
-      locked -> Fs.isWindows() ? Violation.associationUserLocked(locked, claimedBy) : Violation.associationChosenDefault(locked, claimedBy),
-      held -> Violation.associationNotOurs(held, claimedBy),
+      c -> JavacTool.managerFolderOf(c).filter(d -> !JavacTool.managerFolderOf(launcher).equals(Optional.of(d))).ifPresent(Association::removeAtOnce),
+      reported -> new Refusal(Violation.associationsAmbiguous(reported), List.of()),
+      locked -> new Refusal(Fs.isWindows() ? Violation.associationUserLocked(locked, claimedBy) : Violation.associationChosenDefault(locked, claimedBy), List.copyOf(locked.keySet())),
+      held -> new Refusal(Violation.associationNotOurs(held, claimedBy), List.copyOf(held.keySet())),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
+  }
+  /// The manager of that folder never sees the folder deleted in part: the folder is renamed in its folder, then deleted.
+  private static void removeAtOnce(Path dir){
+    if (!Fs.exists(dir)){ return; }
+    var gone= dir.resolveSibling(dir.getFileName()+"_"+UUID.randomUUID().toString().replace("-", ""));
+    Fs.ofV(() -> Fs.move(dir, gone, StandardCopyOption.ATOMIC_MOVE));
+    Fs.rmTree(gone);
   }
   static void eradicateAll(){ FileAssociations.eradicateAll(belongsToFamily, Violation::associationLeftHalfDone); }
 }

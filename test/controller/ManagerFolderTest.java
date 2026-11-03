@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import managerMessages.Report;
 import tools.Fs;
 
 final class ManagerFolderTest{
@@ -23,84 +24,96 @@ final class ManagerFolderTest{
     var project= folder(dir, "myProject");
     assertEquals(project, Manager.projectFolder(project, folder(dir, "manager")));
   }
+  private static final String hello= Fs.isWindows() ? "Base16:43003A005C0064006100740061005C00680065006C006C006F00" : "Base16:2F646174612F68656C6C6F";
+  private static String invalid(String arg, String why){ return "InvalidCall\nFearless was started with the argument\n  \""+arg+"\"\nand that argument is not a call: "+why; }
   @Test void aStartLeavesTheMessageOfItsArguments(){
     var here= Path.of("").toAbsolutePath();
-    assertEquals("Register\nStr:"+here.resolve("myProject").resolve("hello.fearless"), Main.message(Path.of("myProject", "sub", "..", "hello.fearless").toString()));
-    assertEquals("OpenWithOrShortcut\nStr:"+here.resolve("notes.htm"), Main.message("notes.htm"));
-    assertEquals("Register\nStr:"+here, Main.message("."));
+    assertEquals("Register\n"+TaggedText.ofPath(here.resolve("myProject").resolve("hello.fearless")), Main.message(Path.of("myProject", "sub", "..", "hello.fearless").toString()));
+    assertEquals("OpenWithOrShortcut\n"+TaggedText.ofPath(here.resolve("notes.htm")), Main.message("notes.htm"));
+    assertEquals("Register\n"+TaggedText.ofPath(here.resolve("Hello.FEARLESS")), Main.message("Hello.FEARLESS"));
+    assertEquals("Register\n"+TaggedText.ofPath(here), Main.message("."));
     assertEquals("Show", Main.message());
+  }
+  @Test void aCallIsOneArgumentAndItsMessageIsItsWordsOnePerLine(){
     assertEquals("Quit", Main.message("FearlessCommandQuit"));
-    assertEquals("Show\nhello_world", Main.message("FearlessCommandShow", "hello_world"));
-    assertEquals("Run\nhello_world\nhello.Hello1", Main.message("FearlessCommandRun", "hello_world", "hello.Hello1"));
-    assertEquals("Run\nhello_world\nhello.Hello1 hello.Hello3\nPort:51234", Main.message("FearlessCommandRun", "hello_world", "hello.Hello1", "hello.Hello3", "Port:51234"));
-    assertEquals("Compile\nhello_world\nPort:51234", Main.message("FearlessCommandCompile", "hello_world", "Port:51234"));
-    assertEquals("Mount\nhello_world\nhello.Diary notes", Main.message("FearlessCommandMount", "hello_world", "hello.Diary", "notes"));
-    assertEquals("Mount\nhello_world\nhello.Diary notes\nPort:51234", Main.message("FearlessCommandMount", "hello_world", "hello.Diary", "notes", "Port:51234"));
-    assertEquals("Show\nPort:51234", Main.message("FearlessCommandShow", "Port:51234"));
-    var hello= Fs.isWindows() ? "Base16:43003A005C0064006100740061005C00680065006C006C006F00" : "Base16:2F646174612F68656C6C6F";
-    assertEquals("Register\n"+hello, Main.message("FearlessCommandRegister", hello));
+    assertEquals("Show\nhello_world", Main.message("FearlessCommandShow hello_world"));
+    assertEquals("SelectMains\nhello_world\nhello.Hello1\nhello.Hello3", Main.message("FearlessCommandSelectMains hello_world hello.Hello1 hello.Hello3"));
+    assertEquals("SelectMains\nhello_world", Main.message("FearlessCommandSelectMains hello_world"));
+    assertEquals("Run\nhello_world\nPort:51234", Main.message("FearlessCommandRun hello_world Port:51234"));
+    assertEquals("Register\n"+hello, Main.message("FearlessCommandRegister "+hello));
+    assertEquals("Mount\nhello_world\nhello.Diary\nnotes\nPort:1", Main.message("FearlessCommandMount hello_world hello.Diary notes Port:1"));
+    assertEquals("Unmount\nhello_world\nhello.Diary", Main.message("FearlessCommandUnmount hello_world hello.Diary"));
+    assertEquals("Attenuate\nhello_world\nhello.Hello1", Main.message("FearlessCommandAttenuate hello_world hello.Hello1"));
+    assertEquals("Attenuate\nhello_world\nhello.Hello1\nbase.NoManagerQuit\nhello.NoGui", Main.message("FearlessCommandAttenuate hello_world hello.Hello1 base.NoManagerQuit hello.NoGui"));
+    assertEquals("OpenWithOrShortcut\n"+hello+"\nhello_world\nhello.Hello1", Main.message("FearlessCommandOpenWithOrShortcut "+hello+" hello_world hello.Hello1"));
+    assertEquals("Kind\nhello_world\ndataEdit\nPort:65535", Main.message("FearlessCommandKind hello_world dataEdit Port:65535"));
+    assertEquals("Show\nPort:51234", Main.message("FearlessCommandShow Port:51234"));
   }
   @Test void aBase16PathIsTheUnitsOfThisSystem(){
     var windows= Fs.isWindows();
-    assertEquals("Register\nStr:"+Path.of("").toAbsolutePath().resolve("ab"), Main.message("FearlessCommandRegister", windows ? "Base16:61006200" : "Base16:6162"));
-    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is empty.", Main.message("FearlessCommandRegister", windows ? "Base16:2000" : "Base16:20"));
-    same("InvalidCall\nRefused request \"Register\" on path [###]\nis not a path this system accepts: [###]", Main.message("FearlessCommandRegister", windows ? "Base16:2F000000" : "Base16:2F00"));
-    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is not a tagged text: \"Base16:\"\nis malformed: after \"Base16:\" a path is the bytes naming it, each as 2 uppercase hex digits.", Main.message("FearlessCommandRegister", "Base16:"));
+    var ab= windows ? "Base16:43003A005C0061006200" : "Base16:2F6162";
+    assertEquals("Register\n"+ab, Main.message("FearlessCommandRegister "+ab));
+    var relative= windows ? "Base16:61006200" : "Base16:6162";
+    assertEquals(invalid("FearlessCommandRegister "+relative, "\""+relative+"\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister "+relative));
+    var nul= windows ? "Base16:2F000000" : "Base16:2F00";
+    assertEquals(invalid("FearlessCommandRegister "+nul, "\""+nul+"\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister "+nul));
+    assertEquals(invalid("FearlessCommandRegister Base16:", "\"Base16:\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister Base16:"));
+    assertEquals(invalid("FearlessCommandRegister Base16:2f", "\"Base16:2f\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister Base16:2f"));
+    var root= TaggedText.base16(Path.of("").toAbsolutePath().getRoot());
+    assertEquals(invalid("FearlessCommandRegister "+root, "\""+root+"\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister "+root));
   }
   @Test void aBase16PathOfAnOddNumberOfBytesIsRefusedOnlyOnWindows(){
     var odd= "Base16:2F646174612F68656C6C6F";
-    if (!Fs.isWindows()){ assertEquals("Register\n"+odd, Main.message("FearlessCommandRegister", odd)); return; }
-    assertEquals("InvalidCall\nRefused request \"Register\".\nThe path of the request is not a tagged text: \"Base16:2F646174612F68656C6C6F\"\nis malformed: a Windows name is 16 bit units, so its bytes are an even number.", Main.message("FearlessCommandRegister", odd));
+    if (!Fs.isWindows()){ assertEquals("Register\n"+odd, Main.message("FearlessCommandRegister "+odd)); return; }
+    assertEquals(invalid("FearlessCommandRegister "+odd, "\""+odd+"\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister "+odd));
   }
   @Test void aBase16PathThatIsNotUnicodeStaysBase16(){
     Assumptions.assumeFalse(Fs.isMac());
     var notUnicode= Fs.isWindows() ? "Base16:43003A005C00610000D8" : "Base16:2F636166E9";
-    assertEquals("Register\n"+notUnicode, Main.message("FearlessCommandRegister", notUnicode));
+    assertEquals("Register\n"+notUnicode, Main.message("FearlessCommandRegister "+notUnicode));
   }
-  @Test void aWindowsPathWithARootButNoDriveTakesTheDriveOfTheStartFolder(){
+  @Test void aWindowsPathWithARootButNoDriveIsNotAbsolute(){
     Assumptions.assumeTrue(Fs.isWindows());
-    assertEquals("Register\nStr:"+Path.of("").toAbsolutePath().getRoot().resolve("data\\hello"), Main.message("FearlessCommandRegister", "Base16:2F0064006100740061002F00680065006C006C006F00"));
+    var noDrive= "Base16:2F0064006100740061002F00680065006C006C006F00";
+    assertEquals(invalid("FearlessCommandRegister "+noDrive, "\""+noDrive+"\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister "+noDrive));
   }
-  @Test void badArgumentsAreAnInvalidCall(){
-    assertEquals("InvalidCall\nRefused request \"build\".\n\"build\" is not a request of the manager: the requests are \"Show\", \"Quit\", \"Reset\", \"Register\", \"ConnectEclipse\", \"EditMetadata\", \"OpenWithOrShortcut\", \"Check\", \"Terminate\", \"DeleteCache\", \"Forget\", \"Run\", \"Compile\", \"Kind\", \"Mount\", \"Attenuate\".", Main.message("FearlessCommandbuild", "hello"));
-    assertEquals("InvalidCall\nRefused request \"Forget\" with 2 arguments.\nRequest \"Forget\" takes 1 argument.\nThe arguments are:\n  \"hello\"\n  \"now\"", Main.message("FearlessCommandForget", "hello", "now"));
-    same("InvalidCall\nRefused request \"Run\" with 0 arguments.[###]", Main.message("FearlessCommandRun"));
-    same("InvalidCall\nRefused request \"Run\" with 1 argument.[###]", Main.message("FearlessCommandRun", "hello"));
-    same("InvalidCall\nRefused request \"OpenWithOrShortcut\" with 2 arguments.[###]", Main.message("FearlessCommandOpenWithOrShortcut", "Str:/a.foo", "hello"));
-    assertEquals("InvalidCall\nRefused request \"Run\" on project \"hello\".\nThe request names no main.", Main.message("FearlessCommandRun", "hello", "Port:51234"));
-    assertEquals("InvalidCall\nRefused request \"Kind\" on project \"hello\".\n\"library\" is not a kind: the kinds are \"idle\", \"code\", \"dataRead\" and \"dataEdit\".", Main.message("FearlessCommandKind", "hello", "library"));
-    assertEquals("InvalidCall\nRefused request \"Mount\" on project \"hello\".\n\"hello.Pub data sometimes\" is not a mount: a mount is the qualified name of a DataRead type, then the name of a data project, none to remove the mount of that DataRead type.", Main.message("FearlessCommandMount", "hello", "hello.Pub", "data", "sometimes"));
-    assertEquals("InvalidCall\nRefused request \"Mount\" on project \"hello\".\n\"\" is not a mount: a mount is the qualified name of a DataRead type, then the name of a data project, none to remove the mount of that DataRead type.", Main.message("FearlessCommandMount", "hello", ""));
-    assertEquals("InvalidCall\nRefused request \"Attenuate\" on project \"hello\".\nThe request names no main: an attenuation is the name of a main, then the attenuators applied to it in order, none to remove them all.", Main.message("FearlessCommandAttenuate", "hello", ""));
-    assertEquals("InvalidCall\nThe manager was given the port \"Port:0\", but a port is \"Port:\" then a number from 1 to 65535.", Main.message("FearlessCommandCompile", "hello", "Port:0"));
-    assertEquals("InvalidCall\nThe manager was given the port \"Port:65536\", but a port is \"Port:\" then a number from 1 to 65535.", Main.message("FearlessCommandKind", "hello", "code", "Port:65536"));
-    same("InvalidCall\nRefused request \"Register\"[###]The path of the request is empty.", Main.message("FearlessCommandRegister", "Str:"));
-    same("InvalidCall\nRefused request \"Register\"[###]The path of the request is not a tagged text: [###]", Main.message("FearlessCommandRegister", "hello"));
-    same("InvalidCall\n[###]root of a drive[###]", Main.message("FearlessCommandRegister", TaggedText.ofPath(Path.of("").toAbsolutePath().getRoot())));
+  @Test void anArgumentThatIsNotACallIsAnInvalidCall(){
+    same(invalid("FearlessCommandbuild hello", "\"FearlessCommandbuild\" is not a command; the commands are \"FearlessCommandAttenuate\", [###], \"FearlessCommandUnmount\"."), Main.message("FearlessCommandbuild hello"));
+    assertEquals(invalid("FearlessCommandForget hello now", "the calls of that command are\n  FearlessCommandForget projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535."), Main.message("FearlessCommandForget hello now"));
+    assertEquals(invalid("FearlessCommandForget hello now Port:42", "the calls of that command are\n  FearlessCommandForget projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535."), Main.message("FearlessCommandForget hello now Port:42"));
+    assertEquals(invalid("FearlessCommandShow a b", "the calls of that command are\n  FearlessCommandShow\n  FearlessCommandShow projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535."), Main.message("FearlessCommandShow a b"));
+    same(invalid("FearlessCommandRun", "the calls of that command are\n  FearlessCommandRun projectName\n[###]"), Main.message("FearlessCommandRun"));
+    same(invalid("FearlessCommandRun hello hello.Hello", "the calls of that command are\n  FearlessCommandRun projectName\n[###]"), Main.message("FearlessCommandRun hello hello.Hello"));
+    same(invalid("FearlessCommandAttenuate hello", "the calls of that command are\n  FearlessCommandAttenuate projectName typeName typeName1..typeNamen\n[###]"), Main.message("FearlessCommandAttenuate hello"));
+    assertEquals(invalid("FearlessCommandKind hello library", "\"library\" is not "+Report.callKind+"."), Main.message("FearlessCommandKind hello library"));
+    assertEquals(invalid("FearlessCommandShow Hello", "\"Hello\" is not "+Report.callProjectName+"."), Main.message("FearlessCommandShow Hello"));
+    assertEquals(invalid("FearlessCommandShow con", "\"con\" is not "+Report.callProjectName+"."), Main.message("FearlessCommandShow con"));
+    assertEquals(invalid("FearlessCommandMount hello Pub data", "\"Pub\" is not "+Report.callTypeName+"."), Main.message("FearlessCommandMount hello Pub data"));
+    assertEquals(invalid("FearlessCommandMount hello prn.Pub data", "\"prn.Pub\" is not "+Report.callTypeName+"."), Main.message("FearlessCommandMount hello prn.Pub data"));
+    assertEquals(invalid("FearlessCommandCompile hello Port:0", "\"Port:0\" is not "+Report.callPort+"."), Main.message("FearlessCommandCompile hello Port:0"));
+    assertEquals(invalid("FearlessCommandKind hello code Port:65536", "\"Port:65536\" is not "+Report.callPort+"."), Main.message("FearlessCommandKind hello code Port:65536"));
+    assertEquals(invalid("FearlessCommandSelectMains hello hello.A hello.B hello.A", "the mains of \"FearlessCommandSelectMains\" are all different, and \"hello.A\" is named twice."), Main.message("FearlessCommandSelectMains hello hello.A hello.B hello.A"));
+    assertEquals(invalid("FearlessCommandShow  hello", "the calls of that command are\n  FearlessCommandShow\n  FearlessCommandShow projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535."), Main.message("FearlessCommandShow  hello"));
+    assertEquals(invalid("FearlessCommandForget hello ", "the calls of that command are\n  FearlessCommandForget projectName\neach one followed or not by a port: \"Port:\" then a number from 1 to 65535."), Main.message("FearlessCommandForget hello "));
   }
   @Test void aBlankArgumentIsABrokenPath(){
     same("InvalidCall\nFearless was started to open [###],\nbut that is not a path of a file this system accepts.", Main.message(Main.fileAsArg(new String[]{""})));
     same("InvalidCall\nFearless was started to open [###],\nbut that is not a path of a file this system accepts.", Main.message(Main.fileAsArg(new String[]{" "})));
   }
-  @Test void aRelativePathOfAFearlessCommandNamesThePathFromWhereTheCommandStarted(){
-    var here= Path.of("").toAbsolutePath();
-    assertEquals("Register\nStr:"+here.resolve("myProject"), Main.message("FearlessCommandRegister", "Str:myProject"));
-    assertEquals("OpenWithOrShortcut\nStr:"+here.resolve("notes.htm"), Main.message("FearlessCommandOpenWithOrShortcut", "Str:notes.htm"));
-  }
   @Test void aStartWithTwoArgumentsIsAnInvalidCallNamingBoth(){
     same("""
 InvalidCall
-Fearless was started with 2 arguments, but without a first argument starting with
-"FearlessCommand" it takes at most one: the file to open.
+Fearless was started with 2 arguments, but Fearless takes at most one: a call
+starting with "FearlessCommand", or the file to open.
 
 The arguments are:
-  myProject
-  other""", Main.message("myProject", "other"));
+  FearlessCommandRun
+  hello""", Main.message("FearlessCommandRun", "hello"));
   }
   @Test void theMessagesOfARunThatIsNotTheManagerAreAnInvalidCall(){
-    same("InvalidCall\nRefused request \"FatalError\".\n\"FatalError\" is not a request of the manager: [###]", Main.message("FearlessCommandFatalError", "x"));
-    same("InvalidCall\nRefused request \"InvalidCall\".\n\"InvalidCall\" is not a request of the manager: [###]", Main.message("FearlessCommandInvalidCall"));
-    same("InvalidCall\nFearless was started with an argument holding a newline[###]", Main.message("FearlessCommandShow", "a\nb"));
+    same(invalid("FearlessCommandFatalError x", "\"FearlessCommandFatalError\" is not a command[###]"), Main.message("FearlessCommandFatalError x"));
+    same(invalid("FearlessCommandInvalidCall", "\"FearlessCommandInvalidCall\" is not a command[###]"), Main.message("FearlessCommandInvalidCall"));
+    same("InvalidCall\nFearless was started with the argument\n  \"FearlessCommandShow a\" [###] \"b\"\nand that argument is not a call: [###]", Main.message("FearlessCommandShow a\nb"));
   }
   @Test void aStartedFileIsTheFolderAround(@TempDir Path dir){
     var project= folder(dir, "myProject");

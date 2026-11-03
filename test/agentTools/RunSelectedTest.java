@@ -256,7 +256,7 @@ final class RunSelectedTest extends ManagerTest{
     compile.go();
     compiled.go();
     stabilize();
-    checkContent(files.resolve("helloWorld/.fearless_out/hello_manifest.info"), "[###]\"hello.Hello1\": [###]");
+    checkContent(files.resolve("helloWorld/.fearless_out/hello.json"), "[###]\\\"hello.Hello1\\\": [###]");
     var before= look();
     runV.go();
     mainsShown.go();
@@ -270,13 +270,13 @@ final class RunSelectedTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "hello_world": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": ["hello.Hello1", "hello.Hello4"]
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project)));

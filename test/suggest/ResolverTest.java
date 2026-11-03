@@ -63,8 +63,9 @@ final class ResolverTest{
     type("test.Persons", bs(), "[]", m("#", bs(), list(c("base.Nat"), c("base.Str"), c("base.List", c("test.Cat"))), c("test.Person"))),
     type("test.Cats", bs(), "[]", m("#", bs(), list(c("base.Str"), c("base.Nat")), c("test.Cat"))),
     type("test.Pairs", bs(), "[]", m("#", bs("E"), list(x("E"), x("E")), c("base.Opt", x("E")))),
-    type("test.Student", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))));
-  static final Api compiled= new Api(Api.parse(api));
+    type("test.Student", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))),
+    type("test._Shy", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))));
+  static final Api compiled= new Api(ApiTest.types(api));
   static final String head= Stream.of("Str", "Nat", "List", "Flow", "Opt", "Opts", "OptMatch", "F", "Block", "OrderHash", "Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
   static final String file= """
 Cats: { #(name: Str, weight: Nat): Cat -> Cat: { .name: Str -> name; .weight: Nat -> weight; } }
@@ -147,8 +148,8 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same(".size +", probe("ps.flow.map{::.name}.list.get(0).|"));
     same(".filter .first .fold .list .map", probe("ps.flow.map{::.name}.map{::.size}.|"));
     same(".size +", probe("ps.flow.map{p -> p.cats.flow.map{::.name}.list}.list.get(0).get(1).|"));
-    same(".map(F[Person,R]): Flow[R]", at(file+"ps.flow.|").rows().get(4).display());
-    same(".fold(MF[R], F[R,Person,R]): R", at(file+"ps.flow.|").rows().get(2).display());
+    same("imm .map(F[Person,R]): Flow[R]", at(file+"ps.flow.|").rows().get(4).display());
+    same("imm .fold(MF[R], F[R,Person,R]): R", at(file+"ps.flow.|").rows().get(2).display());
   }
   @Test void foldBindsTheAccumulatorFromTheThunkBeforeTypingTheLambda(){
     same(nat, probe("ps.flow.fold({0}, {acc, p -> acc.|"));
@@ -190,10 +191,10 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same("", names("NewThing[T]: OrderHash[NewThing[T]] { .foo(l: List[T]) -> l.get(0).| }"));
     same(".assertEq .cmp .hash", names("A: { .foo(n: NewThing) -> n.| }\nNewThing: OrderHash[NewThing] { }"));
   }
-  @Test void aDeclarationTheLastCompileDoesNotKnowHasTheMethodOfItsFirstSupertypeHavingIt(){
-    same(opt, names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.| }"));
-    same(nat, names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.get.| }"));
-    same(".size +", names("NewThing: Opt[Str], Opt[Nat] { .foo -> this.get.| }"));
+  @Test void aDeclarationTheLastCompileDoesNotKnowHasTheMethodsOfAllItsSupertypes(){
+    same(".get .get .match .match", names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.| }"));
+    same(".size .str + + <=> >", names("NewThing: Opt[Nat], Opt[Str] { .foo -> this.get.| }"));
+    same(".size .str + + <=> >", names("NewThing: Opt[Str], Opt[Nat] { .foo -> this.get.| }"));
   }
   @Test void cyclicSupertypesTheLastCompileDoesNotKnowAddNoMethods(){
     same(".assertEq .cmp .hash", names("A: B, OrderHash[A] { .foo(a: A) -> a.| }\nB: A { }"));
@@ -226,7 +227,7 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     assertEquals(file.length()+8, s.from());
     assertEquals(" + ", s.rows().get(1).insert());
     same(".str", s.rows().get(0).insert());
-    same("+(Nat): Nat", s.rows().get(1).display());
+    same("imm +(Nat): Nat", s.rows().get(1).display());
   }
   @Test void afterAnExpressionTheMethodsAreInsertedAtTheCursor(){
     var s= at(file+"ps.flow |");
@@ -269,11 +270,6 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same(baseTypes, at("", packages, "A: { .foo -> lib.| }").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
     same("Opt[E] OptMatch[E,R] Opts", at("", packages, "use lib.Op|").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
     same(baseTypes, at("", packages, "A: { .foo -> base.| }").types().stream().map(Ty::show).collect(Collectors.joining(" ")));
-  }
-  @Test void theMapOfThePackageIsReadFromTheCompiledMap(){
-    assertEquals(Map.of("lib", "base", "x", "y"), Api.packages("{\"app\":{\"lib\":\"base fear:/_app/_rank_app.fear\",\n\"x\":\"y fear:/_app/_rank_app.fear\"}\n,\n\"other\":{\"a\":\"b fear:/_other/_rank_app.fear\"}\n}\n", "app"));
-    assertEquals(Map.of(), Api.packages("{}", "app"));
-    assertThrows(IllegalArgumentException.class, () -> Api.packages("{\"app\":{\"lib\":\"base\"}", "app"));
   }
   @Test void aPackageNameBeforeTheDotSuggestsItsPublicTypes(){
     same(baseTypes, types(file+"base.|"));
@@ -344,6 +340,28 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same("Person", supers("A: { .foo(p: Person): Opt[OrderHash[Person]] -> Pairs#(p, Bob: P|"));
     same("", supers("A: { .foo: Animal -> rex: |"));
     same("", supers("A: { .foo: Nat; .bar(x: |"));
+  }
+  @Test void theSupertypesAreProposedAlsoWithTheCursorTouchingTheColonAndNeverPrivateCompiledTypes(){
+    same("Person Student", supers("A: { .foo: Person -> Bob:|"));
+    same("Person Student", supers("A: { .foo: Person -> Bob: |"));
+    same("Person Student _Mine", supers("_Mine: Person{}\nA: { .foo: Person -> Bob: |"));
+  }
+  @Test void nothingIsProposedTouchingAClosingBracketOrAtTheStartOfAName(){
+    same("", probe("ps.get(0)|"));
+    same(person, probe("ps.get(0) |"));
+    same("", probe("ps |get"));
+  }
+  @Test void theArgumentOfACallWithoutParenthesesExpectsTheTypeOfItsParameter(){
+    same("Nat", expected("A: { .foo(n: Nat): Str -> n + |"));
+    same("Str", expected("A: { .foo(n: Nat): Str -> |"));
+  }
+  @Test void aDeclarationBeforeTheCursorHasTheTypeItDeclaresAndItsMethodsTheDocumentationOfTheirSupertype(){
+    var s= at("A: { .foo -> Dog: Cat{}.|");
+    same("Dog", s.receiver().show());
+    same("Cat Cat", s.rows().stream().map(r -> r.owner().show()).collect(Collectors.joining(" ")));
+  }
+  @Test void aMethodOfTwoSupertypesIsProposedForEachOfThem(){
+    same(".age .assertEq .assertEq .cats .cmp .cmp .hash .hash .name", names("Two: Person, OrderHash[Person]{}\nA: { .foo(t: Two): Nat -> t.|"));
   }
   @Test void theSupertypeReplacesTheTypeNameBeingTyped(){
     var typed= "A: { .foo: OrderHash[Person] -> Bob: Or|";

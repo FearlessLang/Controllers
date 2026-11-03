@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
@@ -52,9 +51,11 @@ public final class Tiles extends JPanel{
     var i= list.locationToIndex(e.getPoint());
     if (i < 0 || !list.getCellBounds(i, i).contains(e.getPoint())){ return; }
     var p= list.getModel().getElementAt(i);
-    var runs= e.getClickCount() == 2 && p.state() == Project.State.codeCompiled && !p.selectedMains().isEmpty();
-    if (!runs){ Main.command("Show", p.alias()); return; }
-    Main.command("Run", Stream.concat(Stream.of(p.alias()), p.selectedMains().stream()).toArray(String[]::new));
+    var compiled= e.getClickCount() == 2 && p.state() == Project.State.codeCompiled;
+    var mains= p.knownMains();
+    if (compiled && mains.size() == 1){ Main.command("SelectMains "+p.alias()+" "+mains.getFirst(), "Run "+p.alias()); return; }
+    if (compiled && mains.size() > 1 && !p.entry().mains().isEmpty()){ Main.command("Run "+p.alias()); return; }
+    Main.command("Show "+p.alias());
   }
   static JLabel desktop(JLabel res, Icon icon, String text){
     res.setText(text);
@@ -83,7 +84,6 @@ public final class Tiles extends JPanel{
     @Override public Component getListCellRendererComponent(JList<?> l, Object value, int i, boolean selected, boolean focus){
       var p= (Project)value;
       var res= desktop((JLabel)super.getListCellRendererComponent(l, value, i, selected, focus), new Icons.Badge(images.get(p), iconSize, p.state()), p.alias());
-      res.setToolTipText(p.folder()+" - "+p.state().text);
       res.setBorder(selected ? BorderFactory.createLineBorder(l.getSelectionBackground().darker(), 3) : null);
       return res;
     }

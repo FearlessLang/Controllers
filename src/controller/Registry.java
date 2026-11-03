@@ -4,11 +4,13 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -32,6 +34,7 @@ import managerMessages.Violation;
 import metaParser.Span;
 import tools.Fs;
 import userMessages.UserError;
+import utils.Join;
 import utils.OneOr;
 import utils.Push;
 
@@ -71,6 +74,7 @@ public final class Registry{
     if (!Fs.exists(infoFile())){ save(content); return; }
     var text= StringFiles.read(infoFile(), UserError.onFileError());
     content = parse(text, infoFile(), Registry::real, dir);
+    lookup();
   }
   public static Path real(Path folder){
     try{ return folder.toRealPath(); }
@@ -90,6 +94,35 @@ public final class Registry{
   public static boolean isSystem(String ext){ return Fs.isExtSeg(ext) && Icon.system("."+ext); }
   public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all().stream().filter(e -> e.path().equals(folder))); }
   public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all().stream().filter(e -> e.alias().equals(alias))); }
+  public Optional<Entry> lookedUp(String alias){
+    named(alias).ifPresentOrElse(e -> nameCheck(e.path()), this::lookup);
+    return named(alias);
+  }
+  /// true when the check did a lookup
+  public boolean nameCheck(Path folder){
+    var differs= Names.reachable(folder) && !Names.marker(folder).equals(of(folder).orElseThrow().alias());
+    if (differs){ lookup(); }
+    return differs;
+  }
+  /// a folder whose marker can not be written gets no name
+  public void lookup(){ content = inferred(content, content, Registry::marked); }
+  private static Entry marked(Entry e){
+    if (e.alias().isEmpty() || !Names.reachable(e.path()) || Names.marker(e.path()).equals(e.alias())){ return e; }
+    try{ Names.nameAs(e.path(), e.alias()); return e; }
+    catch (UncheckedIOException _){ return new Entry("", e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()); }
+  }
+  public static Content inferred(Content c, Content known){ return inferred(c, known, e -> e); }
+  private static Content inferred(Content c, Content known, UnaryOperator<Entry> mark){
+    var taken= new HashSet<String>();
+    var res= new ArrayList<Entry>();
+    for (var e : c.projects()){
+      var name= Names.reachable(e.path()) ? Names.infer(e.path(), taken) : known.projects().stream().filter(k -> k.path().equals(e.path())).map(Entry::alias).filter(n -> !taken.contains(n)).findFirst().orElse("");
+      var named= mark.apply(new Entry(name, e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()));
+      taken.add(named.alias());
+      res.add(named);
+    }
+    return new Content(res, c.extensions());
+  }
   public Optional<Path> overlapping(Path folder){
     return all().stream().map(Entry::path).filter(o -> !o.equals(folder) && overlap(folder, o)).findFirst();
   }
@@ -109,12 +142,19 @@ public final class Registry{
     e.mounts().forEach((type, data) -> c.projects().stream().filter(t -> types.test(type) && t.alias().equals(data) && kinds.test(t.kind())).forEach(t -> res.put(type, t.path())));
     return Collections.unmodifiableMap(res);
   }
-  public static String text(Content c){ return Info.print(toInfo(c)); }
+  public static String text(Content c){
+    var projects= Join.of(c.projects().stream().map(e -> "    "+Info.print(entryToInfo(e)).strip().replace("\n", "\n    ")), "[\n", ",\n", "\n  ]", "[]");
+    return "{\n  \"projects\": "+projects+",\n  \"systemExtensions\": "+Info.print(strList(c.extensions())).strip()+"\n}\n";
+  }
   public String text(){ return text(content); }
   public void save(Content c){
-    check.accept(c);
     var text= text(c);
-    assert parse(text, infoFile(), p -> p, dir).equals(c);
+    assert text(parse(text, infoFile(), p -> p, dir)).equals(text);
+    save(c, text);
+  }
+  /// writes text, the text of an EditMetadata, which holds c
+  public void save(Content c, String text){
+    check.accept(c);
     var tmp= dir.resolve(UUID.randomUUID()+".tmp");
     try{ Fs.writeString(tmp, text, CREATE_NEW); Fs.move(tmp, infoFile(), ATOMIC_MOVE); }
     catch (IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(), e); }
@@ -131,31 +171,30 @@ public final class Registry{
     return new Content(entries(source, projects.value(), identity, managerDir), names(source, extensions.value(), "\"systemExtensions\"", Registry::isSystem, systemShape));
   }
   private static List<Entry> entries(String source, Info root, UnaryOperator<Path> identity, Path managerDir){
-    if (!(root instanceof Obj top)){ throw Info.err(source, root.span(), Report.infoProjectsNotObject()); }
+    if (!(root instanceof Info.Lst top)){ throw Info.err(source, root.span(), Report.infoProjectsNotList()); }
     var entries= new ArrayList<Entry>();
-    for (var field : top.fields()){
-      if (!Names.isName(field.key())){ throw Info.err(source, field.keySpan(), Report.infoBadName(field.key())); }
-      entries.add(entryOf(source, field, identity));
-      placed(entries.getLast().path(), managerDir, m -> Info.err(source, pathSpan(top, field.key()), m));
+    for (var item : top.items()){
+      entries.add(entryOf(source, item, entries.size()+1, identity));
+      placed(entries.getLast().path(), managerDir, m -> Info.err(source, pathSpan(item), m));
     }
-    for (var a : entries){
-      for (var b : entries.subList(entries.indexOf(a)+1, entries.size())){
-        if (overlap(a.path(), b.path())){ throw Info.err(source, pathSpan(top, b.alias()), Report.infoOverlap(b.alias(), a.alias())); }
+    for (var a= 0; a < entries.size(); a += 1){
+      for (var b= a+1; b < entries.size(); b += 1){
+        if (overlap(entries.get(a).path(), entries.get(b).path())){ throw Info.err(source, pathSpan(top.items().get(b)), Report.infoOverlap(b+1, a+1)); }
       }
     }
     return entries;
   }
-  private static Span pathSpan(Obj top, String alias){ return ((Obj)top.field(alias).orElseThrow().value()).field("path").orElseThrow().value().span(); }
-  private static Entry entryOf(String source, Field field, UnaryOperator<Path> identity){
-    if (!(field.value() instanceof Obj obj)){ throw Info.err(source, field.value().span(), Report.infoProjectNotObject(field.key())); }
+  private static Span pathSpan(Info project){ return ((Obj)project).field("path").orElseThrow().value().span(); }
+  private static Entry entryOf(String source, Info item, int n, UnaryOperator<Path> identity){
+    if (!(item instanceof Obj obj)){ throw Info.err(source, item.span(), Report.infoProjectNotObject()); }
     for (var f : obj.fields()){
       if (!keys.contains(f.key())){ throw Info.err(source, f.keySpan(), Report.infoUnknownAttribute(f.key(), keys)); }
     }
     var mains= obj.field("mains").map(f -> names(source, f.value(), "\"mains\"", Registry::isMainName, mainShape)).orElse(List.of());
-    return new Entry(field.key(), identity.apply(pathOf(source, field.key(), obj)), kindOf(source, field.key(), obj), mains, mounts(source, obj), attenuators(source, obj));
+    return new Entry("", identity.apply(pathOf(source, n, obj)), kindOf(source, n, obj), mains, mounts(source, obj), attenuators(source, obj));
   }
-  private static Path pathOf(String source, String alias, Obj obj){
-    var field= obj.field("path").orElseThrow(() -> Info.err(source, obj.span(), Report.infoMissingPath(alias)));
+  private static Path pathOf(String source, int n, Obj obj){
+    var field= obj.field("path").orElseThrow(() -> Info.err(source, obj.span(), Report.infoMissingPath(n)));
     Path path;
     try{ path= TaggedText.readPath(str(source, field.value(), "\"path\""), m -> Info.err(source, field.value().span(), m)); }
     catch (InvalidPathException e){ throw Info.err(source, field.value().span(), Report.infoNotAPath(e.getMessage())); }
@@ -163,8 +202,8 @@ public final class Registry{
     if (!path.isAbsolute()){ throw Info.err(source, field.value().span(), Report.infoNotAbsolute(path.toString())); }
     return path.normalize();
   }
-  private static Kind kindOf(String source, String alias, Obj obj){
-    var field= obj.field("kind").orElseThrow(() -> Info.err(source, obj.span(), Report.infoMissingKind(alias, kinds)));
+  private static Kind kindOf(String source, int n, Obj obj){
+    var field= obj.field("kind").orElseThrow(() -> Info.err(source, obj.span(), Report.infoMissingKind(n, kinds)));
     var s= str(source, field.value(), "\"kind\"");
     return Kind.of(s).orElseThrow(() -> Info.err(source, field.value().span(), Report.infoBadKind(s, kinds)));
   }
@@ -218,13 +257,9 @@ public final class Registry{
     var dot= s.indexOf('.');
     return dot > 0 && TName.isPkgName(s.substring(0, dot)) && TName.isTypeName(s.substring(dot+1));
   }
-  private static Info toInfo(Content c){
-    var projects= new Obj(c.projects().stream().map(e -> new Field(e.alias(), Info.noSpan, entryToInfo(e))).toList(), Info.noSpan);
-    return new Obj(List.of(new Field("projects", Info.noSpan, projects), new Field("systemExtensions", Info.noSpan, strList(c.extensions()))), Info.noSpan);
-  }
   private static Info entryToInfo(Entry e){
     var fields= new ArrayList<Field>();
-    fields.add(new Field("path", Info.noSpan, new Info.Str(TaggedText.ofPath(e.path()).replace(e.path().getFileSystem().getSeparator(), "/"), Info.noSpan)));
+    fields.add(new Field("path", Info.noSpan, new Info.Str(TaggedText.ofPath(e.path()), Info.noSpan)));
     fields.add(new Field("kind", Info.noSpan, new Info.Str(e.kind().text, Info.noSpan)));
     if (!e.mains().isEmpty()){ fields.add(new Field("mains", Info.noSpan, strList(e.mains()))); }
     if (!e.mounts().isEmpty()){ fields.add(new Field("mounts", Info.noSpan, new Obj(e.mounts().entrySet().stream().map(m -> new Field(m.getKey(), Info.noSpan, new Info.Str(m.getValue(), Info.noSpan))).toList(), Info.noSpan))); }

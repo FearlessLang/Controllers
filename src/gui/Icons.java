@@ -79,7 +79,7 @@ public final class Icons{
         case idle -> dot(g2, x, y, new Color(0x757575), "");
         case dataRead -> dot(g2, x, y, new Color(0x1565C0), "R");
         case dataEdit -> dot(g2, x, y, new Color(0x6A1B9A), "W");
-        case codeNoCache, codeOutdated -> dot(g2, x, y, new Color(0xEF6C00), "!");
+        case codeOutdated -> dot(g2, x, y, new Color(0xEF6C00), "!");
         case codeInvalid, dataReadInvalid, dataEditInvalid -> dot(g2, x, y, new Color(0xC62828), "X");
         case codeCompiled -> dot(g2, x, y, new Color(0x2E7D32), ">");
         case busy -> busy(g2, x, y);

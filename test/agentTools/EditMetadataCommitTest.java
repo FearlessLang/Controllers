@@ -48,12 +48,12 @@ final class EditMetadataCommitTest extends ManagerTest{
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   static final String registry= """
 {
-  "projects": {
-    "hello_world": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "%s"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """;

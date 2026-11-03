@@ -4,19 +4,24 @@ import java.io.ByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.CharacterCodingException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.imageio.ImageIO;
 
 import controller.Registry.Kind;
 import coordinator.Coordinator;
+import coordinator.MainsInfo;
+import fileSupport.JUnitReport;
 import fileSupport.LogFiles;
 import realSourceOracle.RealSourceOracleWithZip;
 import tools.Fs;
@@ -25,48 +30,73 @@ import userMessages.UserError;
 
 /// What the file system says about a project folder: its compilation cache under
 /// `.fearless_out` and why it is out of date, its icon, its logs, and why it is invalid if it is.
-public record Facts(boolean hasCache, Optional<String> stale, Optional<Icon> icon, List<LogFiles.Entry> logs, Optional<String> problem){
+public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<String> packages, Optional<Icon> icon, List<LogFiles.Entry> logs, List<Facts.Suite> tests, Optional<String> problem){
   public static final String outDir= Coordinator.outDir;
+  /// a unit test log, as JUnit XML
+  public record Suite(Instant when, String xml){}
   /// An icon is the same while its file is: the image is read from it once.
   public record Icon(Path file, long stamp, BufferedImage image){
     @Override public boolean equals(Object o){ return o instanceof Icon i && file.equals(i.file) && stamp == i.stamp; }
     @Override public int hashCode(){ return file.hashCode(); }
   }
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
-  public static Facts of(Path folder, String alias, Kind kind, Path baseCache){
-    try{ return retried(() -> read(folder, alias, kind, baseCache)); }
-    catch (UncheckedIOException e){ return invalid(Report.folderUnreadable(folder, e.getCause())); }
+  /// A Coordinator.State that is Error.cacheCorrupted is raised: the manager applies the corruption rule.
+  /// None for a folder the manager can not reach.
+  /// The tests are the unit test logs written since `since`, oldest first; with no `since` (Instant.MAX), the newest unit test log.
+  public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check, Instant since){
+    if (!Names.reachable(folder)){ return Optional.empty(); }
+    try{ return Optional.of(retried(() -> read(folder, alias, kind, check, since))); }
+    catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
   }
-  private static Facts invalid(String problem){ return new Facts(false, Optional.empty(), Optional.empty(), List.of(), Optional.of(problem)); }
+  /// the facts of a project shown as 'invalid' with that problem, until its Forget: the folder of the project can not be reached
+  static Facts invalid(String problem){ return new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), List.of(), Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
     for (var left= 10;; left -= 1){
       try{ return read.get(); }
       catch (UncheckedIOException e){ if (left == 0 || !(e.getCause() instanceof NoSuchFileException)){ throw e; } }
     }
   }
-  private static Facts read(Path folder, String alias, Kind kind, Path baseCache){
-    if (!Fs.isDirectory(folder)){ return invalid(Report.folderMissing(folder)); }
+  private static Facts read(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check, Instant since){
     UserError.root = folder;
-    Map<String,Boolean> built= Map.of();
     Optional<String> problem;
+    Coordinator.State state= new Coordinator.State.OutOfDate();
     try{
-      if (kind == Kind.code){ built = Coordinator.pkgsBuilt(folder, baseCache); }
-      else{ new RealSourceOracleWithZip(folder); }
       problem= Names.markerProblem(folder, alias);
+      if (kind != Kind.code){ new RealSourceOracleWithZip(folder); }
     }
     catch (UserError e){ problem = Optional.of(e.getMessage()); }
     Optional<Icon> icon= Optional.empty();
     try{ icon = icon(folder); }
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
-    var out= folder.resolve(outDir);
-    var hasCache= Fs.isDirectory(out) && Names.list(out).stream().anyMatch(p -> p.getFileName().toString().endsWith(".built"));
-    var stalePkgs= built.entrySet().stream().filter(e -> !e.getValue()).map(Map.Entry::getKey).toList();
-    var stale= kind != Kind.code || stalePkgs.isEmpty() ? Optional.<String>empty()
-      : !hasCache ? Optional.of(Report.noCache())
-      : Optional.of(Report.stalePackages(stalePkgs));
-    return new Facts(hasCache, stale, icon, LogFiles.list(folder), problem);
+    List<LogFiles.Entry> logs= List.of();
+    List<Suite> tests= List.of();
+    try{ logs = LogFiles.list(folder); tests = suites(folder, since); }
+    catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
+    if (kind == Kind.code && problem.isEmpty()){
+      try{ state = check.apply(folder); }
+      catch (UserError e){
+        if (UserError.cacheCorrupted(e.getMessage())){ throw e; }
+        problem = Optional.of(e.getMessage());
+      }
+    }
+    if (state instanceof Coordinator.State.Invalid(var why)){ problem = Optional.of(why); }
+    var compiled= state instanceof Coordinator.State.Compiled c ? Optional.of(c) : Optional.<Coordinator.State.Compiled>empty();
+    var stale= kind == Kind.code && problem.isEmpty() && compiled.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
+    return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, logs, tests, problem.filter(_ -> kind != Kind.idle));
   }
-  Facts outOfDate(String why){ return new Facts(hasCache, Optional.of(why), icon, logs, problem); }
+  private static List<Suite> suites(Path folder, Instant since){
+    var all= JUnitReport.unitTestLogs(folder);
+    var shown= since.equals(Instant.MAX) ? all.stream().limit(1).toList() : all.stream().filter(e -> !e.when().isBefore(since)).toList();
+    return shown.reversed().stream().map(e -> new Suite(e.when(), suite(e.path()))).toList();
+  }
+  /// a unit test log that is not UTF-8 text shows no test case
+  private static String suite(Path log){
+    try{ return JUnitReport.suiteOf("", log); }
+    catch (UncheckedIOException e){
+      if (!(e.getCause() instanceof CharacterCodingException)){ throw e; }
+      return "";
+    }
+  }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));
     if (dir.isEmpty()){ return Optional.empty(); }

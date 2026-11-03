@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -28,13 +27,11 @@ import java.util.Locale;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
-import managerMessages.Violation;
 import gui.Sni.Msg;
 import gui.Sni.Reader;
 import gui.Sni.Writer;
 import tools.Fs;
 import utils.Bug;
-import userMessages.UserError;
 
 final class SniTest{
   @Test void aCallIsFramedAndParsedBack(){
@@ -83,7 +80,6 @@ final class SniTest{
         case "s","o" -> seen.put(key, r.str());
         case "b" -> seen.put(key, ""+r.u32());
         case "a(iiay)" -> seen.put(key, pixmaps(r));
-        case "(sa(iiay)ss)" -> { r.pad(8); var name= r.str(); var pix= pixmaps(r); seen.put(key, name+pix+r.str()+"|"+r.str()); }
         default -> throw new AssertionError(sig);
       }
     }
@@ -91,12 +87,11 @@ final class SniTest{
     assertEquals(String.join(",", Sni.props(Sni.itemPath)), String.join(",", seen.keySet()));
     assertEquals("ApplicationStatus", seen.get("Category"));
     assertEquals("fearless-manager", seen.get("Id"));
-    assertEquals("Fearless Manager", seen.get("Title"));
+    assertEquals("", seen.get("Title"));
     assertEquals("Active", seen.get("Status"));
     assertEquals("/MenuBar", seen.get("Menu"));
     assertEquals("1", seen.get("ItemIsMenu"));
     assertEquals("[2x2:80ff0010 00000000 00000000 ff00ff00]", seen.get("IconPixmap"));
-    assertEquals("[]Fearless Manager|", seen.get("ToolTip"));
   }
   @Test void theMenuLayoutIsTheRootHoldingShowSeparatorQuit(){
     var w= Sni.layout();
@@ -155,7 +150,7 @@ final class SniTest{
     assertEquals(":1.5", m.fields()[6]);
     assertEquals("after", m.body().str());
   }
-  @Test void aFakeBusDrivesTheItemUntilTheWatcherLeaves() throws Exception{
+  @Test void aFakeBusDrivesTheItemAndTheWatcherLeavingIsTheTrayGoingAway() throws Exception{
     Assumptions.assumeTrue(Fs.isLinux());
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
@@ -165,10 +160,9 @@ final class SniTest{
       server.bind(UnixDomainSocketAddress.of(socket));
       var bus= new FutureTask<Void>(() -> { try (var c= server.accept()){ busScript(c, icon); } return null; });
       Thread.startVirtualThread(bus);
-      var e= assertThrows(UserError.class, () -> new Sni(socket, () -> log.add("activate"), () -> log.add("quit"), at -> log.add("menu "+at.x+","+at.y), icon).serve());
+      new Sni(socket, () -> log.add("activate"), () -> log.add("quit"), at -> log.add("menu "+at.x+","+at.y), present -> log.add("tray "+present), icon).serve();
       bus.get();
-      assertEquals(Violation.trayIconRemoved().getMessage(), e.getMessage());
-      assertEquals(List.of("activate", "activate", "activate", "menu 5,6", "menu 7,8", "quit"), log);
+      assertEquals(List.of("activate", "activate", "activate", "menu 5,6", "menu 7,8", "quit", "tray false", "tray false"), log);
     }
     finally{ Files.deleteIfExists(socket); Files.delete(dir); }
   }
@@ -232,7 +226,7 @@ final class SniTest{
       server.bind(UnixDomainSocketAddress.of(socket));
       var bus= new FutureTask<Void>(() -> { try (var c= server.accept()){ noWatcherScript(c); } return null; });
       Thread.startVirtualThread(bus);
-      var sni= new Sni(socket, () -> { throw Bug.unreachable(); }, () -> { throw Bug.unreachable(); }, _ -> { throw Bug.unreachable(); }, new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB));
+      var sni= new Sni(socket, () -> { throw Bug.unreachable(); }, () -> { throw Bug.unreachable(); }, _ -> { throw Bug.unreachable(); }, _ -> { throw Bug.unreachable(); }, new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB));
       bus.get();
       assertFalse(sni.tray);
     }

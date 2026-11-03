@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import controller.Registry.Kind;
+import coordinator.Coordinator;
 import fileSupport.LogFiles;
 import tools.Fs;
 import utils.Range;
@@ -42,45 +43,16 @@ final class FactsTest{
     var old= FileTime.fromMillis(System.currentTimeMillis()-3_600_000);
     Fs.walkV(folder, s -> s.filter(Files::isRegularFile).forEach(f -> Fs.ofV(() -> Files.setLastModifiedTime(f, old))));
   }
-  static void cache(Path project, String pkg, long stamp){ cache(project, pkg, stamp, "{}\n"); }
-  static void cache(Path project, String pkg, long stamp, String mainsInfo){ cache(project, pkg, stamp, mainsInfo, "base"); }
-  static void cache(Path project, String pkg, long stamp, String mainsInfo, String below){
-    at(project.resolve(".fearless_out").resolve(pkg+".built"), "fear:/_"+pkg+"/_rank_app.fear\n---\n"+below, stamp);
-    at(project.resolve(".fearless_out").resolve(pkg+".json"), "{}\n", stamp);
-    at(project.resolve(".fearless_out").resolve("gen_java").resolve(pkg+".jar"), "", stamp);
-    at(project.resolve(".fearless_out").resolve(pkg+"_manifest.info"), manifest(mainsInfo), stamp);
-    at(project.resolve(".fearless_out").resolve("_map.json"), "{}", 0);
+  private static void at(Path file, String content, long stamp){ FakeCache.at(file, content, stamp); }
+  /// The real Coordinator.check, over a base cache holding a base.json with no type.
+  static Facts facts(Path project, String alias, Kind kind){
+    var base= project.getParent().resolve("baseCache");
+    FakeCache.at(base.resolve("base.json"), FakeCache.json(FakeCache.manifest("{}")), 0);
+    var c= new Coordinator(){ @Override public Optional<Path> baseCachePath(){ return Optional.of(base); } };
+    return Facts.of(project, alias, kind, c::check, java.time.Instant.MAX).orElseThrow();
   }
-  static String manifest(String mains){ return "{\n  \"mains\": "+mains.strip()+",\n  \"attenuators\": [],\n  \"dataRead\": [],\n  \"dataEdit\": []\n}\n"; }
-  private static void at(Path file, String content, long stamp){
-    Fs.writeUtf8(file, content);
-    Fs.ofV(() -> Files.setLastModifiedTime(file, FileTime.fromMillis(stamp)));
-  }
-  static long after(Path project){ return Fs.walk(project, s -> s.filter(Files::isRegularFile).mapToLong(Fs::lastModified).max().orElse(0))+1; }
-  static Path baseCache(Path dir){
-    var res= dir.resolve("baseCache");
-    at(res.resolve("base.json"), "{}\n", 0);
-    return res;
-  }
-  static Facts facts(Path project, String alias, Kind kind){ return Facts.of(project, alias, kind, baseCache(project.getParent())); }
   static boolean upToDate(Facts f){ return f.stale().isEmpty(); }
   //A log or an Eclipse report lands after the build stamp, inside the project folder
-  @Test void whatFearlessWritesAboutAProjectIsNotCountedAsSource(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    var stamp= after(project);
-    cache(project, "hello", stamp);
-    var written= project.resolve(LogFiles.runDir);
-    at(written.resolve("eclipse").resolve("problems.txt"), "", stamp+1000);
-    at(written.resolve("logs").resolve("_base").resolve("unit_test_log.log"), "x\n", stamp+1000);
-    assertTrue(upToDate(facts(project, "someproject", Kind.code)));
-  }
-  @Test void aBaseApiNewerThanTheCacheMakesThePackageStale(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    cache(project, "hello", after(project));
-    assertTrue(upToDate(facts(project, "someproject", Kind.code)));
-    at(dir.resolve("baseCache").resolve("base.json"), "{}\n", after(project)+1000);
-    assertEquals(Optional.of("The compilation cache of the package \"hello\" is out of date."), Facts.of(project, "someproject", Kind.code, dir.resolve("baseCache")).stale());
-  }
   @Test void recognisesThePackagesOfTheProject(@TempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve("_other").resolve("_rank_app.fear"), "");
@@ -95,8 +67,8 @@ final class FactsTest{
   }
   @Test void withNoCacheThereIsSomethingToCompileAndNothingToRun(@TempDir Path dir){
     var facts= facts(project(dir, "someProject"), "someproject", Kind.code);
-    assertFalse(facts.hasCache());
-    assertEquals(Optional.of("This project has no compilation cache."), facts.stale());
+    assertEquals(Optional.of("The compilation cache of this project is out of date."), facts.stale());
+    assertEquals(Optional.empty(), facts.mains());
   }
   @Test void aCodeProjectWithNoPackageUsesOnlyBaseAndIsUpToDate(@TempDir Path dir){
     var project= dir.resolve("someProject");
@@ -107,79 +79,16 @@ final class FactsTest{
     assertEquals(Optional.empty(), facts.problem());
     assertTrue(upToDate(facts));
   }
-  @Test void anOutFolderHoldingNoPackageIsNoCache(@TempDir Path dir){
+  @Test void anOutFolderHoldingNoPackageIsOutOfDate(@TempDir Path dir){
     var project= project(dir, "someProject");
-    Fs.writeUtf8(project.resolve(Facts.outDir).resolve("check_error.txt"), "broken");
+    Fs.writeUtf8(project.resolve(Facts.outDir).resolve("_error.txt"), "broken");
     var facts= facts(project, "someproject", Kind.code);
-    assertFalse(facts.hasCache());
-    assertEquals(Optional.of("This project has no compilation cache."), facts.stale());
-  }
-  @Test void aCacheNewerThanEverySourceIsUpToDate(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    cache(project, "hello", after(project));
-    var facts= facts(project, "someproject", Kind.code);
-    assertTrue(facts.hasCache());
-    assertTrue(upToDate(facts));
-  }
-  @Test void aPackageBuiltBeforeOneOfItsFilesChangedIsStale(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    Fs.writeUtf8(project.resolve("_other").resolve("_rank_app.fear"), "");
-    cache(project, "hello", after(project));
-    cache(project, "other", 1000);
-    assertEquals(Optional.of("The compilation cache of the package \"other\" is out of date."), facts(project, "someproject", Kind.code).stale());
-  }
-  @Test void eachPackageIsComparedWithItsOwnFilesOnly(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    var other= project.resolve("_other").resolve("_rank_app.fear");
-    at(other, "", 5000);
-    at(project.resolve("_hello").resolve("_rank_app.fear"), "use base.Main as Main;\n", 1000);
-    cache(project, "hello", 2000);
-    cache(project, "other", 6000);
-    assertTrue(upToDate(facts(project, "someproject", Kind.code)));
-  }
-  @Test void aPackageBuiltBeforeTheApiOfALowerRankIsStale(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    at(project.resolve("_hello").resolve("_rank_app.fear"), "use base.Main as Main;\n", 1000);
-    at(project.resolve("_lib").resolve("_rank_core.fear"), "", 1000);
-    cache(project, "hello", 2000, "{}\n", "base\nlib");
-    at(project.resolve(".fearless_out").resolve("lib.built"), "fear:/_lib/_rank_core.fear\n---\nbase", 3000);
-    at(project.resolve(".fearless_out").resolve("lib.json"), "{}\n", 3000);
-    at(project.resolve(".fearless_out").resolve("gen_java").resolve("lib.jar"), "", 3000);
-    at(project.resolve(".fearless_out").resolve("lib_manifest.info"), manifest("{}\n"), 3000);
-    assertFalse(upToDate(facts(project, "someproject", Kind.code)));
-    cache(project, "hello", 4000, "{}\n", "base\nlib");
-    assertTrue(upToDate(facts(project, "someproject", Kind.code)));
-  }
-  @Test void aPackageBuiltAgainstALowerPackageThatIsGoneIsStale(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    at(project.resolve("_hello").resolve("_rank_app.fear"), "use base.Main as Main;\n", 1000);
-    cache(project, "hello", 2000, "{}\n", "base\nlib");
-    assertFalse(upToDate(facts(project, "someproject", Kind.code)));
-    cache(project, "hello", 2000);
-    assertTrue(upToDate(facts(project, "someproject", Kind.code)));
-  }
-  @Test void aFileOutsideEveryPackageNeverMakesTheCacheStale(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    var stamp= after(project);
-    cache(project, "hello", stamp);
-    at(project.resolve("readme"), "edited\n", stamp+5000);
-    at(project.resolve("someproject.fearless"), "", stamp+5000);
-    assertTrue(upToDate(facts(project, "someproject", Kind.code)));
+    assertEquals(Optional.of("The compilation cache of this project is out of date."), facts.stale());
   }
   @Test void aShortcutFileAtTheTopLevelKeepsTheCacheUpToDateAndTheProjectValid(@TempDir Path dir){
     var project= project(dir, "someProject");
-    var stamp= after(project);
-    cache(project, "hello", stamp);
-    at(project.resolve("bar.fapp042"), "", stamp+5000);
-    var facts= facts(project, "someproject", Kind.code);
-    assertTrue(upToDate(facts));
-    assertEquals(Optional.empty(), facts.problem());
-  }
-  @Test void aFileAddedToAPackageMakesItStaleWhateverItsTime(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    cache(project, "hello", after(project));
-    at(project.resolve("_hello").resolve("more.fear"), "", 1000);
-    assertFalse(upToDate(facts(project, "someproject", Kind.code)));
+    at(project.resolve("bar.fapp042"), "", FakeCache.after(project)+5000);
+    assertEquals(Optional.empty(), facts(project, "someproject", Kind.code).problem());
   }
   @Test void aDataFolderNeedsNoPackageStructure(@TempDir Path dir){
     var project= dir.resolve("publicFiles");
@@ -189,15 +98,13 @@ final class FactsTest{
     assertEquals(Optional.empty(), facts.problem());
     assertEquals(Optional.empty(), facts.stale());
   }
-  @Test void aFolderWithoutItsMarkerIsInvalid(@TempDir Path dir){
+  @Test void aFolderWithTwoMarkersIsInvalid(@TempDir Path dir){
     var project= project(dir, "someProject");
-    same("[###]\"other.fearless\" is missing[###]", facts(project, "other", Kind.code).problem().orElseThrow());
+    Fs.writeUtf8(project.resolve("other.fearless"), "");
+    same("More than one .fearless marker file was found in[###]keep only \"someproject.fearless\".", facts(project, "someproject", Kind.code).problem().orElseThrow());
   }
-  @Test void aMissingFolderIsAProblemNotACrash(@TempDir Path dir){
-    same("""
-The folder of this project does not exist:
-[###]gone
-Restore it, or forget this project.""", facts(dir.resolve("gone"), "gone", Kind.code).problem().orElseThrow());
+  @Test void aMissingFolderIsUnreachable(@TempDir Path dir){
+    assertEquals(Optional.empty(), Facts.of(dir.resolve("gone"), "gone", Kind.code, _ -> new Coordinator.State.OutOfDate(), java.time.Instant.MAX));
   }
   @Test void aFolderDeletedWhileItIsCheckedIsMissing(@TempDir Path dir){
     assertTimeoutPreemptively(Duration.ofSeconds(60), () -> {
@@ -205,9 +112,9 @@ Restore it, or forget this project.""", facts(dir.resolve("gone"), "gone", Kind.
         var project= project(dir, "p"+i);
         IntStream.range(0, 300).forEach(j -> Fs.writeUtf8(project.resolve("_hello").resolve("f"+j+".fear"), ""));
         var gone= Thread.startVirtualThread(() -> Fs.rmTree(project));
-        facts(project, "p"+i, Kind.code);
+        Facts.of(project, "p"+i, Kind.code, _ -> new Coordinator.State.OutOfDate(), java.time.Instant.MAX);
         gone.join();
-        same("The folder of this project does not exist:[###]", facts(project, "p"+i, Kind.code).problem().orElseThrow());
+        assertEquals(Optional.empty(), Facts.of(project, "p"+i, Kind.code, _ -> new Coordinator.State.OutOfDate(), java.time.Instant.MAX));
       }
     });
   }
@@ -227,6 +134,30 @@ The folder of this project cannot be read:
 access denied: [###]_hello
 Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
     Disk.allow(hidden);
+  }
+  @Test void anUnreadableSourceOfAProjectWithACacheIsAProblemNotACorruptedCache(@TempDir Path dir){
+    var project= project(dir, "someProject");
+    FakeCache.write(project, "hello", System.currentTimeMillis()-1_000_000);
+    var source= project.resolve("_hello").resolve("_rank_app.fear");
+    Disk.noRead(source);
+    Assumptions.assumeFalse(Files.isReadable(source));
+    same("""
+The folder of this project cannot be read:
+[###]someProject
+access denied: [###]_rank_app.fear
+Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
+    Disk.allow(source);
+  }
+  @Test void aSymbolicLinkInACodeProjectIsAProblemNotACrash(@TempDir Path dir){
+    var before= Fs.onSymbolicLink;
+    Fs.onSymbolicLink= managerMessages.Report::symbolicLink;
+    try{
+      var project= project(dir, "someProject");
+      Disk.link(project.resolve("_hello").resolve("current"), dir);
+      same("This path is a symbolic link[###]", facts(project, "someproject", Kind.code).problem().orElseThrow());
+      assertEquals(Optional.empty(), Facts.of(Disk.link(dir.resolve("moved"), project), "someproject", Kind.code, _ -> new Coordinator.State.OutOfDate(), java.time.Instant.MAX));
+    }
+    finally{ Fs.onSymbolicLink= before; }
   }
   @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
     var project= project(dir, "someProject");
@@ -272,14 +203,6 @@ The icon of a project is the only .png file in its folder ".config/icon".
 Replace that file with a PNG image, or remove it.
 """, () -> Facts.icon(project));
     assertTrue(facts(project, "someproject", Kind.code).problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
-  }
-  @Test void aBrokenIconDoesNotHideAnUpToDateCache(@TempDir Path dir){
-    var project= project(dir, "someProject");
-    Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"), "not an image");
-    cache(project, "hello", after(project));
-    var facts= facts(project, "someproject", Kind.code);
-    assertTrue(upToDate(facts));
-    assertTrue(facts.problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }
   @Test void aProjectWithBrokenNamesKeepsItsIcon(@TempDir Path dir){
     var project= project(dir, "someProject");

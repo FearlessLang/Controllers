@@ -22,15 +22,17 @@ final class TaggedTextTest{
     assertEquals(tagged, TaggedText.of(text));
     assertEquals(text, read(tagged));
   }
-  @Test void aTextInTheCharacterSetIsStr(){
-    roundTrip("C:\\data\\hello", "Str:C:\\data\\hello");
-    roundTrip("a \"b\"\n", "Str:a \"b\"\n");
-    roundTrip("", "Str:");
+  @Test void aTextInTheCharacterSetIsStrAsStrEscapePrintsIt(){
+    roundTrip("C:\\data\\hello", "Str:\"C:\\data\\hello\"");
+    roundTrip("a \"b\"\n", "Str:`a \"b\"`|");
+    roundTrip("a\nb", "Str:\"a\" | \"b\"");
+    roundTrip("", "Str:\"\"");
   }
-  @Test void aTextOnOneLineHoldingANewlineIsNotStr(){
-    assertEquals("Str:C:\\data", TaggedText.line("C:\\data"));
-    assertEquals("UStr:(\"a\" | \"b\").u", TaggedText.line("a\nb"));
-    assertEquals("a\nb", read(TaggedText.line("a\nb")));
+  @Test void aStrIsAFearlessStringExpressionWithoutU(){
+    assertEquals("ab\nc", read("Str:\"a\" + `b` | (\"c\")"));
+    err("\"Str:\"a\".u\"\nis malformed: after \"Str:\" no string is followed by .u.", () -> read("Str:\"a\".u"));
+    err("\"Str:\"a\nb\"\"\nis malformed: the closing \" on the same line was expected at offset 1 after \"Str:\".", () -> read("Str:\"a\nb\""));
+    err("\"Str:C:/data\"\nis malformed: a string \"...\", `...` or (...) was expected at offset 0 after \"Str:\".", () -> read("Str:C:/data"));
   }
   @Test void aUnicodeTextIsUStrAsUStrEscapePrintsIt(){
     roundTrip("\u00e9", "UStr:\"\".u\"00E9\"");
@@ -51,9 +53,9 @@ final class TaggedTextTest{
   }
   @Test void aPathIsStrOrUStrWhenItsBytesAreUtf8AndBase16Otherwise(){
     Assumptions.assumeTrue(Fs.isLinux());
-    pathRoundTrip(Path.of("/tmp/data"), "Str:/tmp/data");
+    pathRoundTrip(Path.of("/tmp/data"), "Str:\"/tmp/data\"");
     pathRoundTrip(Path.of("/tmp/caf\u00e9"), "UStr:\"/tmp/caf\".u\"00E9\"");
-    pathRoundTrip(Path.of("/a\nb"), "UStr:(\"/a\" | \"b\").u");
+    pathRoundTrip(Path.of("/a\nb"), "Str:\"/a\" | \"b\"");
     pathRoundTrip(PathBytes.path(new byte[]{'/', 'c', 'a', 'f', (byte)0xE9}), "Base16:2F636166E9");
   }
   @Test void aPathReadsBackThroughItsUnitsWhateverTheTag(){
@@ -64,7 +66,8 @@ final class TaggedTextTest{
   }
   @Test void anyFormReadsBackAsTheSameText(){
     assertEquals("abc", read("UStr:\"abc\".u"));
-    assertEquals("abc", read("UStr:\"a\" + `b` + (\"c\")"));
+    assertEquals("abc", read("UStr:\"a\".u + `b`.u + (\"c\".u)"));
+    assertEquals("ab", read("UStr:(\"a\" + `b`).u"));
     assertEquals("\u00e9x", read("UStr:\"\".u \"E9\"+\"x\".u"));
     assertEquals(Path.of("ab"), readPath(Fs.isWindows() ? "Base16:61006200" : "Base16:6162"));
   }
@@ -80,14 +83,17 @@ final class TaggedTextTest{
     err("\"UStr:\"\".u\"e9\"\"\nis malformed: code points, each as 1 to 6 uppercase hex digits, separated by single spaces, was expected at offset 8 after \"UStr:\".", () -> read("UStr:\"\".u\"e9\""));
     err("[###]Unicode scalars (no D800 to DFFF, nothing above 10FFFF) was expected[###]", () -> read("UStr:\"\".u\"D800\""));
     err("[###]the end of the text was expected at offset 3[###]", () -> read("UStr:\"a\".size"));
-    err("[###]the closing \" was expected[###]", () -> read("UStr:\"a"));
+    err("[###]the closing \" on the same line was expected[###]", () -> read("UStr:\"a"));
+    err("\"UStr:\"abc\"\"\nis malformed: after \"UStr:\" every string is followed by .u, like \"caf\".u\"00E9\".", () -> read("UStr:\"abc\""));
+    err("[###]a string followed by .u was expected at offset 11[###]", () -> read("UStr:\"a\".u + \"b\""));
+    err("[###]code points \"...\" was expected[###]", () -> read("UStr:(\"a\".u).u"));
   }
   @Test void aCharacterOutsideTheSetAfterStrOrUStrIsRejected(){
     err("\"Str:/tmp/caf\" [U+00E9]\nis malformed: after \"Str:\" every character is in the Fearless character set, but [U+00E9] is not.", () -> read("Str:/tmp/caf\u00e9"));
     err("[###]\nis malformed: after \"UStr:\" every character is in the Fearless character set, but [U+00E9] is not.", () -> read("UStr:\"caf\u00e9\".u"));
   }
   @Test void parenthesesInUStrNestAtMost100Deep(){
-    assertEquals("a", read("UStr:"+"(".repeat(100)+"\"a\""+")".repeat(100)));
+    assertEquals("a", read("UStr:"+"(".repeat(100)+"\"a\".u"+")".repeat(100)));
     err("A \"UStr:\" text is malformed: its parentheses nest at most 100 deep, and the one at offset 100 after \"UStr:\" is deeper.", () -> read("UStr:"+"(".repeat(100_000)));
   }
   @Test void aMalformedBase16IsRejected(){

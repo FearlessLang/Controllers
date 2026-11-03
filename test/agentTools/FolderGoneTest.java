@@ -198,12 +198,12 @@ final class FolderGoneTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "gone": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(gone)));

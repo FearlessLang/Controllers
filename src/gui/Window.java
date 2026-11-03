@@ -62,6 +62,7 @@ import controller.Manager.State;
 import controller.Project;
 import controller.Registry;
 import managerMessages.Report;
+import metaParser.PrettyFileName;
 import managerMessages.Violation;
 import tools.Fs;
 import tools.OpenPath;
@@ -120,7 +121,16 @@ public final class Window implements Manager.View{
   }
   public static Window create(Main main, Path managerDir){ return onEdt(() -> new Window(main, managerDir.resolve("projects.info"))); }
   public void tray(){ tray = onEdt(() -> Tray.install(this)); }
-  void fail(Throwable problem){ main.fail(problem); }
+  /// A tray that goes away gives the 'tray icon window' to a hidden manager window; a tray that comes back takes it away.
+  void trayed(boolean present){ SwingUtilities.invokeLater(() -> trayedNow(present)); }
+  private void trayedNow(boolean present){
+    tray = present;
+    if (frame.isVisible()){ return; }
+    if (present){ standIn.hide(); return; }
+    standIn.show();
+  }
+  /// The manager window at start: hidden, with the 'tray icon window' when there is no tray.
+  public void hide(){ SwingUtilities.invokeLater(this::close); }
   static <T> T onEdt(Supplier<T> make){
     if (SwingUtilities.isEventDispatchThread()){ return make.get(); }
     var result= new AtomicReference<T>();
@@ -154,12 +164,19 @@ public final class Window implements Manager.View{
   @Override public void state(State s){ SwingUtilities.invokeLater(() -> render(s)); }
   @Override public void output(Path folder, String text){ SwingUtilities.invokeLater(() -> panel(folder).append(text)); }
   @Override public void clear(Path folder){ SwingUtilities.invokeLater(() -> panel(folder).output.setText("")); }
-  @Override public void refuse(String text){ SwingUtilities.invokeLater(() -> { showNow(); say(text); }); }
+  @Override public void refuse(String text){ SwingUtilities.invokeLater(() -> { showNow(); say(editorText(written, text)); }); }
+  static String editorText(Set<Path> written, String text){
+    return written.stream().reduce(text, (t, f) -> t.replace("In file: "+PrettyFileName.displayFileName(f.toUri()), "In the text of the editor:"), (a, _) -> a);
+  }
   @Override public void tell(String text){ refuse(text); }
   private void say(String text){ JOptionPane.showMessageDialog(frame, text, "Fearless", JOptionPane.PLAIN_MESSAGE); }
   @Override public void choose(Path file, List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(file, choices)); }
   @Override public void allow(String question, List<String> extensions){
-    SwingUtilities.invokeLater(() -> { if (JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ capture(extensions); } });
+    SwingUtilities.invokeLater(() -> ask(question, extensions));
+  }
+  private void ask(String question, List<String> extensions){
+    showNow();
+    if (JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ capture(extensions); }
   }
   private void capture(List<String> extensions){
     Registry.Content now;
@@ -179,7 +196,7 @@ public final class Window implements Manager.View{
     file.toFile().deleteOnExit();
     written.add(file);
     Fs.writeUtf8(file, content);
-    Main.command("EditMetadata", TaggedText.ofPath(file));
+    Main.command("EditMetadata "+TaggedText.base16(file));
     return file;
   }
   private void chooser(Path file, List<Project.Claimant> choices){
@@ -202,7 +219,7 @@ public final class Window implements Manager.View{
   private static void pick(JDialog dialog, JList<Project.Claimant> list, Path file){
     if (list.isSelectionEmpty()){ return; }
     dialog.dispose();
-    Main.command("OpenWithOrShortcut", TaggedText.ofPath(file), list.getSelectedValue().alias(), list.getSelectedValue().main());
+    Main.command("OpenWithOrShortcut "+TaggedText.base16(file)+" "+list.getSelectedValue().alias()+" "+list.getSelectedValue().main());
   }
   static JList<Project.Claimant> choices(List<Project.Claimant> choices){
     var icons= choices.stream().map(c -> new ImageIcon(Icons.of(c, 32))).toList();
@@ -249,9 +266,9 @@ public final class Window implements Manager.View{
     var res= new JMenuBar();
     var manager= new JMenu("Manager");
     manager.setMnemonic('M');
-    manager.add(item("Add folder...", () -> choose("Add a Fearless project folder", p -> Main.command("Register", TaggedText.ofPath(p)))));
+    manager.add(item("Add folder...", () -> choose("Add a Fearless project folder", p -> Main.command("Register "+TaggedText.base16(p)))));
     manager.add(item("Edit project metadata...", this::editMetadata));
-    manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse", TaggedText.ofPath(p)))));
+    manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse "+TaggedText.base16(p)))));
     manager.add(item("Base documentation", () -> open(this::say, Deployed.stdLib("baseCache").resolve("base.html"))));
     manager.addSeparator();
     manager.add(item("Reset", this::reset));
@@ -284,7 +301,7 @@ public final class Window implements Manager.View{
       }
       @Override public boolean importData(TransferSupport support){
         var paths= Drop.paths(support.getTransferable(), Window.this::say);
-        paths.forEach(p -> Main.command("Register", TaggedText.ofPath(p)));
+        Main.command(paths.stream().map(p -> "Register "+TaggedText.base16(p)).toArray(String[]::new));
         return !paths.isEmpty();
       }
     };
@@ -292,11 +309,9 @@ public final class Window implements Manager.View{
   private void editMetadata(){
     var base= Fs.readUtf8(info);
     var area= mono(new JTextArea(base, 30, 100));
-    var dialog= new JDialog(frame, "Edit project metadata", true);
-    var commit= new JButton("Commit");
-    var close= new JButton("Close");
-    commit.addActionListener(_ -> commit(dialog, base, area.getText()));
-    close.addActionListener(_ -> dialog.dispose());
+    var dialog= new JDialog(frame, "projects.info", true);
+    var commit= small("Commit", () -> commit(dialog, base, area.getText()));
+    var close= small("Close", dialog::dispose);
     var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
     buttons.add(commit);
     buttons.add(close);
@@ -320,7 +335,8 @@ public final class Window implements Manager.View{
   }
   static JButton small(String text, Runnable action){
     var res= new Small(text);
-    res.setMargin(new Insets(0, 6, 0, 6));
+    res.setMargin(new Insets(0, 3, 0, 3));
+    res.setFont(res.getFont().deriveFont(Font.PLAIN, 11f));
     res.addActionListener(_ -> res.press(action));
     return res;
   }
@@ -341,7 +357,16 @@ public final class Window implements Manager.View{
   }
   static void open(Consumer<String> refuse, Path path){
     if (!Files.exists(path)){ refuse.accept(Report.nothingToOpen(path)); return; }
-    try{ OpenPath.open(path); }
+    try{ said(refuse, path, OpenPath.open(path)); }
     catch (UncheckedIOException e){ refuse.accept(Report.notOpened(path, e.getCause())); }
+  }
+  /// xdg-open ends with an error when no program of the desktop opens the file
+  private static void said(Consumer<String> refuse, Path path, Process opener){
+    if (!Fs.isLinux()){ return; }
+    Thread.startVirtualThread(() -> { if (ended(opener) != 0){ SwingUtilities.invokeLater(() -> refuse.accept(Report.noProgramOpens(path))); } });
+  }
+  private static int ended(Process p){
+    try{ return p.waitFor(); }
+    catch (InterruptedException e){ throw Bug.of(e); }
   }
 }

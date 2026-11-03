@@ -22,7 +22,6 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
-import managerMessages.Violation;
 import utils.Bug;
 
 /// The manager's icon on a Linux desktop: a StatusNotifierItem served on the session bus.
@@ -30,7 +29,7 @@ import utils.Bug;
 /// opens the item's menu when the icon is clicked; a click the desktop reports to the item instead
 /// (Activate, SecondaryActivate, ContextMenu) opens the manager's own menu at the point of the click.
 /// One thread reads the bus for the whole process life; the watcher leaving the bus, or
-/// the bus closing, stops the manager.
+/// the bus closing, is the tray going away (the 'tray icon window' of the manager window).
 final class Sni{
   private static final String bus= "org.freedesktop.DBus";
   private static final String watcher= "org.kde.StatusNotifierWatcher";
@@ -52,6 +51,7 @@ final class Sni{
   private final Runnable activate;
   private final Runnable quit;
   private final Consumer<Point> menuAt;
+  private final Consumer<Boolean> trayed;
   private final BufferedImage icon;
   final boolean tray;
   private int serial;
@@ -62,48 +62,49 @@ final class Sni{
     String sender(){ return fields[7]; }
     String signature(){ return fields[8] == null ? "" : fields[8]; }
   }
-  static boolean install(Runnable activate, Runnable quit, Consumer<Point> menuAt, Image image){
+  /// trayed hears when the watcher leaves (false) or comes back (true), and false when the bus connection ends.
+  static boolean install(Runnable activate, Runnable quit, Consumer<Point> menuAt, Consumer<Boolean> trayed, Image image){
     var address= System.getenv("DBUS_SESSION_BUS_ADDRESS");
     if (address == null){ return false; }
     var path= Pattern.compile("(^|;)unix:([^;]*,)?path=([^,;]+)").matcher(address);
-    if (!path.find()){ throw Violation.couldNotAddTrayIcon(new IOException("DBUS_SESSION_BUS_ADDRESS \""+address+"\"\nnames no \"unix:path=\" socket")); }
+    if (!path.find()){ return false; }
     var icon= new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
     var g= icon.createGraphics();
     g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
     g.drawImage(image, 0, 0, 64, 64, null);
     g.dispose();
-    var sni= new Sni(Path.of(URLDecoder.decode(path.group(3), UTF_8)), activate, quit, menuAt, icon);
+    Sni sni;
+    try{ sni= new Sni(Path.of(URLDecoder.decode(path.group(3), UTF_8)), activate, quit, menuAt, trayed, icon); }
+    catch (IOException e){ return false; }
     if (!sni.tray){ return false; }
     Thread.startVirtualThread(sni::serve);
     return true;
   }
-  Sni(Path socket, Runnable activate, Runnable quit, Consumer<Point> menuAt, BufferedImage icon){
+  Sni(Path socket, Runnable activate, Runnable quit, Consumer<Point> menuAt, Consumer<Boolean> trayed, BufferedImage icon) throws IOException{
     this.activate= activate;
     this.quit= quit;
     this.menuAt= menuAt;
+    this.trayed= trayed;
     this.icon= icon;
-    try{
-      channel= SocketChannel.open(StandardProtocolFamily.UNIX);
-      channel.connect(UnixDomainSocketAddress.of(socket));
-      var uid= Files.getAttribute(Path.of("/proc/self"), "unix:uid").toString();
-      write(channel, ("\0AUTH EXTERNAL "+HexFormat.of().formatHex(uid.getBytes(UTF_8))+"\r\n").getBytes(UTF_8));
-      var answer= line(channel);
-      if (!answer.startsWith("OK ")){ throw new IOException("the session bus refused the connection: "+answer); }
-      write(channel, "BEGIN\r\n".getBytes(UTF_8));
-      await(call(bus, "/org/freedesktop/DBus", bus, "Hello", "", new Writer()));
-      tray= await(call(bus, "/org/freedesktop/DBus", bus, "NameHasOwner", "s", new Writer().str(watcher))).body().u32() == 1;
-      if (!tray){ channel.close(); return; }
-      await(call(bus, "/org/freedesktop/DBus", bus, "AddMatch", "s", new Writer().str("type='signal',sender='"+bus+"',member='NameOwnerChanged',arg0='"+watcher+"'")));
-      register();
-    }
-    catch (IOException e){ throw Violation.couldNotAddTrayIcon(e); }
+    channel= SocketChannel.open(StandardProtocolFamily.UNIX);
+    channel.connect(UnixDomainSocketAddress.of(socket));
+    var uid= Files.getAttribute(Path.of("/proc/self"), "unix:uid").toString();
+    write(channel, ("\0AUTH EXTERNAL "+HexFormat.of().formatHex(uid.getBytes(UTF_8))+"\r\n").getBytes(UTF_8));
+    var answer= line(channel);
+    if (!answer.startsWith("OK ")){ throw new IOException("the session bus refused the connection: "+answer); }
+    write(channel, "BEGIN\r\n".getBytes(UTF_8));
+    await(call(bus, "/org/freedesktop/DBus", bus, "Hello", "", new Writer()));
+    tray= await(call(bus, "/org/freedesktop/DBus", bus, "NameHasOwner", "s", new Writer().str(watcher))).body().u32() == 1;
+    if (!tray){ channel.close(); return; }
+    await(call(bus, "/org/freedesktop/DBus", bus, "AddMatch", "s", new Writer().str("type='signal',sender='"+bus+"',member='NameOwnerChanged',arg0='"+watcher+"'")));
+    register();
   }
   private void register() throws IOException{
     await(call(watcher, "/StatusNotifierWatcher", watcher, "RegisterStatusNotifierItem", "s", new Writer().str(itemPath)));
   }
   void serve(){
     try{ for (;;){ handle(next(channel)); } }
-    catch (IOException e){ throw Violation.trayConnectionLost(e); }
+    catch (IOException e){ trayed.accept(false); }
   }
   private Msg await(int serial) throws IOException{
     for (;;){
@@ -111,7 +112,6 @@ final class Sni{
       var answers= (m.type() == 2 || m.type() == 3) && m.replySerial() == serial;
       if (!answers){ handle(m); continue; }
       if (m.type() == 2){ return m; }
-      if (m.error().equals(serviceUnknown)){ throw Violation.noSystemTray(); }
       throw new IOException(m.error()+(m.signature().startsWith("s") ? ": "+m.body().str() : ""));
     }
   }
@@ -173,8 +173,9 @@ final class Sni{
     var watched= m.sender().equals(bus) && m.member().equals("NameOwnerChanged") && m.body().str().equals(watcher);
     if (!watched){ return; }
     m.body().str();
-    if (m.body().str().isEmpty()){ throw Violation.trayIconRemoved(); }
+    if (m.body().str().isEmpty()){ trayed.accept(false); return; }
     register();
+    trayed.accept(true);
   }
   private void get(Msg m) throws IOException{
     m.body().str();
@@ -183,19 +184,18 @@ final class Sni{
     reply(m, "v", prop(new Writer(), name, icon));
   }
   static List<String> props(String path){
-    return path.equals(menu) ? List.of("Version") : List.of("Category", "Id", "Title", "Status", "IconPixmap", "ToolTip", "ItemIsMenu", "Menu");
+    return path.equals(menu) ? List.of("Version") : List.of("Category", "Id", "Title", "Status", "IconPixmap", "ItemIsMenu", "Menu");
   }
   static Writer all(String path, BufferedImage icon){ return new Writer().array(8, w -> props(path).forEach(p -> prop(w.pad(8).str(p), p, icon))); }
   static Writer prop(Writer w, String name, BufferedImage icon){
     return switch (name){
       case "Category" -> w.sig("s").str("ApplicationStatus");
       case "Id" -> w.sig("s").str("fearless-manager");
-      case "Title" -> w.sig("s").str("Fearless Manager");
+      case "Title" -> w.sig("s").str("");
       case "Status" -> w.sig("s").str("Active");
       case "Menu" -> w.sig("o").str(menu);
       case "ItemIsMenu" -> w.sig("b").u32(1);
       case "IconPixmap" -> pixmaps(w.sig("a(iiay)"), icon);
-      case "ToolTip" -> pixmaps(w.sig("(sa(iiay)ss)").pad(8).str("")).str("Fearless Manager").str("");
       case "Version" -> w.sig("u").u32(3);
       default -> throw Bug.unreachable();
     };
@@ -206,7 +206,7 @@ final class Sni{
   private static Writer item(Writer w, List<String> item){
     return w.u32(Integer.parseInt(item.get(0))).array(8, e -> e.str(item.get(1)).sig("s").str(item.get(2)));
   }
-  private static Writer pixmaps(Writer w, BufferedImage... images){ return w.array(8, e -> List.of(images).forEach(i -> pixmap(e, i))); }
+  private static Writer pixmaps(Writer w, BufferedImage image){ return w.array(8, e -> pixmap(e, image)); }
   private static void pixmap(Writer w, BufferedImage i){
     var argb= i.getRGB(0, 0, i.getWidth(), i.getHeight(), null, 0, i.getWidth());
     w.pad(8).u32(i.getWidth()).u32(i.getHeight()).array(1, e -> IntStream.of(argb).forEach(p -> e.b(p>>24).b(p>>16).b(p>>8).b(p)));

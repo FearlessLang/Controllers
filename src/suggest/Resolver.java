@@ -47,11 +47,12 @@ import suggest.Tokens.Tok;
 /// parameter type of the argument of the call holding it, or the result type of the method whose
 /// body holds it; after Name: it is listed with the types without generics implementing it.
 public record Resolver(Api api, String pkg, Map<String,String> packages, Map<String,String> aliases, String text, List<Tok> tokens, Group root){
-  public record Row(String name, List<Ty> ts, Ty ret){
+  /// a method of the type owner, with the reference capability of its receiver
+  public record Row(Ty owner, String rc, String name, List<Ty> ts, Ty ret){
     public String insert(){ return name.startsWith(".") ? name : " "+name+" "; }
     public String display(){
       var ps= ts.isEmpty() ? "" : ts.stream().map(Ty::show).collect(Collectors.joining(", ", "(", ")"));
-      return name+ps+": "+ret.show();
+      return rc+" "+name+ps+": "+ret.show();
     }
   }
   /// the rows for the cursor, the receiver type they are the methods of, the offset their
@@ -62,7 +63,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   private static final Kind[] separators= {Kind.SemiColon, Kind.Comma, Kind.Arrow, Kind.Colon, Kind.SQuote};
   private static final Set<Kind> silent= Set.of(Kind.LineComment, Kind.BlockComment, Kind.BadUnclosedBlockComment, Kind.UStr, Kind.SStr, Kind.BadUStrUnclosed, Kind.BadSStrUnclosed, Kind.CCurlyId);
   private static final Set<Kind> growing= Set.of(Kind.LineComment, Kind.BadUnclosedBlockComment, Kind.BadUStrUnclosed, Kind.BadSStrUnclosed, Kind.CCurlyId);
-  private static final Comparator<Method> order= Comparator.comparing((Method m) -> !m.name().startsWith(".")).thenComparing(Method::name).thenComparing(Method::arity);
+  private static final Comparator<Row> order= Comparator.comparing((Row r) -> !r.name().startsWith(".")).thenComparing(Row::name).thenComparing(r -> r.ts().size());
   private static final Comparator<Ty> byName= Comparator.comparing(Ty::name).thenComparing(t -> t.args().size());
   public static Resolver of(Api api, String pkg, Map<String,String> packages, String head, String text){
     var tokens= Tokens.tokens(text);
@@ -89,12 +90,12 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   /// method name the methods matching it; anywhere else the methods of the expression before the
   /// cursor, inserted with their dot
   public Suggestions suggest(int pos){
-    if (inside(pos)){ return new Suggestions(pos, Ty.unknown, List.of(), List.of(), List.of()); }
+    if (inside(pos) || startsName(pos)){ return new Suggestions(pos, Ty.unknown, List.of(), List.of(), List.of()); }
     var g= Tokens.innermost(root, pos);
     var items= new ArrayList<>(g.items.stream().filter(it -> it.start() < pos).toList());
     var from= pos;
     var prefix= "";
-    var touching= !items.isEmpty() && items.getLast() instanceof Tok t && pos <= t.end();
+    var touching= !items.isEmpty() && (items.getLast() instanceof Tok t && pos <= t.end() || items.getLast() instanceof Group closed && pos == closed.end+1);
     var slot= superSlot(items, touching, pos);
     if (slot.isPresent()){ return new Suggestions(slot.get(), Ty.unknown, List.of(), List.of(), supers(expectedAt(g, pos), text.substring(slot.get(), pos))); }
     var typing= touching && Tokens.is(items.getLast(), Kind.DotName, Kind.Op);
@@ -108,8 +109,23 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     if (seg.isEmpty()){ return new Suggestions(from, Ty.unknown, List.of(), types, List.of()); }
     var t= typeOf(Chain.parse(seg), scope(g, pos));
     var p= prefix;
-    var rows= methods(t).stream().filter(m -> p.equals(".") || m.name().startsWith(p)).sorted(order).map(m -> new Row(m.name(), m.ts(), m.ret())).toList();
+    var rows= t.alternatives().stream().flatMap(o -> owned(o, new HashSet<>()).stream()).filter(om -> p.equals(".") || om.getValue().name().startsWith(p))
+      .map(om -> new Row(om.getKey(), om.getValue().rc(), om.getValue().name(), om.getValue().ts(), om.getValue().ret())).sorted(order).toList();
     return new Suggestions(from, t, rows, types, List.of());
+  }
+  /// the cursor at the start of a name that follows no dot
+  private boolean startsName(int pos){
+    var dot= pos > 0 && text.charAt(pos-1) == '.';
+    return !dot && tokens.stream().anyMatch(t -> t.start() == pos && Tokens.is(t, Kind.LowercaseId, Kind.UppercaseId));
+  }
+  /// the methods of the type t, each with the type whose documentation lists the method: t when compiled, else the
+  /// supertype of the declaration the method comes from; methods of several supertypes are all kept
+  private List<Map.Entry<Ty,Method>> owned(Ty t, Set<String> seen){
+    if (api.entry(t).isPresent()){ return methods(t).stream().map(m -> Map.entry(t, m)).toList(); }
+    var e= entry(t);
+    if (e.isEmpty() || !seen.add(t.name())){ return List.of(); }
+    var sub= e.get().bind(t);
+    return e.get().supers().stream().flatMap(c -> owned(c.subst(sub), seen).stream()).distinct().toList();
   }
   private boolean inside(int pos){
     return tokens.stream().anyMatch(t -> silent.contains(t.kind()) && t.start() < pos && (pos < t.end() || pos == t.end() && growing.contains(t.kind())));
@@ -118,7 +134,14 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   public Ty expected(int pos){ return inside(pos) ? Ty.unknown : expectedAt(Tokens.innermost(root, pos), pos); }
   private Ty expectedAt(Group g, int pos){
     var names= scope(g, pos);
-    return expectedIn(g, pos, names).map(x -> inScope(x, names)).orElse(Ty.unknown);
+    return argAfter(g, pos, names).or(() -> expectedIn(g, pos, names)).map(x -> inScope(x, names)).orElse(Ty.unknown);
+  }
+  /// the cursor after a method name or an operator written without parentheses: the parameter type of its argument
+  private Optional<Ty> argAfter(Group g, int pos, HashMap<String,Ty> scope){
+    var seg= segment(g, pos);
+    if (seg.size() < 2 || !Tokens.is(seg.getLast(), Kind.DotName, Kind.Op)){ return Optional.empty(); }
+    var call= new Call(Chain.parse(seg.subList(0, seg.size()-1)), Tokens.text(seg.getLast()), List.of(Chain.unknown), List.of());
+    return first(call, scope, 0, Optional.empty()).map(b -> b.m.ts().get(0).subst(b.sub).erase(b.m.bs()));
   }
   /// the type with the generics not in scope unknown
   private static Ty inScope(Ty t, Map<String,Ty> scope){
@@ -129,7 +152,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   private static Optional<Integer> superSlot(List<Item> items, boolean touching, int pos){
     var typed= touching && Tokens.is(items.getLast(), Kind.UppercaseId) && Tokens.text(items.getLast()).indexOf('.') == -1;
     var k= typed ? items.size()-1 : items.size();
-    var slot= (typed || !touching) && k >= 2 && Tokens.is(items.get(k-1), Kind.Colon) && Tokens.is(items.get(k-2), Kind.UppercaseId);
+    var slot= (typed || !touching || Tokens.is(items.getLast(), Kind.Colon)) && k >= 2 && Tokens.is(items.get(k-1), Kind.Colon) && Tokens.is(items.get(k-2), Kind.UppercaseId);
     return slot ? Optional.of(typed ? items.getLast().start() : pos) : Optional.empty();
   }
   /// the expected type and the types implementing it, whose simple name starts with the prefix
@@ -141,10 +164,9 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   /// the types without generics having t as a supertype, not through another supertype: the
   /// visible ones of the last compile, which lists every supertype, and the declarations of this file
   private List<Ty> implementers(Ty t){
-    var compiled= api.all().stream().filter(x -> x.bs().isEmpty() && x.supers().contains(t) && x.supers().stream().noneMatch(s -> below(s, t))).map(x -> new Ty(x.name(), List.of()));
+    var compiled= api.all().stream().filter(x -> x.bs().isEmpty() && x.supers().contains(t) && x.supers().stream().noneMatch(s -> below(s, t))).map(x -> new Ty(x.name(), List.of())).filter(x -> !x.show().startsWith("_"));
     var declared= headers(root).filter(h -> h.xs().isEmpty() && h.supers().stream().anyMatch(c -> parseType(c, Map.of()).equals(t))).map(h -> new Ty(pkg+"."+h.name(), List.of()));
-    var visible= Stream.concat(compiled, declared).filter(x -> x.name().startsWith(pkg+".") || !x.show().startsWith("_"));
-    return visible.distinct().sorted(byName).toList();
+    return Stream.concat(compiled, declared).distinct().sorted(byName).toList();
   }
   /// s is another type having t as a supertype
   private boolean below(Ty s, Ty t){ return !s.equals(t) && api.entry(s).filter(e -> e.supers().stream().anyMatch(c -> c.subst(e.bind(s)).equals(t))).isPresent(); }
@@ -171,11 +193,11 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     var next= items.indexOf(p)+1;
     var whole= next == items.size() || Tokens.is(items.get(next), Kind.Comma, Kind.SemiColon);
     var outer= whole ? expectedIn(p.parent, seg.get(0).start(), scope) : Optional.<Ty>empty();
-    return padded(c, idx, scope).flatMap(pc -> callSub(pc, scope, idx, outer)).map(b -> b.m.ts().get(idx).subst(b.sub).erase(b.m.bs()));
+    return padded(c, idx, scope).flatMap(pc -> first(pc, scope, idx, outer)).map(b -> b.m.ts().get(idx).subst(b.sub).erase(b.m.bs()));
   }
   /// the call with unknown arguments up to the arity of its shortest method having an argument at idx
   private Optional<Call> padded(Call c, int idx, Map<String,Ty> scope){
-    var n= entry(typeOf(c.recv(), scope)).flatMap(t -> t.ms().stream().filter(m -> m.name().equals(c.name()) && m.arity() > idx && m.arity() >= c.arity()).map(Method::arity).min(Integer::compare));
+    var n= typeOf(c.recv(), scope).alternatives().stream().flatMap(r -> entry(r).stream()).flatMap(t -> t.ms().stream()).filter(m -> m.name().equals(c.name()) && m.arity() > idx && m.arity() >= c.arity()).map(Method::arity).min(Integer::compare);
     return n.map(k -> new Call(c.recv(), c.name(), Stream.concat(c.args().stream(), Stream.<E>generate(() -> Chain.unknown)).limit(k).toList(), c.targs()));
   }
   /// the public types of the package named right before the dot at from, alone or as the head of
@@ -261,7 +283,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   /// sugar, or in the rest of a sugar, which also binds the sugar's name
   private Optional<Ty> argType(E call, Group g, HashMap<String,Ty> scope, Optional<Ty> result){
     if (call instanceof Sugar s){
-      if (isAtom(s.call().args().get(0), g)){ return callSub(s.call(), scope, 0, Optional.empty()).map(b -> b.m.ts().get(0).subst(b.sub)); }
+      if (isAtom(s.call().args().get(0), g)){ return first(s.call(), scope, 0, Optional.empty()).map(b -> b.m.ts().get(0).subst(b.sub)); }
       var k= continuation(s.call(), scope);
       k.ifPresent(x -> scope.put(s.x(), x.ts().get(0)));
       return k.flatMap(x -> argType(Chain.parse(new Known(x.ts().get(1)), s.rest()), g, scope, result));
@@ -269,14 +291,14 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     if (!(call instanceof Call c)){ return Optional.empty(); }
     var idx= IntStream.range(0, c.arity()).filter(j -> isAtom(c.args().get(j), g)).findFirst();
     if (idx.isEmpty()){ return Optional.empty(); }
-    return callSub(c, scope, idx.getAsInt(), result).map(b -> b.m.ts().get(idx.getAsInt()).subst(b.sub));
+    return first(c, scope, idx.getAsInt(), result).map(b -> b.m.ts().get(idx.getAsInt()).subst(b.sub));
   }
   private static boolean isAtom(E e, Group g){ return e instanceof Atom a && !a.items().isEmpty() && a.items().get(0) == g; }
   Ty typeOf(E e, Map<String,Ty> scope){
     return switch (e){
       case Known k -> k.t();
       case Atom a -> typeOfAtom(a, scope);
-      case Call c -> callSub(c, scope, -1, Optional.empty()).map(b -> b.m.ret().subst(b.sub).erase(b.m.bs())).orElse(Ty.unknown);
+      case Call c -> Ty.of(callSub(c, scope, -1, Optional.empty()).stream().map(b -> b.m.ret().subst(b.sub).erase(b.m.bs())).toList());
       case Sugar s -> continuation(s.call(), scope).map(k -> typeOf(Chain.parse(new Known(k.ts().get(1)), s.rest()), with(scope, s.x(), k.ts().get(0)))).orElse(Ty.unknown);
     };
   }
@@ -287,31 +309,35 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   }
   private Ty typeOfAtom(Atom a, Map<String,Ty> scope){
     if (a.items().isEmpty()){ return Ty.unknown; }
+    var declared= a.items().getLast() instanceof Group g && g.open == Kind.OCurly && (a.items().size() > 1 || Chain.header(g).isPresent());
+    if (declared){ return literal((Group)a.items().getLast(), new HashMap<>(scope)); }
     if (a.items().get(0) instanceof Group g){ return g.open == Kind.ORound ? typeOf(Chain.parse(g.items), scope) : Ty.unknown; }
     if (Tokens.is(a.items().get(0), Tokens.typeName)){ return parseType(a.items(), scope); }
     return scope.getOrDefault(Tokens.text(a.items().get(0)), Ty.unknown);
   }
+  /// one for each method of that name and arity of each type of the receiver
+  private List<Bound> callSub(Call c, Map<String,Ty> scope, int skip, Optional<Ty> result){
+    return typeOf(c.recv(), scope).alternatives().stream().flatMap(r -> entry(r).stream().flatMap(e -> e.methods(c.name(), c.arity()).stream().map(m -> bound(c, scope, skip, result, r, e, m)))).toList();
+  }
+  /// the parameter types of a call are those of its first method: methods differing in the reference capability of the receiver share them
+  private Optional<Bound> first(Call c, Map<String,Ty> scope, int skip, Optional<Ty> result){ return callSub(c, scope, skip, result).stream().findFirst(); }
   /// the signature of a call and the substitution binding the receiver's generics, the explicit
   /// type arguments, what meeting a class result type with the type expected of the call binds,
   /// whatever meeting the arguments binds, but for the argument at skip, then what meeting a
   /// generic result type with the type expected of the call binds
-  private Optional<Bound> callSub(Call c, Map<String,Ty> scope, int skip, Optional<Ty> result){
-    var recv= typeOf(c.recv(), scope);
-    var e= entry(recv);
-    var m= e.flatMap(t -> t.method(c.name(), c.arity()));
-    if (m.isEmpty()){ return Optional.empty(); }
-    var sub= new HashMap<>(e.get().bind(recv));
+  private Bound bound(Call c, Map<String,Ty> scope, int skip, Optional<Ty> result, Ty recv, Type e, Method m){
+    var sub= new HashMap<>(e.bind(recv));
     var targs= Chain.split(c.targs(), Kind.Comma).stream().filter(a -> !(a.size() == 1 && Tokens.is(a.get(0), Kind.RCap))).toList();
-    if (targs.size() == m.get().bs().size()){ IntStream.range(0, targs.size()).forEach(j -> sub.put(m.get().bs().get(j), parseType(targs.get(j), scope))); }
-    var open= new ArrayList<>(m.get().bs());
-    e.get().bs().stream().filter(b -> sub.get(b).equals(Ty.unknown)).forEach(open::add);
-    var exact= m.get().ret().isC();
-    result.filter(r -> exact).ifPresent(r -> unify(m.get().ret(), r, sub, open));
+    if (targs.size() == m.bs().size()){ IntStream.range(0, targs.size()).forEach(j -> sub.put(m.bs().get(j), parseType(targs.get(j), scope))); }
+    var open= new ArrayList<>(m.bs());
+    e.bs().stream().filter(b -> sub.get(b).equals(Ty.unknown)).forEach(open::add);
+    var exact= m.ret().isC();
+    result.filter(r -> exact).ifPresent(r -> unify(m.ret(), r, sub, open));
     for (int j= 0; j < c.arity(); j += 1){
-      if (j != skip){ unify(m.get().ts().get(j), typeOfArg(c.args().get(j), m.get().ts().get(j).subst(sub), scope), sub, open); }
+      if (j != skip){ unify(m.ts().get(j), typeOfArg(c.args().get(j), m.ts().get(j).subst(sub), scope), sub, open); }
     }
-    result.filter(r -> !exact).ifPresent(r -> unify(m.get().ret(), r, sub, open));
-    return Optional.of(new Bound(m.get(), sub));
+    result.filter(r -> !exact).ifPresent(r -> unify(m.ret(), r, sub, open));
+    return new Bound(m, sub);
   }
   /// an open generic meets a bound type and is bound; a class meets a type whose supertypes, the
   /// type included and each visited once, hold that class: their arguments meet
@@ -334,7 +360,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   /// recv.m x = thunk: the continuation is the second parameter; its only abstract method of two
   /// parameters binds x to the first parameter and the rest of the chain to the second
   private Optional<Method> continuation(Call c, Map<String,Ty> scope){
-    return callSub(c, scope, -1, Optional.empty()).map(b -> b.m.ts().get(1).subst(b.sub)).flatMap(this::lambda2);
+    return first(c, scope, -1, Optional.empty()).map(b -> b.m.ts().get(1).subst(b.sub)).flatMap(this::lambda2);
   }
   private Optional<Method> lambda2(Ty t){ return entry(t).flatMap(e -> e.lambda(2, Set.of()).map(m -> m.subst(e.bind(t)))); }
   private Ty typeOfArg(E a, Ty expected, Map<String,Ty> scope){
@@ -361,7 +387,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   /// its arity not implemented by name in the same literal
   private static Optional<Method> implemented(Type t, Group g, Meth meth){
     var n= meth.params().size();
-    if (meth.name().isPresent()){ return t.method(meth.name().get(), n); }
+    if (meth.name().isPresent()){ return t.methods(meth.name().get(), n).stream().findFirst(); }
     return t.lambda(n, Chain.methodsOf(g).stream().flatMap(m -> m.name().stream()).collect(Collectors.toSet()));
   }
   private Optional<Type> entry(Ty t){ return entry(t, new HashSet<>()); }
@@ -377,14 +403,13 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     var xs= new HashMap<String,Ty>();
     h.xs().forEach(x -> xs.put(x, new Ty(x, List.of())));
     var supers= h.supers().stream().map(c -> parseType(c, xs)).toList();
-    var names= new HashSet<String>();
-    return new Type(pkg+"."+h.name(), h.xs(), supers, supers.stream().flatMap(c -> methods(c, seen).stream()).filter(m -> names.add(m.name()+"/"+m.arity())).toList());
+    return new Type(pkg+"."+h.name(), h.xs(), supers, supers.stream().flatMap(c -> methods(c, seen).stream()).distinct().toList());
   }
   private static Optional<Header> declaration(Group g, String name){
     return g.items.stream().filter(it -> it instanceof Group).map(Group.class::cast)
       .flatMap(c -> (c.open == Kind.OCurly ? Chain.header(c) : Optional.<Header>empty()).filter(h -> h.name().equals(name)).or(() -> declaration(c, name)).stream()).findFirst();
   }
-  /// one method per name and arity, with the type's arguments substituted
+  /// the methods of the type, with the type's arguments substituted
   private List<Method> methods(Ty t){ return methods(t, new HashSet<>()); }
   private List<Method> methods(Ty t, HashSet<String> seen){
     var e= entry(t, seen);

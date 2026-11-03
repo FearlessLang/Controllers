@@ -111,7 +111,7 @@ final class OpenFearlessFileTest extends ManagerTest{
     start();
     managerShown.go();
     stabilize();
-    checkContent(info, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    checkContent(info, "{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n");
     managerMenu.go();
     quitManager.go();
     managerQuit.go();
@@ -126,12 +126,12 @@ final class OpenFearlessFileTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "hello_world": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "idle"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(project)));

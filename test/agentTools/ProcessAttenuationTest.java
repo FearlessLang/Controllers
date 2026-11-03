@@ -501,12 +501,12 @@ final class ProcessAttenuationTest extends ManagerTest{
   static String registry(Path proc, String kind, String more){
     return """
 {
-  "projects": {
-    "proc": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "%s"%s
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(proc), kind, more);

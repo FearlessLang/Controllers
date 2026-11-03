@@ -43,15 +43,9 @@ no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new
   }
   @Test void documentationThatIsNotThereIsSaidToTheManager(@TempDir Path dir){
     var said= new ArrayList<String>();
-    var gen= dir.resolve(Facts.outDir).resolve("gen_java");
-    Panel.openDocs(said::add, dir);
-    Fs.ensureDir(gen);
-    Panel.openDocs(said::add, dir);
-    Window.open(said::add, gen.resolve("index.html"));
-    assertEquals(List.of(
-      "The documentation is not opened: no .html file is in\n  "+gen,
-      "The documentation is not opened: no .html file is in\n  "+gen,
-      "Nothing is opened: nothing exists at\n  "+gen.resolve("index.html")), said);
+    var gen= dir.resolve(Facts.outDir);
+    Window.open(said::add, gen.resolve("hello.html"));
+    assertEquals(List.of("Nothing is opened: nothing exists at\n  "+gen.resolve("hello.html")), said);
   }
   private static Window window(Path dir){
     var app= dir.resolve("app");
@@ -61,6 +55,12 @@ no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new
     System.setProperty(JavacTool.launcherKey, JavacTool.consoleKey);
     try{ return Window.create(null, dir.resolve("manager")); }
     finally{ System.clearProperty(JavacTool.appDirKey); System.clearProperty(JavacTool.launcherKey); }
+  }
+  @Test void anErrorAboutTheFileOfTheEditorNamesTheTextOfTheEditor(@TempDir Path dir){
+    var file= dir.resolve("projects1.info");
+    var error= "In file: "+metaParser.PrettyFileName.displayFileName(file.toUri())+"\n\n001| {\n   | ^";
+    assertEquals("In the text of the editor:\n\n001| {\n   | ^", Window.editorText(java.util.Set.of(file), error));
+    assertEquals(error, Window.editorText(java.util.Set.of(dir.resolve("other.info")), error));
   }
   @Test void anEditMetadataOfAFileTheWindowDidNotWriteKeepsTheFile(@TempDir Path dir){
     var saved= dir.resolve("saved.info");

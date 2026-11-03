@@ -308,13 +308,13 @@ final class OpenWithChoiceTest extends ManagerTest{
     stabilize();
     checkContent(info, """
 {
-  "projects": {
-    "choice": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": ["hello.Second"]
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(choice)));

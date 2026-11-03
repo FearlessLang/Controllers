@@ -5,17 +5,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import coordinator.CapabilityEnvironment;
 import coordinator.Coordinator;
-import coordinator.MainsInfo;
 import core.E.Literal;
 import core.OtherPackages;
 import fileAssociations.Icon;
 import fileAssociations.WindowIcon;
 import naiveBackend.BackendTools;
-import realSourceOracle.RealSourceOracleWithZip;
 import tools.ChildJvm;
 import tools.Fs;
 import tools.JavacTool;
@@ -28,7 +25,7 @@ import userMessages.Violation;
 public final class Deployed implements Manager.Tools{
   public static Path stdLib(String name){ return appDir().resolve("stdLib").resolve(name); }
   private static Path appDir(){ return JavacTool.reqAppDir(Violation::mustUseLauncher); }
-  static Coordinator coordinator(Path project){
+  public static Coordinator coordinator(Path project){
     return new Coordinator(){
       @Override public Optional<Path> baseCachePath(){ return Optional.of(stdLib("baseCache")); }
       @Override public BackendTools backendTools(String pkgName, SourceOracle oracle, OtherPackages other, List<Literal> core, CapabilityEnvironment capabilities){
@@ -36,7 +33,7 @@ public final class Deployed implements Manager.Tools{
       }
     };
   }
-  @Override public ChildJvm compile(Path folder, Consumer<String> out){
+  @Override public ChildJvm compile(Path folder, String alias, Consumer<String> out){
     return ChildJvm.start(List.of(
       "-Djava.awt.headless=true",
       "-D"+JavacTool.appDirKey+"="+appDir(),
@@ -45,7 +42,7 @@ public final class Deployed implements Manager.Tools{
       "--enable-native-access=Commons,Coordinator",
       "-p", appDir().resolve(JavacTool.deployedModsDirName).toString(),
       "-m", "Controller/controller.ChildMain",
-      PathClassLoader.argOf(folder)), out);
+      PathClassLoader.argOf(folder), alias), out);
   }
   @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
     return Coordinator.startMain(folder, stdLib("base"), main, input, grants.reads(), grants.edits(), attenuators, Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
@@ -56,7 +53,7 @@ public final class Deployed implements Manager.Tools{
     if (Fs.isMac()){ return; }
     var launcher= Association.launcher();
     var windows= preloads.stream().map(Deployed::window).toList();
-    Association.reconcile(launcher, Stream.concat(Stream.of(new Icon(".fearless", launcher, Association.iconFile())), captured.stream()).toList(), windows, claimedBy);
+    Association.reconcile(launcher, captured, windows, claimedBy);
   }
   private static WindowIcon window(Project.Claimant c){
     return new WindowIcon(Association.deskId(c.folder(), c.main())+"-"+c.claim().icon(), c.main().substring(c.main().lastIndexOf('.')+1), c.folder(), c.icon(".png"));
@@ -64,8 +61,5 @@ public final class Deployed implements Manager.Tools{
   @Override public void connect(Path eclipse, Path managerDir){
     Eclipse.connect(eclipse, appDir().resolve("eclipsePlugin"), Main.programDir(), Association.launcher(), managerDir, stdLib("baseCache"));
   }
-  @Override public Optional<MainsInfo> mains(Path folder){
-    var c= coordinator(folder);
-    return c.mains(folder, RealSourceOracleWithZip.stdLib(stdLib("base")));
-  }
+  @Override public Coordinator.State check(Path folder){ return coordinator(folder).check(folder); }
 }

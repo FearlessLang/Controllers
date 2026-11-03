@@ -300,12 +300,12 @@ final class KindWhileBusyTest extends ManagerTest{
     compiled.go();
     var code= """
 {
-  "projects": {
-    "start": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "code"
     }
-  },
+  ],
   "systemExtensions": []
 }
 """.formatted(slashed(gui));

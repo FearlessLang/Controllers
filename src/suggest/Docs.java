@@ -8,25 +8,25 @@ import java.util.stream.IntStream;
 /// The documentation of the types of one package and of their methods, from the text rendering
 /// the compiler writes next to the api json (docBuilder.HtmlDocRenderer.renderText): a type's
 /// header line, Name or Name[X1:bounds,..,Xn:bounds], then " : " and its supertypes if any; the
-/// type's own documentation under it; then one line per method, [RC] name[Bs](Ts):T, opened by
+/// type's own documentation under it; then one line per method, [RC] name[Bs](Ts):T (no RC is imm), opened by
 /// a tab, with its own documentation under that. A tab opens a method line and nothing else;
 /// documentation lines are indented or blank. Every public type and every method of a type is
 /// there: a missing one is an error. An anonymous literal, whose name is private, has no entry.
 public final class Docs{
   private static final Pattern generic= Pattern.compile("[\\[,]_*[A-Z]");
-  private static final Pattern methodLine= Pattern.compile("\t(?:(?:readH|mutH|imm|iso|read|mut) )?([^\\[(:]+)(?:\\[[^\\]]*\\])?(?:\\((.*)\\))?:.*");
+  private static final Pattern methodLine= Pattern.compile("\t(?:(readH|mutH|imm|iso|read|mut) )?([^\\[(:]+)(?:\\[[^\\]]*\\])?(?:\\((.*)\\))?:.*");
   private final List<String> lines;
   public Docs(String txt){ this.lines= List.of(txt.split("\n")); }
   /// the type's line and its own documentation, the lines before its first method
   public Optional<String> type(String simple, int arity){ return header(simple, arity).map(this::text); }
   /// the method's line and its documentation
-  public Optional<String> method(String simple, int arity, String name, int n){
-    return header(simple, arity).map(i -> methods(i, simple, name, n));
+  public Optional<String> method(String simple, int arity, String rc, String name, int n){
+    return header(simple, arity).map(i -> methods(i, simple, rc+" "+name+"/"+n));
   }
-  private String methods(int i, String simple, String name, int n){
+  private String methods(int i, String simple, String signature){
     var res= IntStream.range(i+1, entryEnd(i))
-      .filter(j -> lines.get(j).startsWith("\t") && signature(lines.get(j)).equals(name+"/"+n)).mapToObj(this::text).toList();
-    if (res.isEmpty()){ throw new IllegalArgumentException("No method "+name+"/"+n+" of "+simple+" in the documentation"); }
+      .filter(j -> lines.get(j).startsWith("\t") && signature(lines.get(j)).equals(signature)).mapToObj(this::text).toList();
+    if (res.isEmpty()){ throw new IllegalArgumentException("No method "+signature+" of "+simple+" in the documentation"); }
     return String.join("\n", res);
   }
   private Optional<Integer> header(String simple, int arity){
@@ -47,12 +47,12 @@ public final class Docs{
     for (int j= i+1; j < lines.size() && !opens(lines.get(j)); j += 1){ res.append("\n").append(lines.get(j).strip()); }
     return res.toString().strip();
   }
-  /// name/arity of a method line, [RC] name[Bs](T1,..,Tn):T
+  /// RC name/arity of a method line, [RC] name[Bs](T1,..,Tn):T
   static String signature(String line){
     var m= methodLine.matcher(line);
     if (!m.matches()){ throw new IllegalArgumentException("Malformed method line in the documentation: "+line.strip()); }
-    var ps= m.group(2);
+    var ps= m.group(3);
     for (; ps != null && ps.contains("["); ps = ps.replaceAll("\\[[^\\[\\]]*\\]", "")){}
-    return m.group(1)+"/"+(ps == null ? 0 : ps.split(",").length);
+    return (m.group(1) == null ? "imm" : m.group(1))+" "+m.group(2)+"/"+(ps == null ? 0 : ps.split(",").length);
   }
 }

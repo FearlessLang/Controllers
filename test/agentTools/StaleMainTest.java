@@ -36,13 +36,13 @@ final class StaleMainTest extends ManagerTest{
   static final String mains= "use base.Main as Main;\n\nFirst: Main{sys -> sys.out.println \"First\"}\nSecond: Main{sys -> sys.out.println \"Second\"}\n";
   static final String registry= """
 {
-  "projects": {
-    "menu": {
-      "path": "Str:%s",
+  "projects": [
+    {
+      "path": "Str:\\"%s\\"",
       "kind": "code",
       "mains": [%s]
     }
-  },
+  ],
   "systemExtensions": []
 }
 """;
