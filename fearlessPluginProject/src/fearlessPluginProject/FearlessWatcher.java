@@ -75,7 +75,7 @@ public final class FearlessWatcher extends Job implements IStartup{
     }
     MainButton.look(projects);
   }
-  /// False for a workspace project that is not the mirror of the registered project of that name, or that the user closed.
+  /// False for a workspace project that is not the mirror of the registered project of that name.
   private boolean mirror(IProject project, ManagerLink.Project p, IProgressMonitor monitor) throws CoreException{
     if (!project.exists()){
       marks.remove(project.getName());
@@ -85,7 +85,7 @@ public final class FearlessWatcher extends Job implements IStartup{
       description.setNatureIds(new String[]{Nature.id});
       project.setDescription(description, monitor);
     }
-    if (!project.isOpen()){ return false; }
+    project.open(monitor);
     if (!Nature.marks(project)){ clash(project.getName()); return false; }
     clashes.remove(project.getName());
     var src= project.getFolder(srcName);
