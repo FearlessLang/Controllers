@@ -68,19 +68,13 @@ public final class Registry{
   private final Path dir;
   private final Consumer<Content> check;
   private Content content= new Content(List.of(), List.of());
-  private String written= "";
   public Registry(Path dir, Consumer<Content> check){
     this.dir= dir;
     this.check= check;
     if (!Fs.exists(infoFile())){ save(content); return; }
     var text= StringFiles.read(infoFile(), UserError.onFileError());
     content = parse(text, infoFile(), Registry::real, dir);
-    written = text;
     lookup();
-  }
-  /// projects.info still holds what this manager wrote there
-  public void unchanged(){
-    if (!Fs.exists(infoFile()) || !StringFiles.read(infoFile(), UserError.onFileError()).equals(written)){ throw Violation.managerFileChanged(infoFile()); }
   }
   public static Path real(Path folder){
     try{ return folder.toRealPath(); }
@@ -165,7 +159,6 @@ public final class Registry{
     try{ Fs.writeString(tmp, text, CREATE_NEW); Fs.move(tmp, infoFile(), ATOMIC_MOVE); }
     catch (IOException e){ throw Violation.couldNotSaveManagerFile(infoFile(), e); }
     content = c;
-    written = text;
   }
   public static Content parse(String source, Path file, UnaryOperator<Path> identity, Path managerDir){
     var root= Info.parse(source, file.toUri());

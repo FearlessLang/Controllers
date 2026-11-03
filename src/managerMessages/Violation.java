@@ -208,15 +208,6 @@ using it, or the folder itself may be blocked.
 
 %s""".formatted(path(msgDir.toString()), reported(cause)), cause);
   }
-  public static UserError managerFileChanged(Path file){
-    return new UserError("""
-Another program changed or removed the file "%s" of the manager folder.
-
-%s
-The manager folder is:
-%s
-Only Fearless writes this file: change it with Edit project metadata.""".formatted(file.getFileName(), managerFolderIntro(), path(file.getParent().toString())));
-  }
   public static UserError couldNotSaveManagerFile(Path file, Throwable cause){
     return new UserError("""
 Fearless could not save the file "%s" of its manager folder.

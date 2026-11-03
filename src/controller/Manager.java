@@ -252,7 +252,6 @@ public final class Manager{
   }
   private Path icon(List<Project.Claimant> cs, String suffix){ return cs.size() == 1 ? cs.getFirst().icon(suffix) : dir.resolve("icons").resolve(conflict+suffix); }
   private void apply(String message){
-    registry.unchanged();
     var lines= List.of(message.split("\n", -1));
     var verb= lines.getFirst();
     var args= lines.subList(1, lines.size());
@@ -695,7 +694,6 @@ public final class Manager{
     return l.child != null && !l.job.equals(Project.compiling) && Stream.of(l.grants.reads(), l.grants.edits()).anyMatch(m -> m.containsValue(f));
   }
   private void rotate(){
-    registry.unchanged();
     if (!view.visible()){ return; }
     selected.ifPresent(this::scan);
     var others= registry.all().stream().map(Entry::path).filter(f -> !selected.equals(Optional.of(f))).toList();

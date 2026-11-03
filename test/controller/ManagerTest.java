@@ -1284,15 +1284,6 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     Fs.writeUtf8(file, info(dir).replace("\"kind\": \"idle\"", "\"kind\": \"library\""));
     Errs.err("In file: [###]projects.info[###]\"kind\" must be one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\", not \"library\".[###]", () -> manager(dir));
   }
-  @Test void aProjectsInfoChangedByAnotherProgramIsFatalAtTheNextMessage(@TempDir Path dir){
-    var m= manager(dir);
-    registered(m, dir, "hello");
-    var file= dir.resolve("manager").resolve("projects.info");
-    Fs.writeUtf8(file, info(dir).replace("\"idle\"", "\"code\""));
-    send(m, "Show");
-    same("Another program changed or removed the file \"projects.info\" of the manager folder.[###]", failures.getLast().getMessage());
-    failures.clear();
-  }
   @Test void compilingKeepsSelectedMainsThatAreGone(@TempDir Path dir){
     var mains= new ArrayList<>(List.of("hello.One", "hello.Two", "hello.Old"));
     var m= manager(dir, f -> known(mains.toArray(String[]::new)).apply(f));
