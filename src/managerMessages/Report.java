@@ -4,6 +4,7 @@ import static userMessages.UserError.disp;
 import static userMessages.UserError.path;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.FileSystemException;
 import java.nio.file.Path;
 import java.util.List;
@@ -87,6 +88,17 @@ The arguments are:
 
   //-- registering a folder
   public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link, and Fearless does not follow symbolic links:\n"+path(p.toString())); }
+  public static String importNotUrl(String text){ return disp(text.strip())+" is not the URL of a zip: the URL starts with \"https:\" or \"file:\"."; }
+  public static String importNotNamed(String file){ return "The file "+disp(file)+" is not a zip of the Fearless demos: its name ends with \"_app.zip\", \"_edu_app.zip\", \"_lib.zip\" or \"_edu_lib.zip\", after a name of lowercase letters, digits and \"_\" starting with a letter."; }
+  public static String importNotDownloaded(URI uri, String why){ return "The zip\n"+path(uri.toString())+"\ncannot be downloaded: "+why; }
+  public static String importBadZip(String file, String why){ return "The zip "+disp(file)+" cannot be imported: "+why; }
+  public static String importNoFiles(String file){ return "The zip "+disp(file)+" holds no file."; }
+  public static String importNoMarker(String file, String name){ return "The zip "+disp(file)+" has no "+disp(name+".fearless")+" at its top level: the zip of an app holds the marker of its project."; }
+  public static String importSelectProject(){ return "Select a project first: a lib zip goes into the folder \"lib\" of the selected project."; }
+  public static String importBusy(Path target){ return "The import does not replace\n"+path(target.toString())+"\nwhile its project compiles or runs a main."; }
+  public static String importReplace(Path target){ return path(target.toString())+"\nexists already. Replace it?"; }
+  public static String importNotWritten(Path target, IOException e){ return "The import cannot write\n"+path(target.toString())+"\n"+fileFailure(e); }
+  public static String storeNotOpened(String url, IOException e){ return "The store\n"+path(url)+"\ncannot be opened: "+fileFailure(e); }
   public static String registerNothing(Path path){ return refusedPath("Register", path)+"\nNothing exists at that path."; }
   public static String registerLink(Path path){ return refusedPath("Register", path)+"\nThis path is a symbolic link, and Fearless does not follow symbolic links."; }
   public static String folderNestedWithRegistered(Path folder, Path registered){

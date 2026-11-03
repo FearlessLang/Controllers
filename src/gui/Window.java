@@ -18,6 +18,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
@@ -38,6 +40,7 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -87,6 +90,7 @@ public final class Window implements Manager.View{
   private final Set<Path> written= ConcurrentHashMap.newKeySet();
   private final StandIn standIn= new StandIn();
   private State state= new State(List.of(), Optional.empty(), List.of());
+  private Optional<Path> registering= Optional.empty();
   private Optional<Panel> shown= Optional.empty();
   private volatile boolean onScreen;
   private boolean surfaced;
@@ -243,6 +247,7 @@ public final class Window implements Manager.View{
   private Panel panel(Path folder){ return panels.computeIfAbsent(folder, _ -> new Panel(this::say)); }
   private void render(State s){
     state = s;
+    registering.flatMap(s::of).ifPresent(this::compile);
     tiles.render(s);
     panels.keySet().removeIf(f -> s.of(f).isEmpty());
     s.shown().ifPresent(p -> panel(p.folder()).render(p, s.projects(), split.getHeight()));
@@ -274,7 +279,73 @@ public final class Window implements Manager.View{
     manager.add(item("Reset", this::reset));
     manager.add(item("Quit", () -> Main.command("Quit")));
     res.add(manager);
+    var store= new JMenu("Store");
+    store.add(item("Fearless demos", this::store));
+    store.add(item("Import zip...", this::importZip));
+    res.add(store);
     return res;
+  }
+  private void store(){
+    var opener= Fs.isWindows() ? "explorer.exe" : Fs.isMac() ? "open" : "xdg-open";
+    try{ Fs.of(Fs.processBuilder(List.of(opener, ImportZip.store)).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD)::start); }
+    catch (UncheckedIOException e){ say(Report.storeNotOpened(ImportZip.store, e.getCause())); }
+  }
+  private void importZip(){
+    registering = Optional.empty();
+    var dialog= new JDialog(frame, "Import zip", false);
+    var url= new JTextField(60);
+    var status= new JTextArea(4, 60);
+    status.setEditable(false);
+    status.setLineWrap(true);
+    status.setWrapStyleWord(true);
+    var go= small("Import", () -> fetch(dialog, url, status));
+    var top= new JPanel(new BorderLayout());
+    top.add(new JLabel("URL of the zip:"), BorderLayout.WEST);
+    top.add(url, BorderLayout.CENTER);
+    top.add(go, BorderLayout.EAST);
+    dialog.add(top, BorderLayout.NORTH);
+    dialog.add(new JScrollPane(status), BorderLayout.CENTER);
+    dialog.getRootPane().setDefaultButton(go);
+    dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+    dialog.pack();
+    dialog.setLocationRelativeTo(frame);
+    dialog.setVisible(true);
+  }
+  private void fetch(JDialog dialog, JTextField url, JTextArea status){
+    if (!url.isEditable()){ return; }
+    ImportZip.Zip z;
+    try{ z= ImportZip.zip(url.getText()); }
+    catch (UserError e){ status.setText(e.getMessage()); return; }
+    var selected= state.shown().map(Project::folder);
+    if (!z.app() && selected.isEmpty()){ status.setText(Report.importSelectProject()); return; }
+    url.setEditable(false);
+    status.setText("Downloading "+z.file()+"...");
+    Thread.startVirtualThread(() -> fetched(dialog, url, status, z, selected));
+  }
+  private void fetched(JDialog dialog, JTextField url, JTextArea status, ImportZip.Zip z, Optional<Path> selected){
+    try{
+      var bytes= ImportZip.bytes(z);
+      var entries= ImportZip.entries(z, bytes);
+      SwingUtilities.invokeLater(() -> { dialog.dispose(); install(z, bytes, entries, selected); });
+    }
+    catch (UserError e){ SwingUtilities.invokeLater(() -> { url.setEditable(true); status.setText(e.getMessage()); }); }
+  }
+  private void install(ImportZip.Zip z, byte[] bytes, Map<String,byte[]> entries, Optional<Path> selected){
+    var target= ImportZip.target(z, info.getParent(), selected);
+    var project= z.app() ? target : selected.orElseThrow();
+    if (state.of(project).filter(Project::busy).isPresent()){ say(Report.importBusy(target)); return; }
+    var asked= Files.exists(target) && JOptionPane.showConfirmDialog(frame, Report.importReplace(target), "Fearless", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION;
+    if (asked){ return; }
+    try{ ImportZip.install(z, bytes, entries, target); }
+    catch (UncheckedIOException e){ say(Report.importNotWritten(target, e.getCause())); return; }
+    if (!z.app()){ return; }
+    registering = Optional.of(target);
+    Main.command("Register "+TaggedText.base16(target));
+  }
+  private void compile(Project p){
+    registering = Optional.empty();
+    var kind= p.kind() == Registry.Kind.code ? Stream.<String>of() : Stream.of("Kind "+p.alias()+" code");
+    Main.command(Stream.concat(kind, Stream.of("Compile "+p.alias())).toArray(String[]::new));
   }
   private void reset(){
     var reset= JOptionPane.showOptionDialog(frame, Report.resetQuestion(), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Reset", "Cancel"}, "Cancel");
