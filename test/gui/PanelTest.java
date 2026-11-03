@@ -80,6 +80,22 @@ FAILED   Bad at line: 5
 disabled Later at line: 9
 """), text);
   }
+  @Test void aDamagedUnitTestLogStillShowsInTheTestsArea(@TempDir Path dir){
+    var folder= dir.resolve("hello");
+    Fs.writeUtf8(folder.resolve("hello.fearless"), "");
+    var logs= folder.resolve(".out").resolve("logs").resolve("_base");
+    Fs.writeUtf8(logs.resolve("unit_test_log$20261103_000000_000Z.log"), "<testcase classname=\"Bad\" name=\"Bad at line: 5\">\n<failure>\ncut short\n</testcase>\n");
+    var hello= project(folder, Kind.code, Map.of(), Optional.empty());
+    var panel= new Panel(_ -> {});
+    panel.render(hello, List.of(hello), 800);
+    assertEquals(List.of("0 passed, 1 failed, 0 disabled\nFAILED   Bad at line: 5\n    cut short\n"), tests(panel));
+    Fs.ofV(() -> Files.write(logs.resolve("unit_test_log$20261103_000000_001Z.log"), new byte[]{(byte)0xFF, '\n'}));
+    var again= project(folder, Kind.code, Map.of(), Optional.empty());
+    assertEquals(Optional.empty(), again.facts().problem());
+    panel.render(again, List.of(again), 800);
+    assertEquals(List.of("0 passed, 0 failed, 0 disabled\n"), tests(panel));
+  }
+  private static List<String> tests(Panel panel){ return all(panel.root).filter(c -> "tests".equals(c.getName())).map(c -> ((javax.swing.JTextArea)c).getText()).toList(); }
   @Test void aMountOfAProjectThatIsNotRegisteredIsMarkedAlsoBeforeACompilation(@TempDir Path dir){
     Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
     var hello= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.empty());

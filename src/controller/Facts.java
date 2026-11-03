@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -67,7 +68,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
     List<LogFiles.Entry> logs= List.of();
     var tests= "";
-    try{ logs = LogFiles.list(folder); tests = JUnitReport.suite("", folder); }
+    try{ logs = LogFiles.list(folder); tests = suite(folder); }
     catch (UserError e){ if (problem.isEmpty()){ problem = Optional.of(e.getMessage()); } }
     if (kind == Kind.code && problem.isEmpty()){
       try{ state = check.apply(folder); }
@@ -80,6 +81,14 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     var compiled= state instanceof Coordinator.State.Compiled c ? Optional.of(c) : Optional.<Coordinator.State.Compiled>empty();
     var stale= kind == Kind.code && problem.isEmpty() && compiled.isEmpty() ? Optional.of(Report.outOfDate()) : Optional.<String>empty();
     return new Facts(stale, compiled.map(Coordinator.State.Compiled::manifest), compiled.map(Coordinator.State.Compiled::packages).orElse(List.of()), icon, logs, tests, problem.filter(_ -> kind != Kind.idle));
+  }
+  /// a unit test log that is not UTF-8 text shows no test case
+  private static String suite(Path folder){
+    try{ return JUnitReport.suite("", folder); }
+    catch (UncheckedIOException e){
+      if (!(e.getCause() instanceof CharacterCodingException)){ throw e; }
+      return "";
+    }
   }
   static Optional<Icon> icon(Path folder){
     var dir= Names.folder(folder, ".config").flatMap(c -> Names.folder(c, "icon"));

@@ -154,7 +154,7 @@ final class Panel{
   private static String testLine(String name, String body){
     if (body.contains("<skipped/>")){ return "disabled "+xmlText(name)+"\n"; }
     if (!body.contains("<failure>")){ return "passed   "+xmlText(name)+"\n"; }
-    var failure= body.substring(body.indexOf("<failure>")+"<failure>".length(), body.indexOf("</failure>")).replaceAll("(?s)<expected>.*?</expected>|<actual>.*?</actual>", "").strip();
+    var failure= body.substring(body.indexOf("<failure>")+"<failure>".length()).replaceFirst("(?s)</failure>.*", "").replaceAll("(?s)<expected>.*?</expected>|<actual>.*?</actual>", "").strip();
     return "FAILED   "+xmlText(name)+"\n"+xmlText(failure).indent(4);
   }
   private static String xmlText(String s){ return s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"").replace("&amp;", "&"); }

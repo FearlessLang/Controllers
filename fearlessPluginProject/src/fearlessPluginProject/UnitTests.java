@@ -48,7 +48,7 @@ final class UnitTests{
       while (end > 0 && bytes[end-1] != '\n'){ end -= 1; }
       text= StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes, 0, end)).toString();
     }
-    catch (CharacterCodingException e){ throw new IllegalStateException("The unit test log "+log+" is not UTF-8 text.", e); }
+    catch (CharacterCodingException e){ return Optional.empty(); }
     catch (NoSuchFileException e){ return Optional.empty(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
     var done= 0;
