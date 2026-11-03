@@ -141,6 +141,18 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     var own= depth < 0 ? "" : "  ".repeat(depth)+mark+row.text()+"\n";
     return own+java.util.Collections.list(n.children()).stream().map(c -> rows((javax.swing.tree.DefaultMutableTreeNode)c, depth+1)).collect(java.util.stream.Collectors.joining());
   }
+  @Test void theStatusLineSaysTheStateTheProblemAndTheBrokenMounts(@TempDir Path dir){
+    Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
+    var hello= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.empty());
+    var panel= new Panel(_ -> {});
+    panel.render(hello, List.of(hello), 800);
+    assertEquals(List.of("code: compilation cache out of date; the mount on hello.Diary is broken (see Data)"), statuses(panel));
+    Fs.writeUtf8(dir.resolve("hello").resolve("other.fearless"), "");
+    var twice= project(dir.resolve("hello"), Kind.code, Map.of(), Optional.empty());
+    panel.render(twice, List.of(twice), 800);
+    Err.strCmp("code: invalid content: [###]", statuses(panel).getFirst());
+  }
+  private static List<String> statuses(Panel panel){ return all(panel.root).filter(c -> "status".equals(c.getName())).map(c -> ((JLabel)c).getText()).toList(); }
   @Test void aMountOfAProjectThatIsNotRegisteredIsMarkedAlsoBeforeACompilation(@TempDir Path dir){
     Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
     var hello= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.empty());

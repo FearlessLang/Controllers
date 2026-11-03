@@ -94,6 +94,7 @@ final class Panel{
   private final JPanel selectedMains= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
   private final JLabel icon= new JLabel();
   private final JLabel name= new JLabel();
+  private final JLabel status= named(new JLabel(), "status");
   private Object shown= List.of();
   private Project project;
   Panel(Consumer<String> refuse){
@@ -109,7 +110,6 @@ final class Panel{
     root.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
     root.setMinimumSize(new Dimension(0, 0));//let the split divider shrink this panel past its natural content width
     var header= new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-    header.add(icon);
     name.setFont(name.getFont().deriveFont(Font.BOLD, 15f));
     header.add(name);
     header.add(action);
@@ -119,7 +119,10 @@ final class Panel{
     header.add(projectMenu);
     var top= new JPanel();
     top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
-    Stream.of(header, selectedMains, shortcuts).forEach(top::add);
+    var statusLine= new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+    statusLine.add(icon);
+    statusLine.add(status);
+    Stream.of(header, statusLine, selectedMains, shortcuts).forEach(top::add);
     var areas= new JPanel();
     areas.setLayout(new BoxLayout(areas, BoxLayout.Y_AXIS));
     Stream.of(new Collapsible("Output", half(output), true, small("Clear", () -> output.setText(""))), tests, attenuators, claims, data, logs).forEach(areas::add);
@@ -155,6 +158,13 @@ final class Panel{
     Stream.of(named(Window.item("Forget", () -> Main.command("Forget "+alias)), "forget"), named(Window.item("Delete cache", () -> Main.command("DeleteCache "+alias)), "deleteCache"))
       .forEach(i -> { i.setEnabled(!project.busy()); menu.add(i); });
     menu.show(projectMenu, 0, projectMenu.getHeight());
+  }
+  /// the state in words, then what is running, the first line of the 'problem', and the broken mounts
+  static String status(Project p, List<Project> all){
+    var running= p.job().equals(Project.compiling) ? ", compiling" : ", running "+p.job();
+    var detail= p.busy() ? running : p.problem().map(pr -> ": "+pr.lines().findFirst().orElse("")).orElse("");
+    var broken= p.entry().mounts().keySet().stream().filter(t -> p.brokenMount(t, all).isPresent()).map(t -> "; the mount on "+t+" is broken (see Data)").collect(Collectors.joining());
+    return p.state().text+detail+broken;
   }
   private void kinds(){
     var menu= new JPopupMenu();
@@ -254,6 +264,7 @@ final class Panel{
     project = p;
     icon.setIcon(new ImageIcon(Icons.of(p, iconSize).getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
     name.setText(p.alias());
+    status.setText(status(p, all));
     var a= p.action();
     var several= a == Project.Action.run && p.knownMains().size() > 1;
     action.setText(switch (a){ case check -> "Check"; case compile -> "Compile"; case run -> "Run"; case terminate -> "Terminate"; });
