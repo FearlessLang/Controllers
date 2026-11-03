@@ -99,7 +99,7 @@ use base.Debug as Debug;
 
 Window: Main { sys -> sys.gui.name "Hello Fearless" .run HelloFrame }
 HelloFrame: Consumer[mut Frame]{::
-  .content{::
+  .content.pane{::
     .background (Color.ghostWhite)
     .label{:: .text "Hello from a Fearless window" }
     .button{::
@@ -136,15 +136,15 @@ ByOpenWith: Main, OpenWith[IconsFile] { sys -> sys.gui.name "OpenWith" .icon Ico
     .title "drop more files here"
     .virtualPixelSpace(WidthNat#600, HeightNat#400)
     .modelFps(10, {:: .action{ShowFiles#(at, lines!)}})
-    .content{::
+    .content.pane{::
       .background (Color.rubberDuck)
-      .vertical .chunk 1000 .heightGap 0
+      .vertical .minPerLine 1000000 .heightGap 0
       .save lines
       }
     }
   }}
 ShortcutFrame: Consumer[mut Frame]{::
-  .content{::
+  .content.pane{::
     .background (Color.ghostWhite)
     .label{:: .text "Started from the shortcut file by_shortcut.fapp... in the project folder." }
     }

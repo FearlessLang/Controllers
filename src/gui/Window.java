@@ -357,7 +357,16 @@ public final class Window implements Manager.View{
   }
   static void open(Consumer<String> refuse, Path path){
     if (!Files.exists(path)){ refuse.accept(Report.nothingToOpen(path)); return; }
-    try{ OpenPath.open(path); }
+    try{ said(refuse, path, OpenPath.open(path)); }
     catch (UncheckedIOException e){ refuse.accept(Report.notOpened(path, e.getCause())); }
+  }
+  /// xdg-open ends with an error when no program of the desktop opens the file
+  private static void said(Consumer<String> refuse, Path path, Process opener){
+    if (!Fs.isLinux()){ return; }
+    Thread.startVirtualThread(() -> { if (ended(opener) != 0){ refuse.accept(Report.noProgramOpens(path)); } });
+  }
+  private static int ended(Process p){
+    try{ return p.waitFor(); }
+    catch (InterruptedException e){ throw Bug.of(e); }
   }
 }

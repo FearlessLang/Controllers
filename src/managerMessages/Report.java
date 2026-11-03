@@ -223,6 +223,7 @@ Replace that file with a PNG image, or remove it.
 
   //-- what the window opens
   public static String nothingToOpen(Path path){ return "Nothing is opened: nothing exists at\n"+path(path.toString()); }
+  public static String noProgramOpens(Path path){ return "Nothing is opened: no program of this system opens\n"+path(path.toString()); }
   public static String notOpened(Path path, IOException e){ return "Nothing is opened at\n"+path(path.toString())+"\n"+fileFailure(e); }
   public static String dropRefused(String item, String why){ return "Nothing is registered from "+disp(item)+",\ndropped on the window: "+why+"."; }
   public static String dropUnreadable(Exception e){ return "Nothing is registered from what was dropped on the window: the desktop did not hand it over: "+e.getMessage(); }
