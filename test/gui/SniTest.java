@@ -80,7 +80,6 @@ final class SniTest{
         case "s","o" -> seen.put(key, r.str());
         case "b" -> seen.put(key, ""+r.u32());
         case "a(iiay)" -> seen.put(key, pixmaps(r));
-        case "(sa(iiay)ss)" -> { r.pad(8); var name= r.str(); var pix= pixmaps(r); seen.put(key, name+pix+r.str()+"|"+r.str()); }
         default -> throw new AssertionError(sig);
       }
     }
@@ -88,12 +87,11 @@ final class SniTest{
     assertEquals(String.join(",", Sni.props(Sni.itemPath)), String.join(",", seen.keySet()));
     assertEquals("ApplicationStatus", seen.get("Category"));
     assertEquals("fearless-manager", seen.get("Id"));
-    assertEquals("Fearless Manager", seen.get("Title"));
+    assertEquals("", seen.get("Title"));
     assertEquals("Active", seen.get("Status"));
     assertEquals("/MenuBar", seen.get("Menu"));
     assertEquals("1", seen.get("ItemIsMenu"));
     assertEquals("[2x2:80ff0010 00000000 00000000 ff00ff00]", seen.get("IconPixmap"));
-    assertEquals("[]Fearless Manager|", seen.get("ToolTip"));
   }
   @Test void theMenuLayoutIsTheRootHoldingShowSeparatorQuit(){
     var w= Sni.layout();

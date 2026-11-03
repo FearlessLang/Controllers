@@ -40,7 +40,7 @@ public final class Tray{
     });
     if (Fs.isLinux() && Sni.install(() -> Main.command("Show"), () -> Main.command("Quit"), at -> SwingUtilities.invokeLater(() -> open(anchor, menu, at)), window::trayed, Icons.app())){ return true; }
     if (!SystemTray.isSupported()){ return false; }
-    var icon= new TrayIcon(Icons.app(), "Fearless Manager");
+    var icon= new TrayIcon(Icons.app());
     icon.setImageAutoSize(true);
     icon.addMouseListener(new MouseAdapter(){
       @Override public void mouseReleased(MouseEvent e){ open(anchor, menu, MouseInfo.getPointerInfo().getLocation()); }

@@ -184,19 +184,18 @@ final class Sni{
     reply(m, "v", prop(new Writer(), name, icon));
   }
   static List<String> props(String path){
-    return path.equals(menu) ? List.of("Version") : List.of("Category", "Id", "Title", "Status", "IconPixmap", "ToolTip", "ItemIsMenu", "Menu");
+    return path.equals(menu) ? List.of("Version") : List.of("Category", "Id", "Title", "Status", "IconPixmap", "ItemIsMenu", "Menu");
   }
   static Writer all(String path, BufferedImage icon){ return new Writer().array(8, w -> props(path).forEach(p -> prop(w.pad(8).str(p), p, icon))); }
   static Writer prop(Writer w, String name, BufferedImage icon){
     return switch (name){
       case "Category" -> w.sig("s").str("ApplicationStatus");
       case "Id" -> w.sig("s").str("fearless-manager");
-      case "Title" -> w.sig("s").str("Fearless Manager");
+      case "Title" -> w.sig("s").str("");
       case "Status" -> w.sig("s").str("Active");
       case "Menu" -> w.sig("o").str(menu);
       case "ItemIsMenu" -> w.sig("b").u32(1);
       case "IconPixmap" -> pixmaps(w.sig("a(iiay)"), icon);
-      case "ToolTip" -> pixmaps(w.sig("(sa(iiay)ss)").pad(8).str("")).str("Fearless Manager").str("");
       case "Version" -> w.sig("u").u32(3);
       default -> throw Bug.unreachable();
     };
@@ -207,7 +206,7 @@ final class Sni{
   private static Writer item(Writer w, List<String> item){
     return w.u32(Integer.parseInt(item.get(0))).array(8, e -> e.str(item.get(1)).sig("s").str(item.get(2)));
   }
-  private static Writer pixmaps(Writer w, BufferedImage... images){ return w.array(8, e -> List.of(images).forEach(i -> pixmap(e, i))); }
+  private static Writer pixmaps(Writer w, BufferedImage image){ return w.array(8, e -> pixmap(e, image)); }
   private static void pixmap(Writer w, BufferedImage i){
     var argb= i.getRGB(0, 0, i.getWidth(), i.getHeight(), null, 0, i.getWidth());
     w.pad(8).u32(i.getWidth()).u32(i.getHeight()).array(1, e -> IntStream.of(argb).forEach(p -> e.b(p>>24).b(p>>16).b(p>>8).b(p)));
