@@ -44,8 +44,11 @@ final class ImportZipTest{
     assertEquals(List.of("tiny_bank", "tiny_bank_edu_app", true, true), List.of(z.name(), z.folder(), z.edu(), z.app()));
     var l= ImportZip.zip("https://example.org/text_kit_lib.zip");
     assertEquals(List.of("text_kit", false, false), List.of(l.name(), l.edu(), l.app()));
-    Err.strCmp("\"ftp://example.org/a_lib.zip\" is not the URL of a zip: the URL starts with \"https:\" or \"file:\".", assertThrows(UserError.class, () -> ImportZip.zip("ftp://example.org/a_lib.zip")).getMessage());
-    Err.strCmp("The file \"demo.zip\" is not a zip of the Fearless demos: [###]", assertThrows(UserError.class, () -> ImportZip.zip("https://example.org/demo.zip")).getMessage());
+    Err.strCmp("\"ftp://example.org/a_lib.zip\" is not the URL of a zip: [###]", assertThrows(UserError.class, () -> ImportZip.zip("ftp://example.org/a_lib.zip")).getMessage());
+    Err.strCmp("The file \"demo.zip\" is not a zip the manager imports: [###]", assertThrows(UserError.class, () -> ImportZip.zip("https://example.org/demo.zip")).getMessage());
+    for (var wrong : List.of("file://data/a_app.zip", "file:a_app.zip", "https:///a_app.zip", "https:a_app.zip")){
+      Err.strCmp("\""+wrong+"\" is not the URL of a zip: [###]", assertThrows(UserError.class, () -> ImportZip.zip(wrong)).getMessage());
+    }
   }
   @Test void anAppKeepsTheZipAndCopiesTheMarkerAndTheIconOut(@TempDir Path dir){
     var target= imported(dir, zipFile(dir, "lights_out_app.zip", "lights_out.fearless", ".config/icon/icon.png", "_lights_out/_rank_app.fear"), Optional.empty());
@@ -61,6 +64,12 @@ final class ImportZipTest{
     assertEquals(hello.resolve("lib").resolve("text_kit_lib.zip"), imported(dir, zipFile(dir, "text_kit_lib.zip", "_text_kit/_rank_core200.fear"), Optional.of(hello)));
     imported(dir, zipFile(dir, "shapes_lab_edu_lib.zip", "_shapes_lab/_rank_worker100.fear"), Optional.of(hello));
     assertEquals(List.of("lib/shapes_lab_edu_lib/_shapes_lab/_rank_worker100.fear", "lib/text_kit_lib.zip"), files(hello));
+  }
+  @Test void aFileThatIsNotAZipIsRefused(@TempDir Path dir){
+    var file= dir.resolve("bad_app.zip");
+    Fs.writeUtf8(file, "not a zip");
+    var z= ImportZip.zip(file.toUri().toString());
+    Err.strCmp("The zip \"bad_app.zip\" cannot be imported: the file is not a zip", assertThrows(UserError.class, () -> ImportZip.entries(z, ImportZip.bytes(z))).getMessage());
   }
   @Test void anAppWithNoMarkerIsRefused(@TempDir Path dir){
     var z= ImportZip.zip(zipFile(dir, "lights_out_app.zip", "_lights_out/_rank_app.fear").toUri().toString());

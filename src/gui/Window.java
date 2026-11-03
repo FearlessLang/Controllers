@@ -280,6 +280,7 @@ public final class Window implements Manager.View{
     manager.add(item("Quit", () -> Main.command("Quit")));
     res.add(manager);
     var store= new JMenu("Store");
+    store.setMnemonic('S');
     store.add(item("Fearless demos", this::store));
     store.add(item("Import zip...", this::importZip));
     res.add(store);
@@ -318,6 +319,10 @@ public final class Window implements Manager.View{
     catch (UserError e){ status.setText(e.getMessage()); return; }
     var selected= state.shown().map(Project::folder);
     if (!z.app() && selected.isEmpty()){ status.setText(Report.importSelectProject()); return; }
+    var target= ImportZip.target(z, info.getParent(), selected);
+    if (Files.exists(target) && state.of(z.app() ? target : selected.orElseThrow()).filter(Project::busy).isPresent()){ status.setText(Report.importBusy(target)); return; }
+    var kept= Files.exists(target) && JOptionPane.showOptionDialog(dialog, Report.importReplace(target), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Replace", "Cancel"}, "Cancel") != 0;
+    if (kept){ return; }
     url.setEditable(false);
     status.setText("Downloading "+z.file()+"...");
     Thread.startVirtualThread(() -> fetched(dialog, url, status, z, selected));
@@ -332,10 +337,6 @@ public final class Window implements Manager.View{
   }
   private void install(ImportZip.Zip z, byte[] bytes, Map<String,byte[]> entries, Optional<Path> selected){
     var target= ImportZip.target(z, info.getParent(), selected);
-    var project= z.app() ? target : selected.orElseThrow();
-    if (state.of(project).filter(Project::busy).isPresent()){ say(Report.importBusy(target)); return; }
-    var asked= Files.exists(target) && JOptionPane.showConfirmDialog(frame, Report.importReplace(target), "Fearless", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION;
-    if (asked){ return; }
     try{ ImportZip.install(z, bytes, entries, target); }
     catch (UncheckedIOException e){ say(Report.importNotWritten(target, e.getCause())); return; }
     if (!z.app()){ return; }
