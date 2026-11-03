@@ -61,7 +61,6 @@ final class Panel{
   private final Consumer<String> refuse;
   final JPanel root= new JPanel(new BorderLayout(8, 8));
   final JTextArea output= mono(named(new JTextArea(10, 60), "output"));
-  private final JPanel kinds= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
   private final JPanel shortcuts= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
   private final JPanel attenuatorsBox= new JPanel();
   private final Collapsible attenuators= new Collapsible("Attenuators", half(attenuatorsBox), false);
@@ -72,6 +71,7 @@ final class Panel{
   private final JList<LogFiles.Entry> logList= new JList<>();
   private final Collapsible logs= new Collapsible("Logs", half(logList), false, small("Logs", this::openLogs));
   private final JButton openDocs= small("Open docs", this::openDocs);
+  private final JButton kind= named(small("Kind", this::kinds), "kind");
   private final JButton action= named(small("Compile", this::act), "action");
   private final JButton deleteCache= small("Delete cache", () -> Main.command("DeleteCache "+this.project.alias()));
   private final JButton forget= small("Forget", () -> Main.command("Forget "+this.project.alias()));
@@ -89,13 +89,15 @@ final class Panel{
     attenuatorsBox.setLayout(new BoxLayout(attenuatorsBox, BoxLayout.Y_AXIS));
     root.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
     root.setMinimumSize(new Dimension(0, 0));//let the split divider shrink this panel past its natural content width
-    var header= new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+    var header= new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
     header.add(icon);
-    name.setFont(name.getFont().deriveFont(Font.BOLD, 18f));
+    name.setFont(name.getFont().deriveFont(Font.BOLD, 15f));
     header.add(name);
     header.add(action);
     header.add(openDocs);
-    header.add(kinds);
+    kind.setIcon(new Arrow());
+    kind.setHorizontalTextPosition(JButton.LEADING);
+    header.add(kind);
     header.add(small("Browse", () -> Window.open(refuse, project.folder())));
     header.add(forget);
     header.add(deleteCache);
@@ -128,6 +130,13 @@ final class Panel{
     var f= project.folder();
     project.facts().packages().forEach(pkg -> menu.add(Window.item(pkg, () -> Window.open(refuse, Deployed.coordinator(f).docs(f, pkg)))));
     menu.show(openDocs, 0, openDocs.getHeight());
+  }
+  private void kinds(){
+    var menu= new JPopupMenu();
+    var alias= project.alias();
+    List.of(Kind.idle, Kind.dataRead, Kind.dataEdit, Kind.code).stream().filter(k -> k != project.kind())
+      .forEach(k -> menu.add(named(Window.item(k == Kind.idle ? "Back to idle" : "Become "+k.text, () -> Main.command("Kind "+alias+" "+k.text)), k.text)));
+    menu.show(kind, 0, kind.getHeight());
   }
   private void openLogs(){ Window.open(refuse, project.folder().resolve(LogFiles.runDir).resolve("logs")); }
   void append(String text){
@@ -190,7 +199,7 @@ final class Panel{
     openDocs.setEnabled(p.mains().isPresent());
     deleteCache.setEnabled(!p.busy());
     forget.setEnabled(!p.busy());
-    fillKinds(p);
+    kind.setEnabled(!p.busy());
     fillSelected(p, several);
     fillShortcuts(p, claimed);
     fillAttenuators(p);
@@ -286,18 +295,6 @@ final class Panel{
   }
   private static void attenuate(Project p, String main, List<String> applied){
     Main.command(applied.stream().map(a -> " "+a).collect(Collectors.joining("", "Attenuate "+p.alias()+" "+main, "")));
-  }
-  private void fillKinds(Project p){
-    kinds.removeAll();
-    if (p.kind() != Kind.idle){ kinds.add(kindButton(p, "Back to idle", Kind.idle)); }
-    if (p.kind() != Kind.dataRead){ kinds.add(kindButton(p, "Become dataRead", Kind.dataRead)); }
-    if (p.kind() != Kind.dataEdit){ kinds.add(kindButton(p, "Become dataEdit", Kind.dataEdit)); }
-    if (p.kind() != Kind.code){ kinds.add(kindButton(p, "Become code", Kind.code)); }
-  }
-  private JButton kindButton(Project p, String text, Kind target){
-    var res= named(small(text, () -> Main.command("Kind "+p.alias()+" "+target.text)), target.text);
-    res.setEnabled(!p.busy());
-    return res;
   }
   private void fillData(Project p, List<Project> all){
     dataBox.removeAll();

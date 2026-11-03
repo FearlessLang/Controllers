@@ -331,7 +331,8 @@ public final class Window implements Manager.View{
   }
   static JButton small(String text, Runnable action){
     var res= new Small(text);
-    res.setMargin(new Insets(0, 6, 0, 6));
+    res.setMargin(new Insets(0, 3, 0, 3));
+    res.setFont(res.getFont().deriveFont(Font.PLAIN, 11f));
     res.addActionListener(_ -> res.press(action));
     return res;
   }
