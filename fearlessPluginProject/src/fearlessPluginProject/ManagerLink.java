@@ -17,7 +17,6 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -51,7 +50,6 @@ public final class ManagerLink{
     catch (NoSuchFileException e){ return Optional.empty(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
-  static Project project(String alias){ return Objects.requireNonNull(projects().get(alias)); }
   private static Project project(Map<String,Object> o){
     var mains= o.containsKey("mains") ? Info.lst(o.get("mains")).stream().map(m -> (String)m).toList() : List.<String>of();
     return new Project(path(o.get("path")), (String)o.get("kind"), mains);

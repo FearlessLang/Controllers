@@ -21,8 +21,9 @@ public final class PopupItems extends CompoundContributionItem{
   @Override protected IContributionItem[] getContributionItems(){
     var selection= (IStructuredSelection)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getSelectionService().getSelection();
     var alias= Adapters.adapt(selection.getFirstElement(), IResource.class).getProject().getName();
-    var p= ManagerLink.project(alias);
+    var p= ManagerLink.projects().get(alias);
     var res= new ArrayList<IContributionItem>();
+    if (p == null){ return new IContributionItem[0]; }
     var kinds= List.of(List.of("Back to idle", "idle"), List.of("Become dataRead", "dataRead"), List.of("Become dataEdit", "dataEdit"), List.of("Become code", "code"));
     kinds.stream().filter(k -> !k.get(1).equals(p.kind())).forEach(k -> res.add(action(k.get(0), () -> ManagerLink.send("Kind", alias, k.get(1)))));
     res.add(new Separator());

@@ -121,7 +121,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   private static boolean marked(Path folder, String alias){
     if (!Files.isDirectory(folder)){ return false; }
     try (var s= Files.list(folder)){
-      return s.filter(f -> f.getFileName().toString().endsWith(".fearless") && Files.isRegularFile(f)).map(f -> f.getFileName().toString()).toList().equals(List.of(alias+".fearless"));
+      return s.filter(f -> f.getFileName().toString().endsWith(".fearless") && !f.getFileName().toString().startsWith(".") && Files.isRegularFile(f)).map(f -> f.getFileName().toString()).toList().equals(List.of(alias+".fearless"));
     }
     catch (IOException e){ return false; }
   }
