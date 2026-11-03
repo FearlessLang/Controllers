@@ -403,7 +403,7 @@ public final class Manager{
     if (live.get(f) != l || l.child != child){ return; }
     l.child = null;
     if (l.job.equals(Project.compiling)){ compiled(f, l, ec); return; }
-    output(f, "--- "+l.job+" exited with "+ec+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
+    output(f, "--- "+l.job+(l.terminated ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
     if (!l.stopped && (l.updated || broken(f))){ l.terminated = true; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
     l.updated = false;
     next(f);

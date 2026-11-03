@@ -419,7 +419,7 @@ ran hello.Hello
 --- running hello.Slow ---
 ran hello.Slow
 --- terminating hello.Slow ---
---- hello.Slow exited with [###] after [###]s ---
+--- hello.Slow was terminated after [###]s ---
 """, view.out(hello));
     assertEquals(List.of(
       "Refused request \"Run\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
@@ -491,7 +491,7 @@ ran hello.Slow
     send(m, "Terminate", "hello");
     idle(m);
     var out= view.out(hello);
-    same("--- hello.SlowChatty exited with 143 after [###]s ---\n", out.substring(out.lastIndexOf("--- hello.SlowChatty exited")));
+    same("--- hello.SlowChatty was terminated after [###]s ---\n", out.substring(out.lastIndexOf("--- hello.SlowChatty was terminated")));
   }
   @Test void theSelectedMainsRunInTheirOrder(@TempDir Path dir){
     var m= manager(dir, "hello.One", "hello.Two", "hello.Three");
@@ -788,7 +788,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Check", "data");
     assertEquals(List.of("hello "+hello), listed(m));
     assertFalse(project(m, hello).busy());
-    same("[###]ran hello.Slow\n--- terminating hello.Slow ---\n--- hello.Slow exited with [###]", view.out(hello));
+    same("[###]ran hello.Slow\n--- terminating hello.Slow ---\n--- hello.Slow was terminated[###]", view.out(hello));
     assertEquals("The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getFirst());
   }
   @Test void aRefusedForgetOfAnUnreachableProjectIsShownNotFatal(@TempDir Path dir) throws IOException{
@@ -1508,7 +1508,7 @@ What stood in the way:
     same("""
 --- running hello.Slow ---
 ran hello.Slow
---- hello.Slow exited with [###] after [###]s ---
+--- hello.Slow was terminated after [###]s ---
 Some files inside the project "hello" were updated while main "hello.Slow" was running.
 """, view.out(hello));
     assertEquals(shown+1, view.shown);
@@ -1527,7 +1527,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     same("""
 --- running hello.Slow ---
 ran hello.Slow
---- hello.Slow exited with [###] after [###]s ---
+--- hello.Slow was terminated after [###]s ---
 Some files inside the project "hello" were updated while main "hello.Slow" was running.
 """, view.out(hello));
     assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
@@ -1591,7 +1591,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     Fs.writeUtf8(mainsInfo(hello), "{");
     send(m, "DeleteCache", "other");
     idle(m);
-    same("[###]ran hello.Slow\n--- hello.Slow exited with [###]", view.out(hello));
+    same("[###]ran hello.Slow\n--- hello.Slow was terminated[###]", view.out(hello));
     assertFalse(view.out(hello).contains("were updated"));
     same("Fearless crashed: either this project's compilation cache was corrupted[###]", compileError(hello));
   }
