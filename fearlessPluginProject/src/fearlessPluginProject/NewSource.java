@@ -20,6 +20,8 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -32,6 +34,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
@@ -43,8 +46,16 @@ public final class NewSource extends AbstractHandler{
     Object on= part instanceof IEditorPart e ? e.getEditorInput() : window.getSelectionService().getSelection() instanceof IStructuredSelection s ? s.getFirstElement() : null;
     var resource= Optional.ofNullable(Adapters.adapt(on, IResource.class)).filter(r -> Nature.marks(r.getProject()));
     var project= resource.map(IResource::getProject).orElseThrow();
-    var type= "type".equals(event.getParameter("fearlessPluginProject.what"));
+    var what= event.getParameter("fearlessPluginProject.what");
+    if (what.equals("folder")){ return folder(window, resource.orElseThrow()); }
+    var type= what.equals("type");
     new Dialog(window.getShell(), window.getActivePage(), project, type, resource.map(NewSource::start).orElse("")).open();
+    return null;
+  }
+  private static Object folder(IWorkbenchWindow window, IResource on){
+    var wizard= new NewFolder();
+    wizard.init(window.getWorkbench(), new StructuredSelection(on));
+    new WizardDialog(window.getShell(), wizard).open();
     return null;
   }
   private static String start(IResource r){
