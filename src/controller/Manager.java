@@ -539,7 +539,9 @@ public final class Manager{
   }
   static Path projectFolder(Path path, Path managerDir){
     if (!Files.exists(path)){ throw new Refused(Report.registerNothing(path)); }
-    return Registry.placed(Registry.real(Files.isDirectory(path) ? path : path.getParent()), managerDir, Refused::new);
+    var folder= Files.isDirectory(path) ? path : path.getParent();
+    if (Files.isSymbolicLink(folder)){ throw new Refused(Report.registerLink(folder)); }
+    return Registry.placed(Registry.real(folder), managerDir, Refused::new);
   }
   private void register(Path path){
     var folder= projectFolder(path, dir);

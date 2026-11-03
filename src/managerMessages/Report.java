@@ -88,6 +88,7 @@ The arguments are:
   //-- registering a folder
   public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link, and Fearless does not follow symbolic links:\n"+path(p.toString())); }
   public static String registerNothing(Path path){ return refusedPath("Register", path)+"\nNothing exists at that path."; }
+  public static String registerLink(Path path){ return refusedPath("Register", path)+"\nThis path is a symbolic link, and Fearless does not follow symbolic links."; }
   public static String folderNestedWithRegistered(Path folder, Path registered){
     return refusedPath("Register", folder)+"\nA registered project has the folder\n"+path(registered.toString())+"\nOne of the two folders is inside the other: every file belongs to exactly one project.";
   }

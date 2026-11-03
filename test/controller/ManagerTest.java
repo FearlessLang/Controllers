@@ -321,6 +321,13 @@ public class Child{
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
   }
+  @Test void registeringASymbolicLinkIsRefused(@TempDir Path dir){
+    var m= manager(dir);
+    var link= Disk.link(dir.resolve("link"), folder(dir, "target"));
+    send(m, "Register", TaggedText.of(link.toString()));
+    same("Refused request \"Register\" on path\n[###]link\nThis path is a symbolic link, and Fearless does not follow symbolic links.", view.refused.getLast());
+    assertEquals(List.of(), listed(m));
+  }
   @Test void anEditOfOneProjectKeepsThePathOfAnotherWhoseFolderBecameALink(@TempDir Path dir){
     var m= manager(dir);
     registered(m, dir, "a");
@@ -666,18 +673,17 @@ The projects are:
     same("Refused request \"Register\" on path\n[###]One of the two folders is inside the other[###]", view.refused.getFirst());
     assertEquals(List.of("hello "+hello), listed(m));
   }
-  @Test void aLinkToARegisteredFolderOnlySelectsItAndALinkIntoOneIsRefused(@TempDir Path dir){
+  @Test void aLinkToARegisteredFolderOrIntoOneIsRefusedAsALink(@TempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     var other= registered(m, dir, "other");
     var link= Disk.link(dir.resolve("link"), hello);
     var inner= Disk.link(dir.resolve("inner"), folder(hello, "inner"));
     send(m, "Register", TaggedText.of(link.toString()));
-    assertEquals(Optional.of(hello), m.state().selected());
     send(m, "Register", TaggedText.of(inner.toString()));
+    assertEquals(Optional.of(other), m.state().selected());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
-    assertEquals(1, view.refused.size());
-    same("[###]A registered project has the folder\n[###]hello\nOne of the two folders is inside the other[###]", view.refused.getFirst());
+    same("[###]link\nThis path is a symbolic link, and Fearless does not follow symbolic links.\n[###]inner\nThis path is a symbolic link, and Fearless does not follow symbolic links.", String.join("\n", view.refused));
   }
   @Test void kindsChangeToAnyKind(@TempDir Path dir){
     var m= manager(dir);
