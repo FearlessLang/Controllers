@@ -18,7 +18,8 @@ final class Names{
     return problem(container.removeFirstSegments(2).append(name).toString(), file);
   }
   static Optional<String> problem(String path, boolean file){
-    if (path.length() > 200){ return Optional.of("\""+path+"\" is longer than 200 characters: a path inside a Fearless project is at most 200 characters long."); }
+    var limit= Stream.of(path.split("/")).anyMatch(s -> s.startsWith(".")) ? 250 : 200;
+    if (path.length() > limit){ return Optional.of("\""+path+"\" is longer than "+limit+" characters: a path inside a Fearless project is at most 200 characters long, or 250 inside a hidden folder."); }
     var segments= List.of(path.split("/", -1));
     for (int i= 0; i < segments.size(); i += 1){
       var inHidden= segments.subList(0, i).stream().anyMatch(s -> s.startsWith(".")) && !segments.get(i).isEmpty();

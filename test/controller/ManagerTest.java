@@ -111,8 +111,8 @@ public class Child{
       Fs.ofV(() -> Files.deleteIfExists(outDir.resolve("_error.txt")));
       var stamp= FakeCache.after(folder);
       FakeCache.at(outDir.resolve(alias+".jar"), "", stamp);
-      Pattern.compile("\\[\"([a-z][a-z0-9_]*\\.[A-Za-z0-9_]+)\", \"").matcher(mains).results().map(r -> r.group(1)).distinct()
-        .forEach(i -> image(outDir.resolve("icons").resolve(i+".png"), 64, 64, "png"));
+      Pattern.compile("\\[\"([a-z][a-z0-9_]*\\.[A-Za-z0-9_]+)\", \"([^\"]*)\", \"([^\"]*)\", \"([^\"]*)\"").matcher(mains).results().map(r -> new MainsInfo.Claim(r.group(1), r.group(2), r.group(3), r.group(4), "", "")).distinct()
+        .forEach(c -> image(Coordinator.iconFiles(folder, c).getFirst(), 64, 64, "png"));
       if (folder.getFileName().toString().equals("edited")){ touch(folder); }
       if (folder.getFileName().toString().equals("slowcompile")){ return jvm(out, "compiling", "1", "3000"); }
       var previous= outDir.resolve(alias+".json");
@@ -1508,7 +1508,7 @@ What stood in the way:
   private static String merged(String... infos){ return Stream.of(infos).map(i -> i.strip().substring(1, i.strip().length()-1)).collect(Collectors.joining(", ", "{", "}\n")); }
   /// The preloaded icons are the icons of the claims, as the Coordinator records them.
   private static String info(String main, String shortcuts, String openWiths){
-    var icons= Pattern.compile("\\[\"([^\"]+)\", ").matcher(shortcuts+openWiths).results().map(r -> claim(r.group(1), "", "", "", "").replace("\"@@\"", "\"\"")).distinct().collect(Collectors.joining(", "));
+    var icons= Pattern.compile("\\[\"([^\"]+)\", \"([^\"]*)\", \"([^\"]*)\", \"([^\"]*)\", ").matcher(shortcuts+openWiths).results().map(r -> claim(r.group(1), r.group(2), r.group(3), r.group(4), "").replace("\"@@\"", "\"\"")).distinct().collect(Collectors.joining(", "));
     return "{\""+main+"\": [["+shortcuts.replace("@@\"", "@@fapp\"")+"], ["+openWiths.replace("@@\"", "@@ffile\"")+"], ["+icons+"]]}\n";
   }
   /// An empty ext is an autoselected extension: the fake compile asks the manager for it.
@@ -1691,17 +1691,17 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     infos.put("hello", claiming("hello.Hello", "fapp010", "foo"));
     infos.put("other", claiming("other.Other", "fapp004", "foo"));
     compiled(m, "hello");
-    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png", ".foo hello/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/_base/icons/conflict.png", ".foo hello/.fearless_out/icons/art/foo.png"), wanted(dir));
     compiled(m, "other");
     assertEquals(List.of(
-      ".fapp004 other/.fearless_out/icons/base.IconsConflict.png",
-      ".fapp010 hello/.fearless_out/icons/base.IconsConflict.png",
+      ".fapp004 other/.fearless_out/icons/_base/icons/conflict.png",
+      ".fapp010 hello/.fearless_out/icons/_base/icons/conflict.png",
       ".foo manager/icons/base.IconsConflict.png"), wanted(dir));
     send(m, "Show", "hello");
     touch(dir.resolve("hello"));
     compiled(m, "hello");
     send(m, "DeleteCache", "hello");
-    assertEquals(List.of(".fapp004 other/.fearless_out/icons/base.IconsConflict.png", ".foo other/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
+    assertEquals(List.of(".fapp004 other/.fearless_out/icons/_base/icons/conflict.png", ".foo other/.fearless_out/icons/art/foo.png"), wanted(dir));
     send(m, "Forget", "other");
     assertEquals(List.of(".foo manager/icons/base.IconsConflict.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
@@ -1724,7 +1724,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertTrue(project(m, hello).needsCompiling());
     assertFalse(Files.exists(mainsInfo(hello)));
     assertEquals(Project.noClaims, project(m, hello).claims());
-    assertEquals(List.of(".bar manager/icons/base.IconsConflict.png", ".fapp002 other/.fearless_out/icons/base.IconsConflict.png", ".foo other/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
+    assertEquals(List.of(".bar manager/icons/base.IconsConflict.png", ".fapp002 other/.fearless_out/icons/_base/icons/conflict.png", ".foo other/.fearless_out/icons/art/foo.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
   }
   @Test void aMainTheCorruptionRuleEndsGetsNoFilesUpdatedLine(@TempDir Path dir){
@@ -1820,7 +1820,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     var notWritten= "--- hello.fapp010 is not written: access denied: "+hello.resolve("hello.fapp010")+"\n---\n";
     assertEquals("--- compiling hello ---\ncompiled\n"+notWritten+"--- compile failed ---\n", view.out(hello));
     assertEquals(notWritten, Fs.readUtf8(hello.resolve(Facts.outDir).resolve("_error.txt")));
-    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/base.IconsConflict.png"), wanted(dir));
+    assertEquals(List.of(".fapp010 hello/.fearless_out/icons/_base/icons/conflict.png"), wanted(dir));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
   private static List<String> top(Path project){ return Names.list(project).stream().map(p -> p.getFileName().toString()).toList(); }
@@ -2033,7 +2033,7 @@ Add these system extensions to "systemExtensions" of projects.info?
 The manager becomes the program opening every file with these extensions,
 in place of the program opening them now. The project then needs compiling again.""", String.join("\n", view.asked));
     assertEquals(List.of("fapp001", "htm"), claimed(m).keySet().stream().sorted().toList());
-    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/base.IconsConflict.png"), wanted(dir));
+    assertEquals(List.of(".fapp001 hello/.fearless_out/icons/_base/icons/conflict.png"), wanted(dir));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
     assertEquals(List.of(List.of("htm")), view.offered);
     allow(m, dir, view.offered.getLast().toArray(String[]::new));
@@ -2105,6 +2105,6 @@ in place of the program opening them now. The project then needs compiling again
     assertFalse(Files.exists(hello.resolve(Facts.outDir)));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
     assertEquals(Project.State.codeCompiled, project(m, other).state());
-    assertEquals(List.of(".fapp002 other/.fearless_out/icons/base.IconsConflict.png", ".qux other/.fearless_out/icons/hello.IconsFoo.png"), wanted(dir));
+    assertEquals(List.of(".fapp002 other/.fearless_out/icons/_base/icons/conflict.png", ".qux other/.fearless_out/icons/art/foo.png"), wanted(dir));
   }
 }
