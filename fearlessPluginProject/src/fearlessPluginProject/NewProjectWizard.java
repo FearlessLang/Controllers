@@ -152,7 +152,7 @@ ShortcutFrame: Consumer[mut Frame]{::
 ShowFiles: {#(at: mut Var[mut CapInputCursor], lines: mut Pane): Void -> at.get#.match{
   .empty -> Void;
   .some file -> Block#
-    .do{(file.readStr(StrCleaners.text)).split("" | "").flow.for{l -> Block#(lines.label{:: .text l .topInset 0 .bottomInset 0}, Void)}}
+    .do{(file.readStr(StrCleaners.softText)).split("" | "").flow.for{l -> Block#(lines.label{:: .text l .topInset 0 .bottomInset 0}, Void)}}
     .do{at.set(at.get.next)}
     .return{this#(at, lines)}
   }}
