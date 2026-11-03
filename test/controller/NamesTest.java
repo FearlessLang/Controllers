@@ -174,4 +174,11 @@ final class NamesTest{
     Names.nameAs(proj, name);
     assertTrue(Files.isRegularFile(proj.resolve("proj2.fearless")));
   }
+  @Test void aHiddenFileEndingInFearlessIsNoMarker(@TempDir Path dir){
+    var proj= dir.resolve("proj");
+    Fs.writeUtf8(proj.resolve(".old.fearless"), "");
+    Fs.writeUtf8(proj.resolve("proj.fearless"), "\n");
+    assertEquals("proj", Names.infer(proj, java.util.Set.of()));
+    assertEquals(Optional.empty(), Names.markerProblem(proj, "proj"));
+  }
 }

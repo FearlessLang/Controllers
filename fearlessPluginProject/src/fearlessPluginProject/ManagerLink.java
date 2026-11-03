@@ -47,7 +47,7 @@ public final class ManagerLink{
   }
   private static Optional<String> marker(Path folder){
     if (!Files.isDirectory(folder, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(folder)){ return Optional.empty(); }
-    try (var files= Files.list(folder)){ return files.filter(p -> p.getFileName().toString().endsWith(".fearless") && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).map(p -> p.getFileName().toString()).sorted().findFirst().map(n -> n.substring(0, n.length()-".fearless".length())); }
+    try (var files= Files.list(folder)){ return files.filter(p -> p.getFileName().toString().endsWith(".fearless") && !p.getFileName().toString().startsWith(".") && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).map(p -> p.getFileName().toString()).sorted().findFirst().map(n -> n.substring(0, n.length()-".fearless".length())); }
     catch (NoSuchFileException e){ return Optional.empty(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }

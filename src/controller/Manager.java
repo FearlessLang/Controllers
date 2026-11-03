@@ -466,7 +466,11 @@ public final class Manager{
     if (UserError.cacheCorrupted(why)){ corrupted(f, why); return; }
     errorFile(f, why);
   }
-  private void errorFile(Path f, String why){ uncached(f, () -> Coordinator.writeError(f, why)); }
+  /// _error.txt passes the error on to Eclipse: a folder where it can not be written gets none
+  private void errorFile(Path f, String why){
+    try{ Coordinator.writeError(f, why); }
+    catch (UncheckedIOException | UserError _){}
+  }
   private void uncached(Path f, Runnable r){
     try{ r.run(); }
     catch (UncheckedIOException e){ output(f, Report.cacheNotDeleted(Report.fileFailure(e.getCause()))); }
@@ -657,9 +661,14 @@ public final class Manager{
     l.mains = fresh.mains();
     return true;
   }
+  /// a cache the corruption rule could not delete is shown as 'invalid' until the next compilation, not corrected again
   private Optional<Facts> checked(Path f){
     try{ return facts(f); }
-    catch (UserError err){ corrupted(f, err.getMessage()); rebuild(Optional.empty()); }
+    catch (UserError err){
+      if (live.get(f).corruption.isPresent()){ return Optional.of(Facts.invalid(err.getMessage())); }
+      corrupted(f, err.getMessage());
+      rebuild(Optional.empty());
+    }
     try{ return facts(f); }
     catch (UserError err){ return Optional.of(Facts.invalid(err.getMessage())); }
   }

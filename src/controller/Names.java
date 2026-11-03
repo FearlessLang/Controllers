@@ -73,8 +73,9 @@ public final class Names{
   /// the top level of a project folder, symbolic links included: a link makes the project 'invalid', not unnamed
   private static List<Path> entries(Path dir){ return Fs.of(() -> { try (var s= Files.list(dir)){ return s.sorted(Comparator.comparing(p -> p.getFileName().toString())).toList(); } }); }
   private static List<Path> markers(Path folder){
-    return entries(folder).stream().filter(p -> p.getFileName().toString().endsWith(ext) && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).toList();
+    return entries(folder).stream().filter(p -> isMarkerName(p.getFileName().toString()) && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).toList();
   }
+  private static boolean isMarkerName(String f){ return f.endsWith(ext) && !f.startsWith("."); }
   private static String stem(Path file){
     var name= file.getFileName().toString();
     return name.substring(0, name.length()-ext.length());

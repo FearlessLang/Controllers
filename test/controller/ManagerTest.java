@@ -1723,6 +1723,9 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     try{
       send(m, "Check", "hello");
       assertTrue(project(m, hello).problem().isPresent());
+      var once= view.out(hello);
+      send(m, "Show", "hello");
+      assertEquals(once, view.out(hello));
       assertEquals(List.of(), failures);
     }
     finally{ Disk.allow(out); }
