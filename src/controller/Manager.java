@@ -376,7 +376,7 @@ public final class Manager{
     selected = Optional.of(f);
     var p= project(f);
     view.clear(f);
-    output(f, p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias())).stripTrailing()+"\n");
+    output(f, p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias(), p.kind() == Kind.code)).stripTrailing()+"\n");
   }
   private void next(Path f){
     var l= live.get(f);

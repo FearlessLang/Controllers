@@ -675,10 +675,10 @@ The projects are:
       "Refused request \"Run\" on project \"data\".\nThe kind of project \"data\" is \"idle\": only a project of kind \"code\" accepts request \"Run\"."), view.refused);
     assertEquals("", view.out(data));
     send(m, "Check", "data");
-    assertEquals("The project \"data\" is valid, and up to date.\n", view.out(data));
+    assertEquals("The project \"data\" is valid.\n", view.out(data));
     Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
     send(m, "Check", "data");
-    assertEquals("The project \"data\" is valid, and up to date.\n", view.out(data));
+    assertEquals("The project \"data\" is valid.\n", view.out(data));
     var checkError= data.resolve(Facts.outDir).resolve("_error.txt");
     assertFalse(Files.exists(checkError));
     assertEquals(Project.State.idle, project(m, data).state());
@@ -692,7 +692,7 @@ The projects are:
     assertEquals(Project.Action.check, project(m, data).action());
     Fs.ofV(() -> Files.delete(data.resolve("Bad Name.txt")));
     send(m, "Check", "data");
-    assertEquals("The project \"data\" is valid, and up to date.\n", view.out(data));
+    assertEquals("The project \"data\" is valid.\n", view.out(data));
     var hello= code(m, dir, "hello");
     send(m, "Check", "hello");
     assertEquals("The compilation cache of this project is out of date.\n", view.out(hello));
