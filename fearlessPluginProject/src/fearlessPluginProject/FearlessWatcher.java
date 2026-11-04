@@ -55,7 +55,7 @@ public final class FearlessWatcher extends Job implements IStartup{
     setSystem(true);
     setRule(ResourcesPlugin.getWorkspace().getRoot());
   }
-  @Override public void earlyStartup(){ schedule(); }
+  @Override public void earlyStartup(){ FearlessPerspective.hideRunAndDebug(); schedule(); }
   @Override protected IStatus run(IProgressMonitor monitor){
     if (stopped){ return Status.CANCEL_STATUS; }
     try{ tick(monitor); }
