@@ -94,6 +94,10 @@ EList[E:*]
     same("mut .get(Nat):E\nthe element as mut", d.method("EList", 1, "mut", ".get", 1).orElseThrow());
     same("read .get(Nat):read/imm E\nthe element as read", d.method("EList", 1, "read", ".get", 1).orElseThrow());
   }
+  @Test void aCapabilityVariantWithNoLineOfItsOwnComesWithTheLinesOfItsMethod(){
+    same("read !=(read Nat):Bool\nfrom: DataType[Nat,Nat]!=", method("Nat", 0, "imm", "!=", 1));
+    same("mut .return(mut MF[R]):R\n\nThe result.", method("Block", 1, "read", ".return", 1));
+  }
   @Test void aMissingPublicTypeOrMethodIsAnError(){
     same("No type Nope with 0 generics in the documentation", assertThrows(IllegalArgumentException.class, () -> docs.type("Nope", 0)).getMessage());
     same("No type Nat with 1 generics in the documentation", assertThrows(IllegalArgumentException.class, () -> docs.type("Nat", 1)).getMessage());

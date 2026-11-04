@@ -21,13 +21,13 @@ public final class Docs{
   public Optional<String> type(String simple, int arity){ return header(simple, arity).map(this::text); }
   /// the method's line and its documentation
   public Optional<String> method(String simple, int arity, String rc, String name, int n){
-    return header(simple, arity).map(i -> methods(i, simple, rc+" "+name+"/"+n));
+    return header(simple, arity).map(i -> methods(i, simple, rc, name+"/"+n));
   }
-  private String methods(int i, String simple, String signature){
-    var res= IntStream.range(i+1, entryEnd(i))
-      .filter(j -> lines.get(j).startsWith("\t") && signature(lines.get(j)).equals(signature)).mapToObj(this::text).toList();
-    if (res.isEmpty()){ throw new IllegalArgumentException("No method "+signature+" of "+simple+" in the documentation"); }
-    return String.join("\n", res);
+  private String methods(int i, String simple, String rc, String method){
+    var all= IntStream.range(i+1, entryEnd(i)).filter(j -> lines.get(j).startsWith("\t") && signature(lines.get(j)).endsWith(" "+method)).boxed().toList();
+    if (all.isEmpty()){ throw new IllegalArgumentException("No method "+rc+" "+method+" of "+simple+" in the documentation"); }
+    var exact= all.stream().filter(j -> signature(lines.get(j)).equals(rc+" "+method)).toList();
+    return String.join("\n", (exact.isEmpty() ? all : exact).stream().map(this::text).toList());
   }
   private Optional<Integer> header(String simple, int arity){
     var res= IntStream.range(0, lines.size()).filter(i -> isHeader(lines.get(i), simple, arity)).boxed().findFirst();
