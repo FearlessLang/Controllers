@@ -109,10 +109,10 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   }
   private static Optional<String> target(IWorkbenchWindow window){
     var page= Optional.ofNullable(window.getActivePage());
-    var part= page.map(p -> p.getActivePart());
-    Object on= part.filter(p -> p instanceof IEditorPart).map(p -> (Object)((IEditorPart)p).getEditorInput())
-      .orElse(page.map(p -> p.getSelection()).filter(s -> s instanceof IStructuredSelection).map(s -> ((IStructuredSelection)s).getFirstElement()).orElse(null));
-    return Optional.ofNullable(Adapters.adapt(on, IResource.class)).map(r -> FearlessWatcher.alias(r.getProject())).filter(found::containsKey);
+    var selected= page.filter(p -> !(p.getActivePart() instanceof IEditorPart)).map(p -> p.getSelection()).filter(s -> s instanceof IStructuredSelection).map(s -> ((IStructuredSelection)s).getFirstElement());
+    var edited= page.map(p -> p.getActiveEditor()).map(e -> (Object)e.getEditorInput());
+    return Stream.of(selected, edited).flatMap(Optional::stream).map(o -> Adapters.adapt(o, IResource.class)).filter(r -> r != null)
+      .map(r -> FearlessWatcher.alias(r.getProject())).filter(found::containsKey).findFirst();
   }
   private static Action action(String alias, ManagerLink.Project p){
     if (!p.kind().equals("code") || !marked(p.folder(), alias)){ return Action.check; }

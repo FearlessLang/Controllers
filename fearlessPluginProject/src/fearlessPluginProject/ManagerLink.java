@@ -64,7 +64,7 @@ public final class ManagerLink{
     catch (NoSuchFileException e){ return Stream.of(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
-  /// the error of _error.txt, while _error.txt is not a stale error file (see ControllersDesign, Eclipse)
+  /// the error of _error.txt, while _error.txt is not a stale error file (see EclipseDesign)
   static Optional<String> error(Path folder){
     var file= out(folder).resolve("_error.txt");
     var time= stamp(file);

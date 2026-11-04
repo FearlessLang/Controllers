@@ -7,12 +7,16 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 final class Follow{
   private static volatile Optional<Follow> followed= Optional.empty();
+  private static final Map<String,Instant> runs= new ConcurrentHashMap<>();
   private static final String applied= "Applied\n";
   final String alias;
   final boolean compile;
@@ -20,7 +24,9 @@ final class Follow{
   static Optional<Follow> followed(){ return followed; }
   static boolean compiling(String alias){ return followed.filter(j -> j.compile && j.alias.equals(alias)).isPresent(); }
   static void compile(String alias){ follow(alias, true, "Compile", alias); }
+  static Optional<Instant> lastRun(String alias){ return Optional.ofNullable(runs.get(alias)); }
   static void run(String alias, List<String> mains){
+    runs.put(alias, Instant.now());
     ManagerLink.send("SelectMains", Stream.concat(Stream.of(alias), mains.stream()).toArray(String[]::new));
     follow(alias, false, "Run", alias);
   }

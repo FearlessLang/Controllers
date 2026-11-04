@@ -8,19 +8,25 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
 final class UnitTests{
   private static final Pattern disabled= Pattern.compile("(?m)^PLAN\\|DISABLED\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)$");
-  static Optional<String> report(String name, Path folder){
-    var logs= folder.resolve(".out").resolve("logs");
+  static Optional<String> report(String name, Path folder, Optional<Instant> since){
+    var logs= folder.resolve(".out").resolve("logs").resolve("_base");
     if (!Files.isDirectory(logs)){ return Optional.empty(); }
-    try (var all= Files.walk(logs)){
-      var newest= all.filter(p -> p.getParent().equals(logs.resolve("_base")) && p.getFileName().toString().matches("unit_test_log(\\$.*)?\\.log")).max(Comparator.comparing(p -> p.getFileName().toString()));
-      return newest.flatMap(UnitTests::complete).map(log -> document(name, log));
+    try (var all= Files.list(logs)){
+      var found= all.filter(p -> p.getFileName().toString().matches("unit_test_log(\\$.*)?\\.log")).sorted(Comparator.comparing(p -> p.getFileName().toString())).toList();
+      var shown= since.map(t -> found.stream().filter(p -> !time(p).isBefore(t)).toList()).orElse(found.isEmpty() ? List.of() : List.of(found.getLast()));
+      var suites= shown.stream().flatMap(p -> complete(p).stream().map(log -> suite(shown.size() == 1 ? name : name+" "+clock.format(time(p).atZone(ZoneId.systemDefault())), log))).toList();
+      return suites.isEmpty() ? Optional.empty() : Optional.of(document(suites));
     }
     catch (NoSuchFileException e){ return Optional.empty(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
@@ -29,16 +35,20 @@ final class UnitTests{
       return Optional.empty();
     }
   }
-  private static String document(String name, String log){
+  private static final DateTimeFormatter clock= DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+  private static Instant time(Path log){
+    try{ return Files.getLastModifiedTime(log).toInstant(); }
+    catch (NoSuchFileException e){ return Instant.MIN; }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+  }
+  private static String suite(String name, String log){
     var body= disabled.matcher(log).replaceAll(UnitTests::skipped).replaceAll("(?m)^PLAN\\|RUN\\|.*$\\r?\\n?", "");
     return """
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites>
 <testsuite name="%s" tests="%s" failures="%s" errors="0">
 %s</testsuite>
-</testsuites>
-""".formatted(name, count(body, "<testcase "), count(body, "<failure>"), body);
+""".formatted(xmlAttr(name), count(body, "<testcase "), count(body, "<failure>"), body);
   }
+  private static String document(List<String> suites){ return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites>\n"+String.join("", suites)+"</testsuites>\n"; }
   /// none for a log that the running main moved away meanwhile
   private static Optional<String> complete(Path log){
     String text;

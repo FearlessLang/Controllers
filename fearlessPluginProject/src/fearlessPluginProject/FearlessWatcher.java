@@ -55,7 +55,7 @@ public final class FearlessWatcher extends Job implements IStartup{
     setSystem(true);
     setRule(ResourcesPlugin.getWorkspace().getRoot());
   }
-  @Override public void earlyStartup(){ schedule(); }
+  @Override public void earlyStartup(){ FearlessPerspective.hideRunAndDebug(); schedule(); }
   @Override protected IStatus run(IProgressMonitor monitor){
     if (stopped){ return Status.CANCEL_STATUS; }
     try{ tick(monitor); }
@@ -131,7 +131,7 @@ public final class FearlessWatcher extends Job implements IStartup{
       project.deleteMarkers(problemType, true, IResource.DEPTH_INFINITE);
       mark(target, problem, lined && target != project ? Integer.parseInt(m.group(2)) : 0);
     }
-    var report= UnitTests.report(alias, p.folder());
+    var report= UnitTests.report(alias, p.folder(), Follow.lastRun(alias));
     if (report.isEmpty() || report.get().equals(reports.put(alias, report.get()))){ return; }
     var copy= Platform.getStateLocation(FrameworkUtil.getBundle(getClass())).append("report.xml").toFile().toPath();
     try{ Files.writeString(copy, report.get()); }
