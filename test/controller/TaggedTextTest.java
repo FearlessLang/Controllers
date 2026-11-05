@@ -8,7 +8,6 @@ import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import fileSupport.Info;
@@ -47,21 +46,29 @@ final class TaggedTextTest{
     assertEquals(tagged, TaggedText.ofPath(p));
     assertEquals(p, readPath(tagged));
   }
-  @Test void aPathThatIsNotUnicodeIsBase16OfTheUtf16LittleEndianUnitsOfWindows(){
-    Assumptions.assumeTrue(Fs.isWindows());
-    pathRoundTrip(Path.of("C:/a\ud800"), "Base16:43003A005C00610000D8");
-  }
-  @Test void aPathIsStrOrUStrWhenItsBytesAreUtf8AndBase16Otherwise(){
-    Assumptions.assumeTrue(Fs.isLinux());
+  @Test void aPathIsStrOrUStrWhenItIsUnicodeAndBase16OfTheUnitsOfTheDeskOtherwise(){
+    if (Fs.isWindows()){
+      pathRoundTrip(Path.of("C:\\data"), "Str:\"C:\\data\"");
+      pathRoundTrip(Path.of("C:\\caf\u00e9"), "UStr:\"C:\\caf\".u\"00E9\"");
+      pathRoundTrip(Path.of("C:/a\ud800"), "Base16:43003A005C00610000D8");
+      return;
+    }
     pathRoundTrip(Path.of("/tmp/data"), "Str:\"/tmp/data\"");
     pathRoundTrip(Path.of("/tmp/caf\u00e9"), "UStr:\"/tmp/caf\".u\"00E9\"");
     pathRoundTrip(Path.of("/a\nb"), "Str:\"/a\" | \"b\"");
+    if (Fs.isMac()){ return; }
     pathRoundTrip(PathBytes.path(new byte[]{'/', 'c', 'a', 'f', (byte)0xE9}), "Base16:2F636166E9");
   }
   @Test void aPathReadsBackThroughItsUnitsWhateverTheTag(){
-    Assumptions.assumeTrue(Fs.isLinux());
+    if (Fs.isWindows()){
+      assertEquals(Path.of("C:\\caf\u00e9"), readPath("Base16:43003A005C00630061006600E900"));
+      assertEquals(Path.of("C:\\caf\u00e9"), readPath("UStr:\"C:\\caf\".u\"E9\""));
+      assertEquals(Path.of("\ud800"), readPath("Base16:00D8"));
+      return;
+    }
     assertEquals(Path.of("/caf\u00e9"), readPath("Base16:2F636166C3A9"));
     assertEquals(Path.of("/caf\u00e9"), readPath("UStr:\"/caf\".u\"E9\""));
+    if (Fs.isMac()){ return; }
     assertEquals(PathBytes.path(new byte[]{(byte)0xFF}), readPath("Base16:FF"));
   }
   @Test void anyFormReadsBackAsTheSameText(){

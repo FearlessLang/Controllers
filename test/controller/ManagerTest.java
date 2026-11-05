@@ -313,10 +313,10 @@ public class Child{
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
   }
-  @Test void aFolderNamedByBytesThatAreNotUtf8IsRegisteredByItsMessageAndRemembered(@TempDir Path dir){
-    Assumptions.assumeTrue(Fs.isLinux());
+  @Test void aFolderWhoseNameIsNotUnicodeIsRegisteredByItsMessageAndRemembered(@TempDir Path dir){
+    Assumptions.assumeFalse(Fs.isMac());
     var m= manager(dir);
-    var odd= dir.resolve(PathBytes.path(new byte[]{'c', 'a', 'f', (byte)0xE9}));
+    var odd= Fs.isWindows() ? dir.resolve("caf\ud800") : dir.resolve(PathBytes.path(new byte[]{'c', 'a', 'f', (byte)0xE9}));
     Fs.ensureDir(odd);
     send(m, "Register", TaggedText.ofPath(odd));
     same("[###]\"path\": \"Base16:[###]\",[###]", info(dir));
