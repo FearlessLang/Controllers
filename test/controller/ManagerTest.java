@@ -182,7 +182,7 @@ public class Child{
   private final List<String> locked= new ArrayList<>();
   private final List<Path> connected= new ArrayList<>();
   private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
-  @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); }
+  @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); Disk.checkedByHandOnWindows(); }
   private Manager manager(Path dir, String... mains){ return manager(dir, view, known(mains)); }
   private static Function<Path,Optional<MainsInfo>> known(String... mains){ return known(List.of(), mains); }
   private static Function<Path,Optional<MainsInfo>> known(List<String> attenuators, String... mains){ return known(attenuators, List.of(), List.of(), mains); }

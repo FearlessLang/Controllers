@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -14,6 +15,7 @@ import managerMessages.Report;
 import tools.Fs;
 
 final class ManagerFolderTest{
+  @AfterEach void checkedByHandOnWindows(){ Disk.checkedByHandOnWindows(); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);

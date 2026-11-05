@@ -21,6 +21,7 @@ import java.util.Locale;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -31,6 +32,7 @@ import tools.Fs;
 import utils.Range;
 
 final class FactsTest{
+  @AfterEach void checkedByHandOnWindows(){ Disk.checkedByHandOnWindows(); }
   static Path project(Path dir, String name){
     var res= dir.resolve(name);
     Fs.writeUtf8(res.resolve("_hello").resolve("_rank_app.fear"), "use base.Main as Main;\n");

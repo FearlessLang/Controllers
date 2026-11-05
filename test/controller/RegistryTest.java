@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -26,6 +27,7 @@ import tools.Fs;
 import userMessages.UserError;
 
 final class RegistryTest{
+  @AfterEach void checkedByHandOnWindows(){ Disk.checkedByHandOnWindows(); }
   private static final Path file= Path.of("projects.info").toAbsolutePath();
   private static final String root= Path.of("").toAbsolutePath().getRoot().toString().replace('\\', '/');
   private static Content content(String text){ return Registry.parse(text, file, Registry::real, Path.of(root+"manager")); }
