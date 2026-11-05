@@ -36,6 +36,7 @@ final class RegistryTest{
     Fs.ensureDir(res);
     return res;
   }
+  private static String written(Path p){ return p.toAbsolutePath().normalize().toString().replace("\\", "\\\\"); }
   private static String unix(Path p){ return p.toAbsolutePath().normalize().toString().replace('\\', '/'); }
 
   //-- the schema
@@ -211,7 +212,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
   ],
   "systemExtensions": []
 }
-""".formatted(unix(code)), Fs.readUtf8(folder(dir, "manager").resolve("projects.info")));
+""".formatted(written(code)), Fs.readUtf8(folder(dir, "manager").resolve("projects.info")));
   }
   @Test void aCorruptedFileRefusesToLoadWithARichError(@TempDir Path dir){
     Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), "not info at all");
@@ -294,7 +295,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
   ],
   "systemExtensions": []
 }
-""".formatted(unix(zeta), unix(alpha)), Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
+""".formatted(written(zeta), written(alpha)), Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
     assertEquals(List.of("zeta", "alpha"), registry(dir).all().stream().map(Entry::alias).toList());
   }
   private static String listed(Path... folders){

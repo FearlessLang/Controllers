@@ -46,7 +46,7 @@ final class ImportZipTest{
     assertEquals(List.of("text_kit", false, false), List.of(l.name(), l.edu(), l.app()));
     Err.strCmp("\"ftp://example.org/a_lib.zip\" is not the URL of a zip: [###]", assertThrows(UserError.class, () -> ImportZip.zip("ftp://example.org/a_lib.zip")).getMessage());
     Err.strCmp("The file \"demo.zip\" is not a zip the manager imports: [###]", assertThrows(UserError.class, () -> ImportZip.zip("https://example.org/demo.zip")).getMessage());
-    for (var wrong : List.of("file://data/a_app.zip", "file:a_app.zip", "https:///a_app.zip", "https:a_app.zip")){
+    for (var wrong : Fs.isWindows() ? List.of("file:a_app.zip", "https:///a_app.zip", "https:a_app.zip") : List.of("file://data/a_app.zip", "file:a_app.zip", "https:///a_app.zip", "https:a_app.zip")){
       Err.strCmp("\""+wrong+"\" is not the URL of a zip: [###]", assertThrows(UserError.class, () -> ImportZip.zip(wrong)).getMessage());
     }
   }
