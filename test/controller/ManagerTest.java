@@ -256,6 +256,7 @@ public class Child{
   }
   private static Project project(Manager m, Path folder){ return m.state().of(folder).orElseThrow(); }
   private static List<String> listed(Manager m){ return m.state().projects().stream().map(p -> p.alias()+" "+p.folder()).toList(); }
+  private static String written(Path p){ return p.toString().replace("\\", "\\\\"); }
   private static String info(Path dir){ return Fs.readUtf8(dir.resolve("manager").resolve("projects.info")); }
   private static Path edit(Manager m, Path dir, String text){
     var file= dir.resolve("edited.info");
@@ -999,7 +1000,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     compiled(m, "hello");
     var other= folder(dir, "other");
     Fs.writeUtf8(other.resolve(Facts.outDir).resolve("other.built"), "");
-    edit(m, dir, info(dir).replace(hello.toString(), other.toString()));
+    edit(m, dir, info(dir).replace(written(hello), written(other)));
     assertEquals(List.of("other "+other), listed(m));
     assertEquals(Kind.code, project(m, other).kind());
     assertFalse(Files.exists(other.resolve(Facts.outDir).resolve("other.built")));
@@ -1012,7 +1013,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     var before= info(dir);
-    edit(m, dir, before.replace(hello.toString(), folder(dir, "other").toString()));
+    edit(m, dir, before.replace(written(hello), written(folder(dir, "other"))));
     assertEquals(before, info(dir));
     same("Refused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".", view.refused.getLast());
     send(m, "Terminate", "hello");
@@ -1424,7 +1425,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     compiled(m, "hello");
     Fs.rmTree(hello.resolve(Facts.outDir));
     allow(m, dir, "htm");
-    same("[###]NoSuchFileException: [###]hello/.fearless_out/icons/[###].png", failures.getFirst().toString());
+    same("[###]NoSuchFileException: [###]hello/.fearless_out/icons/[###].png", failures.getFirst().toString().replace('\\', '/'));
     failures.clear();
   }
   @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEndAndAnyOtherRequestUntilItIsApplied(@TempDir Path dir){
