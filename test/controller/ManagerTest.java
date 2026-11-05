@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
@@ -61,6 +62,7 @@ import tools.ChildJvm;
 import tools.Fs;
 import utils.Push;
 import tools.PathBytes;
+import tools.PathClassLoader;
 import userMessages.Report;
 import userMessages.UserError;
 import userMessages.Violation;
@@ -83,7 +85,7 @@ public class Child{
   }
   static void take(String[] a) throws Exception{
     var in= new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
-    var json= java.nio.file.Files.readString(java.nio.file.Path.of(a[1]));
+    var json= java.nio.file.Files.readString(tools.PathClassLoader.pathOf(a[1]));
     for (var i= 3; i < a.length; i += 1){
       System.out.print("FearlessTakeFreeExtension:"+a[i].replace(',', ' ')+"\\n");
       System.out.flush();
@@ -91,14 +93,14 @@ public class Child{
       if (answer.isEmpty()){ System.out.print("no free extension\\n"); System.exit(1); }
       json= json.replaceFirst("@@[a-z]*", answer);
     }
-    java.nio.file.Files.writeString(java.nio.file.Path.of(a[2]), json);
+    java.nio.file.Files.writeString(tools.PathClassLoader.pathOf(a[2]), json);
     System.out.print("compiled\\n");
     System.out.flush();
     System.exit(0);
   }
 }
 """);
-    Fs.runTool("javac", List.of("-d", classes.toString(), src.toString()));
+    Fs.runTool("javac", List.of("-d", classes.toString(), "-cp", PathClassLoader.jar().toString(), src.toString()));
   }
   record Fake(Function<Path,Optional<MainsInfo>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> locked, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
     /// Writes the cache of the infos of the project; each extension written @@fapp or @@ffile is the autoselected extension of the previous cache, else is asked to the manager, as Coordinator.compile does.
@@ -122,7 +124,7 @@ public class Child{
       var template= outDir.resolve("template.txt");
       Fs.writeUtf8(template, FakeCache.json(FakeCache.manifest(mains)));
       var asks= Pattern.compile("@@(fapp|ffile)").matcher(mains).results().map(r -> IntStream.range(0, 1000).mapToObj(n -> r.group(1)+String.format(Locale.ROOT, "%03d", n)).collect(Collectors.joining(","))).toList();
-      return ChildJvm.start(Stream.concat(Stream.of("-cp", classes.toString(), "Child", "take", template.toString(), outDir.resolve(alias+".json").toString()), asks.stream()).toList(), out);
+      return ChildJvm.start(Stream.concat(Stream.of("-cp", classes+File.pathSeparator+PathClassLoader.jar(), "Child", "take", PathClassLoader.argOf(template), PathClassLoader.argOf(outDir.resolve(alias+".json"))), asks.stream()).toList(), out);
     }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
       granted.add(grants);
