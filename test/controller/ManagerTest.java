@@ -1070,7 +1070,10 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
       t.m.state().projects().stream().filter(Project::busy).forEach(p -> send(t.m, "Terminate", p.alias()));
       idle(t.m);
     }
-    assertEquals(outcomes.get(0), outcomes.get(1).stream().map(s -> s.replace("DIR/edited.info", "DIR/manager/projects.info")).toList());
+    assertEquals(outcomes.get(0), outcomes.get(1).stream().map(ManagerTest::asProjectsInfo).toList());
+  }
+  private static String asProjectsInfo(String s){
+    return s.replace("DIR/edited.info", "DIR/manager/projects.info").replace("DIR\\edited.info", "DIR\\manager\\projects.info").replace("DIR\\\\edited.info", "DIR\\\\manager\\\\projects.info");
   }
   private static String without(Registry.Content c, String name){ return Registry.text(new Registry.Content(c.projects().stream().filter(e -> !e.alias().equals(name)).toList(), c.extensions())); }
   private static String with(Registry.Content c, String name, UnaryOperator<Registry.Entry> op){ return Registry.text(new Registry.Content(c.projects().stream().map(e -> e.alias().equals(name) ? op.apply(e) : e).toList(), c.extensions())); }
