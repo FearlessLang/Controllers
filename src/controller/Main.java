@@ -142,7 +142,7 @@ public final class Main implements Manager.Exit{
   }
   private static String file(String arg){
     Path path;
-    try{ path= (arg.startsWith("file:") ? PathClassLoader.pathOf(arg) : Path.of(arg)).toAbsolutePath().normalize(); }
+    try{ path= (arg.startsWith(Fs.isWindows() ? "Base16:" : "file:") ? PathClassLoader.pathOf(arg) : Path.of(arg)).toAbsolutePath().normalize(); }
     catch (IllegalArgumentException e){ return "InvalidCall\n"+Report.brokenPath(arg); }
     if (arg.isBlank() || path.getFileName() == null){ return "InvalidCall\n"+Report.brokenPath(arg); }
     var project= Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Names.ext);
