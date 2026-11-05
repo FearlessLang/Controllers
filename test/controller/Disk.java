@@ -24,13 +24,24 @@ import org.junit.jupiter.api.Assumptions;
 import tools.Fs;
 
 final class Disk{
+  private static boolean junction;
   static Path link(Path link, Path target){
     try{ return Fs.of(() -> Files.createSymbolicLink(link, target)); }
     catch (UncheckedIOException e){
       var refused= Fs.isWindows() && e.getCause() instanceof FileSystemException;
       if (!refused){ throw e; }
-      return Assumptions.abort("Windows does not give this process the privilege to create symbolic links");
+      if (!Files.isDirectory(target)){ return Assumptions.abort("Windows does not give this process the privilege to create symbolic links"); }
+      var p= Fs.of(new ProcessBuilder("cmd", "/c", "mklink", "/J", link.toString(), target.toString()).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD)::start);
+      try{ assert p.waitFor() == 0; }
+      catch (InterruptedException ie){ throw new AssertionError(ie); }
+      junction= true;
+      return link;
     }
+  }
+  static void checkedByHandOnWindows(){
+    var made= junction;
+    junction= false;
+    assert !made: "This test was written on Linux, where a Windows junction can not be made: Disk.link made a junction (dir shows <JUNCTION>) because this process can not make symbolic links; on this Windows desk check by hand that the manager treated the junction as the test expects of a symbolic link; then remove this assert.";
   }
   static void noRead(Path p){
     if (!Fs.isWindows()){ posix(p, "---------"); return; }
