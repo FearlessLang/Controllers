@@ -76,9 +76,6 @@ public final class Main implements Manager.Exit{
     catch (Throwable t){ exitCode = fatal(UserError.crashed(t), 3); }
     System.exit(exitCode);
   }
-  //TO TEST: on Windows the launcher hands Java a '?' in place of an unpaired surrogate of the
-  //argument, so a file whose name holds one is refused as a broken path when given as the
-  //argument; a "Base16:" path of a FearlessCommand argument carries it.
   //The JVM hands main the arguments decoded as text, and bytes not valid in the file name encoding are
   //lost: a file argument is read again as the bytes the process received, and handed on as PathClassLoader.argOf.
   static String[] fileAsArg(String[] args){
