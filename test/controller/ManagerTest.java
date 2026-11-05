@@ -328,7 +328,7 @@ public class Child{
     var m= manager(dir);
     var link= Disk.link(dir.resolve("link"), folder(dir, "target"));
     send(m, "Register", TaggedText.of(link.toString()));
-    same("Refused request \"Register\" on path\n[###]link\nThis path is a symbolic link, and Fearless does not follow symbolic links.", view.refused.getLast());
+    same("Refused request \"Register\" on path\n[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", view.refused.getLast());
     assertEquals(List.of(), listed(m));
   }
   @Test void anEditOfOneProjectKeepsThePathOfAnotherWhoseFolderBecameALink(@TempDir Path dir){
@@ -686,7 +686,7 @@ The projects are:
     send(m, "Register", TaggedText.of(inner.toString()));
     assertEquals(Optional.of(other), m.state().selected());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
-    same("[###]link\nThis path is a symbolic link, and Fearless does not follow symbolic links.\n[###]inner\nThis path is a symbolic link, and Fearless does not follow symbolic links.", String.join("\n", view.refused));
+    same("[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.\n[###]inner\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", String.join("\n", view.refused));
   }
   @Test void kindsChangeToAnyKind(@TempDir Path dir){
     var m= manager(dir);

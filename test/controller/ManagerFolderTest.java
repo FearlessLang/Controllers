@@ -162,7 +162,7 @@ never part of a project, and no project is inside it.
   @Test void aLinkToTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
     var managerDir= folder(dir, "manager");
     var link= Disk.link(dir.resolve("link"), managerDir);
-    refused("[###]link\nThis path is a symbolic link, and Fearless does not follow symbolic links.", () -> Manager.projectFolder(link, managerDir));
+    refused("[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", () -> Manager.projectFolder(link, managerDir));
   }
   @Test void theRootOfADriveIsNotAProject(@TempDir Path dir){
     refused("""

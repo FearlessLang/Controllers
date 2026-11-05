@@ -87,7 +87,7 @@ The arguments are:
   public static String grantsWhileRunning(String name, String job){ return "Refused request to change the data projects mounted on the DataRead types of project "+disp(name)+".\n"+running(name, job)+"\nThe data projects of a main stay the same while the main runs."; }
 
   //-- registering a folder
-  public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link, and Fearless does not follow symbolic links:\n"+path(p.toString())); }
+  public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions:\n"+path(p.toString())); }
   public static String importNotUrl(String text){ return disp(text.strip())+" is not the URL of a zip: the URL is \"https://\" followed by a host and a path, or \"file://\" followed by the absolute path of the zip, as \"file:///home/me/demo_app.zip\"."; }
   public static String importNotNamed(String file){ return "The file "+disp(file)+" is not a zip the manager imports: its name ends with \"_app.zip\", \"_edu_app.zip\", \"_lib.zip\" or \"_edu_lib.zip\", after a name of lowercase letters, digits and \"_\" starting with a letter."; }
   public static String importNotDownloaded(URI uri, String why){ return "The zip\n"+path(uri.toString())+"\ncannot be downloaded: "+why; }
@@ -101,7 +101,7 @@ The arguments are:
   public static String importNotWritten(Path target, IOException e){ return "The import cannot write\n"+path(target.toString())+"\n"+fileFailure(e); }
   public static String storeNotOpened(String url, IOException e){ return "The store\n"+path(url)+"\ncannot be opened: "+fileFailure(e); }
   public static String registerNothing(Path path){ return refusedPath("Register", path)+"\nNothing exists at that path."; }
-  public static String registerLink(Path path){ return refusedPath("Register", path)+"\nThis path is a symbolic link, and Fearless does not follow symbolic links."; }
+  public static String registerLink(Path path){ return refusedPath("Register", path)+"\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions."; }
   public static String folderNestedWithRegistered(Path folder, Path registered){
     return refusedPath("Register", folder)+"\nA registered project has the folder\n"+path(registered.toString())+"\nOne of the two folders is inside the other: every file belongs to exactly one project.";
   }
