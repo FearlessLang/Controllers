@@ -668,14 +668,15 @@ The projects are:
     var messages= folder(dir.resolve("manager"), "messages");
     Fs.ofV(() -> Files.write(messages.resolve("1.msg"), new byte[]{'R', 'u', 'n', '\n', (byte)0xFF}));
     Fs.writeUtf8(messages.resolve("2.msg"), "Show");
-    Errs.err("A message file of the manager folder does not hold what Fearless wrote there:\nits bytes do not form valid UTF-8 text.\n\nThe message file is:\n[###]1.msg", m::drain);
+    m.drain();
+    m.settle();
+    same("A message file of the manager folder does not hold what Fearless wrote there:\nits bytes do not form valid UTF-8 text.\n\nThe message file is:\n[###]1.msg", failures.removeFirst().getMessage());
   }
   @Test void aMessageFileLeftWhileTheManagerEndsIsAppliedByTheNextManager(@TempDir Path dir){
     var m= manager(dir);
     m.stop();
     Fs.writeUtf8(folder(dir.resolve("manager"), "messages").resolve("1.msg"), "Show");
-    try{ m.drain(); }
-    catch (RejectedExecutionException _){}
+    assertThrows(RejectedExecutionException.class, m::drain);
     var next= manager(dir);
     next.drain();
     next.settle();
@@ -1294,8 +1295,10 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     Fs.writeUtf8(msg, "");
     Disk.noRead(msg);
     Assumptions.assumeFalse(Files.isReadable(msg));
-    Errs.err("Fearless could not list its manager folder, or could not read or\nremove a message file in it.[###]1.msg[###]", m::drain);
+    m.drain();
+    m.settle();
     Disk.allow(msg);
+    same("Fearless could not list its manager folder, or could not read or\nremove a message file in it.[###]1.msg[###]", failures.removeFirst().getMessage());
   }
   @Test void aFolderHoldingASymbolicLinkIsRefusedOrInvalidNeverFatal(@TempDir Path dir){
     var before= Fs.onSymbolicLink;

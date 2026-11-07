@@ -134,7 +134,7 @@ public final class Main implements Manager.Exit{
   }
   private static boolean base16(String w){
     if (!w.matches("Base16:(?:[0-9A-F][0-9A-F])+")){ return false; }
-    try{ var p= TaggedText.readPath(w, Refused::new); return p.isAbsolute() && p.getFileName() != null; }
+    try{ var p= TaggedText.readPath(w, Refused::new); return p.isAbsolute() && p.normalize().getFileName() != null; }
     catch (Refused|InvalidPathException e){ return false; }
   }
   private static String file(String arg){

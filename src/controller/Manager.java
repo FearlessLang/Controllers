@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -138,29 +139,32 @@ public final class Manager{
   }
   public void message(String text){ post(() -> apply(text)); }
   void stop(){
-    try{ core.submit(() -> live.values().stream().filter(l -> l.child != null).forEach(l -> l.child.kill())).get(1, TimeUnit.MINUTES); }
+    try{ core.submit(this::end).get(1, TimeUnit.MINUTES); }
     catch (InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
     core.shutdownNow();
   }
   //Runs once before the watcher thread starts, then only from that thread: never concurrently.
-  public void drain(){
+  public void drain(){ post(() -> taken().forEach(this::apply)); }
+  private List<String> taken(){
     var msgDir= dir.resolve("messages");
-    try{ Fs.ofV(() -> take(msgDir)); }
+    try{ return Fs.of(() -> take(msgDir)); }
     catch (UncheckedIOException e){ throw Violation.couldNotDrainMessageFolder(msgDir, e.getCause()); }
   }
-  private void take(Path msgDir) throws IOException{
+  private List<String> take(Path msgDir) throws IOException{
+    var res= new ArrayList<String>();
     for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".msg")).toList()){
       String text;
       try{ text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Fs.readAllBytes(file))).toString(); }
       catch (CharacterCodingException e){ throw Violation.messageNotUtf8(file); }
       Fs.deleteIfExists(file);
-      post(() -> apply(text));
+      res.add(text);
     }
     var old= Instant.now().minusSeconds(60);
     for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".tmp")).toList()){
       try{ if (Fs.getLastModifiedTime(file).toInstant().isBefore(old)){ Fs.deleteIfExists(file); } }
       catch (NoSuchFileException e){}
     }
+    return res;
   }
   void settle(){
     try{ core.submit(() -> {}).get(1, TimeUnit.MINUTES); }
@@ -219,6 +223,10 @@ public final class Manager{
     l.stopped = true;
     l.child.kill();
   }
+  private void end(){
+    ending = true;
+    live.keySet().forEach(this::endJob);
+  }
   private Optional<String> reconcile(Optional<Path> compiled, List<String> extensions){
     var claimed= Project.claimed(projects());
     var next= captured(claimed, extensions);
@@ -272,8 +280,8 @@ public final class Manager{
     if (ending){ throw new Refused(Report.quitting(verb)); }
     if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch (verb){
-      case "Quit" -> { ending = true; exit.quit(); }
-      case "Reset" -> { ending = true; exit.reset(); }
+      case "Quit" -> { end(); exit.quit(); }
+      case "Reset" -> { end(); exit.reset(); }
       case "Register" -> register(path(args.getFirst()));
       case "ConnectEclipse" -> connect(path(args.getFirst()));
       case "EditMetadata" -> editMetadata(path(args.getFirst()));

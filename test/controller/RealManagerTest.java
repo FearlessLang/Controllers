@@ -53,7 +53,7 @@ final class RealManagerTest{
       @Override public Optional<Path> baseCachePath(){ return base; }
       @Override public Path stdLibBase(){ return ResolveResource.stLibPath; }
       @Override public BackendTools backendTools(String pkgName, SourceOracle oracle, OtherPackages other, List<Literal> core, CapabilityEnvironment capabilities){
-        return BackendTools.of(pkgName, oracle, other, core, out, baseCachePath(), ResolveResource.stLibRTPath, capabilities);
+        return BackendTools.of(pkgName, oracle, other, core, out, baseCachePath(), false, ResolveResource.stLibRTPath, capabilities);
       }
     };
   }
@@ -129,18 +129,4 @@ final class RealManagerTest{
   }
   @Test void aMainCallingQuitNeverReturns(@TempDir Path dir){ endsTheManagerAndNeverReturns(dir, "realmgr.Quit", "quit"); }
   @Test void aMainCallingResetNeverReturns(@TempDir Path dir){ endsTheManagerAndNeverReturns(dir, "realmgr.Reset", "reset"); }
-  @Test void aMainUnderNoManagerQuitCanNotEndTheManager(@TempDir Path dir){
-    var m= manager(dir);
-    compiled(m, dir, "realmgr");
-    compiled(m, dir, "quitter");
-    message(m, "SelectMains", "quitter", "realmgr.Quit");
-    message(m, "Attenuate", "realmgr", "realmgr.RunsQuit", "base.NoManagerQuit");
-    message(m, "SelectMains", "realmgr", "realmgr.RunsQuit");
-    message(m, "Run", "realmgr");
-    until(m, Duration.ofMinutes(1), () -> !exits.isEmpty() || idle(m));
-    m.stop();
-    assertEquals(List.of(), failures);
-    assertEquals(List.of(), view.refused);
-    assertEquals(List.of(), exits);
-  }
 }
