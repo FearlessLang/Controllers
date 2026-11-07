@@ -90,7 +90,6 @@ public final class Main implements Manager.Exit{
     try{ return List.of(call(args[0])); }
     catch (Refused e){ return List.of("InvalidCall\n"+Report.badCall(args[0], e.getMessage())); }
   }
-  /// The commands of the grammar of a call, each without the prefix FearlessCommand.
   private static final List<List<String>> commands= Stream.of(
     "Show", "Show projectName", "Quit", "Reset",
     "Register base16", "ConnectEclipse base16", "EditMetadata base16", "OpenWithOrShortcut base16", "OpenWithOrShortcut base16 projectName typeName",
