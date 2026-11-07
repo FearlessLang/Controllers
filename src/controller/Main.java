@@ -111,7 +111,7 @@ public final class Main implements Manager.Exit{
     var forms= commands.stream().filter(c -> c.getFirst().equals(verb)).toList();
     if (forms.isEmpty()){ throw new Refused(Report.callUnknown(words.getFirst(), commands.stream().map(c -> prefix+c.getFirst()).distinct().sorted().toList())); }
     var port= words.size() > 1 && words.getLast().startsWith("Port:");
-    if (port && !Follow.isPort(words.getLast())){ throw new Refused(Report.callWord(words.getLast(), Report.callPort)); }
+    if (port){ check(words.getLast(), Follow.isPort(words.getLast()), Report.callPort); }
     var args= words.subList(1, words.size()-(port ? 1 : 0));
     var form= OneOr.opt("form of "+verb, forms.stream().filter(f -> f.getLast().equals(typeNames) ? args.size() >= f.size()-2 : args.size() == f.size()-1))
       .orElseThrow(() -> new Refused(Report.callForms(forms.stream().map(f -> Join.of(f, prefix, " ", "")).toList())));
@@ -121,15 +121,15 @@ public final class Main implements Manager.Exit{
     return String.join("\n", Stream.concat(Stream.of(verb), words.stream().skip(1)).toList());
   }
   private static void word(String kind, String w){
-    var ok= switch (kind){
-      case "projectName" -> projectName.matcher(w).matches();
-      case "typeName", typeNames -> typeName.matcher(w).matches();
-      case "kind" -> Registry.Kind.of(w).isPresent();
-      case "base16" -> base16(w);
+    switch (kind){
+      case "projectName" -> check(w, projectName.matcher(w).matches(), Report.callProjectName);
+      case "typeName", typeNames -> check(w, typeName.matcher(w).matches(), Report.callTypeName);
+      case "kind" -> check(w, Registry.Kind.of(w).isPresent(), Report.callKind);
+      case "base16" -> check(w, base16(w), Report.callBase16);
       default -> throw Bug.unreachable();
-    };
-    if (!ok){ throw new Refused(Report.callWord(w, switch (kind){ case "projectName" -> Report.callProjectName; case "typeName", typeNames -> Report.callTypeName; case "kind" -> Report.callKind; case "base16" -> Report.callBase16; default -> throw Bug.unreachable(); })); }
+    }
   }
+  private static void check(String w, boolean ok, String what){ if (!ok){ throw new Refused(Report.callWord(w, what)); } }
   private static boolean base16(String w){
     if (!w.matches("Base16:(?:[0-9A-F][0-9A-F])+")){ return false; }
     try{ var p= TaggedText.readPath(w, Refused::new); return p.isAbsolute() && p.normalize().getFileName() != null; }
