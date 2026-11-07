@@ -84,15 +84,11 @@ public final class Main implements Manager.Exit{
   }
   /// A folder or a .fearless file opened with the manager program is Register, then Show.
   static List<String> messages(String... args){
-    var m= message(args);
-    return args.length == 1 && !args[0].startsWith(prefix) && m.startsWith("Register\n") ? List.of(m, "Show") : List.of(m);
-  }
-  static String message(String... args){
-    if (args.length == 0){ return "Show"; }
-    if (args.length > 1){ return "InvalidCall\n"+Report.tooManyArguments(List.of(args)); }
+    if (args.length == 0){ return List.of("Show"); }
+    if (args.length > 1){ return List.of("InvalidCall\n"+Report.tooManyArguments(List.of(args))); }
     if (!args[0].startsWith(prefix)){ return file(args[0]); }
-    try{ return call(args[0]); }
-    catch (Refused e){ return "InvalidCall\n"+Report.badCall(args[0], e.getMessage()); }
+    try{ return List.of(call(args[0])); }
+    catch (Refused e){ return List.of("InvalidCall\n"+Report.badCall(args[0], e.getMessage())); }
   }
   /// The commands of the grammar of a call, each without the prefix FearlessCommand.
   private static final List<List<String>> commands= Stream.of(
@@ -135,14 +131,14 @@ public final class Main implements Manager.Exit{
     try{ var p= TaggedText.readPath(w, Refused::new); return p.isAbsolute() && p.normalize().getFileName() != null; }
     catch (Refused|InvalidPathException e){ return false; }
   }
-  private static String file(String arg){
+  private static List<String> file(String arg){
     Path path;
     try{ path= (arg.startsWith(Fs.isWindows() ? "Base16:" : "file:") ? PathClassLoader.pathOf(arg) : Path.of(arg)).toAbsolutePath().normalize(); }
-    catch (IllegalArgumentException e){ return "InvalidCall\n"+Report.brokenPath(arg); }
-    if (arg.isBlank() || path.getFileName() == null){ return "InvalidCall\n"+Report.brokenPath(arg); }
+    catch (IllegalArgumentException e){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
+    if (arg.isBlank() || path.getFileName() == null){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
     var project= Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Names.ext);
-    var verb= project ? "Register" : "OpenWithOrShortcut";
-    return verb+"\n"+TaggedText.ofPath(path);
+    if (project){ return List.of("Register\n"+TaggedText.ofPath(path), "Show"); }
+    return List.of("OpenWithOrShortcut\n"+TaggedText.ofPath(path));
   }
   private static final ExecutorService sender= Executors.newSingleThreadExecutor(Thread.ofVirtual().factory());
   /// Runs the manager program with each call in turn, each once the process before has ended, also across the calls of

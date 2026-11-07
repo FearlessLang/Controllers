@@ -33,13 +33,14 @@ import tools.Fs;
 import tools.SourceOracle;
 import utils.Bug;
 import utils.Err;
+import utils.OneOr;
 
 final class RealManagerTest{
   @TempDir static Path shared;
   public static void main(String[] args) throws IOException{
     var msgDir= Path.of(args[0]);
     var name= String.format(Locale.ROOT, "%020d-%s", System.currentTimeMillis(), UUID.randomUUID());
-    Fs.writeUtf8(msgDir.resolve(name+".tmp"), Main.message(args[1]));
+    Fs.writeUtf8(msgDir.resolve(name+".tmp"), OneOr.of("one message", Main.messages(args[1]).stream()));
     Fs.move(msgDir.resolve(name+".tmp"), msgDir.resolve(name+".msg"));
   }
   static Path baseCache(){ return shared.resolve("baseCache"); }
