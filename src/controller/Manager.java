@@ -278,39 +278,35 @@ public final class Manager{
   }
   private void request(String verb, List<String> args, Optional<Follow> follow){
     if (ending){ throw new Refused(Report.quitting(verb)); }
-    if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch (verb){
+      case "Show" -> { if (!args.isEmpty()){ selected = Optional.of(registered(verb, args.getFirst())); } view.show(); }
       case "Quit" -> { end(); exit.quit(); }
       case "Reset" -> { end(); exit.reset(); }
       case "Register" -> register(path(args.getFirst()));
       case "ConnectEclipse" -> connect(path(args.getFirst()));
       case "EditMetadata" -> editMetadata(path(args.getFirst()));
       case "OpenWithOrShortcut" -> openWith(path(args.getFirst()), args.subList(1, args.size()));
-      default -> project(verb, args, follow);
+      case "Run" -> { var f= registered(verb, args.getFirst()); run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty()); }
+      case "Compile" -> compile(registered(verb, args.getFirst()), follow);
+      case "Check" -> check(registered(verb, args.getFirst()));
+      case "Terminate" -> terminate(registered(verb, args.getFirst()));
+      case "DeleteCache" -> deleteCache(registered(verb, args.getFirst()));
+      case "Kind" -> kind(registered(verb, args.getFirst()), args.get(1));
+      case "Forget" -> forget(registered(verb, args.getFirst()));
+      case "Mount" -> mount(registered(verb, args.getFirst()), args.get(1), Optional.of(lookedUp(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(args.getFirst(), args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
+      case "Unmount" -> mount(registered(verb, args.getFirst()), args.get(1), Optional.empty());
+      case "Attenuate" -> attenuate(registered(verb, args.getFirst()), args.get(1), args.subList(2, args.size()));
+      case "SelectMains" -> edit(registered(verb, args.getFirst()), e -> e.withMains(args.subList(1, args.size())));
+      default -> throw Bug.unreachable();
     }
   }
   /// A path of a message, as the manager program wrote it.
   private static Path path(String text){ return TaggedText.readPath(text, Bug::of).normalize(); }
-  private void project(String verb, List<String> args, Optional<Follow> follow){
-    var name= args.getFirst();
+  private Path registered(String verb, String name){
     Supplier<Refused> unknown= () -> new Refused(Report.unknownProject(verb, name, registry.all().stream().map(Entry::alias).toList()));
     var f= lookedUp(name).orElseThrow(unknown).path();
     if (!scan(f)){ unreachable(f); throw unknown.get(); }
-    switch (verb){
-      case "Show" -> { selected = Optional.of(f); view.show(); }
-      case "Run" -> run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty());
-      case "Compile" -> compile(f, follow);
-      case "Check" -> check(f);
-      case "Terminate" -> terminate(f);
-      case "DeleteCache" -> deleteCache(f);
-      case "Kind" -> kind(f, args.get(1));
-      case "Forget" -> forget(f);
-      case "Mount" -> mount(f, args.get(1), Optional.of(lookedUp(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(name, args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
-      case "Unmount" -> mount(f, args.get(1), Optional.empty());
-      case "Attenuate" -> attenuate(f, args.get(1), args.subList(2, args.size()));
-      case "SelectMains" -> edit(f, e -> e.withMains(args.subList(1, args.size())));
-      default -> throw Bug.unreachable();
-    }
+    return f;
   }
   private Optional<Entry> lookedUp(String name){
     var res= renaming(() -> registry.lookedUp(name));
