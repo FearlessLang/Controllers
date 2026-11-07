@@ -292,7 +292,7 @@ public final class Manager{
       case "Show" -> { selected = Optional.of(f); view.show(); }
       case "Run" -> run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty());
       case "Compile" -> compile(f, follow);
-      case "Check" -> check(f);
+      case "Check" -> check(f, follow);
       case "Terminate" -> terminate(f);
       case "DeleteCache" -> deleteCache(f);
       case "Kind" -> kind(f, args.get(1));
@@ -373,12 +373,14 @@ public final class Manager{
     view.output(f, text);
     follow.ifPresent(fl -> { fl.send(text); fl.end(); });
   }
-  private void check(Path f){
+  private void check(Path f, Optional<Follow> follow){
     idle(f, "Check");
     selected = Optional.of(f);
     var p= project(f);
     view.clear(f);
-    output(f, p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias(), p.kind() == Kind.code)).stripTrailing()+"\n");
+    var text= p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias(), p.kind() == Kind.code)).stripTrailing()+"\n";
+    view.output(f, text);
+    follow.ifPresent(fl -> fl.send(text));
   }
   private void next(Path f){
     var l= live.get(f);

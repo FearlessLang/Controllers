@@ -1471,6 +1471,17 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("The manager was given the port "+closed+", but no program of this machine accepts a connection there: connect: [###]", view.refused.get(0));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
+  @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@TempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    try (var server= port()){
+      var check= follower(server);
+      send(m, "Check", "hello", "Port:"+server.getLocalPort());
+      assertEquals("Applied\nThe compilation cache of this project is out of date.\n", check.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    assertEquals("The compilation cache of this project is out of date.\n", view.out(hello));
+  }
   @Test void connectingEclipseNeedsAnEclipseFolder(@TempDir Path dir){
     var m= manager(dir);
     var eclipse= dir.resolve("unzipped").resolve("eclipse");
