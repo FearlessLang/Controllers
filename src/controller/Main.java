@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -27,7 +26,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.Locale;
 
@@ -42,6 +40,7 @@ import tools.PathClassLoader;
 import tools.JavacTool;
 import userMessages.UserError;
 import utils.Bug;
+import utils.Join;
 import utils.OneOr;
 import utils.Range;
 
@@ -95,42 +94,41 @@ public final class Main implements Manager.Exit{
     try{ return call(args[0]); }
     catch (Refused e){ return "InvalidCall\n"+Report.badCall(args[0], e.getMessage()); }
   }
-  /// The arguments of each command of the grammar of a call: p a projectName, t a typeName, b a base16, k a kind; a last * is typeName1..typeNamen.
-  private static final Map<String,List<String>> commands= Map.ofEntries(
-    Map.entry("Show", List.of("", "p")), Map.entry("Quit", List.of("")), Map.entry("Reset", List.of("")),
-    Map.entry("Register", List.of("b")), Map.entry("ConnectEclipse", List.of("b")), Map.entry("EditMetadata", List.of("b")), Map.entry("OpenWithOrShortcut", List.of("b", "bpt")),
-    Map.entry("Run", List.of("p")), Map.entry("Compile", List.of("p")), Map.entry("Check", List.of("p")), Map.entry("Terminate", List.of("p")), Map.entry("DeleteCache", List.of("p")),
-    Map.entry("Kind", List.of("pk")), Map.entry("Forget", List.of("p")), Map.entry("Mount", List.of("ptp")), Map.entry("Unmount", List.of("pt")),
-    Map.entry("Attenuate", List.of("pt*")), Map.entry("SelectMains", List.of("p*")));
+  /// The commands of the grammar of a call, each without the prefix FearlessCommand.
+  private static final List<List<String>> commands= Stream.of(
+    "Show", "Show projectName", "Quit", "Reset",
+    "Register base16", "ConnectEclipse base16", "EditMetadata base16", "OpenWithOrShortcut base16", "OpenWithOrShortcut base16 projectName typeName",
+    "Run projectName", "Compile projectName", "Check projectName", "Terminate projectName", "DeleteCache projectName",
+    "Kind projectName kind", "Forget projectName", "Mount projectName typeName projectName", "Unmount projectName typeName",
+    "Attenuate projectName typeName typeName1..typeNamen", "SelectMains projectName typeName1..typeNamen").map(c -> List.of(c.split(" "))).toList();
+  private static final String typeNames= "typeName1..typeNamen";
   private static final Pattern projectName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$)[a-z_][a-z0-9_]{0,190}");
   private static final Pattern typeName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])[.])[a-z][a-z0-9_]*[.]_*[A-Z][A-Za-z0-9_]*'*");
   /// The message of a call: the verb, then the arguments of the verb and the port, one per line.
   private static String call(String call){
     var words= List.of(call.split(" ", -1));
     var verb= words.getFirst().substring(prefix.length());
-    var forms= commands.get(verb);
-    if (forms == null){ throw new Refused(Report.callUnknown(words.getFirst(), commands.keySet().stream().sorted().map(v -> prefix+v).toList())); }
+    var forms= commands.stream().filter(c -> c.getFirst().equals(verb)).toList();
+    if (forms.isEmpty()){ throw new Refused(Report.callUnknown(words.getFirst(), commands.stream().map(c -> prefix+c.getFirst()).distinct().sorted().toList())); }
     var port= words.size() > 1 && words.getLast().startsWith("Port:");
     if (port && !Follow.isPort(words.getLast())){ throw new Refused(Report.callWord(words.getLast(), Report.callPort)); }
     var args= words.subList(1, words.size()-(port ? 1 : 0));
-    var form= OneOr.opt("form of "+verb, forms.stream().filter(f -> f.endsWith("*") ? args.size() >= f.length()-1 : args.size() == f.length()))
-      .orElseThrow(() -> new Refused(Report.callForms(forms.stream().map(f -> form(words.getFirst(), f)).toList())));
-    for (int i : Range.of(0, args.size())){ word(i < form.length() && form.charAt(i) != '*' ? form.charAt(i) : 't', args.get(i)); }
+    var form= OneOr.opt("form of "+verb, forms.stream().filter(f -> f.getLast().equals(typeNames) ? args.size() >= f.size()-2 : args.size() == f.size()-1))
+      .orElseThrow(() -> new Refused(Report.callForms(forms.stream().map(f -> Join.of(f, prefix, " ", "")).toList())));
+    for (int i : Range.of(0, args.size())){ word(form.get(Math.min(i+1, form.size()-1)), args.get(i)); }
     var mains= verb.equals("SelectMains") ? args.subList(1, args.size()) : List.<String>of();
     mains.stream().filter(m -> mains.indexOf(m) != mains.lastIndexOf(m)).findFirst().ifPresent(m -> { throw new Refused(Report.callRepeated(m)); });
     return String.join("\n", Stream.concat(Stream.of(verb), words.stream().skip(1)).toList());
   }
-  private static String form(String command, String f){
-    return f.chars().mapToObj(c -> " "+switch (c){ case 'p' -> "projectName"; case 't' -> "typeName"; case 'b' -> "base16"; case 'k' -> "kind"; default -> "typeName1..typeNamen"; }).collect(Collectors.joining("", command, ""));
-  }
-  private static void word(char kind, String w){
+  private static void word(String kind, String w){
     var ok= switch (kind){
-      case 'p' -> projectName.matcher(w).matches();
-      case 't' -> typeName.matcher(w).matches();
-      case 'k' -> Registry.Kind.of(w).isPresent();
-      default -> base16(w);
+      case "projectName" -> projectName.matcher(w).matches();
+      case "typeName", typeNames -> typeName.matcher(w).matches();
+      case "kind" -> Registry.Kind.of(w).isPresent();
+      case "base16" -> base16(w);
+      default -> throw Bug.unreachable();
     };
-    if (!ok){ throw new Refused(Report.callWord(w, switch (kind){ case 'p' -> Report.callProjectName; case 't' -> Report.callTypeName; case 'k' -> Report.callKind; default -> Report.callBase16; })); }
+    if (!ok){ throw new Refused(Report.callWord(w, switch (kind){ case "projectName" -> Report.callProjectName; case "typeName", typeNames -> Report.callTypeName; case "kind" -> Report.callKind; case "base16" -> Report.callBase16; default -> throw Bug.unreachable(); })); }
   }
   private static boolean base16(String w){
     if (!w.matches("Base16:(?:[0-9A-F][0-9A-F])+")){ return false; }
