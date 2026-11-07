@@ -64,6 +64,10 @@ final class ManagerFolderTest{
     var root= TaggedText.base16(Path.of("").toAbsolutePath().getRoot());
     assertEquals(invalid("FearlessCommandRegister "+root, "\""+root+"\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister "+root));
   }
+  @Test void aBase16PathNamingTheRootOfADriveWithADotDotIsNotACall(){
+    var root= TaggedText.base16(Path.of("").toAbsolutePath().getRoot().resolve(".."));
+    assertEquals(invalid("FearlessCommandRegister "+root, "\""+root+"\" is not "+Report.callBase16+"."), Main.message("FearlessCommandRegister "+root));
+  }
   @Test void aBase16PathOfAnOddNumberOfBytesIsRefusedOnlyOnWindows(){
     var odd= "Base16:2F646174612F68656C6C6F";
     if (!Fs.isWindows()){ assertEquals("Register\n"+odd, Main.message("FearlessCommandRegister "+odd)); return; }

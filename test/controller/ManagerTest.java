@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -668,6 +669,17 @@ The projects are:
     Fs.ofV(() -> Files.write(messages.resolve("1.msg"), new byte[]{'R', 'u', 'n', '\n', (byte)0xFF}));
     Fs.writeUtf8(messages.resolve("2.msg"), "Show");
     Errs.err("A message file of the manager folder does not hold what Fearless wrote there:\nits bytes do not form valid UTF-8 text.\n\nThe message file is:\n[###]1.msg", m::drain);
+  }
+  @Test void aMessageFileLeftWhileTheManagerEndsIsAppliedByTheNextManager(@TempDir Path dir){
+    var m= manager(dir);
+    m.stop();
+    Fs.writeUtf8(folder(dir.resolve("manager"), "messages").resolve("1.msg"), "Show");
+    try{ m.drain(); }
+    catch (RejectedExecutionException _){}
+    var next= manager(dir);
+    next.drain();
+    next.settle();
+    assertEquals(1, view.shown);
   }
   @Test void aFolderInsideARegisteredOneIsRefused(@TempDir Path dir){
     var m= manager(dir);
