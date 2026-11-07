@@ -32,6 +32,7 @@ import tools.ChildJvm;
 import tools.Fs;
 import tools.SourceOracle;
 import utils.Bug;
+import utils.Err;
 
 final class RealManagerTest{
   @TempDir static Path shared;
@@ -129,4 +130,15 @@ final class RealManagerTest{
   }
   @Test void aMainCallingQuitNeverReturns(@TempDir Path dir){ endsTheManagerAndNeverReturns(dir, "realmgr.Quit", "quit"); }
   @Test void aMainCallingResetNeverReturns(@TempDir Path dir){ endsTheManagerAndNeverReturns(dir, "realmgr.Reset", "reset"); }
+  @Test void aRegisterOfTheRootOfADriveAfterAnUnpairedSurrogateIsADeterministicError(@TempDir Path dir){
+    var m= manager(dir);
+    var project= compiled(m, dir, "realmgr");
+    message(m, "SelectMains", "realmgr", "realmgr.RegisterTests");
+    message(m, "Run", "realmgr");
+    until(m, Duration.ofSeconds(30), () -> idle(m));
+    m.stop();
+    assertEquals(List.of(), failures);
+    assertEquals(List.of(), view.refused);
+    Err.strCmp("--- running realmgr.RegisterTests ---\n--- realmgr.RegisterTests exited with 0 after [###]s ---\n", view.out(project));
+  }
 }
