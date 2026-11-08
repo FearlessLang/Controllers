@@ -139,8 +139,14 @@ public final class Manager{
   }
   public void message(String text){ post(() -> apply(text)); }
   void stop(){
-    try{ core.submit(this::end).get(1, TimeUnit.MINUTES); }
+    try{
+      core.submit(this::last).get(1, TimeUnit.MINUTES);
+      if (!core.awaitTermination(1, TimeUnit.MINUTES)){ throw new TimeoutException(); }
+    }
     catch (InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
+  }
+  private void last(){
+    end();
     core.shutdownNow();
   }
   //Runs once before the watcher thread starts, then only from that thread: never concurrently.
