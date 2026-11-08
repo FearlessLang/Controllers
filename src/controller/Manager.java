@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -138,29 +139,32 @@ public final class Manager{
   }
   public void message(String text){ post(() -> apply(text)); }
   void stop(){
-    try{ core.submit(() -> live.values().stream().filter(l -> l.child != null).forEach(l -> l.child.kill())).get(1, TimeUnit.MINUTES); }
+    try{ core.submit(this::end).get(1, TimeUnit.MINUTES); }
     catch (InterruptedException|ExecutionException|TimeoutException e){ throw Bug.of(e); }
     core.shutdownNow();
   }
   //Runs once before the watcher thread starts, then only from that thread: never concurrently.
-  public void drain(){
+  public void drain(){ post(() -> taken().forEach(this::apply)); }
+  private List<String> taken(){
     var msgDir= dir.resolve("messages");
-    try{ Fs.ofV(() -> take(msgDir)); }
+    try{ return Fs.of(() -> take(msgDir)); }
     catch (UncheckedIOException e){ throw Violation.couldNotDrainMessageFolder(msgDir, e.getCause()); }
   }
-  private void take(Path msgDir) throws IOException{
+  private List<String> take(Path msgDir) throws IOException{
+    var res= new ArrayList<String>();
     for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".msg")).toList()){
       String text;
       try{ text= UTF_8.newDecoder().decode(ByteBuffer.wrap(Fs.readAllBytes(file))).toString(); }
       catch (CharacterCodingException e){ throw Violation.messageNotUtf8(file); }
       Fs.deleteIfExists(file);
-      post(() -> apply(text));
+      res.add(text);
     }
     var old= Instant.now().minusSeconds(60);
     for (var file : Names.list(msgDir).stream().filter(f -> f.toString().endsWith(".tmp")).toList()){
       try{ if (Fs.getLastModifiedTime(file).toInstant().isBefore(old)){ Fs.deleteIfExists(file); } }
       catch (NoSuchFileException e){}
     }
+    return res;
   }
   void settle(){
     try{ core.submit(() -> {}).get(1, TimeUnit.MINUTES); }
@@ -219,6 +223,10 @@ public final class Manager{
     l.stopped = true;
     l.child.kill();
   }
+  private void end(){
+    ending = true;
+    live.keySet().forEach(this::endJob);
+  }
   private Optional<String> reconcile(Optional<Path> compiled, List<String> extensions){
     var claimed= Project.claimed(projects());
     var next= captured(claimed, extensions);
@@ -270,39 +278,35 @@ public final class Manager{
   }
   private void request(String verb, List<String> args, Optional<Follow> follow){
     if (ending){ throw new Refused(Report.quitting(verb)); }
-    if (verb.equals("Show") && args.isEmpty()){ view.show(); return; }
     switch (verb){
-      case "Quit" -> { ending = true; exit.quit(); }
-      case "Reset" -> { ending = true; exit.reset(); }
+      case "Show" -> { if (!args.isEmpty()){ selected = Optional.of(registered(verb, args.getFirst())); } view.show(); }
+      case "Quit" -> { end(); exit.quit(); }
+      case "Reset" -> { end(); exit.reset(); }
       case "Register" -> register(path(args.getFirst()));
       case "ConnectEclipse" -> connect(path(args.getFirst()));
       case "EditMetadata" -> editMetadata(path(args.getFirst()));
       case "OpenWithOrShortcut" -> openWith(path(args.getFirst()), args.subList(1, args.size()));
-      default -> project(verb, args, follow);
+      case "Run" -> { var f= registered(verb, args.getFirst()); run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty()); }
+      case "Compile" -> compile(registered(verb, args.getFirst()), follow);
+      case "Check" -> check(registered(verb, args.getFirst()), follow);
+      case "Terminate" -> terminate(registered(verb, args.getFirst()));
+      case "DeleteCache" -> deleteCache(registered(verb, args.getFirst()));
+      case "Kind" -> kind(registered(verb, args.getFirst()), args.get(1));
+      case "Forget" -> forget(registered(verb, args.getFirst()));
+      case "Mount" -> mount(registered(verb, args.getFirst()), args.get(1), Optional.of(lookedUp(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(args.getFirst(), args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
+      case "Unmount" -> mount(registered(verb, args.getFirst()), args.get(1), Optional.empty());
+      case "Attenuate" -> attenuate(registered(verb, args.getFirst()), args.get(1), args.subList(2, args.size()));
+      case "SelectMains" -> edit(registered(verb, args.getFirst()), e -> e.withMains(args.subList(1, args.size())));
+      default -> throw Bug.unreachable();
     }
   }
   /// A path of a message, as the manager program wrote it.
   private static Path path(String text){ return TaggedText.readPath(text, Bug::of).normalize(); }
-  private void project(String verb, List<String> args, Optional<Follow> follow){
-    var name= args.getFirst();
+  private Path registered(String verb, String name){
     Supplier<Refused> unknown= () -> new Refused(Report.unknownProject(verb, name, registry.all().stream().map(Entry::alias).toList()));
     var f= lookedUp(name).orElseThrow(unknown).path();
     if (!scan(f)){ unreachable(f); throw unknown.get(); }
-    switch (verb){
-      case "Show" -> { selected = Optional.of(f); view.show(); }
-      case "Run" -> run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty());
-      case "Compile" -> compile(f, follow);
-      case "Check" -> check(f, follow);
-      case "Terminate" -> terminate(f);
-      case "DeleteCache" -> deleteCache(f);
-      case "Kind" -> kind(f, args.get(1));
-      case "Forget" -> forget(f);
-      case "Mount" -> mount(f, args.get(1), Optional.of(lookedUp(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(name, args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
-      case "Unmount" -> mount(f, args.get(1), Optional.empty());
-      case "Attenuate" -> attenuate(f, args.get(1), args.subList(2, args.size()));
-      case "SelectMains" -> edit(f, e -> e.withMains(args.subList(1, args.size())));
-      default -> throw Bug.unreachable();
-    }
+    return f;
   }
   private Optional<Entry> lookedUp(String name){
     var res= renaming(() -> registry.lookedUp(name));
