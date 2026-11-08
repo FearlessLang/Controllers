@@ -183,7 +183,8 @@ public class Child{
   private final List<String> locked= new ArrayList<>();
   private final List<Path> connected= new ArrayList<>();
   private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
-  @AfterEach void nothingFailed(){ assertEquals(List.of(), failures); Disk.checkedByHandOnWindows(); }
+  private final List<Manager> managers= new ArrayList<>();
+  @AfterEach void nothingFailed(){ managers.forEach(Manager::stop); assertEquals(List.of(), failures); Disk.checkedByHandOnWindows(); }
   private Manager manager(Path dir, String... mains){ return manager(dir, view, known(mains)); }
   private static Function<Path,Optional<MainsInfo>> known(String... mains){ return known(List.of(), mains); }
   private static Function<Path,Optional<MainsInfo>> known(List<String> attenuators, String... mains){ return known(attenuators, List.of(), List.of(), mains); }
@@ -200,7 +201,9 @@ public class Child{
       @Override public void fail(Throwable problem){ failures.add(problem); }
     };
     Fs.ensureDir(dir.resolve("manager"));
-    return new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, locked, connected, granted), v, exit);
+    var res= new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, locked, connected, granted), v, exit);
+    managers.add(res);
+    return res;
   }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -674,6 +677,7 @@ The projects are:
   }
   @Test void aMessageFileLeftWhileTheManagerEndsIsAppliedByTheNextManager(@TempDir Path dir){
     var m= manager(dir);
+    managers.remove(m);
     m.stop();
     Fs.writeUtf8(folder(dir.resolve("manager"), "messages").resolve("1.msg"), "Show");
     assertThrows(RejectedExecutionException.class, m::drain);
