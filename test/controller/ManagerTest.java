@@ -891,6 +891,22 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(Optional.empty(), project(m, todo).problem());
     assertEquals(Project.State.dataRead, project(m, todo).state());
   }
+  @Test void theProblemOfADataProjectNamesTheZipWhoseEntryNameIsNotUtf8(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    var bytes= new ByteArrayOutputStream();
+    Fs.ofV(() -> { try (var z= new ZipOutputStream(bytes, StandardCharsets.ISO_8859_1)){ z.putNextEntry(new ZipEntry("café.txt")); z.write('h'); } });
+    Fs.ofV(() -> Files.write(data.resolve("pics.zip"), bytes.toByteArray()));
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    assertEquals(Project.State.dataReadInvalid, project(m, data).state());
+    same("""
+Root: [###]
+Path: "pics.zip"
+
+An entry name of this zip is not UTF-8 text.
+Tools read such a name in different encodings, so the same entry may get a different name on each system.[###]""", project(m, data).problem().orElseThrow());
+  }
   @Test void aDataProjectThatIsGoneEndsTheRunningMainsMountingItThenIsForgotten(@TempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
     var hello= code(m, dir, "hello");
