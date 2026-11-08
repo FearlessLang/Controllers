@@ -288,7 +288,7 @@ public final class Manager{
       case "OpenWithOrShortcut" -> openWith(path(args.getFirst()), args.subList(1, args.size()));
       case "Run" -> { var f= registered(verb, args.getFirst()); run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty()); }
       case "Compile" -> compile(registered(verb, args.getFirst()), follow);
-      case "Check" -> check(registered(verb, args.getFirst()));
+      case "Check" -> check(registered(verb, args.getFirst()), follow);
       case "Terminate" -> terminate(registered(verb, args.getFirst()));
       case "DeleteCache" -> deleteCache(registered(verb, args.getFirst()));
       case "Kind" -> kind(registered(verb, args.getFirst()), args.get(1));
@@ -377,12 +377,14 @@ public final class Manager{
     view.output(f, text);
     follow.ifPresent(fl -> { fl.send(text); fl.end(); });
   }
-  private void check(Path f){
+  private void check(Path f, Optional<Follow> follow){
     idle(f, "Check");
     selected = Optional.of(f);
     var p= project(f);
     view.clear(f);
-    output(f, p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias(), p.kind() == Kind.code)).stripTrailing()+"\n");
+    var text= p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias(), p.kind() == Kind.code)).stripTrailing()+"\n";
+    view.output(f, text);
+    follow.ifPresent(fl -> fl.send(text));
   }
   private void next(Path f){
     var l= live.get(f);
