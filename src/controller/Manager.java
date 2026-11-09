@@ -5,17 +5,21 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -358,7 +362,7 @@ public final class Manager{
     l.todo = mains;
     l.ran = List.of();
     l.input = input;
-    l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow(), l.mains.orElseThrow().dataEdit());
+    l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow(), l.mains.orElseThrow().dataEdit(), this::lockFile);
     l.attenuators = attenuated;
     l.follow = follow;
     view.clear(f);
@@ -687,7 +691,21 @@ public final class Manager{
   }
   private Optional<Facts> facts(Path f){
     var e= registry.of(f).orElseThrow();
-    return Facts.of(f, e.alias(), e.kind(), tools::check, live.get(f).ran.stream().findFirst().map(Project.Ran::since).orElse(Instant.MAX));
+    Supplier<Optional<Facts>> read= () -> Facts.of(f, e.alias(), e.kind(), tools::check, live.get(f).ran.stream().findFirst().map(Project.Ran::since).orElse(Instant.MAX));
+    if (!e.kind().isData()){ return read.get(); }
+    var known= live.get(f).facts;
+    try (var ch= FileChannel.open(lockFile(f), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)){
+      var held= known == null ? ch.lock(0, Long.MAX_VALUE, true) : ch.tryLock(0, Long.MAX_VALUE, true);
+      if (held == null){ return Optional.of(known); }
+      return read.get();
+    }
+    catch (IOException ex){ throw new UncheckedIOException(ex); }
+  }
+  Path lockFile(Path folder){
+    var locks= dir.resolve("locks");
+    Fs.ensureDir(locks);
+    try{ return locks.resolve(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(folder.toAbsolutePath().toString().getBytes(UTF_8)))+".lock"); }
+    catch (NoSuchAlgorithmException ex){ throw Bug.of(ex); }
   }
   /// The 'autoCheck' of a project folder the manager can not reach: the job of the project ends, and so does every running main
   /// of a project with a mount of that project; a dialog says so, then the project is forgotten.
