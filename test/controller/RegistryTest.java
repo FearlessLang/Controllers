@@ -263,9 +263,10 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     var notes= entry("notes", Kind.dataEdit, Map.of());
     var other= entry("other", Kind.code, Map.of());
     var code= entry("code", Kind.code, Map.of("code.Pub", "pub", "code.Old", "notes", "code.Diary", "notes", "code.Ledger", "pub", "code.Gone", "gone", "code.Other", "other"));
-    var grants= Registry.grants(new Content(List.of(pub, notes, other, code), List.of()), code, List.of("code.Diary", "code.Ledger"));
+    var grants= Registry.grants(new Content(List.of(pub, notes, other, code), List.of()), code, List.of("code.Diary", "code.Ledger"), p -> p.resolve("x.lock"));
     assertEquals(Map.of("code.Pub", pub.path(), "code.Old", notes.path()), grants.reads());
     assertEquals(Map.of("code.Diary", notes.path()), grants.edits());
+    assertEquals(Map.of("code.Pub", pub.path().resolve("x.lock"), "code.Old", notes.path().resolve("x.lock"), "code.Diary", notes.path().resolve("x.lock")), grants.locks());
   }
   @Test void mountsSurviveAReRead(@TempDir Path dir){
     var code= folder(dir, "mycode");
