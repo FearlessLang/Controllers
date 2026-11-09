@@ -7,6 +7,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 
 import java.awt.Desktop;
 import java.awt.GraphicsEnvironment;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ProcessBuilder.Redirect;
@@ -19,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -79,25 +79,21 @@ public final class Main implements Manager.Exit{
     catch (Throwable t){ exitCode = fatal(UserError.crashed(t), 3); }
     System.exit(exitCode);
   }
-  private static final LinkedBlockingQueue<Path> opened= new LinkedBlockingQueue<>();
-  private static void takeOpened(){ Desktop.getDesktop().setOpenFileHandler(e -> e.getFiles().forEach(f -> opened.add(f.toPath()))); }
-  private static List<String> startMessages(String[] args) throws InterruptedException{
-    if (args.length != 0 || !Fs.isMac() || GraphicsEnvironment.isHeadless()){ return messages(fileAsArg(args)); }
+  private static final LinkedBlockingQueue<List<File>> opened= new LinkedBlockingQueue<>();
+  private static boolean awaitsOpened;
+  private static void takeOpened(){ Desktop.getDesktop().setOpenFileHandler(e -> opened.add(e.getFiles())); }
+  private static List<String> startMessages(String[] args){
+    var byEvent= List.of(args).equals(List.of(prefix+"Opened"));
+    awaitsOpened = Fs.isMac() && !GraphicsEnvironment.isHeadless() && (args.length == 0 || byEvent);
+    if (!awaitsOpened){ return messages(fileAsArg(args)); }
     takeOpened();
-    var first= opened.poll(2000, TimeUnit.MILLISECONDS);
-    if (first == null){ return messages(); }
-    var files= new ArrayList<Path>(List.of(first));
-    opened.drainTo(files);
-    return files.stream().flatMap(f -> messages(PathClassLoader.argOf(f.toAbsolutePath())).stream()).toList();
+    return byEvent ? List.of() : messages();
   }
-  private void leaveOpened(){
-    while (true){
-      Path f;
-      try{ f= opened.take(); }
-      catch (InterruptedException e){ throw Bug.of(e); }
-      messages(PathClassLoader.argOf(f.toAbsolutePath())).forEach(m -> leave(msgDir(), m));
-    }
+  private void leaveOpened(long wait){
+    try{ Stream.ofNullable(opened.poll(wait, TimeUnit.MILLISECONDS)).flatMap(List::stream).flatMap(Main::messagesOf).forEach(m -> leave(msgDir(), m)); }
+    catch (InterruptedException e){ throw Bug.of(e); }
   }
+  private static Stream<String> messagesOf(File f){ return messages(PathClassLoader.argOf(f.toPath().toAbsolutePath())).stream(); }
   //The JVM hands main the arguments decoded as text, and bytes not valid in the file name encoding are
   //lost: a file argument is read again as the bytes the process received, and handed on as PathClassLoader.argOf.
   static String[] fileAsArg(String[] args){
@@ -216,7 +212,7 @@ public final class Main implements Manager.Exit{
     try{ lock = Fs.openChannel(lockFile, CREATE, WRITE).tryLock(); }
     catch (OverlappingFileLockException e){ throw Bug.unreachable(); }
     catch (IOException e){ throw Violation.couldNotUseInstanceLock(lockFile, e); }
-    if (lock == null){ return; }
+    if (lock == null){ if (awaitsOpened){ main.leaveOpened(2000); } return; }
     UserError.becameManagerOwner();
     main.own();
   }
@@ -256,7 +252,7 @@ public final class Main implements Manager.Exit{
     window.hide();
     manager.drain();
     Thread.startVirtualThread(() -> watch(watcher));
-    if (Fs.isMac()){ takeOpened(); Thread.startVirtualThread(this::leaveOpened); }
+    if (Fs.isMac()){ takeOpened(); Thread.startVirtualThread(() -> { while (true){ leaveOpened(Long.MAX_VALUE); } }); }
     manager.start();
     try{ done.await(); }
     catch (InterruptedException e){ throw Bug.of(e); }
