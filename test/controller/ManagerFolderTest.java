@@ -2,6 +2,8 @@ package controller;
 
 import static controller.Errs.same;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Path;
@@ -38,6 +40,11 @@ final class ManagerFolderTest{
     assertEquals(List.of("Register\n"+TaggedText.ofPath(here.resolve("Hello.FEARLESS")), "Show"), Main.messages("Hello.FEARLESS"));
     assertEquals(List.of("Register\n"+TaggedText.ofPath(here), "Show"), Main.messages("."));
     assertEquals("Show", message());
+  }
+  @Test void aDroppedFolderOrFearlessFileIsRegisteredAndAnyOtherFileIsOpened(@TempDir Path dir){
+    assertTrue(Main.isProject(dir));
+    assertTrue(Main.isProject(dir.resolve("Hello.FEARLESS")));
+    assertFalse(Main.isProject(dir.resolve("notes.htm")));
   }
   @Test void aCallIsOneArgumentAndItsMessageIsItsWordsOnePerLine(){
     assertEquals("Quit", message("FearlessCommandQuit"));

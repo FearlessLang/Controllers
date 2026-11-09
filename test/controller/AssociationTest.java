@@ -16,15 +16,19 @@ import tools.JavacTool;
 final class AssociationTest{
   private static final String linuxLauncher= "/home/me/fearlessManaged0_001/bin/fearlessManaged0_001";
   private static final Path winLauncher= Path.of("C:\\fearlessManaged0_001\\fearlessManaged0_001.exe");
+  private static final String macLauncher= "/Applications/fearlessManaged0_001.app/Contents/MacOS/fearlessManaged0_001";
   private static final String identity= "fearlessManaged0_001";
   @Test void theLauncherNamesTheProgramAndTheManagerIsNotThePortable(){
     assertEquals(identity, Association.identity(Path.of(linuxLauncher)));
     assertEquals(identity, Association.identity(Path.of("fearlessManaged0_001.exe")));
+    assertEquals(identity, Association.identity(Path.of(macLauncher)));
     assertNotEquals(Association.identity(Path.of(linuxLauncher)), Association.identity(Path.of("/home/me/fearlessBin0_001/bin/fearlessBin0_001")));
   }
   @Test void theTwoLaunchersOfOneFearlessAreTwoIdentitiesWithOneManagerFolder(){
     assertEquals(JavacTool.managerFolderOf(Path.of(linuxLauncher)), JavacTool.managerFolderOf(Path.of(linuxLauncher+"w")));
     assertEquals(identity+"w", Association.identity(Path.of(linuxLauncher+"w")));
+    assertEquals(Path.of("/Applications/fearless0_001"), JavacTool.managerFolderOf(Path.of(macLauncher)).get());
+    assertEquals(JavacTool.managerFolderOf(Path.of(macLauncher)), JavacTool.managerFolderOf(Path.of(macLauncher+"w")));
     assertEquals(identity+"w", Association.identity(Path.of("fearlessManaged0_001w.exe")));
     assertEquals(JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001.exe")), JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001w.exe")));
     assertTrue(JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001.exe")).isPresent());

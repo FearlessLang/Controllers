@@ -5,6 +5,8 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 
+import java.awt.Desktop;
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ProcessBuilder.Redirect;
@@ -17,12 +19,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -69,11 +73,30 @@ public final class Main implements Manager.Exit{
     NativeLocaleForcer.forceEnglish();
     Fs.onSymbolicLink= Report::symbolicLink;
     var exitCode= 0;
-    try{ NativeLocaleForcer.requireUtf8FileNames(); run(messages(fileAsArg(args))); }
+    try{ NativeLocaleForcer.requireUtf8FileNames(); run(startMessages(args)); }
     catch (UserError e){ exitCode = fatal(e, 1); }
     catch (VirtualMachineError|LinkageError e){ exitCode = fatal(Violation.vmOrLinkageFailure(e), 2); }
     catch (Throwable t){ exitCode = fatal(UserError.crashed(t), 3); }
     System.exit(exitCode);
+  }
+  private static final LinkedBlockingQueue<Path> opened= new LinkedBlockingQueue<>();
+  private static void takeOpened(){ Desktop.getDesktop().setOpenFileHandler(e -> e.getFiles().forEach(f -> opened.add(f.toPath()))); }
+  private static List<String> startMessages(String[] args) throws InterruptedException{
+    if (args.length != 0 || !Fs.isMac() || GraphicsEnvironment.isHeadless()){ return messages(fileAsArg(args)); }
+    takeOpened();
+    var first= opened.poll(2000, TimeUnit.MILLISECONDS);
+    if (first == null){ return messages(); }
+    var files= new ArrayList<Path>(List.of(first));
+    opened.drainTo(files);
+    return files.stream().flatMap(f -> messages(PathClassLoader.argOf(f.toAbsolutePath())).stream()).toList();
+  }
+  private void leaveOpened(){
+    while (true){
+      Path f;
+      try{ f= opened.take(); }
+      catch (InterruptedException e){ throw Bug.of(e); }
+      messages(PathClassLoader.argOf(f.toAbsolutePath())).forEach(m -> leave(msgDir(), m));
+    }
   }
   //The JVM hands main the arguments decoded as text, and bytes not valid in the file name encoding are
   //lost: a file argument is read again as the bytes the process received, and handed on as PathClassLoader.argOf.
@@ -135,10 +158,10 @@ public final class Main implements Manager.Exit{
     try{ path= (arg.startsWith(Fs.isWindows() ? "Base16:" : "file:") ? PathClassLoader.pathOf(arg) : Path.of(arg)).toAbsolutePath().normalize(); }
     catch (IllegalArgumentException e){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
     if (arg.isBlank() || path.getFileName() == null){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
-    var project= Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Names.ext);
-    if (project){ return List.of("Register\n"+TaggedText.ofPath(path), "Show"); }
+    if (isProject(path)){ return List.of("Register\n"+TaggedText.ofPath(path), "Show"); }
     return List.of("OpenWithOrShortcut\n"+TaggedText.ofPath(path));
   }
+  public static boolean isProject(Path path){ return Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Names.ext); }
   private static final ExecutorService sender= Executors.newSingleThreadExecutor(Thread.ofVirtual().factory());
   /// Runs the manager program with each call in turn, each once the process before has ended, also across the calls of
   /// several GUI operations, so the messages arrive in that order.
@@ -173,7 +196,7 @@ public final class Main implements Manager.Exit{
       if (watcher != null){ Fs.ofV(watcher::close); }
       if (lock != null){ Fs.ofV(() -> lock.channel().close()); }
       Fs.rmTree(managerDir);
-      if (!Fs.isMac()){ Association.eradicateAll(); }
+      Association.eradicateAll();
       return Optional.empty();
     }
     catch (UncheckedIOException w){ return Optional.of(Violation.notWiped(managerDir, w.getCause())); }
@@ -233,6 +256,7 @@ public final class Main implements Manager.Exit{
     window.hide();
     manager.drain();
     Thread.startVirtualThread(() -> watch(watcher));
+    if (Fs.isMac()){ takeOpened(); Thread.startVirtualThread(this::leaveOpened); }
     manager.start();
     try{ done.await(); }
     catch (InterruptedException e){ throw Bug.of(e); }

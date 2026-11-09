@@ -1,6 +1,7 @@
 package gui;
 
 import java.awt.AWTException;
+import java.awt.Desktop;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.MouseInfo;
@@ -8,6 +9,7 @@ import java.awt.Point;
 import java.awt.SystemTray;
 import java.awt.Toolkit;
 import java.awt.TrayIcon;
+import java.awt.desktop.AppReopenedListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeListener;
@@ -29,6 +31,7 @@ import tools.Fs;
 /// The icon lives for the whole process life and is removed by process death.
 public final class Tray{
   public static boolean install(Window window){
+    if (Fs.isMac()){ Desktop.getDesktop().addAppEventListener((AppReopenedListener)_ -> Main.command("Show")); return true; }
     var menu= menu();
     var anchor= new JWindow();
     anchor.setType(java.awt.Window.Type.POPUP);
