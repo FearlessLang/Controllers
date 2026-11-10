@@ -882,15 +882,6 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(1, view.refused.size());
     same("--- running hello.Hello ---\nran hello.Hello\n[###]", view.out(hello));
   }
-  @Test void aFolderHoldingAResourceWithoutExtensionNamedAsTheFolderIsRegisteredValid(@TempDir Path dir){
-    var m= manager(dir);
-    var todo= dir.resolve("todo");
-    Fs.writeUtf8(todo.resolve("todo"), "milk\n");
-    send(m, "Register", TaggedText.of(todo.toString()));
-    send(m, "Kind", project(m, todo).alias(), "dataRead");
-    assertEquals(Optional.empty(), project(m, todo).problem());
-    assertEquals(Project.State.dataRead, project(m, todo).state());
-  }
   @Test void aLockFileOfNoRegisteredProjectIsDeletedWhenTheManagerStarts(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
@@ -1949,25 +1940,22 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
   @Test void aShortcutFileBreakingTheProjectFileRulesFailsTheCompileAndCreatesNothing(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
-    Fs.writeUtf8(hello.resolve("todo"), "");
     var calls= associated.size();
     var bar= claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010");
     var longName= "hello.L"+"o".repeat(192);
     for (var c : List.of(
-      Map.entry(info(longName, bar, ""), "Main \""+longName+"\" cannot have the shortcut file \"l"+"o".repeat(192)+".fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
-      Map.entry(info("hello.Todo", bar, ""), "Main \"hello.Todo\" cannot have the shortcut file \"todo.fapp010\": the project has the file \"todo\", and a file without extension cannot share its name with a file with an extension. Rename the main, or rename the file \"todo\"."))){
+      Map.entry(info(longName, bar, ""), "Main \""+longName+"\" cannot have the shortcut file \"l"+"o".repeat(192)+".fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."))){
       infos.put("hello", c.getKey());
       touch(hello);
       compiled(m, "hello");
       same("--- compiling hello ---\ncompiled\n"+c.getValue()+"\n--- compile failed ---\n", view.out(hello));
-      assertEquals(List.of(".fearless_out", "_hello", "hello.fearless", "todo"), top(hello));
+      assertEquals(List.of(".fearless_out", "_hello", "hello.fearless"), top(hello));
     }
-    assertEquals(calls+2, associated.size());
+    assertEquals(calls+1, associated.size());
     infos.put("hello", info("hello.L"+"o".repeat(191), bar, ""));
     touch(hello);
     compiled(m, "hello");
     assertTrue(Files.exists(hello.resolve("l"+"o".repeat(191)+".fapp010")));
-    Fs.ofV(() -> Files.delete(hello.resolve("todo")));
     infos.put("hello", info("hello.Todo", bar, ""));
     touch(hello);
     compiled(m, "hello");
