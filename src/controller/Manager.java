@@ -672,7 +672,6 @@ public final class Manager{
   }
   private void drop(Path f){
     var l= live.remove(f);
-    if (l.child != null){ l.terminated = true; l.child.kill(); }
     l.follow.ifPresent(Follow::end);
     if (selected.equals(Optional.of(f))){ selected = Optional.empty(); }
   }
@@ -739,11 +738,20 @@ public final class Manager{
     if (l == null){ return; }
     if (l.child != null && !l.job.equals(Project.compiling)){ endMain(f); }
     registry.all().stream().map(Entry::path).filter(g -> mounts(g, f)).toList().forEach(this::endMain);
-    if (l.child != null){ l.terminated = true; l.child.kill(); }
+    if (l.child != null){ endCompile(f, l); }
     l.job = "";
     view.refuse(Report.unreachable(alias(f), f));
     try{ forget(f); }
     catch (Refused r){ view.refuse(r.getMessage()); }
+  }
+  private void endCompile(Path f, Live l){
+    var child= l.child;
+    l.child = null;
+    child.kill();
+    code(child);
+    drain(f, l);
+    flushLine(f, l);
+    output(f, "--- compile was terminated ---\n");
   }
   private boolean mounts(Path g, Path f){
     var l= live.get(g);
