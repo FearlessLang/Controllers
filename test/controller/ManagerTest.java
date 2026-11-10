@@ -1525,6 +1525,18 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     catch (IOException e){ throw new UncheckedIOException(e); }
     assertEquals("The compilation cache of this project is out of date.\n", view.out(hello));
   }
+  @Test void aCheckWhileAMainRunsIsRefusedAndLeavesTheOutputOfTheMain(@TempDir Path dir){
+    var m= manager(dir, "hello.Slow");
+    var hello= code(m, dir, "hello");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    send(m, "Check", "hello");
+    same("Refused request \"Check\" on project \"hello\".\n[###]", String.join("\n", view.refused));
+    same("--- running hello.Slow ---\nran hello.Slow\n", view.out(hello));
+    send(m, "Terminate", "hello");
+    idle(m);
+  }
   @Test void theConnectionOfAFixReceivesTheChangesOfTheFix(@TempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
