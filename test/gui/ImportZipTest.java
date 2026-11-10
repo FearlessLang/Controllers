@@ -59,6 +59,11 @@ final class ImportZipTest{
     var target= imported(dir, zipFile(dir, "tiny_bank_edu_app.zip", "tiny_bank.fearless", "_tiny_bank/_rank_app.fear"), Optional.empty());
     assertEquals(List.of("_tiny_bank/_rank_app.fear", "tiny_bank.fearless"), files(target));
   }
+  @Test void anEduAppKeepsTheFoldersWithNothingInside(@TempDir Path dir){
+    var target= imported(dir, zipFile(dir, "tiny_bank_edu_app.zip", "tiny_bank.fearless", ".git/refs/tags/", ".git/head"), Optional.empty());
+    assertEquals(List.of(".git/head", "tiny_bank.fearless"), files(target));
+    assertEquals(List.of(), files(target.resolve(".git").resolve("refs").resolve("tags")));
+  }
   @Test void aLibGoesIntoTheFolderLibOfTheSelectedProject(@TempDir Path dir){
     var hello= dir.resolve("hello");
     assertEquals(hello.resolve("lib").resolve("text_kit_lib.zip"), imported(dir, zipFile(dir, "text_kit_lib.zip", "_text_kit/_rank_core200.fear"), Optional.of(hello)));

@@ -78,7 +78,7 @@ final class ImportZip{
   }
   static void install(Zip z, byte[] bytes, Map<String,byte[]> entries, Path target){
     if (Files.exists(target)){ Fs.rmTree(target); }
-    if (z.edu()){ entries.forEach((n, b) -> write(target.resolve(n), b)); return; }
+    if (z.edu()){ entries.forEach((n, b) -> unzip(target.resolve(n), n, b)); return; }
     if (!z.app()){ write(target, bytes); return; }
     write(target.resolve(z.file()), bytes);
     entries.forEach((n, b) -> { if (n.equals(z.name()+".fearless") || icon(n)){ write(target.resolve(n), b); } });
@@ -86,6 +86,10 @@ final class ImportZip{
   private static boolean icon(String entry){
     var folder= ".config/icon/";
     return entry.startsWith(folder) && entry.indexOf('/', folder.length()) < 0 && entry.endsWith(".png");
+  }
+  private static void unzip(Path to, String name, byte[] bytes){
+    if (name.endsWith("/")){ Fs.ensureDir(to); return; }
+    write(to, bytes);
   }
   private static void write(Path file, byte[] bytes){
     Fs.ensureDir(file.getParent());
