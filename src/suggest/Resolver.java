@@ -136,11 +136,15 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     var names= scope(g, pos);
     return argAfter(g, pos, names).or(() -> expectedIn(g, pos, names)).map(x -> inScope(x, names)).orElse(Ty.unknown);
   }
-  /// the cursor after a method name or an operator written without parentheses: the parameter type of its argument
+  /// the cursor after a method name or an operator written without parentheses, or after the = of a
+  /// sugar recv.m x =: the parameter type of the first argument
   private Optional<Ty> argAfter(Group g, int pos, HashMap<String,Ty> scope){
     var seg= segment(g, pos);
-    if (seg.size() < 2 || !Tokens.is(seg.getLast(), Kind.DotName, Kind.Op)){ return Optional.empty(); }
-    var call= new Call(Chain.parse(seg.subList(0, seg.size()-1)), Tokens.text(seg.getLast()), List.of(Chain.unknown), List.of());
+    var sugar= seg.size() >= 4 && Tokens.is(seg.getLast(), Kind.Eq) && (Tokens.is(seg.get(seg.size()-2), Kind.LowercaseId) || Tokens.isGroup(seg.get(seg.size()-2), Kind.OCurly));
+    var at= seg.size()-(sugar ? 3 : 1);
+    if (at < 1 || !Tokens.is(seg.get(at), Kind.DotName, Kind.Op)){ return Optional.empty(); }
+    var args= sugar ? List.<E>of(Chain.unknown, Chain.unknown) : List.<E>of(Chain.unknown);
+    var call= new Call(Chain.parse(seg.subList(0, at)), Tokens.text(seg.get(at)), args, List.of());
     return first(call, scope, 0, Optional.empty()).map(b -> b.m.ts().get(0).subst(b.sub).erase(b.m.bs()));
   }
   /// the type with the generics not in scope unknown

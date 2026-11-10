@@ -164,6 +164,10 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same(person, probe("Block#.let x = {ps.get 0} .return{ ps.flow.map{ p -> x.|"));
     same(nat, probe("Block#.let x = {ps.get 0} .return{ x.age }.|"));
   }
+  @Test void afterTheEqualOfASugarTheThunkIsExpected(){
+    same("MF[?]", expected(file+"Block#.let x = |"));
+    same("MF[?]", expected(file+"Block#.let x = {ps.get 0} .let y = |"));
+  }
   @Test void anUnderscoreBeforeTheEqualIsNotASugar(){ same("", probe("Block#.let _ = {ps.get 0} .|")); }
   @Test void aNamedMethodOfTheExpectedTypeBindsItsParameters(){
     same(".size +", probe("ps.flow.map{::.name}.first.match{ .some s -> s.|"));
