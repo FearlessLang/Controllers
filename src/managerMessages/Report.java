@@ -61,6 +61,7 @@ The arguments are:
   //-- requests the state of the project refuses
   private static String running(String name, String job){ return job.equals(Project.compiling) ? "A compilation of project "+disp(name)+" is currently running." : "Main "+disp(job)+" is currently running inside project "+disp(name)+"."; }
   public static String busy(String verb, String name, String job){ return "Refused request "+disp(verb)+" on project "+disp(name)+".\n"+running(name, job); }
+  public static String inUse(String verb, String name, String user, String job){ return refused(verb, name)+"\n"+running(user, job)+(user.equals(name) ? "" : "\nProject "+disp(user)+" has a mount of project "+disp(name)+"."); }
   public static String notCode(String verb, String name, String kind){ return refused(verb, name)+"\nThe kind of project "+disp(name)+" is "+disp(kind)+": only a project of kind \"code\" accepts request "+disp(verb)+"."; }
   public static String invalidContent(String verb, String name, String why){ return refused(verb, name)+"\nThe content of project "+disp(name)+" is invalid:\n"+why.stripTrailing(); }
   public static String notCompiled(String name, String state){ return refused("Run", name)+"\nThe state of project "+disp(name)+" is "+disp(state)+": only a project in state \"code: compiled\" runs a main."; }
@@ -166,6 +167,18 @@ Replace that file with a PNG image, or remove it.
   public static String outOfDate(){ return "The compilation cache of this project is out of date."; }
   public static String filesUpdated(String name, String job){ return "Some files inside the project "+disp(name)+" were updated while "+(job.equals(Project.compiling) ? "the project was compiling." : "main "+disp(job)+" was running."); }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of every program of the Fearless family, this manager included.\nNothing in the project folders changes."; }
+  public static String fixQuestion(String name){
+    return """
+Fix changes the folder of project %s:
+- Fix deletes the files and folders that desktops, archive programs and text editors write next to your files:
+  ".DS_Store", "._name", "__MACOSX", "Icon", "Thumbs.db", "desktop.ini", ".directory", ".Trash-1000" and the files ending with "~";
+- Fix removes the byte order mark and the Windows line endings of the Fearless source files;
+- Fix sets to the current time the files with no time or with a time in the future;
+- Fix deletes the folders and the zips left with nothing inside.
+Fix does the same inside the zips of the project.
+The Output lists every change. A change of Fix can not be undone.""".formatted(disp(name));
+  }
+  public static String needsNoFix(String name){ return "The project "+disp(name)+" needs no fix."; }
   public static String checkFine(String name, boolean code){ return "The project "+disp(name)+" is valid"+(code ? ", and up to date." : "."); }
   public static String cacheNotDeleted(String why){ return "--- the compilation cache is not deleted: "+why+"\n---\n"; }
   public static String alreadyCompiled(String alias){ return "The project "+disp(alias)+" was already up to date and compiled."; }

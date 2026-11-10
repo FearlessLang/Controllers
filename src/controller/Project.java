@@ -57,6 +57,9 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public String alias(){ return entry.alias(); }
   public Kind kind(){ return entry.kind(); }
   public boolean busy(){ return !job.isEmpty(); }
+  public Optional<Project> usedBy(List<Project> all){
+    return all.stream().filter(p -> p.busy() && (p.equals(this) || !p.job.equals(compiling) && p.entry.mounts().containsValue(alias()))).findFirst();
+  }
   public boolean needsCompiling(){ return kind() == Kind.code && facts.stale().isPresent(); }
   public Optional<String> problem(){ return facts.problem(); }
   public List<String> knownMains(){ return mains.map(m -> List.copyOf(m.mains().keySet())).orElse(List.of()); }
