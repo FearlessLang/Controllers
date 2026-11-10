@@ -339,6 +339,8 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     var s= at("Animal: {}\nDog: Animal{}\nA: { .foo: Animal -> Rex: |");
     same("Animal Dog", s.supers().stream().map(Ty::show).collect(Collectors.joining(" ")));
     same("Dog", supers("Animal: {}\nDog: Animal{}\nA: { .foo: Animal -> Rex: D|"));
+    same("Animal Dog", supers("Animal: {}\nDog: Animal{}\nA: { .foo: Animal -> Rex[X]: |"));
+    same("Dog", supers("Animal: {}\nDog: Animal{}\nA: { .foo: Animal -> Rex[X,Y]: D|"));
     same("OrderHash[Person] Person", supers("A: { .foo: OrderHash[Person] -> Bob: |"));
     same("Person Student", supers("A: { .foo: Person -> Bob: |"));
     same("Person", supers("A: { .foo(p: Person): Opt[OrderHash[Person]] -> Pairs#(p, Bob: P|"));

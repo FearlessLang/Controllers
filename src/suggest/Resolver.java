@@ -156,7 +156,8 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   private static Optional<Integer> superSlot(List<Item> items, boolean touching, int pos){
     var typed= touching && Tokens.is(items.getLast(), Kind.UppercaseId) && Tokens.text(items.getLast()).indexOf('.') == -1;
     var k= typed ? items.size()-1 : items.size();
-    var slot= (typed || !touching || Tokens.is(items.getLast(), Kind.Colon)) && k >= 2 && Tokens.is(items.get(k-1), Kind.Colon) && Tokens.is(items.get(k-2), Kind.UppercaseId);
+    var named= k >= 2 && Tokens.is(items.get(k-1), Kind.Colon) && (Tokens.is(items.get(k-2), Kind.UppercaseId) || k >= 3 && Tokens.isGroup(items.get(k-2), Kind.OSquareArg) && Tokens.is(items.get(k-3), Kind.UppercaseId));
+    var slot= (typed || !touching || Tokens.is(items.getLast(), Kind.Colon)) && named;
     return slot ? Optional.of(typed ? items.getLast().start() : pos) : Optional.empty();
   }
   /// the expected type and the types implementing it, whose simple name starts with the prefix
