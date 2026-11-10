@@ -39,6 +39,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -97,6 +98,7 @@ final class Panel{
   private final JLabel status= named(new JLabel(), "status");
   private Object shown= List.of();
   private Project project;
+  private List<Project> all= List.of();
   Panel(Consumer<String> refuse){
     this.refuse= refuse;
     output.setEditable(false);
@@ -157,7 +159,14 @@ final class Panel{
     menu.add(Window.item("Browse", () -> Window.open(refuse, project.folder())));
     Stream.of(named(Window.item("Forget", () -> Main.command("Forget "+alias)), "forget"), named(Window.item("Delete cache", () -> Main.command("DeleteCache "+alias)), "deleteCache"))
       .forEach(i -> { i.setEnabled(!project.busy()); menu.add(i); });
+    var fix= named(Window.item("Fix", () -> fix(alias)), "fix");
+    fix.setEnabled(project.usedBy(all).isEmpty());
+    menu.add(fix);
     menu.show(projectMenu, 0, projectMenu.getHeight());
+  }
+  private void fix(String alias){
+    var fix= JOptionPane.showOptionDialog(root, Report.fixQuestion(alias), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Fix", "Cancel"}, "Cancel");
+    if (fix == 0){ Main.command("Fix "+alias); }
   }
   /// the state in words, then what is running, the first line of the 'problem', and the broken mounts
   static String status(Project p, List<Project> all){
@@ -262,6 +271,7 @@ final class Panel{
     if (next.equals(shown)){ return; }
     shown = next;
     project = p;
+    this.all = all;
     icon.setIcon(new ImageIcon(Icons.of(p, iconSize).getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
     name.setText(p.alias());
     status.setText(status(p, all));

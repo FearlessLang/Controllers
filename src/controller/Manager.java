@@ -49,6 +49,7 @@ import fileAssociations.Icon;
 import mainCoordinator.MakeDemo;
 import managerMessages.Report;
 import managerMessages.Violation;
+import realSourceOracle.Fix;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.UserError;
@@ -315,6 +316,7 @@ public final class Manager{
       case "DeleteCache" -> deleteCache(registered(verb, args.getFirst()));
       case "Kind" -> kind(registered(verb, args.getFirst()), args.get(1));
       case "Forget" -> forget(registered(verb, args.getFirst()));
+      case "Fix" -> fix(registered(verb, args.getFirst()), follow);
       case "Mount" -> mount(registered(verb, args.getFirst()), args.get(1), Optional.of(lookedUp(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(args.getFirst(), args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
       case "Unmount" -> mount(registered(verb, args.getFirst()), args.get(1), Optional.empty());
       case "Attenuate" -> attenuate(registered(verb, args.getFirst()), args.get(1), args.subList(2, args.size()));
@@ -407,6 +409,19 @@ public final class Manager{
     var text= p.problem().or(() -> p.facts().stale()).orElse(Report.checkFine(p.alias(), p.kind() == Kind.code)).stripTrailing()+"\n";
     view.output(f, text);
     follow.ifPresent(fl -> fl.send(text));
+  }
+  private void fix(Path f, Optional<Follow> follow){
+    project(f).usedBy(projects()).ifPresent(u -> { throw new Refused(Report.inUse("Fix", alias(f), u.alias(), u.job())); });
+    selected = Optional.of(f);
+    view.clear(f);
+    var said= new StringBuilder();
+    try{ Fix.of(f, s -> said.append(s).append("\n")); }
+    catch (UncheckedIOException e){ said.append(Report.fileFailure(e.getCause())).append("\n"); }
+    catch (UserError e){ said.append(e.getMessage().stripTrailing()).append("\n"); }
+    var text= said.isEmpty() ? Report.needsNoFix(alias(f))+"\n" : said.toString();
+    view.output(f, text);
+    follow.ifPresent(fl -> fl.send(text));
+    scan(f);
   }
   private void next(Path f){
     var l= live.get(f);

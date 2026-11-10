@@ -113,7 +113,7 @@ public final class Main implements Manager.Exit{
     "Show", "Show projectName", "Quit", "Reset",
     "Register base16", "ConnectEclipse base16", "EditMetadata base16", "OpenWithOrShortcut base16", "OpenWithOrShortcut base16 projectName typeName",
     "Run projectName", "Compile projectName", "Check projectName", "Terminate projectName", "DeleteCache projectName",
-    "Kind projectName kind", "Forget projectName", "Mount projectName typeName projectName", "Unmount projectName typeName",
+    "Kind projectName kind", "Forget projectName", "Fix projectName", "Mount projectName typeName projectName", "Unmount projectName typeName",
     "Attenuate projectName typeName typeName1..typeNamen", "SelectMains projectName typeName1..typeNamen").map(c -> List.of(c.split(" "))).toList();
   private static final String typeNames= "typeName1..typeNamen";
   private static final Pattern projectName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$)[a-z_][a-z0-9_]{0,190}");

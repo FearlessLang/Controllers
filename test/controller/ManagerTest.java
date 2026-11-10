@@ -516,6 +516,7 @@ ran hello.Hello
     send(m, "Run", "hello", "hello.Slow");
     send(m, "Compile", "hello");
     send(m, "DeleteCache", "hello");
+    send(m, "Fix", "hello");
     send(m, "Kind", "hello", "idle");
     send(m, "Forget", "hello");
     send(m, "Terminate", "hello");
@@ -530,6 +531,7 @@ ran hello.Slow
       "Refused request \"Run\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
       "Refused request \"Compile\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
       "Refused request \"DeleteCache\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
+      "Refused request \"Fix\" on project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
       "Refused request to change the kind of project \"hello\" to \"idle\".\nMain \"hello.Slow\" is currently running inside project \"hello\".",
       "Refused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\"."), view.refused);
     assertEquals(Kind.code, project(m, hello).kind());
@@ -543,6 +545,8 @@ ran hello.Slow
     send(m, "Show", "other");
     send(m, "Terminate", "slowcompile");
     assertEquals(List.of("Refused request \"Terminate\" on project \"slowcompile\".\nA compilation of project \"slowcompile\" is currently running."), view.refused);
+    send(m, "Fix", "slowcompile");
+    assertEquals("Refused request \"Fix\" on project \"slowcompile\".\nA compilation of project \"slowcompile\" is currently running.", view.refused.getLast());
     assertEquals(Optional.of(other), m.state().selected());
     idle(m);
     same("[###]compiling\n--- compile failed with 1 ---\n", view.out(slow));
@@ -1520,6 +1524,67 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
     assertEquals("The compilation cache of this project is out of date.\n", view.out(hello));
+  }
+  @Test void theConnectionOfAFixReceivesTheChangesOfTheFix(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var source= hello.resolve("_app").resolve("main.fear");
+    Fs.writeUtf8(hello.resolve(".DS_Store"), "");
+    Fs.writeUtf8(source, "A:{}\r\n");
+    try (var server= port()){
+      var fix= follower(server);
+      send(m, "Fix", "hello", "Port:"+server.getLocalPort());
+      assertEquals("Applied\nDeleted .DS_Store\nFixed the line endings of _app/main.fear\n", fix.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    assertEquals("Deleted .DS_Store\nFixed the line endings of _app/main.fear\n", view.out(hello));
+    assertEquals("A:{}\n", Fs.readUtf8(source));
+    assertEquals(Optional.of(hello), m.state().selected());
+    send(m, "Fix", "hello");
+    assertEquals("The project \"hello\" needs no fix.\n", view.out(hello));
+  }
+  @Test void aRunningMainRefusesTheFixOfTheDataProjectsMountedOnTheProjectOfTheMain(@TempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
+    var hello= code(m, dir, "hello");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Mount", "hello", "hello.Pub data");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    send(m, "Fix", "data");
+    assertEquals(List.of("Refused request \"Fix\" on project \"data\".\nMain \"hello.Slow\" is currently running inside project \"hello\".\nProject \"hello\" has a mount of project \"data\"."), view.refused);
+    send(m, "Terminate", "hello");
+    idle(m);
+    send(m, "Fix", "data");
+    assertEquals("The project \"data\" needs no fix.\n", view.out(data));
+  }
+  @Test void aFixEndsAtTheChangeTheFileSystemRefuses(@TempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var locked= folder(hello, "locked");
+    Fs.writeUtf8(hello.resolve(".DS_Store"), "");
+    Fs.writeUtf8(locked.resolve("notes.txt~"), "");
+    Disk.noWrite(locked);
+    try{
+      send(m, "Fix", "hello");
+      same("Deleted .DS_Store\naccess denied: [###]notes.txt~[###]\n", view.out(hello));
+    }
+    finally{ Disk.allow(locked); }
+  }
+  @Test void aFixEndsAtASymbolicLink(@TempDir Path dir){
+    var before= Fs.onSymbolicLink;
+    Fs.onSymbolicLink = managerMessages.Report::symbolicLink;
+    try{
+      var m= manager(dir);
+      var hello= registered(m, dir, "hello");
+      Fs.writeUtf8(hello.resolve(".DS_Store"), "");
+      Disk.link(folder(hello, "linked").resolve("link"), folder(dir, "target"));
+      send(m, "Fix", "hello");
+      same("Deleted .DS_Store\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions:\n[###]link\n", view.out(hello));
+    }
+    finally{ Fs.onSymbolicLink = before; }
   }
   @Test void connectingEclipseNeedsAnEclipseFolder(@TempDir Path dir){
     var m= manager(dir);

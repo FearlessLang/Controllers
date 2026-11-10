@@ -275,6 +275,7 @@ public final class Window implements Manager.View{
     manager.add(item("Edit project metadata...", this::editMetadata));
     manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse "+TaggedText.base16(p)))));
     manager.add(item("Base documentation", () -> open(this::say, Deployed.stdLib("baseCache").resolve("base.html"))));
+    manager.add(item("Info", () -> Thread.startVirtualThread(this::info)));
     manager.addSeparator();
     manager.add(item("Reset", this::reset));
     manager.add(item("Quit", () -> Main.command("Quit")));
@@ -351,6 +352,12 @@ public final class Window implements Manager.View{
   private void reset(){
     var reset= JOptionPane.showOptionDialog(frame, Report.resetQuestion(), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Reset", "Cancel"}, "Cancel");
     if (reset == 0){ Main.command("Reset"); }
+  }
+  private void info(){
+    String line;
+    try{ line = Deployed.coordinator(Deployed.stdLib("base")).drawing().replace(". ", ".\n"); }
+    catch (InterruptedException e){ throw Bug.of(e); }
+    SwingUtilities.invokeLater(() -> JOptionPane.showOptionDialog(frame, line, "Fearless", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, new Object[]{"Close"}, "Close"));
   }
   static JMenuItem item(String text, Runnable action){
     var res= new JMenuItem(text);
