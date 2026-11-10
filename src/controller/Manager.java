@@ -295,7 +295,11 @@ public final class Manager{
       follow.ifPresent(Follow::applied);
       if (!List.of("Run", "Compile").contains(verb)){ follow.ifPresent(Follow::end); }
     }
-    catch (Refused r){ follow.ifPresent(fl -> fl.refuse(r.getMessage())); view.refuse(r.getMessage()); }
+    catch (Refused r){
+      var why= verb.equals("InvalidCall") ? String.join("\n", given) : r.getMessage();
+      follow.ifPresent(fl -> fl.refuse(why));
+      view.refuse(why);
+    }
   }
   private void request(String verb, List<String> args, Optional<Follow> follow){
     if (ending){ throw new Refused(Report.quitting(verb)); }
