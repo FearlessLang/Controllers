@@ -255,11 +255,8 @@ public final class Manager{
     var next= captured(claimed, extensions);
     try{ tools.associate(next, preloads().toList(), e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of()))); }
     catch (Refusal r){
-      var claims= compiled.stream().flatMap(f -> Project.claimants(f, alias(f), live.get(f).claims)).map(c -> "."+c.claim().extension());
-      var added= extensions.stream().filter(x -> !registry.extensions().contains(x)).map(x -> "."+x);
-      var brought= Stream.concat(claims, added).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
+      var brought= compiled.stream().flatMap(f -> Project.claimants(f, alias(f), live.get(f).claims)).map(c -> "."+c.claim().extension()).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
       if (r.extensions.isEmpty() || r.extensions.contains(".fearless") || !brought.containsAll(r.extensions)){ throw r.error; }
-      if (compiled.isEmpty()){ throw new Refused(r.getMessage()); }
       var hit= r.extensions.stream().flatMap(e -> claimed.getOrDefault(e.substring(1), List.of()).stream()).map(Project.Claimant::folder).distinct().toList();
       for (var g : hit){
         endJob(g);
