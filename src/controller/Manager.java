@@ -259,18 +259,18 @@ public final class Manager{
     var claimed= Project.claimed(projects());
     var next= captured(claimed, extensions);
     try{ tools.associate(next, preloads().toList(), e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of()))); }
-    catch (Refusal r){
+    catch (NotOurs n){
       var brought= compiled.stream().flatMap(f -> Project.claimants(f, alias(f), live.get(f).claims)).map(c -> "."+c.claim().extension()).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
-      if (r.extensions.isEmpty() || r.extensions.contains(".fearless") || !brought.containsAll(r.extensions)){ throw r.error; }
-      var hit= r.extensions.stream().flatMap(e -> claimed.getOrDefault(e.substring(1), List.of()).stream()).map(Project.Claimant::folder).distinct().toList();
+      if (n.extensions.contains(".fearless") || !brought.containsAll(n.extensions)){ throw n.error; }
+      var hit= n.extensions.stream().flatMap(e -> claimed.getOrDefault(e.substring(1), List.of()).stream()).map(Project.Claimant::folder).distinct().toList();
       for (var g : hit){
         endJob(g);
         deleted(g);
-        errorFile(g, r.error.getMessage());
+        errorFile(g, n.error.getMessage());
       }
       var again= rebuild(Optional.empty());
       assert again.isEmpty();
-      return compiled.filter(hit::contains).map(_ -> r.error.getMessage());
+      return compiled.filter(hit::contains).map(_ -> n.error.getMessage());
     }
     captured = next.stream().map(Icon::extension).collect(Collectors.toSet());
     return Optional.empty();

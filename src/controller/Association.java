@@ -40,9 +40,9 @@ public final class Association{
   static void reconcile(Path launcher, List<Icon> extensions, List<WindowIcon> windows, Function<String,String> claimedBy){
     FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, windows, launcher, iconFile(),
       c -> JavacTool.managerFolderOf(c).filter(d -> !JavacTool.managerFolderOf(launcher).equals(Optional.of(d))).ifPresent(Association::removeAtOnce),
-      reported -> new Refusal(Violation.associationsAmbiguous(reported), List.of()),
-      choices -> new Refusal(Violation.associationChosenByHand(choices, claimedBy).withRecovery("Remove these choices", () -> FileAssociations.forgetChoices(choices, Violation::associationNotWritable)), List.of()),
-      held -> new Refusal(Violation.associationNotOurs(held, claimedBy), List.copyOf(held.keySet())),
+      Violation::associationsAmbiguous,
+      choices -> Violation.associationChosenByHand(choices, claimedBy).withRecovery("Remove these choices", () -> FileAssociations.forgetChoices(choices, Violation::associationNotWritable)),
+      held -> new NotOurs(held, claimedBy),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
   }

@@ -141,9 +141,9 @@ public class Child{
       windows.add(preloads.stream().map(c -> c.label()+" "+c.claim().icon()).toList());
       var all= Stream.concat(Stream.of(new Icon(".fearless", null, null)), captured.stream()).toList();
       var chosenByHand= all.stream().map(Icon::extension).filter(chosen::contains).toList();
-      if (!chosenByHand.isEmpty()){ throw new Refusal(Violation.associationChosenByHand(chosenByHand.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy), List.of()); }
+      if (!chosenByHand.isEmpty()){ throw Violation.associationChosenByHand(chosenByHand.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy); }
       var blocked= all.stream().map(Icon::extension).filter(e -> !Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
-      if (!blocked.isEmpty()){ throw new Refusal(Violation.associationNotOurs(blocked, claimedBy), List.copyOf(blocked.keySet())); }
+      if (!blocked.isEmpty()){ throw new NotOurs(blocked, claimedBy); }
     }
     @Override public void connect(Path eclipse, Path managerDir){ connected.add(eclipse); }
     private static ChildJvm jvm(Consumer<String> out, String... args){
