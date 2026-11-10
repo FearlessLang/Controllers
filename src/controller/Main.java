@@ -163,10 +163,7 @@ public final class Main implements Manager.Exit{
   /// several GUI operations, so the messages arrive in that order.
   public static void command(String... calls){ sender.execute(() -> Stream.of(calls).forEach(Main::send)); }
   private static void send(String call){
-    var pb= new ProcessBuilder(Association.launcher().toString(), prefix+call).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD);
-    //The launcher marks the process it starts with _JPACKAGE_ variables; a launcher started by
-    //that process inherits them, takes itself for that process, and ends with 1.
-    pb.environment().keySet().removeIf(k -> k.startsWith("_JPACKAGE_"));
+    var pb= Fs.processBuilder(List.of(Association.launcher().toString(), prefix+call)).redirectOutput(Redirect.DISCARD).redirectError(Redirect.DISCARD);
     try{ Fs.of(pb::start).waitFor(); }
     catch (InterruptedException e){ throw Bug.of(e); }
   }
