@@ -401,17 +401,14 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
   private Optional<Type> entry(Ty t, HashSet<String> seen){
     var res= api.entry(t);
     if (res.isPresent() || !t.name().startsWith(pkg+".") || !seen.add(t.name())){ return res; }
-    return declaration(root, t.name().substring(pkg.length()+1)).filter(h -> h.xs().size() == t.args().size() && h.xs().stream().distinct().count() == h.xs().size()).map(h -> declared(h, seen));
+    var name= t.name().substring(pkg.length()+1);
+    return headers(root).filter(h -> h.name().equals(name)).findFirst().filter(h -> h.xs().size() == t.args().size() && h.xs().stream().distinct().count() == h.xs().size()).map(h -> declared(h, seen));
   }
   private Type declared(Header h, HashSet<String> seen){
     var xs= new HashMap<String,Ty>();
     h.xs().forEach(x -> xs.put(x, new Ty(x, List.of())));
     var supers= h.supers().stream().map(c -> parseType(c, xs)).toList();
     return new Type(pkg+"."+h.name(), h.xs(), supers, supers.stream().flatMap(c -> methods(c, seen).stream()).distinct().toList());
-  }
-  private static Optional<Header> declaration(Group g, String name){
-    return g.items.stream().filter(it -> it instanceof Group).map(Group.class::cast)
-      .flatMap(c -> (c.open == Kind.OCurly ? Chain.header(c) : Optional.<Header>empty()).filter(h -> h.name().equals(name)).or(() -> declaration(c, name)).stream()).findFirst();
   }
   /// the methods of the type, with the type's arguments substituted
   private List<Method> methods(Ty t){ return methods(t, new HashSet<>()); }
