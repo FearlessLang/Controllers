@@ -53,10 +53,7 @@ public final class Names{
     var moved= markers(folder).stream().limit(1).toList();
     return !taken.contains(name) && entries(folder).stream().filter(p -> !moved.contains(p)).noneMatch(p -> clashes(p, name));
   }
-  private static boolean clashes(Path p, String name){
-    var f= p.getFileName().toString();
-    return f.equalsIgnoreCase(name+ext) || f.equalsIgnoreCase(name) && !Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS);
-  }
+  private static boolean clashes(Path p, String name){ return p.getFileName().toString().equalsIgnoreCase(name+ext); }
   static void nameAs(Path folder, String name){
     assert isName(name);
     var target= folder.resolve(name+ext);

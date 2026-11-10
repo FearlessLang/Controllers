@@ -36,7 +36,7 @@ final class FactsTest{
   static Path project(Path dir, String name){
     var res= dir.resolve(name);
     Fs.writeUtf8(res.resolve("_hello").resolve("_rank_app.fear"), "use base.Main as Main;\n");
-    Fs.writeUtf8(res.resolve("readme"), "hi\n");
+    Fs.writeUtf8(res.resolve("readme.txt"), "hi\n");
     Fs.writeUtf8(res.resolve(name.toLowerCase(Locale.ROOT)+".fearless"), "");
     backdated(res);
     return res;
@@ -74,7 +74,7 @@ final class FactsTest{
   }
   @Test void aCodeProjectWithNoPackageUsesOnlyBaseAndIsUpToDate(@TempDir Path dir){
     var project= dir.resolve("someProject");
-    Fs.writeUtf8(project.resolve("readme"), "hi\n");
+    Fs.writeUtf8(project.resolve("readme.txt"), "hi\n");
     Fs.writeUtf8(project.resolve("someproject.fearless"), "");
     backdated(project);
     var facts= facts(project, "someproject", Kind.code);

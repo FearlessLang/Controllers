@@ -221,9 +221,6 @@ Replace that file with a PNG image, or remove it.
   public static UserError shortcutBadFileName(String main, String file){
     return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
   }
-  public static UserError shortcutMasksFile(String main, String file, String name){
-    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": the project has the file "+disp(name)+", and a file without extension cannot share its name with a file with an extension. Rename the main, or rename the file "+disp(name)+".");
-  }
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" cannot both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
