@@ -56,7 +56,7 @@ The arguments are:
   public static String unknownProject(String verb, String name, List<String> names){
     return refused(verb, name)+"\nNo project is named "+disp(name)+"."+Join.of(names.stream().map(n -> "\n  "+n), "\nThe projects are:", "", "", "\nNo project is registered.");
   }
-  public static String portClosed(int port, IOException e){ return "The manager was given the port "+port+", but no program of this machine accepts a connection there: "+fileFailure(e); }
+  public static String portClosed(String verb, int port, IOException e){ return "Refused request "+disp(verb)+": the manager was given the port "+port+", but no program of this machine accepts a connection there: "+fileFailure(e); }
 
   //-- requests the state of the project refuses
   private static String running(String name, String job){ return job.equals(Project.compiling) ? "A compilation of project "+disp(name)+" is currently running." : "Main "+disp(job)+" is currently running inside project "+disp(name)+"."; }

@@ -292,7 +292,7 @@ public final class Manager{
     var port= !args.isEmpty() && args.getLast().startsWith("Port:");
     var follow= Optional.<Follow>empty();
     try{
-      follow = port ? Optional.of(Follow.to(args.getLast())) : follow;
+      follow = port ? Optional.of(Follow.to(verb, args.getLast())) : follow;
       request(verb, port ? args.subList(0, args.size()-1) : args, follow);
       follow.ifPresent(Follow::applied);
       if (!List.of("Run", "Compile").contains(verb)){ follow.ifPresent(Follow::end); }
