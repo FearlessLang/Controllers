@@ -11,8 +11,10 @@ import java.util.List;
 import java.util.Locale;
 
 import controller.Project;
+import controller.Project.Job;
 import userMessages.UserError;
 import userMessages.Violation;
+import utils.Bug;
 import utils.Join;
 
 /// Report: what the user gave the manager that it cannot accept: a message, a folder, the
@@ -59,9 +61,15 @@ The arguments are:
   public static String portClosed(String verb, int port, IOException e){ return "Refused request "+disp(verb)+": the manager was given the port "+port+", but no program of this machine accepts a connection there: "+fileFailure(e); }
 
   //-- requests the state of the project refuses
-  private static String running(String name, String job){ return job.equals(Project.compiling) ? "A compilation of project "+disp(name)+" is currently running." : "Main "+disp(job)+" is currently running inside project "+disp(name)+"."; }
-  public static String busy(String verb, String name, String job){ return "Refused request "+disp(verb)+" on project "+disp(name)+".\n"+running(name, job); }
-  public static String inUse(String verb, String name, String user, String job){ return refused(verb, name)+"\n"+running(user, job)+(user.equals(name) ? "" : "\nProject "+disp(user)+" has a mount of project "+disp(name)+"."); }
+  private static String running(String name, Job job){
+    return switch (job){
+      case Job.Compile _ -> "A compilation of project "+disp(name)+" is currently running.";
+      case Job.Main(var main) -> "Main "+disp(main)+" is currently running inside project "+disp(name)+".";
+      case Job.Idle _ -> throw Bug.unreachable();
+    };
+  }
+  public static String busy(String verb, String name, Job job){ return "Refused request "+disp(verb)+" on project "+disp(name)+".\n"+running(name, job); }
+  public static String inUse(String verb, String name, String user, Job job){ return refused(verb, name)+"\n"+running(user, job)+(user.equals(name) ? "" : "\nProject "+disp(user)+" has a mount of project "+disp(name)+"."); }
   public static String notCode(String verb, String name, String kind){ return refused(verb, name)+"\nThe kind of project "+disp(name)+" is "+disp(kind)+": only a project of kind \"code\" accepts request "+disp(verb)+"."; }
   public static String invalidContent(String verb, String name, String why){ return refused(verb, name)+"\nThe content of project "+disp(name)+" is invalid:\n"+why.stripTrailing(); }
   public static String notCompiled(String name, String state){ return refused("Run", name)+"\nThe state of project "+disp(name)+" is "+disp(state)+": only a project in state \"code: compiled\" runs a main."; }
@@ -72,9 +80,9 @@ The arguments are:
   public static String notAnAttenuator(String name, String main, String attenuator, List<String> attenuators){
     return refused("Run", name)+"\nMain "+disp(main)+" is attenuated by "+disp(attenuator)+", and "+disp(attenuator)+" is not an attenuator of project "+disp(name)+"."+Join.of(attenuators.stream().map(a -> "\n  "+a), "\nThe attenuators are:", "", "", "\nThe project has no attenuator.");
   }
-  public static String kindWhileBusy(String name, String kind, String job){ return "Refused request to change the kind of project "+disp(name)+" to "+disp(kind)+".\n"+running(name, job); }
-  public static String removedWhileBusy(String name, String job){ return "Refused request to remove project "+disp(name)+".\n"+running(name, job); }
-  public static String extensionWhileBusy(String name, String ext, String job){ return "Refused request to remove "+disp(ext)+" from \"systemExtensions\": a main of project "+disp(name)+" claims "+disp(ext)+".\n"+running(name, job); }
+  public static String kindWhileBusy(String name, String kind, Job job){ return "Refused request to change the kind of project "+disp(name)+" to "+disp(kind)+".\n"+running(name, job); }
+  public static String removedWhileBusy(String name, Job job){ return "Refused request to remove project "+disp(name)+".\n"+running(name, job); }
+  public static String extensionWhileBusy(String name, String ext, Job job){ return "Refused request to remove "+disp(ext)+" from \"systemExtensions\": a main of project "+disp(name)+" claims "+disp(ext)+".\n"+running(name, job); }
   public static String mountsRefused(String name, List<String> problems){
     return refused("Run", name)+"\nProject "+disp(name)+" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:"+Join.of(problems.stream().map(p -> "\n  "+p.replace("\n", "\n  ")), "", "", "");
   }
@@ -85,7 +93,7 @@ The arguments are:
   public static String mountNotData(String data, String kind){ return "the kind of project "+disp(data)+" is "+disp(kind)+", and only a project of kind \"dataRead\" or \"dataEdit\" is a data project."; }
   public static String mountNotEditable(String data, String type){ return "the kind of project "+disp(data)+" is \"dataRead\", and "+disp(type)+" is a DataEdit type: only a project of kind \"dataEdit\" is mounted on a DataEdit type."; }
   public static String mountInvalid(String data, String why){ return "the content of project "+disp(data)+" is invalid:\n"+why.stripTrailing(); }
-  public static String grantsWhileRunning(String name, String job){ return "Refused request to change the data projects mounted on the DataRead types of project "+disp(name)+".\n"+running(name, job)+"\nThe data projects of a main stay the same while the main runs."; }
+  public static String grantsWhileRunning(String name, Job job){ return "Refused request to change the data projects mounted on the DataRead types of project "+disp(name)+".\n"+running(name, job)+"\nThe data projects of a main stay the same while the main runs."; }
 
   //-- registering a folder
   public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions:\n"+path(p.toString())); }
@@ -165,7 +173,7 @@ Replace that file with a PNG image, or remove it.
 """.formatted(path(icon.toString())));
   }
   public static String outOfDate(){ return "The compilation cache of this project is out of date."; }
-  public static String filesUpdated(String name, String job){ return "Some files inside the project "+disp(name)+" were updated while "+(job.equals(Project.compiling) ? "the project was compiling." : "main "+disp(job)+" was running."); }
+  public static String filesUpdated(String name, String main){ return "Some files inside the project "+disp(name)+" were updated while main "+disp(main)+" was running."; }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of every program of the Fearless family, this manager included.\nNothing in the project folders changes."; }
   public static String fixQuestion(String name){
     return """

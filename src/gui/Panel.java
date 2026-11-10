@@ -170,7 +170,7 @@ final class Panel{
   }
   /// the state in words, then what is running, the first line of the 'problem', and the broken mounts
   static String status(Project p, List<Project> all){
-    var running= p.job().equals(Project.compiling) ? ", compiling" : ", running "+p.job();
+    var running= p.job() instanceof Project.Job.Main(var main) ? ", running "+main : ", compiling";
     var detail= p.busy() ? running : p.problem().map(pr -> ": "+pr.lines().findFirst().orElse("")).orElse("");
     var broken= p.entry().mounts().keySet().stream().filter(t -> p.brokenMount(t, all).isPresent()).map(t -> "; the mount on "+t+" is broken (see Data)").collect(Collectors.joining());
     return p.state().text+detail+broken;
@@ -280,7 +280,7 @@ final class Panel{
     action.setText(switch (a){ case check -> "Check"; case compile -> "Compile"; case run -> "Run"; case terminate -> "Terminate"; });
     action.setIcon(several ? new Arrow() : null);
     action.setHorizontalTextPosition(JButton.LEADING);
-    action.setEnabled(!p.job().equals(Project.compiling) && (a != Project.Action.run || !p.knownMains().isEmpty()));
+    action.setEnabled(!(p.job() instanceof Project.Job.Compile) && (a != Project.Action.run || !p.knownMains().isEmpty()));
     openDocs.setEnabled(p.mains().isPresent());
     kind.setText("Kind: "+p.kind().text);
     kind.setEnabled(!p.busy());

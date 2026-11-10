@@ -40,6 +40,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import controller.Project.Job;
 import controller.Registry.Content;
 import controller.Registry.Entry;
 import controller.Registry.Kind;
@@ -91,7 +92,7 @@ public final class Manager{
   public record State(List<Project> projects, Optional<Path> selected, List<String> extensions){
     public Optional<Project> of(Path folder){ return OneOr.opt("project "+folder, projects.stream().filter(p -> p.folder().equals(folder))); }
     public Optional<Project> shown(){ return selected.flatMap(this::of); }
-    public List<String> running(){ return projects.stream().filter(Project::busy).map(p -> p.alias()+" - "+p.job()).toList(); }
+    public List<String> running(){ return projects.stream().filter(Project::busy).map(p -> p.alias()+" - "+(p.job() instanceof Job.Main(var main) ? main : "compiling")).toList(); }
   }
   private enum Cut{ none, filesUpdated, stopped }
   private static final class Live{
@@ -99,7 +100,7 @@ public final class Manager{
     Facts facts;
     Optional<MainsInfo> mains= Optional.empty();
     MainsInfo claims= Project.noClaims;
-    String job= "";
+    Job job= new Job.Idle();
     Instant since= Instant.EPOCH;
     StringBuilder compiled= new StringBuilder();
     ChildJvm child;
@@ -219,7 +220,7 @@ public final class Manager{
     for (var e : registry.all()){
       var l= live.get(e.path());
       if (e.kind() != Kind.code){ l.claims = Project.noClaims; continue; }
-      if (l.job.equals(Project.compiling)){ continue; }
+      if (l.job instanceof Job.Compile){ continue; }
       l.claims = cached(e.path());
     }
   }
@@ -268,7 +269,7 @@ public final class Manager{
     captured = next.stream().map(Icon::extension).collect(Collectors.toSet());
     return Optional.empty();
   }
-  private Stream<Project.Claimant> preloads(){ return projects().stream().filter(p -> !p.job().equals(Project.compiling)).flatMap(p -> Project.preloads(p.folder(), p.alias(), p.claims())); }
+  private Stream<Project.Claimant> preloads(){ return projects().stream().filter(p -> !(p.job() instanceof Job.Compile)).flatMap(p -> Project.preloads(p.folder(), p.alias(), p.claims())); }
   private List<Icon> captured(Map<String,List<Project.Claimant>> claimed, List<String> extensions){
     var suffix= Fs.isWindows() ? ".ico" : ".png";
     var all= new TreeSet<>(claimed.keySet().stream().filter(e -> !Registry.isSystem(e)).toList());
@@ -346,7 +347,7 @@ public final class Manager{
   }
   private void idle(Path f, String verb){
     var job= live.get(f).job;
-    if (!job.isEmpty()){ throw new Refused(Report.busy(verb, alias(f), job)); }
+    if (!(job instanceof Job.Idle)){ throw new Refused(Report.busy(verb, alias(f), job)); }
   }
   private void runnable(Path f, String verb){
     idle(f, verb);
@@ -390,7 +391,7 @@ public final class Manager{
     l.compiled.setLength(0);
     view.clear(f);
     output(f, "--- compiling "+alias(f)+" ---\n");
-    start(f, Project.compiling, () -> tools.compile(f, alias(f), out(f)));
+    start(f, new Job.Compile(), () -> tools.compile(f, alias(f), out(f)));
   }
   private void upToDate(Path f, Optional<Follow> follow){
     view.clear(f);
@@ -427,24 +428,24 @@ public final class Manager{
     l.todo = l.todo.subList(1, l.todo.size());
     output(f, "--- running "+main+" ---\n");
     l.ran = Push.of(l.ran, new Project.Ran(main, Instant.now()));
-    start(f, main, () -> tools.run(f, main, l.input, l.grants, l.attenuators.getOrDefault(main, List.of()), out(f)));
+    start(f, new Job.Main(main), () -> tools.run(f, main, l.input, l.grants, l.attenuators.getOrDefault(main, List.of()), out(f)));
   }
   private void ended(Path f){
     var l= live.get(f);
-    l.job = "";
+    l.job = new Job.Idle();
     l.follow.ifPresent(Follow::end);
     l.follow = Optional.empty();
     scan(f);
   }
-  private void start(Path f, String what, Supplier<ChildJvm> jvm){
+  private void start(Path f, Job job, Supplier<ChildJvm> jvm){
     var l= live.get(f);
     try{ l.child = jvm.get(); }
     catch (UncheckedIOException e){
-      output(f, "--- "+(what.equals(Project.compiling) ? "compile" : what)+" did not start: "+Report.fileFailure(e.getCause())+"\n---\n");
+      output(f, "--- "+(job instanceof Job.Main(var main) ? main : "compile")+" did not start: "+Report.fileFailure(e.getCause())+"\n---\n");
       ended(f);
       return;
     }
-    l.job = what;
+    l.job = job;
     l.since = Instant.now();
     var child= l.child;
     Thread.startVirtualThread(() -> await(f, l, child));
@@ -460,15 +461,21 @@ public final class Manager{
   private void exited(Path f, Live l, ChildJvm child, int ec){
     if (live.get(f) != l || l.child != child){ return; }
     l.child = null;
-    if (l.job.equals(Project.compiling)){ compiled(f, l, ec); return; }
-    output(f, "--- "+l.job+(l.cut != Cut.none ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
-    if (l.cut == Cut.filesUpdated || l.cut == Cut.none && broken(f)){ l.cut = Cut.filesUpdated; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
+    switch (l.job){
+      case Job.Compile _ -> compiled(f, l, ec);
+      case Job.Main(var main) -> mainExited(f, l, main, ec);
+      case Job.Idle _ -> throw Bug.unreachable();
+    }
+  }
+  private void mainExited(Path f, Live l, String main, int ec){
+    output(f, "--- "+main+(l.cut != Cut.none ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
+    if (l.cut == Cut.filesUpdated || l.cut == Cut.none && broken(f)){ l.cut = Cut.filesUpdated; output(f, Report.filesUpdated(alias(f), main)+"\n"); }
     next(f);
   }
   /// What the manager does after Coordinator.compile: step 1 only after a compilation with no error, step 2 always, steps 3 and 4 only with no error.
   private void compiled(Path f, Live l, int ec){
     flushLine(f, l);
-    l.job = "";
+    l.job = new Job.Idle();
     l.answered.clear();
     var failed= ec != 0;
     if (ec == ChildMain.cacheCorrupted){
@@ -531,7 +538,7 @@ public final class Manager{
   }
   private void terminate(Path f){
     var l= live.get(f);
-    if (l.job.equals(Project.compiling)){ throw new Refused(Report.busy("Terminate", alias(f), l.job)); }
+    if (l.job instanceof Job.Compile){ throw new Refused(Report.busy("Terminate", alias(f), l.job)); }
     selected = Optional.of(f);
     if (l.child != null){ endMain(f); }
   }
@@ -539,7 +546,7 @@ public final class Manager{
   private void endMain(Path f){
     var l= live.get(f);
     l.cut = Cut.stopped;
-    output(f, "--- terminating "+l.job+" ---\n");
+    output(f, "--- terminating "+((Job.Main)l.job).main()+" ---\n");
     var child= l.child;
     child.kill();
     var ec= code(child);
@@ -621,7 +628,7 @@ public final class Manager{
     Content next;
     try{ next= Registry.inferred(Registry.parse(text, file, identity, dir), registry.content()); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
-    registry.all().stream().filter(o -> !live.get(o.path()).job.isEmpty()).forEach(o -> kept(o, next));
+    registry.all().stream().filter(o -> !(live.get(o.path()).job instanceof Job.Idle)).forEach(o -> kept(o, next));
     granted(next);
     if (!registry.extensions().equals(next.extensions())){ reconcile(Optional.empty(), next.extensions()); }
     var old= registry.content();
@@ -676,7 +683,7 @@ public final class Manager{
   private boolean scan(Path f){
     renaming(() -> registry.nameCheck(f));
     var l= live.get(f);
-    var compiling= l.job.equals(Project.compiling);
+    var compiling= l.job instanceof Job.Compile;
     var named= !alias(f).isEmpty();
     var found= !named ? Optional.<Facts>empty() : compiling ? Optional.of(l.facts).filter(_ -> Files.isDirectory(f, LinkOption.NOFOLLOW_LINKS)) : checked(f);
     if (found.isEmpty()){
@@ -686,7 +693,7 @@ public final class Manager{
     }
     var fresh= found.get();
     if (compiling){ return true; }
-    if (!l.job.isEmpty()){
+    if (l.job instanceof Job.Main){
       if (fresh.stale().isPresent() || fresh.problem().isPresent()){
         if (l.cut == Cut.none){ l.cut = Cut.filesUpdated; }
         l.child.kill();
@@ -737,10 +744,10 @@ public final class Manager{
   private void unreachable(Path f){
     var l= live.get(f);
     if (l == null){ return; }
-    if (l.child != null && !l.job.equals(Project.compiling)){ endMain(f); }
+    if (l.child != null && l.job instanceof Job.Main){ endMain(f); }
     registry.all().stream().map(Entry::path).filter(g -> mounts(g, f)).toList().forEach(this::endMain);
     if (l.child != null){ endCompile(f, l); }
-    l.job = "";
+    l.job = new Job.Idle();
     view.refuse(Report.unreachable(alias(f), f));
     try{ forget(f); }
     catch (Refused r){ view.refuse(r.getMessage()); }
@@ -756,7 +763,7 @@ public final class Manager{
   }
   private boolean mounts(Path g, Path f){
     var l= live.get(g);
-    return l.child != null && !l.job.equals(Project.compiling) && l.grants.mounts().containsValue(f);
+    return l.child != null && l.job instanceof Job.Main && l.grants.mounts().containsValue(f);
   }
   private void rotate(){
     if (!view.visible()){ return; }
@@ -770,7 +777,7 @@ public final class Manager{
   private void granted(Content next){
     for (var e : live.entrySet()){
       var job= e.getValue().job;
-      if (job.isEmpty() || job.equals(Project.compiling)){ continue; }
+      if (!(job instanceof Job.Main)){ continue; }
       var now= registry.of(e.getKey()).orElseThrow();
       var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey())))
         .filter(p -> !p.mounts().equals(now.mounts()) || now.mounts().values().stream().anyMatch(d -> !data(registry.content(), d).equals(data(next, d))));
@@ -804,7 +811,7 @@ public final class Manager{
   }
   private void late(Path f, Live l, String text){
     if (live.get(f) != l){ return; }
-    if (!l.job.equals(Project.compiling)){ output(f, text); return; }
+    if (!(l.job instanceof Job.Compile)){ output(f, text); return; }
     l.line.append(text);
     for (var nl= l.line.indexOf("\n"); nl >= 0; nl = l.line.indexOf("\n")){
       var line= l.line.substring(0, nl+1);

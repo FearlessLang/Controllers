@@ -28,8 +28,12 @@ import tools.Fs;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
 /// folder holds, its mains once known, and its job, if any.
-public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, String job, List<Project.Ran> ran){
-  public static final String compiling= "compiling";
+public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, Project.Job job, List<Project.Ran> ran){
+  public sealed interface Job{
+    record Idle() implements Job{}
+    record Compile() implements Job{}
+    record Main(String main) implements Job{}
+  }
   /// a main of the last Run of the project, and when it started
   public record Ran(String main, Instant since){}
   public static final MainsInfo noClaims= new MainsInfo(Map.of());
@@ -56,9 +60,9 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public Path folder(){ return entry.path(); }
   public String alias(){ return entry.alias(); }
   public Kind kind(){ return entry.kind(); }
-  public boolean busy(){ return !job.isEmpty(); }
+  public boolean busy(){ return !(job instanceof Job.Idle); }
   public Optional<Project> usedBy(List<Project> all){
-    return all.stream().filter(p -> p.busy() && (p.equals(this) || !p.job.equals(compiling) && p.entry.mounts().containsValue(alias()))).findFirst();
+    return all.stream().filter(p -> p.busy() && (p.equals(this) || p.job instanceof Job.Main && p.entry.mounts().containsValue(alias()))).findFirst();
   }
   public boolean needsCompiling(){ return kind() == Kind.code && facts.stale().isPresent(); }
   public Optional<String> problem(){ return facts.problem(); }
