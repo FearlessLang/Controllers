@@ -44,7 +44,7 @@ public final class Deployed implements Manager.Tools{
       PathClassLoader.argOf(folder), alias), out);
   }
   @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
-    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.reads(), grants.edits(), grants.locks(), attenuators, Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
+    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.mounts(), grants.locks(), attenuators, Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Path baseCache(){ return stdLib("baseCache"); }

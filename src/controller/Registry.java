@@ -58,7 +58,7 @@ public final class Registry{
   public record Content(List<Entry> projects, List<String> extensions){
     public Content{ projects = List.copyOf(projects); extensions = List.copyOf(extensions); }
   }
-  public record Grants(Map<String,Path> reads, Map<String,Path> edits, Map<String,Path> locks){}
+  public record Grants(Map<String,Path> mounts, Map<String,Path> locks){}
   private static final List<String> keys= List.of("path", "kind", "mains", "mounts", "attenuators");
   private static final String kinds= "\"idle\", \"code\", \"dataRead\" or \"dataEdit\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
@@ -137,17 +137,13 @@ public final class Registry{
     save(new Content(all().stream().map(e -> e.path().equals(folder) ? op.apply(e) : e).toList(), extensions()));
   }
   public static Grants grants(Content c, Entry e, List<String> dataEdit, UnaryOperator<Path> lockFile){
-    var reads= granted(c, e, t -> !dataEdit.contains(t), Kind::isData);
-    var edits= granted(c, e, dataEdit::contains, k -> k == Kind.dataEdit);
+    var mounts= new LinkedHashMap<String,Path>();
+    e.mounts().forEach((type, data) -> c.projects().stream().filter(t -> t.alias().equals(data) && granted(t.kind(), dataEdit.contains(type))).forEach(t -> mounts.put(type, t.path())));
     var locks= new LinkedHashMap<String,Path>();
-    Stream.of(reads, edits).forEach(m -> m.forEach((t, p) -> locks.put(t, lockFile.apply(p))));
-    return new Grants(reads, edits, Collections.unmodifiableMap(locks));
+    mounts.forEach((t, p) -> locks.put(t, lockFile.apply(p)));
+    return new Grants(Collections.unmodifiableMap(mounts), Collections.unmodifiableMap(locks));
   }
-  private static Map<String,Path> granted(Content c, Entry e, Predicate<String> types, Predicate<Kind> kinds){
-    var res= new LinkedHashMap<String,Path>();
-    e.mounts().forEach((type, data) -> c.projects().stream().filter(t -> types.test(type) && t.alias().equals(data) && kinds.test(t.kind())).forEach(t -> res.put(type, t.path())));
-    return Collections.unmodifiableMap(res);
-  }
+  private static boolean granted(Kind k, boolean editType){ return editType ? k == Kind.dataEdit : k.isData(); }
   public static String text(Content c){
     var projects= Join.of(c.projects().stream().map(e -> "    "+Info.print(entryToInfo(e)).strip().replace("\n", "\n    ")), "[\n", ",\n", "\n  ]", "[]");
     return "{\n  \"projects\": "+projects+",\n  \"systemExtensions\": "+Info.print(strList(c.extensions())).strip()+"\n}\n";

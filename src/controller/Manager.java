@@ -734,7 +734,7 @@ public final class Manager{
   }
   private boolean mounts(Path g, Path f){
     var l= live.get(g);
-    return l.child != null && !l.job.equals(Project.compiling) && Stream.of(l.grants.reads(), l.grants.edits()).anyMatch(m -> m.containsValue(f));
+    return l.child != null && !l.job.equals(Project.compiling) && l.grants.mounts().containsValue(f);
   }
   private void rotate(){
     if (!view.visible()){ return; }
