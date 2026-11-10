@@ -50,6 +50,7 @@ import mainCoordinator.MakeDemo;
 import managerMessages.Report;
 import managerMessages.Violation;
 import realSourceOracle.Fix;
+import realSourceOracle.ZipLocator;
 import tools.ChildJvm;
 import tools.Fs;
 import userMessages.UserError;
@@ -671,6 +672,7 @@ public final class Manager{
   }
   private void drop(Path f){
     var l= live.remove(f);
+    ZipLocator.forget(f);
     if (l.child != null){ l.terminated = true; l.child.kill(); }
     l.follow.ifPresent(Follow::end);
     if (selected.equals(Optional.of(f))){ selected = Optional.empty(); }
