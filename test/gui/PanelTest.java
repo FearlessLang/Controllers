@@ -54,7 +54,7 @@ final class PanelTest{
     assertEquals(List.of(), all(panel.root).filter(c -> c.getName() != null && c.getName().startsWith("shortcut ")).toList());
   }
   private static final String goodBadLater= """
-PLAN|RUN|_hello/_rank_app.fear|Good|Good at line: 3|3
+PLAN\tRUN\t_hello/_rank_app.fear\tGood\tGood at line: 3\t3
 <testcase classname="Good" name="Good at line: 3" file="_hello/_rank_app.fear" line="3"></testcase>
 <testcase classname="Bad" name="Bad at line: 5" file="_hello/_rank_app.fear" line="5">
 <failure>
@@ -64,7 +64,7 @@ Expected: 7 Actual: 6 &lt;here&gt;
 second line
 </failure>
 </testcase>
-PLAN|DISABLED|_hello/_rank_app.fear|Later|Later at line: 9|9
+PLAN\tDISABLED\t_hello/_rank_app.fear\tLater\tLater at line: 9\t9
 """;
   @Test void theTestsAreaShowsTheNewestUnitTestLogWithAMarkOnEachTestCase(@TempDir Path dir){
     var folder= dir.resolve("hello");

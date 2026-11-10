@@ -18,7 +18,7 @@ import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
 final class UnitTests{
-  private static final Pattern disabled= Pattern.compile("(?m)^PLAN\\|DISABLED\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)\\|([^|\\r\\n]*)$");
+  private static final Pattern disabled= Pattern.compile("(?m)^PLAN\tDISABLED\t([^\t\\r\\n]*)\t([^\t\\r\\n]*)\t([^\t\\r\\n]*)\t([^\t\\r\\n]*)$");
   static Optional<String> report(String name, Path folder, Optional<Instant> since){
     var logs= folder.resolve(".out").resolve("logs").resolve("_base");
     if (!Files.isDirectory(logs)){ return Optional.empty(); }
@@ -42,7 +42,7 @@ final class UnitTests{
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static String suite(String name, String log){
-    var body= disabled.matcher(log).replaceAll(UnitTests::skipped).replaceAll("(?m)^PLAN\\|RUN\\|.*$\\r?\\n?", "");
+    var body= disabled.matcher(log).replaceAll(UnitTests::skipped).replaceAll("(?m)^PLAN\tRUN\t.*$\\r?\\n?", "");
     return """
 <testsuite name="%s" tests="%s" failures="%s" errors="0">
 %s</testsuite>
