@@ -1511,7 +1511,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     try (var server= port()){ closed= server.getLocalPort(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
     send(m, "Compile", "hello", "Port:"+closed);
-    same("The manager was given the port "+closed+", but no program of this machine accepts a connection there: connect: [###]", view.refused.get(0));
+    same("Refused request \"Compile\": the manager was given the port "+closed+", but no program of this machine accepts a connection there: connect: [###]", view.refused.get(0));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
   @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@TempDir Path dir){
