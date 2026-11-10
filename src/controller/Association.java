@@ -41,7 +41,7 @@ public final class Association{
     FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, windows, launcher, iconFile(),
       c -> JavacTool.managerFolderOf(c).filter(d -> !JavacTool.managerFolderOf(launcher).equals(Optional.of(d))).ifPresent(Association::removeAtOnce),
       reported -> new Refusal(Violation.associationsAmbiguous(reported), List.of()),
-      locked -> new Refusal(Violation.associationUserLocked(locked, claimedBy), List.copyOf(locked.keySet())),
+      locked -> Fs.isWindows() ? new Refusal(Violation.associationUserLocked(locked, claimedBy), List.copyOf(locked.keySet())) : new Refusal(Violation.associationBrokenDesk(locked), List.of()),
       held -> new Refusal(Violation.associationNotOurs(held, claimedBy), List.copyOf(held.keySet())),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
