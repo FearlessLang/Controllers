@@ -1572,6 +1572,31 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Fix", "data");
     assertEquals("The project \"data\" needs no fix.\n", view.out(data));
   }
+  @Test void aRunningCompilationAcceptsTheFixOfTheDataProjectsMountedOnTheProjectOfTheCompilation(@TempDir Path dir){
+    var m= manager(dir);
+    var slow= code(m, dir, "slowcompile");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Mount", "slowcompile", "slowcompile.Pub data");
+    send(m, "Compile", "slowcompile");
+    until(m, _ -> view.out(slow).contains("compiling\n"));
+    send(m, "Fix", "data");
+    assertEquals(List.of(), view.refused);
+    assertEquals("The project \"data\" needs no fix.\n", view.out(data));
+    idle(m);
+  }
+  @Test void aFixMakesAnInvalidProjectValid(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    Fs.writeUtf8(data.resolve("My File.txt"), "");
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    assertEquals(Project.State.dataReadInvalid, project(m, data).state());
+    send(m, "Fix", "data");
+    assertEquals("Renamed My File.txt to my_file.txt\n", view.out(data));
+    assertEquals(Project.State.dataRead, project(m, data).state());
+  }
   @Test void aFixEndsAtTheChangeTheFileSystemRefuses(@TempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
@@ -1593,7 +1618,12 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
       var hello= registered(m, dir, "hello");
       Fs.writeUtf8(hello.resolve(".DS_Store"), "");
       Disk.link(folder(hello, "linked").resolve("link"), folder(dir, "target"));
-      send(m, "Fix", "hello");
+      try (var server= port()){
+        var fix= follower(server);
+        send(m, "Fix", "hello", "Port:"+server.getLocalPort());
+        same("Applied\nDeleted .DS_Store\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions:\n[###]link\n", fix.join());
+      }
+      catch (IOException e){ throw new UncheckedIOException(e); }
       same("Deleted .DS_Store\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions:\n[###]link\n", view.out(hello));
     }
     finally{ Fs.onSymbolicLink = before; }

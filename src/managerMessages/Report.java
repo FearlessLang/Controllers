@@ -171,18 +171,21 @@ Replace that file with a PNG image, or remove it.
     return """
 Fix changes the folder of project %s:
 - Fix deletes the files and folders that desktops, archive programs, office programs and text editors write next to your files:
-  ".DS_Store", "._name", "__MACOSX", ".AppleDouble", "Icon", "Thumbs.db", "ehthumbs.db", "desktop.ini", "name:Zone.Identifier",
-  ".directory", ".Trash-1000", "~$name", ".~lock.name#", "name~", "#name#" and ".name.swp";
-  a file "name~", "#name#" or ".name.swp" can hold text of yours that a text editor did not save;
+  ".DS_Store", "._name", "__MACOSX", ".AppleDouble", "Icon\\r", "Thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", "desktop.ini",
+  "name:Zone.Identifier", ".directory", ".Trash-1000", "~$name", ".~lock.name#", "name~", "#name#" and ".name.swp";
+  a file "name~", "#name#" or ".name.swp" can hold text of yours that a text editor did not save,
+  and a folder ".Trash-1000" holds the files that you moved to the trash;
 - Fix renames the files and folders whose name a project can not hold: "My Logo.PNG" becomes "my_logo.png",
   and a file with no extension gets "png", "jpg", "gif", "txt" or "bin" from its content;
 - Fix cleans the text of the Fearless source files: Fix removes the byte order mark, turns every line ending into a line feed,
-  the typographic quotes and dashes into ' " and -, every tab into a space, and removes every other character
-  that a Fearless source file can not hold;
+  the typographic quotes and dashes into ' " and -, every tab into a space, an accented letter into the letter without the accent,
+  and removes or turns into plain characters every other character that a Fearless source file can not hold;
 - Fix sets to the current time the files with no time or with a time in the future;
 - Fix deletes the folders and the zips left with nothing inside.
 Fix does every change of this list also inside the zips of the project.
-Fix renames nothing and cleans no text inside a folder whose name starts with a dot.
+A file or a folder whose name starts with a dot, and everything inside such a folder, gets fewer changes:
+Fix deletes there the files and folders of the first point, renames only the names that are not valid Unicode and sets the times;
+Fix cleans no text and opens no zip there, and keeps the folders with nothing inside that are inside a folder whose name starts with a dot.
 The Output lists every change. A change of Fix can not be undone.""".formatted(disp(name));
   }
   public static String needsNoFix(String name){ return "The project "+disp(name)+" needs no fix."; }
