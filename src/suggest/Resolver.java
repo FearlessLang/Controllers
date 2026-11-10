@@ -189,11 +189,15 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     call.add(p);
     if (seg.isEmpty() || !(Chain.parse(call) instanceof Call c)){ return Optional.empty(); }
     var idx= (int)p.items.stream().filter(it -> it.start() < pos && Tokens.is(it, Kind.Comma)).count();
+    return padded(c, idx, scope).flatMap(pc -> first(pc, scope, idx, outer(p, scope))).map(b -> b.m.ts().get(idx).subst(b.sub).erase(b.m.bs()));
+  }
+  /// the type expected of the call whose arguments are p, when that call is the whole argument or body holding it
+  private Optional<Ty> outer(Group p, HashMap<String,Ty> scope){
+    var seg= segment(p.parent, p.start);
     var items= p.parent.items;
     var next= items.indexOf(p)+1;
-    var whole= next == items.size() || Tokens.is(items.get(next), Kind.Comma, Kind.SemiColon);
-    var outer= whole ? expectedIn(p.parent, seg.get(0).start(), scope) : Optional.<Ty>empty();
-    return padded(c, idx, scope).flatMap(pc -> first(pc, scope, idx, outer)).map(b -> b.m.ts().get(idx).subst(b.sub).erase(b.m.bs()));
+    var whole= !seg.isEmpty() && (next == items.size() || Tokens.is(items.get(next), Kind.Comma, Kind.SemiColon));
+    return whole ? expectedIn(p.parent, seg.get(0).start(), scope) : Optional.empty();
   }
   /// the call with unknown arguments up to the arity of its shortest method having an argument at idx
   private Optional<Call> padded(Call c, int idx, Map<String,Ty> scope){
@@ -259,7 +263,7 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     if (seg.isEmpty() && p.open == Kind.ORound){
       var call= new ArrayList<>(segment(p.parent, p.start));
       call.add(p);
-      return argType(Chain.parse(call), g, scope, result(p.parent, p, scope));
+      return argType(Chain.parse(call), g, scope, outer(p, scope));
     }
     if (!seg.isEmpty() && Tokens.is(seg.getLast(), Kind.DotName, Kind.Op, Kind.Eq)){
       var call= new ArrayList<>(seg);
