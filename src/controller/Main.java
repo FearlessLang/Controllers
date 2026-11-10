@@ -107,7 +107,11 @@ public final class Main implements Manager.Exit{
     if (args.length > 1){ return List.of("InvalidCall\n"+Report.tooManyArguments(List.of(args))); }
     if (!args[0].startsWith(prefix)){ return file(args[0]); }
     try{ return List.of(call(args[0])); }
-    catch (Refused e){ return List.of("InvalidCall\n"+Report.badCall(args[0], e.getMessage())); }
+    catch (Refused e){ return List.of("InvalidCall\n"+Report.badCall(args[0], e.getMessage())+port(args[0])); }
+  }
+  private static String port(String call){
+    var last= call.substring(call.lastIndexOf(' ')+1);
+    return Follow.isPort(last) ? "\n"+last : "";
   }
   private static final List<List<String>> commands= Stream.of(
     "Show", "Show projectName", "Quit", "Reset",
