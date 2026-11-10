@@ -97,7 +97,7 @@ public final class Assist implements IContentAssistProcessorExtension{
   private static ICompletionProposal[] proposals(At a, int offset, boolean documented){
     var s= a.r().suggest(offset);
     var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size()))));
-    var others= Stream.concat(typeProposals, s.supers().stream().map(t -> superProposal(t, s.from(), offset, a.r().text(), a.api().entry(t).map(e -> doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size()))).orElse(null))));
+    var others= Stream.concat(typeProposals, s.supers().stream().map(t -> superProposal(t, s.from(), offset, a.r(), a.api().entry(t).map(e -> doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size()))).orElse(null))));
     if (s.rows().isEmpty()){ return others.toArray(ICompletionProposal[]::new); }
     return Stream.concat(s.rows().stream().map(r -> proposal(r, s.from(), offset, a.api().entry(r.owner()).map(t -> doc(a, documented, t.name(), d -> d.method(simple(r.owner().name()), r.owner().args().size(), r.rc(), r.name(), r.ts().size()))).orElse(null))), others).toArray(ICompletionProposal[]::new);
   }
@@ -125,8 +125,8 @@ public final class Assist implements IContentAssistProcessorExtension{
     var name= simple(t.name());
     return new CompletionProposal("."+name, from, offset-from, name.length()+1, null, t.show(), null, doc);
   }
-  private static ICompletionProposal superProposal(Ty t, int from, int offset, String text, String doc){
-    var insert= (from > 0 && text.charAt(from-1) == ':' ? " " : "")+t.show();
+  private static ICompletionProposal superProposal(Ty t, int from, int offset, Resolver r, String doc){
+    var insert= (from > 0 && r.text().charAt(from-1) == ':' ? " " : "")+r.written(t);
     return new CompletionProposal(insert, from, offset-from, insert.length(), null, t.show(), null, doc);
   }
   private static String pkg(String name){ return name.substring(0, name.indexOf('.')); }

@@ -421,6 +421,22 @@ public record Resolver(Api api, String pkg, Map<String,String> packages, Map<Str
     var sub= e.get().bind(t);
     return e.get().ms().stream().map(m -> m.subst(sub)).toList();
   }
+  /// the text naming t in this file: the simple name of a type of this package that no alias hides,
+  /// else the alias of a use directive, else the qualified name with its package as written here
+  public String written(Ty t){
+    var args= t.args().isEmpty() ? "" : t.args().stream().map(this::written).collect(Collectors.joining(",", "[", "]"));
+    return writtenName(t.name())+args;
+  }
+  private String writtenName(String name){
+    var dot= name.indexOf('.');
+    if (dot < 0){ return name; }
+    var simple= name.substring(dot+1);
+    var actual= name.substring(0, dot);
+    if (actual.equals(pkg) && !aliases.containsKey(simple)){ return simple; }
+    var alias= aliases.entrySet().stream().filter(e -> e.getValue().equals(name)).map(Map.Entry::getKey).sorted().findFirst();
+    var written= packages.entrySet().stream().filter(e -> e.getValue().equals(actual)).map(Map.Entry::getKey).sorted().findFirst().orElse(actual);
+    return alias.orElse(written+"."+simple);
+  }
   /// the qualified name a type name written in the source stands for: a literal's, an alias's, or
   /// one of this package
   private String tname(String s){
