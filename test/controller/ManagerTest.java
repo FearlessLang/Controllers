@@ -800,7 +800,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     idle(m);
     assertEquals(3, view.refused.size());
     var folder= project(m, data).folder();
-    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder), Map.of("hello.Diary", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Diary", m.lockFile(folder)))), granted);
+    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder, "hello.Diary", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Diary", m.lockFile(folder)))), granted);
   }
   @Test void attenuatorsAreSetByRequestAndARunStartsEachMainUnderItsOwn(@TempDir Path dir){
     var m= manager(dir, known(List.of("hello.NoGui", "hello.NoNet"), "hello.One", "hello.Two"));
@@ -1024,7 +1024,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     var folder= project(m, data).folder();
-    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder), Map.of("hello.Notes", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Notes", m.lockFile(folder)))), granted);
+    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder, "hello.Notes", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Notes", m.lockFile(folder)))), granted);
     var before= info(dir);
     send(m, "Mount", "hello", "hello.Old other");
     send(m, "Kind", "data", "dataRead");

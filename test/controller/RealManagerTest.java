@@ -63,7 +63,7 @@ final class RealManagerTest{
   record Real(Path launcher) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, String alias, Consumer<String> out){ throw Bug.unreachable(); }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
-      return Coordinator.startMain(folder, ResolveResource.stLibPath, main, input, grants.reads(), grants.edits(), grants.locks(), attenuators, List.of("-DfearlessManager.launcher="+launcher), coordinator(folder).sharedClasspath(), out);
+      return Coordinator.startMain(folder, ResolveResource.stLibPath, main, input, grants.mounts(), grants.locks(), attenuators, List.of("-DfearlessManager.launcher="+launcher), coordinator(folder).sharedClasspath(), out);
     }
     @Override public Coordinator.State check(Path folder){ return coordinator(folder).check(folder); }
     @Override public Path stdLibBase(){ return ResolveResource.stLibPath; }
