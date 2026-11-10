@@ -397,6 +397,14 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same(".at .at .get .get", rows.stream().map(Row::name).collect(Collectors.joining(" ")));
     same("4", ""+rows.stream().map(Row::display).distinct().count());
   }
+  @Test void aSupertypeIsWrittenAsThisFileNamesIt(){
+    var r= Resolver.of(compiled, "test", Map.of("lib", "base"), "use base.Str as Stringer;\nuse base.Opt as Opt;\nuse base.Nat as Person;", "");
+    same("Stringer", r.written(new Ty("base.Str", List.of())));
+    same("Opt[Stringer]", r.written(new Ty("base.Opt", List.of(new Ty("base.Str", List.of())))));
+    same("lib.Bool", r.written(new Ty("base.Bool", List.of())));
+    same("Cat", r.written(new Ty("test.Cat", List.of())));
+    same("test.Person", r.written(new Ty("test.Person", List.of())));
+  }
   @Test void noTextNorCursorMakesTheSuggestionsThrow() throws IOException{
     var heads= head+"\nuse Foo as B;\nuse base. as C;\nuse as D;\nuse lib.Str as;\nuse lib.Nat as N;";
     List<Path> fear;
