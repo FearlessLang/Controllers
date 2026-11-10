@@ -190,13 +190,14 @@ public final class Manager{
   private void post(Runnable r){ core.execute(() -> step(r)); }
   private void step(Runnable r){
     try{ r.run(); publish(); }
+    catch (NotOurs n){ exit.fail(n.error); }
     catch (Throwable t){ exit.fail(t); }
   }
   private void load(){
     registry.all().forEach(e -> live.put(e.path(), new Live()));
     registry.all().stream().filter(e -> e.kind() == Kind.code).forEach(e -> uncached(e.path(), () -> Coordinator.dropUnfinished(e.path())));
     Map.of(conflict, "conflict.png", fearless, "fearless.png").forEach((icon, png) -> ClaimIcons.materialise(dir.resolve("icons"), icon, Fs.of(() -> Fs.readAllBytes(tools.stdLibBase().resolve("icons").resolve(png)))));
-    rebuild(Optional.empty());
+    rebuild();
     dropLocks();
     registry.all().forEach(e -> scan(e.path()));
   }
@@ -216,10 +217,24 @@ public final class Manager{
     scan(e.path());
   }
   private boolean allowed(Project.Claimant c){ return !Registry.isSystem(c.claim().extension()) || registry.extensions().contains(c.claim().extension()); }
+  private void rebuild(){ refresh(); reconcile(registry.extensions()); }
   /// Rebuilds the in memory map, then reconciles; gives the error of compiled when a new extension of compiled is refused.
-  private Optional<String> rebuild(Optional<Path> compiled){
-    refresh();
-    return reconcile(compiled, registry.extensions());
+  private Optional<String> rebuild(Path compiled){
+    try{ rebuild(); return Optional.empty(); }
+    catch (NotOurs n){
+      var brought= Project.claimants(compiled, alias(compiled), live.get(compiled).claims).map(c -> "."+c.claim().extension()).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
+      if (n.extensions.contains(".fearless") || !brought.containsAll(n.extensions)){ throw n.error; }
+      var claimed= Project.claimed(projects());
+      var hit= n.extensions.stream().flatMap(e -> claimed.getOrDefault(e.substring(1), List.of()).stream()).map(Project.Claimant::folder).distinct().toList();
+      assert hit.contains(compiled);
+      for (var g : hit){
+        endJob(g);
+        deleted(g);
+        errorFile(g, n.error.getMessage());
+      }
+      rebuild();
+      return Optional.of(n.error.getMessage());
+    }
   }
   /// the claims of the in memory map, read again from the caches
   private void refresh(){
@@ -255,25 +270,11 @@ public final class Manager{
     ending = true;
     live.keySet().forEach(this::endJob);
   }
-  private Optional<String> reconcile(Optional<Path> compiled, List<String> extensions){
+  private void reconcile(List<String> extensions){
     var claimed= Project.claimed(projects());
     var next= captured(claimed, extensions);
-    try{ tools.associate(next, preloads().toList(), e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of()))); }
-    catch (NotOurs n){
-      var brought= compiled.stream().flatMap(f -> Project.claimants(f, alias(f), live.get(f).claims)).map(c -> "."+c.claim().extension()).filter(e -> !captured.contains(e)).collect(Collectors.toSet());
-      if (n.extensions.contains(".fearless") || !brought.containsAll(n.extensions)){ throw n.error; }
-      var hit= n.extensions.stream().flatMap(e -> claimed.getOrDefault(e.substring(1), List.of()).stream()).map(Project.Claimant::folder).distinct().toList();
-      for (var g : hit){
-        endJob(g);
-        deleted(g);
-        errorFile(g, n.error.getMessage());
-      }
-      var again= rebuild(Optional.empty());
-      assert again.isEmpty();
-      return compiled.filter(hit::contains).map(_ -> n.error.getMessage());
-    }
+    tools.associate(next, preloads().toList(), e -> Report.claimedBy(claimed.getOrDefault(e.substring(1), List.of())));
     captured = next.stream().map(Icon::extension).collect(Collectors.toSet());
-    return Optional.empty();
   }
   private Stream<Project.Claimant> preloads(){ return projects().stream().filter(p -> !(p.job() instanceof Job.Compile)).flatMap(p -> Project.preloads(p.folder(), p.alias(), p.claims())); }
   private List<Icon> captured(Map<String,List<Project.Claimant>> claimed, List<String> extensions){
@@ -349,7 +350,7 @@ public final class Manager{
   private <T> T renaming(Supplier<T> look){
     var before= registry.all().stream().map(Entry::alias).toList();
     var res= look.get();
-    if (!before.equals(registry.all().stream().map(Entry::alias).toList())){ rebuild(Optional.empty()); }
+    if (!before.equals(registry.all().stream().map(Entry::alias).toList())){ rebuild(); }
     return res;
   }
   private void idle(Path f, Verb verb){
@@ -498,14 +499,14 @@ public final class Manager{
       catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); }
     }
     l.corruption = Optional.empty();
-    var refusedHere= rebuild(Optional.of(f)).or(() -> l.corruption);
+    var refusedHere= rebuild(f).or(() -> l.corruption);
     refusedHere.ifPresent(why -> output(f, why.stripTrailing()+"\n"));
     failed |= refusedHere.isPresent();
     if (!failed){ failed = !Project.shortcuts(Project.claimants(f, alias(f), l.claims)).stream().map(f::resolve).filter(p -> Fs.notExists(p)).allMatch(p -> shortcut(f, p)); }
     if (!failed){
       try{ Coordinator.finish(f); }
       catch (UncheckedIOException e){ failed = true; stepFailed(f, Report.cacheNotFinished(Report.fileFailure(e.getCause()))); }
-      catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); rebuild(Optional.empty()); }
+      catch (UserError e){ failed = true; stepFailed(f, e.getMessage()); rebuild(); }
     }
     output(f, "--- compile "+(!failed ? "done" : ec == 0 ? "failed" : "failed with "+ec)+" ---\n");
     scan(f);
@@ -561,7 +562,7 @@ public final class Manager{
     idle(f, Verb.DeleteCache);
     selected = Optional.of(f);
     deleted(f);
-    rebuild(Optional.empty());
+    rebuild();
     scan(f);
   }
   private void kind(Path f, String text){
@@ -634,7 +635,7 @@ public final class Manager{
     catch (UserError e){ throw new Refused(e.getMessage()); }
     registry.all().stream().filter(o -> !(live.get(o.path()).job instanceof Job.Idle)).forEach(o -> kept(o, next));
     granted(next);
-    if (!registry.extensions().equals(next.extensions())){ reconcile(Optional.empty(), next.extensions()); }
+    if (!registry.extensions().equals(next.extensions())){ reconcile(next.extensions()); }
     var old= registry.content();
     registry.save(next, text);
     var removed= old.projects().stream().filter(o -> same(o, next).isEmpty()).toList();
@@ -648,7 +649,7 @@ public final class Manager{
     Stream.concat(kinds.stream(), claiming.stream()).distinct().forEach(this::deleted);
     var removedCode= removed.stream().anyMatch(o -> o.kind() == Kind.code);
     var renamed= registry.all().stream().anyMatch(e -> same(e, old).filter(o -> !o.alias().equals(e.alias())).isPresent());
-    if (removedCode || renamed || !added.isEmpty() || !kinds.isEmpty() || !claiming.isEmpty()){ rebuild(Optional.empty()); }
+    if (removedCode || renamed || !added.isEmpty() || !kinds.isEmpty() || !claiming.isEmpty()){ rebuild(); }
     registry.all().forEach(e -> scan(e.path()));
   }
   /// the entry of c with the folder of e: a project whose folder changes is removed and added
@@ -718,7 +719,7 @@ public final class Manager{
     catch (UserError err){
       if (live.get(f).corruption.isPresent()){ return Optional.of(Facts.invalid(err.getMessage())); }
       corrupted(f, err.getMessage());
-      rebuild(Optional.empty());
+      rebuild();
     }
     try{ return facts(f); }
     catch (UserError err){ return Optional.of(Facts.invalid(err.getMessage())); }
