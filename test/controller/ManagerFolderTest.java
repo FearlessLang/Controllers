@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -188,5 +190,19 @@ The folder is:
 Put the project in a folder inside it, and make that folder the project
 folder.
 """, () -> Manager.projectFolder(dir.getRoot(), folder(dir, "manager")));
+  }
+  @Test void theTopFolderOfADriveIsNotAProject(@TempDir Path dir) throws IOException{
+    var top= Registry.real(dir);
+    while (top.getParent() != null && Files.getFileStore(top).equals(Files.getFileStore(top.getParent()))){ top = top.getParent(); }
+    var drive= top;
+    refused("""
+Fearless cannot keep track of the root of a drive or of the file system as a
+project.
+
+The folder is:
+  %s
+Put the project in a folder inside it, and make that folder the project
+folder.
+""".formatted(drive), () -> Manager.projectFolder(drive, folder(dir, "manager")));
   }
 }

@@ -82,9 +82,14 @@ public final class Registry{
   }
   static Path placed(Path folder, Path managerDir, Function<String,RuntimeException> err){
     var manager= real(managerDir);
-    if (folder.getFileName() == null){ throw err.apply(Report.projectFolderIsRoot(folder)); }
+    if (driveTop(folder)){ throw err.apply(Report.projectFolderIsRoot(folder)); }
     if (overlap(folder, manager)){ throw err.apply(Report.managerFolderNotAProject(folder, manager)); }
     return folder;
+  }
+  private static boolean driveTop(Path folder){
+    if (folder.getFileName() == null){ return true; }
+    try{ return !Files.getFileStore(folder).equals(Files.getFileStore(folder.getParent())); }
+    catch (IOException e){ return false; }
   }
   private static boolean overlap(Path a, Path b){ return a.startsWith(b) || b.startsWith(a); }
   public Path infoFile(){ return dir.resolve("projects.info"); }
