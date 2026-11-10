@@ -33,7 +33,7 @@ final class PanelTest{
   private static Project project(Path folder, Kind kind, Map<String,String> mounts, Optional<MainsInfo> mains){
     var alias= folder.getFileName().toString();
     var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), mounts, Map.of());
-    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate(), java.time.Instant.MAX).orElseThrow(), mains, Project.noClaims, "", List.of());
+    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate(), java.time.Instant.MAX).orElseThrow(), mains, Project.noClaims, new Project.Job.Idle(), List.of());
   }
   private static Stream<Component> all(Component c){
     if (!(c instanceof Container k)){ return Stream.of(c); }
@@ -48,7 +48,7 @@ final class PanelTest{
     var claim= new MainsInfo.Claim("base.IconsConflict", "icons/conflict.png", "", "", "", "fapp010");
     var claims= new MainsInfo(Map.of("hello.Foo'", new MainsInfo.Main(List.of(claim), List.of(), List.of(claim))), List.of(), List.of(), List.of());
     var p= project(folder, Kind.code, Map.of(), Optional.of(claims));
-    var withClaims= new Project(p.entry(), p.facts(), p.mains(), claims, "", List.of());
+    var withClaims= new Project(p.entry(), p.facts(), p.mains(), claims, new Project.Job.Idle(), List.of());
     var panel= new Panel(_ -> {});
     panel.render(withClaims, List.of(withClaims), 800);
     assertEquals(List.of(), all(panel.root).filter(c -> c.getName() != null && c.getName().startsWith("shortcut ")).toList());
@@ -92,7 +92,7 @@ failed unit test log of 2026-11-03T00:00:00Z: 1 passed, 1 failed, 1 disabled
     var start= java.time.Instant.parse("2026-11-03T00:00:00Z");
     var facts= Facts.of(entry.path(), "hello", Kind.code, _ -> new coordinator.Coordinator.State.OutOfDate(), start).orElseThrow();
     var ran= List.of(new Project.Ran("hello.Auto", start), new Project.Ran("hello.Mine", start.plusSeconds(2)));
-    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, "", ran);
+    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, new Project.Job.Idle(), ran);
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello), 800);
     assertEquals("""
@@ -113,7 +113,7 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     var entry= new Entry("hello", folder.toAbsolutePath().normalize(), Kind.code, List.of(), Map.of(), Map.of());
     var start= java.time.Instant.parse("2026-11-03T00:00:05Z");
     var facts= Facts.of(entry.path(), "hello", Kind.code, _ -> new coordinator.Coordinator.State.OutOfDate(), start).orElseThrow();
-    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, "", List.of(new Project.Ran("hello.Hello", start)));
+    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, new Project.Job.Idle(), List.of(new Project.Ran("hello.Hello", start)));
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello), 800);
     assertEquals("", tests(panel));

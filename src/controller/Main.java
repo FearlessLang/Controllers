@@ -107,14 +107,12 @@ public final class Main implements Manager.Exit{
     if (args.length > 1){ return List.of("InvalidCall\n"+Report.tooManyArguments(List.of(args))); }
     if (!args[0].startsWith(prefix)){ return file(args[0]); }
     try{ return List.of(call(args[0])); }
-    catch (Refused e){ return List.of("InvalidCall\n"+Report.badCall(args[0], e.getMessage())); }
+    catch (Refused e){ return List.of("InvalidCall\n"+Report.badCall(args[0], e.getMessage())+port(args[0])); }
   }
-  private static final List<List<String>> commands= Stream.of(
-    "Show", "Show projectName", "Quit", "Reset",
-    "Register base16", "ConnectEclipse base16", "EditMetadata base16", "OpenWithOrShortcut base16", "OpenWithOrShortcut base16 projectName typeName",
-    "Run projectName", "Compile projectName", "Check projectName", "Terminate projectName", "DeleteCache projectName",
-    "Kind projectName kind", "Forget projectName", "Fix projectName", "Mount projectName typeName projectName", "Unmount projectName typeName",
-    "Attenuate projectName typeName typeName1..typeNamen", "SelectMains projectName typeName1..typeNamen").map(c -> List.of(c.split(" "))).toList();
+  private static String port(String call){
+    var last= call.substring(call.lastIndexOf(' ')+1);
+    return Follow.isPort(last) ? "\n"+last : "";
+  }
   private static final String typeNames= "typeName1..typeNamen";
   private static final Pattern projectName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$)[a-z_][a-z0-9_]{0,190}");
   private static final Pattern typeName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])[.])[a-z][a-z0-9_]*[.]_*[A-Z][A-Za-z0-9_]*'*");
@@ -122,8 +120,8 @@ public final class Main implements Manager.Exit{
   private static String call(String call){
     var words= List.of(call.split(" ", -1));
     var verb= words.getFirst().substring(prefix.length());
-    var forms= commands.stream().filter(c -> c.getFirst().equals(verb)).toList();
-    if (forms.isEmpty()){ throw new Refused(Report.callUnknown(words.getFirst(), commands.stream().map(c -> prefix+c.getFirst()).distinct().sorted().toList())); }
+    var forms= Stream.of(Manager.Verb.values()).filter(v -> v.name().equals(verb)).flatMap(v -> v.forms.stream()).toList();
+    if (forms.isEmpty()){ throw new Refused(Report.callUnknown(words.getFirst(), Stream.of(Manager.Verb.values()).map(v -> prefix+v).sorted().toList())); }
     var port= words.size() > 1 && words.getLast().startsWith("Port:");
     if (port){ check(words.getLast(), Follow.isPort(words.getLast()), Report.callPort); }
     var args= words.subList(1, words.size()-(port ? 1 : 0));
@@ -153,8 +151,8 @@ public final class Main implements Manager.Exit{
     Path path;
     try{ path= (arg.startsWith(Fs.isWindows() ? "Base16:" : "file:") ? PathClassLoader.pathOf(arg) : Path.of(arg)).toAbsolutePath().normalize(); }
     catch (IllegalArgumentException e){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
-    if (arg.isBlank() || path.getFileName() == null){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
-    if (isProject(path)){ return List.of("Register\n"+TaggedText.ofPath(path), "Show"); }
+    if (arg.isBlank()){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
+    if (path.getFileName() == null || isProject(path)){ return List.of("Register\n"+TaggedText.ofPath(path), "Show"); }
     return List.of("OpenWithOrShortcut\n"+TaggedText.ofPath(path));
   }
   public static boolean isProject(Path path){ return Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Names.ext); }

@@ -141,9 +141,9 @@ public class Child{
       windows.add(preloads.stream().map(c -> c.label()+" "+c.claim().icon()).toList());
       var all= Stream.concat(Stream.of(new Icon(".fearless", null, null)), captured.stream()).toList();
       var chosenByHand= all.stream().map(Icon::extension).filter(chosen::contains).toList();
-      if (!chosenByHand.isEmpty()){ throw new Refusal(Violation.associationChosenByHand(chosenByHand.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy), List.of()); }
+      if (!chosenByHand.isEmpty()){ throw Violation.associationChosenByHand(chosenByHand.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy); }
       var blocked= all.stream().map(Icon::extension).filter(e -> !Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
-      if (!blocked.isEmpty()){ throw new Refusal(Violation.associationNotOurs(blocked, claimedBy), List.copyOf(blocked.keySet())); }
+      if (!blocked.isEmpty()){ throw new NotOurs(blocked, claimedBy); }
     }
     @Override public void connect(Path eclipse, Path managerDir){ connected.add(eclipse); }
     private static ChildJvm jvm(Consumer<String> out, String... args){
@@ -334,6 +334,15 @@ public class Child{
     send(m, "Register", TaggedText.of(link.toString()));
     same("Refused request \"Register\" on path\n[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", view.refused.getLast());
     assertEquals(List.of(), listed(m));
+  }
+  @Test void aFolderAnEditMetadataNamesThroughALinkedFolderIsOneProjectAlsoForTheNextManager(@TempDir Path dir){
+    var m= manager(dir);
+    folder(folder(dir, "real"), "hello");
+    var linked= Disk.link(dir.resolve("linked"), dir.resolve("real")).resolve("hello");
+    edit(m, dir, Registry.text(new Registry.Content(List.of(new Registry.Entry("", linked, Kind.idle, List.of(), Map.of(), Map.of())), List.of())));
+    var again= manager(dir);
+    send(again, "Register", TaggedText.of(linked.toString()));
+    assertEquals(1, listed(again).size(), listed(again).toString());
   }
   @Test void anEditOfOneProjectKeepsThePathOfAnotherWhoseFolderBecameALink(@TempDir Path dir){
     var m= manager(dir);
@@ -550,6 +559,19 @@ ran hello.Slow
     assertEquals(Optional.of(other), m.state().selected());
     idle(m);
     same("[###]compiling\n--- compile failed with 1 ---\n", view.out(slow));
+  }
+  @Test void theConnectionOfACompilationEndedByAnUnreachableFolderEndsWithTheMarkOfHowTheCompilationEnded(@TempDir Path dir){
+    var m= manager(dir);
+    var slow= code(m, dir, "slowcompile");
+    try (var server= port()){
+      var compile= follower(server);
+      send(m, "Compile", "slowcompile", "Port:"+server.getLocalPort());
+      until(m, _ -> view.out(slow).contains("compiling\n"));
+      Fs.rmTree(slow);
+      send(m, "Check", "slowcompile");
+      same("Applied\n--- compiling slowcompile ---\ncompiling\n--- compile [###] ---\n", compile.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   @Test void compileOfACompiledProjectSaysSo(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -898,6 +920,17 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     var again= manager(dir);
     again.settle();
     assertEquals(List.of(true, true, false), Stream.of(kept, inner, stray).map(Files::exists).toList());
+  }
+  @Test void eachDataProjectHasALockFileOfItsOwnAlsoWhenItsFolderNameIsNotUnicode(@TempDir Path dir){
+    Assumptions.assumeFalse(Fs.isMac());
+    var m= manager(dir);
+    var folders= Stream.of(0xE9, 0xE8).map(b -> Fs.isWindows() ? dir.resolve("data"+(char)(0xD800+b)) : dir.resolve(PathBytes.path(new byte[]{'d', 'a', 't', 'a', (byte)(int)b}))).toList();
+    folders.forEach(f -> Fs.writeUtf8(f.resolve("readme.txt"), "hi\n"));
+    folders.forEach(f -> send(m, "Register", TaggedText.ofPath(f)));
+    m.state().projects().forEach(p -> send(m, "Kind", p.alias(), "dataRead"));
+    var locks= m.state().projects().stream().map(p -> m.lockFile(p.folder())).distinct().toList();
+    assertEquals(2, m.state().projects().size());
+    assertEquals(2, locks.size(), locks.toString());
   }
   @Test void theProblemOfADataProjectNamesTheZipWhoseEntryNameIsNotUtf8(@TempDir Path dir){
     var m= manager(dir);
@@ -1513,6 +1546,30 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Compile", "hello", "Port:"+closed);
     same("Refused request \"Compile\": the manager was given the port "+closed+", but no program of this machine accepts a connection there: connect: [###]", view.refused.get(0));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
+  }
+  @Test void anArgumentThatIsNotACallAnswersItsPortWithTheErrorOfTheDialog(@TempDir Path dir){
+    var m= manager(dir);
+    try (var server= port()){
+      server.setSoTimeout(10_000);
+      var refused= follower(server);
+      message(m, Main.messages("FearlessCommandForget Hello Port:"+server.getLocalPort()));
+      assertEquals("Refused\n"+view.refused.getFirst(), refused.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+  }
+  @Test void anArgumentThatIsNotACallWithAPortWhereNobodyListensShowsWhyTheArgumentIsNotACall(@TempDir Path dir){
+    var m= manager(dir);
+    int closed;
+    try (var server= port()){ closed= server.getLocalPort(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    message(m, Main.messages("FearlessCommandForget Hello Port:"+closed));
+    same("[###]Fearless was started with the argument\n  \"FearlessCommandForget Hello Port:"+closed+"\"\nand that argument is not a call: \"Hello\" is not a projectName[###]", String.join("\n", view.refused));
+  }
+  @Test void theManagerStartedWithTheRootOfADriveSaysThatTheRootOfADriveIsNotAProject(@TempDir Path dir){
+    var m= manager(dir);
+    Main.messages(dir.getRoot().toString()).forEach(m::message);
+    m.settle();
+    same("Fearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]", String.join("\n", view.refused));
   }
   @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
