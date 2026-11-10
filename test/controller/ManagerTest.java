@@ -891,6 +891,18 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(Optional.empty(), project(m, todo).problem());
     assertEquals(Project.State.dataRead, project(m, todo).state());
   }
+  @Test void aLockFileOfNoRegisteredProjectIsDeletedWhenTheManagerStarts(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    var kept= m.lockFile(project(m, data).folder());
+    var stray= kept.resolveSibling("0".repeat(64)+".lock");
+    Fs.writeUtf8(stray, "");
+    var again= manager(dir);
+    again.settle();
+    assertEquals(List.of(true, false), Stream.of(kept, stray).map(Files::exists).toList());
+  }
   @Test void theProblemOfADataProjectNamesTheZipWhoseEntryNameIsNotUtf8(@TempDir Path dir){
     var m= manager(dir);
     var data= data(dir);

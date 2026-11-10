@@ -190,7 +190,18 @@ public final class Manager{
     registry.all().stream().filter(e -> e.kind() == Kind.code).forEach(e -> uncached(e.path(), () -> Coordinator.dropUnfinished(e.path())));
     Map.of(conflict, "conflict.png", fearless, "fearless.png").forEach((icon, png) -> ClaimIcons.materialise(dir.resolve("icons"), icon, Fs.of(() -> Fs.readAllBytes(tools.stdLibBase().resolve("icons").resolve(png)))));
     rebuild(Optional.empty());
+    dropLocks();
     registry.all().forEach(e -> scan(e.path()));
+  }
+  private void dropLocks(){
+    Fs.ensureDir(dir.resolve("locks"));
+    var keep= registry.all().stream().map(e -> lockFile(e.path())).collect(Collectors.toSet());
+    var stray= Fs.of(() -> { try (var s= Files.list(dir.resolve("locks"))){ return s.filter(p -> !keep.contains(p)).toList(); } });
+    stray.stream().filter(Manager::free).forEach(p -> Fs.ofV(() -> Files.delete(p)));
+  }
+  private static boolean free(Path lock){
+    try (var ch= FileChannel.open(lock, StandardOpenOption.WRITE); var held= ch.tryLock()){ return held != null; }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private void open(Entry e){
     live.put(e.path(), new Live());
