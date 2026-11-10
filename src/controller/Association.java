@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -41,10 +42,15 @@ public final class Association{
     FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, windows, launcher, iconFile(),
       c -> JavacTool.managerFolderOf(c).filter(d -> !JavacTool.managerFolderOf(launcher).equals(Optional.of(d))).ifPresent(Association::removeAtOnce),
       reported -> new Refusal(Violation.associationsAmbiguous(reported), List.of()),
-      locked -> new Refusal(Violation.associationUserLocked(locked, claimedBy), List.copyOf(locked.keySet())),
+      locked -> chosen(locked, claimedBy),
       held -> new Refusal(Violation.associationNotOurs(held, claimedBy), List.copyOf(held.keySet())),
       Violation::associationNotWritable,
       Violation::associationLeftHalfDone);
+  }
+  private static Refusal chosen(Map<String,List<String>> locked, Function<String,String> claimedBy){
+    var error= Fs.isWindows() ? Violation.associationUserLocked(locked, claimedBy) : Violation.associationBrokenDesk(locked);
+    var refused= Fs.isWindows() ? List.copyOf(locked.keySet()) : List.<String>of();
+    return new Refusal(error.withRecovery("Remove these choices", () -> FileAssociations.forgetChoices(locked, Violation::associationNotWritable)), refused);
   }
   /// The manager of that folder never sees the folder deleted in part: the folder is renamed in its folder, then deleted.
   private static void removeAtOnce(Path dir){
