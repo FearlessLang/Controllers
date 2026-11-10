@@ -96,13 +96,10 @@ public final class Manager{
   }
   private enum Cut{ none, filesUpdated, stopped }
   private static final class Live{
-    Facts scanned;
     Facts facts;
     Optional<MainsInfo> mains= Optional.empty();
     MainsInfo claims= Project.noClaims;
     Job job= new Job.Idle();
-    Instant since= Instant.EPOCH;
-    StringBuilder compiled= new StringBuilder();
     ChildJvm child;
     Cut cut= Cut.none;
     Optional<String> corruption= Optional.empty();
@@ -386,9 +383,7 @@ public final class Manager{
     runnable(f, "Compile");
     selected = Optional.of(f);
     if (!project(f).needsCompiling()){ upToDate(f, follow); return; }
-    var l= live.get(f);
-    l.follow = follow;
-    l.compiled.setLength(0);
+    live.get(f).follow = follow;
     view.clear(f);
     output(f, "--- compiling "+alias(f)+" ---\n");
     start(f, new Job.Compile(), () -> tools.compile(f, alias(f), out(f)));
@@ -446,7 +441,6 @@ public final class Manager{
       return;
     }
     l.job = job;
-    l.since = Instant.now();
     var child= l.child;
     Thread.startVirtualThread(() -> await(f, l, child));
   }
@@ -468,7 +462,7 @@ public final class Manager{
     }
   }
   private void mainExited(Path f, Live l, String main, int ec){
-    output(f, "--- "+main+(l.cut != Cut.none ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
+    output(f, "--- "+main+(l.cut != Cut.none ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.ran.getLast().since(), Instant.now()).toSeconds()+"s ---\n");
     if (l.cut == Cut.filesUpdated || l.cut == Cut.none && broken(f)){ l.cut = Cut.filesUpdated; output(f, Report.filesUpdated(alias(f), main)+"\n"); }
     next(f);
   }
@@ -699,13 +693,11 @@ public final class Manager{
         l.child.kill();
         return true;
       }
-      l.scanned = fresh;
       l.facts = fresh;
       return true;
     }
     if (fresh.problem().isPresent()){ errorFile(f, fresh.problem().get()); }
-    if (fresh.equals(l.scanned)){ return true; }
-    l.scanned = fresh;
+    if (fresh.equals(l.facts)){ return true; }
     l.facts = fresh;
     l.mains = fresh.mains();
     return true;
@@ -817,13 +809,11 @@ public final class Manager{
       var line= l.line.substring(0, nl+1);
       l.line.delete(0, nl+1);
       if (line.startsWith(ChildMain.takeFreeExtension)){ answer(l, List.of(line.substring(ChildMain.takeFreeExtension.length()).strip().split(" "))); continue; }
-      l.compiled.append(line);
       output(f, line);
     }
   }
   private void flushLine(Path f, Live l){
     if (l.line.isEmpty()){ return; }
-    l.compiled.append(l.line);
     output(f, l.line.toString());
     l.line.setLength(0);
   }
