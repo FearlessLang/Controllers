@@ -195,10 +195,11 @@ public final class Manager{
   }
   private void dropLocks(){
     Fs.ensureDir(dir.resolve("locks"));
-    var keep= registry.all().stream().map(e -> lockFile(e.path())).collect(Collectors.toSet());
+    var keep= registry.all().stream().map(e -> lockFile(e.path())).flatMap(l -> Stream.of(l, inner(l))).collect(Collectors.toSet());
     var stray= Fs.of(() -> { try (var s= Files.list(dir.resolve("locks"))){ return s.filter(p -> !keep.contains(p)).toList(); } });
     stray.stream().filter(Manager::free).forEach(p -> Fs.ofV(() -> Files.delete(p)));
   }
+  static Path inner(Path lock){ return lock.resolveSibling(lock.getFileName().toString().replace(".lock", "_inner.lock")); }
   private static boolean free(Path lock){
     try (var ch= FileChannel.open(lock, StandardOpenOption.WRITE); var held= ch.tryLock()){ return held != null; }
     catch (IOException e){ throw new UncheckedIOException(e); }

@@ -897,11 +897,12 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Register", TaggedText.of(data.toString()));
     send(m, "Kind", "data", "dataRead");
     var kept= m.lockFile(project(m, data).folder());
+    var inner= Manager.inner(kept);
     var stray= kept.resolveSibling("0".repeat(64)+".lock");
-    Fs.writeUtf8(stray, "");
+    Stream.of(inner, stray).forEach(p -> Fs.writeUtf8(p, ""));
     var again= manager(dir);
     again.settle();
-    assertEquals(List.of(true, false), Stream.of(kept, stray).map(Files::exists).toList());
+    assertEquals(List.of(true, true, false), Stream.of(kept, inner, stray).map(Files::exists).toList());
   }
   @Test void theProblemOfADataProjectNamesTheZipWhoseEntryNameIsNotUtf8(@TempDir Path dir){
     var m= manager(dir);
