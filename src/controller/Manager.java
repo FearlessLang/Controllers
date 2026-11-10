@@ -729,7 +729,7 @@ public final class Manager{
   Path lockFile(Path folder){
     var locks= dir.resolve("locks");
     Fs.ensureDir(locks);
-    try{ return locks.resolve(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(folder.toAbsolutePath().toString().getBytes(UTF_8)))+".lock"); }
+    try{ return locks.resolve(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(TaggedText.base16(folder.toAbsolutePath()).getBytes(UTF_8)))+".lock"); }
     catch (NoSuchAlgorithmException ex){ throw Bug.of(ex); }
   }
   /// The 'autoCheck' of a project folder the manager can not reach: the job of the project ends, and so does every running main
