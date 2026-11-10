@@ -94,6 +94,15 @@ public final class Manager{
     public Optional<Project> shown(){ return selected.flatMap(this::of); }
     public List<String> running(){ return projects.stream().filter(Project::busy).map(p -> p.alias()+" - "+(p.job() instanceof Job.Main(var main) ? main : "compiling")).toList(); }
   }
+  enum Verb{
+    Show("", "projectName"), Quit(""), Reset(""),
+    Register("base16"), ConnectEclipse("base16"), EditMetadata("base16"), OpenWithOrShortcut("base16", "base16 projectName typeName"),
+    Run("projectName"), Compile("projectName"), Check("projectName"), Terminate("projectName"), DeleteCache("projectName"),
+    Kind("projectName kind"), Forget("projectName"), Fix("projectName"), Mount("projectName typeName projectName"), Unmount("projectName typeName"),
+    Attenuate("projectName typeName typeName1..typeNamen"), SelectMains("projectName typeName1..typeNamen");
+    final List<List<String>> forms;
+    Verb(String... forms){ this.forms= Stream.of(forms).map(f -> List.of((name()+" "+f).split(" "))).toList(); }
+  }
   private enum Cut{ none, filesUpdated, stopped }
   private static final class Live{
     Facts facts;
@@ -287,9 +296,10 @@ public final class Manager{
     try{
       follow = port ? Optional.of(Follow.to(verb, args.getLast())) : follow;
       if (verb.equals("InvalidCall")){ throw new Refused(String.join("\n", given)); }
-      request(verb, given, follow);
+      var v= Verb.valueOf(verb);
+      request(v, given, follow);
       follow.ifPresent(Follow::applied);
-      if (!List.of("Run", "Compile").contains(verb)){ follow.ifPresent(Follow::end); }
+      if (v != Verb.Run && v != Verb.Compile){ follow.ifPresent(Follow::end); }
     }
     catch (Refused r){
       var why= verb.equals("InvalidCall") ? String.join("\n", given) : r.getMessage();
@@ -297,35 +307,35 @@ public final class Manager{
       view.refuse(why);
     }
   }
-  private void request(String verb, List<String> args, Optional<Follow> follow){
-    if (ending){ throw new Refused(Report.quitting(verb)); }
+  private void request(Verb verb, List<String> args, Optional<Follow> follow){
+    if (ending){ throw new Refused(Report.quitting(verb.name())); }
     switch (verb){
-      case "Show" -> { if (!args.isEmpty()){ selected = Optional.of(registered(verb, args.getFirst())); } view.show(); }
-      case "Quit" -> { end(); exit.quit(); }
-      case "Reset" -> { end(); exit.reset(); }
-      case "Register" -> register(path(args.getFirst()));
-      case "ConnectEclipse" -> connect(path(args.getFirst()));
-      case "EditMetadata" -> editMetadata(path(args.getFirst()));
-      case "OpenWithOrShortcut" -> openWith(path(args.getFirst()), args.subList(1, args.size()));
-      case "Run" -> { var f= registered(verb, args.getFirst()); run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty()); }
-      case "Compile" -> compile(registered(verb, args.getFirst()), follow);
-      case "Check" -> check(registered(verb, args.getFirst()), follow);
-      case "Terminate" -> terminate(registered(verb, args.getFirst()));
-      case "DeleteCache" -> deleteCache(registered(verb, args.getFirst()));
-      case "Kind" -> kind(registered(verb, args.getFirst()), args.get(1));
-      case "Forget" -> forget(registered(verb, args.getFirst()));
-      case "Fix" -> fix(registered(verb, args.getFirst()), follow);
-      case "Mount" -> mount(registered(verb, args.getFirst()), args.get(1), Optional.of(lookedUp(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(args.getFirst(), args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
-      case "Unmount" -> mount(registered(verb, args.getFirst()), args.get(1), Optional.empty());
-      case "Attenuate" -> attenuate(registered(verb, args.getFirst()), args.get(1), args.subList(2, args.size()));
-      case "SelectMains" -> edit(registered(verb, args.getFirst()), e -> e.withMains(args.subList(1, args.size())));
+      case Show -> { if (!args.isEmpty()){ selected = Optional.of(registered(verb, args.getFirst())); } view.show(); }
+      case Quit -> { end(); exit.quit(); }
+      case Reset -> { end(); exit.reset(); }
+      case Register -> register(path(args.getFirst()));
+      case ConnectEclipse -> connect(path(args.getFirst()));
+      case EditMetadata -> editMetadata(path(args.getFirst()));
+      case OpenWithOrShortcut -> openWith(path(args.getFirst()), args.subList(1, args.size()));
+      case Run -> { var f= registered(verb, args.getFirst()); run(f, registry.of(f).orElseThrow().mains(), follow, Optional.empty()); }
+      case Compile -> compile(registered(verb, args.getFirst()), follow);
+      case Check -> check(registered(verb, args.getFirst()), follow);
+      case Terminate -> terminate(registered(verb, args.getFirst()));
+      case DeleteCache -> deleteCache(registered(verb, args.getFirst()));
+      case Kind -> kind(registered(verb, args.getFirst()), args.get(1));
+      case Forget -> forget(registered(verb, args.getFirst()));
+      case Fix -> fix(registered(verb, args.getFirst()), follow);
+      case Mount -> mount(registered(verb, args.getFirst()), args.get(1), Optional.of(lookedUp(args.get(2)).orElseThrow(() -> new Refused(Report.unknownData(args.getFirst(), args.get(2), registry.all().stream().map(Entry::alias).toList()))).alias()));
+      case Unmount -> mount(registered(verb, args.getFirst()), args.get(1), Optional.empty());
+      case Attenuate -> attenuate(registered(verb, args.getFirst()), args.get(1), args.subList(2, args.size()));
+      case SelectMains -> edit(registered(verb, args.getFirst()), e -> e.withMains(args.subList(1, args.size())));
       default -> throw Bug.unreachable();
     }
   }
   /// A path of a message, as the manager program wrote it.
   private static Path path(String text){ return TaggedText.readPath(text, Bug::of).normalize(); }
-  private Path registered(String verb, String name){
-    Supplier<Refused> unknown= () -> new Refused(Report.unknownProject(verb, name, registry.all().stream().map(Entry::alias).toList()));
+  private Path registered(Verb verb, String name){
+    Supplier<Refused> unknown= () -> new Refused(Report.unknownProject(verb.name(), name, registry.all().stream().map(Entry::alias).toList()));
     var f= lookedUp(name).orElseThrow(unknown).path();
     if (!scan(f)){ unreachable(f); throw unknown.get(); }
     return f;
@@ -342,18 +352,18 @@ public final class Manager{
     if (!before.equals(registry.all().stream().map(Entry::alias).toList())){ rebuild(Optional.empty()); }
     return res;
   }
-  private void idle(Path f, String verb){
+  private void idle(Path f, Verb verb){
     var job= live.get(f).job;
-    if (!(job instanceof Job.Idle)){ throw new Refused(Report.busy(verb, alias(f), job)); }
+    if (!(job instanceof Job.Idle)){ throw new Refused(Report.busy(verb.name(), alias(f), job)); }
   }
-  private void runnable(Path f, String verb){
+  private void runnable(Path f, Verb verb){
     idle(f, verb);
     var p= project(f);
-    if (p.kind() != Kind.code){ throw new Refused(Report.notCode(verb, p.alias(), p.kind().text)); }
-    p.problem().ifPresent(why -> { throw new Refused(Report.invalidContent(verb, p.alias(), why)); });
+    if (p.kind() != Kind.code){ throw new Refused(Report.notCode(verb.name(), p.alias(), p.kind().text)); }
+    p.problem().ifPresent(why -> { throw new Refused(Report.invalidContent(verb.name(), p.alias(), why)); });
   }
   private void run(Path f, List<String> mains, Optional<Follow> follow, Optional<Path> input){
-    runnable(f, "Run");
+    runnable(f, Verb.Run);
     var p= project(f);
     if (p.needsCompiling()){ throw new Refused(Report.notCompiled(p.alias(), p.state().text)); }
     var all= p.knownMains();
@@ -380,7 +390,7 @@ public final class Manager{
     next(f);
   }
   private void compile(Path f, Optional<Follow> follow){
-    runnable(f, "Compile");
+    runnable(f, Verb.Compile);
     selected = Optional.of(f);
     if (!project(f).needsCompiling()){ upToDate(f, follow); return; }
     live.get(f).follow = follow;
@@ -395,7 +405,7 @@ public final class Manager{
     follow.ifPresent(fl -> { fl.send(text); fl.end(); });
   }
   private void check(Path f, Optional<Follow> follow){
-    idle(f, "Check");
+    idle(f, Verb.Check);
     selected = Optional.of(f);
     var p= project(f);
     view.clear(f);
@@ -404,7 +414,7 @@ public final class Manager{
     follow.ifPresent(fl -> fl.send(text));
   }
   private void fix(Path f, Optional<Follow> follow){
-    project(f).usedBy(projects()).ifPresent(u -> { throw new Refused(Report.inUse("Fix", alias(f), u.alias(), u.job())); });
+    project(f).usedBy(projects()).ifPresent(u -> { throw new Refused(Report.inUse(Verb.Fix.name(), alias(f), u.alias(), u.job())); });
     selected = Optional.of(f);
     view.clear(f);
     var said= new StringBuilder();
@@ -532,7 +542,7 @@ public final class Manager{
   }
   private void terminate(Path f){
     var l= live.get(f);
-    if (l.job instanceof Job.Compile){ throw new Refused(Report.busy("Terminate", alias(f), l.job)); }
+    if (l.job instanceof Job.Compile){ throw new Refused(Report.busy(Verb.Terminate.name(), alias(f), l.job)); }
     selected = Optional.of(f);
     if (l.child != null){ endMain(f); }
   }
@@ -548,7 +558,7 @@ public final class Manager{
     exited(f, l, child, ec);
   }
   private void deleteCache(Path f){
-    idle(f, "DeleteCache");
+    idle(f, Verb.DeleteCache);
     selected = Optional.of(f);
     deleted(f);
     rebuild(Optional.empty());

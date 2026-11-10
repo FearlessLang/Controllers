@@ -113,12 +113,6 @@ public final class Main implements Manager.Exit{
     var last= call.substring(call.lastIndexOf(' ')+1);
     return Follow.isPort(last) ? "\n"+last : "";
   }
-  private static final List<List<String>> commands= Stream.of(
-    "Show", "Show projectName", "Quit", "Reset",
-    "Register base16", "ConnectEclipse base16", "EditMetadata base16", "OpenWithOrShortcut base16", "OpenWithOrShortcut base16 projectName typeName",
-    "Run projectName", "Compile projectName", "Check projectName", "Terminate projectName", "DeleteCache projectName",
-    "Kind projectName kind", "Forget projectName", "Fix projectName", "Mount projectName typeName projectName", "Unmount projectName typeName",
-    "Attenuate projectName typeName typeName1..typeNamen", "SelectMains projectName typeName1..typeNamen").map(c -> List.of(c.split(" "))).toList();
   private static final String typeNames= "typeName1..typeNamen";
   private static final Pattern projectName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$)[a-z_][a-z0-9_]{0,190}");
   private static final Pattern typeName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])[.])[a-z][a-z0-9_]*[.]_*[A-Z][A-Za-z0-9_]*'*");
@@ -126,8 +120,8 @@ public final class Main implements Manager.Exit{
   private static String call(String call){
     var words= List.of(call.split(" ", -1));
     var verb= words.getFirst().substring(prefix.length());
-    var forms= commands.stream().filter(c -> c.getFirst().equals(verb)).toList();
-    if (forms.isEmpty()){ throw new Refused(Report.callUnknown(words.getFirst(), commands.stream().map(c -> prefix+c.getFirst()).distinct().sorted().toList())); }
+    var forms= Stream.of(Manager.Verb.values()).filter(v -> v.name().equals(verb)).flatMap(v -> v.forms.stream()).toList();
+    if (forms.isEmpty()){ throw new Refused(Report.callUnknown(words.getFirst(), Stream.of(Manager.Verb.values()).map(v -> prefix+v).sorted().toList())); }
     var port= words.size() > 1 && words.getLast().startsWith("Port:");
     if (port){ check(words.getLast(), Follow.isPort(words.getLast()), Report.callPort); }
     var args= words.subList(1, words.size()-(port ? 1 : 0));
