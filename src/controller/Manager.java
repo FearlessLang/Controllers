@@ -93,6 +93,7 @@ public final class Manager{
     public Optional<Project> shown(){ return selected.flatMap(this::of); }
     public List<String> running(){ return projects.stream().filter(Project::busy).map(p -> p.alias()+" - "+p.job()).toList(); }
   }
+  private enum Cut{ none, filesUpdated, stopped }
   private static final class Live{
     Facts scanned;
     Facts facts;
@@ -102,9 +103,7 @@ public final class Manager{
     Instant since= Instant.EPOCH;
     StringBuilder compiled= new StringBuilder();
     ChildJvm child;
-    boolean terminated;
-    boolean updated;
-    boolean stopped;
+    Cut cut= Cut.none;
     Optional<String> corruption= Optional.empty();
     List<String> todo= List.of();
     Optional<Path> input= Optional.empty();
@@ -242,8 +241,7 @@ public final class Manager{
   private void endJob(Path f){
     var l= live.get(f);
     if (l.child == null){ return; }
-    l.terminated = true;
-    l.stopped = true;
+    l.cut = Cut.stopped;
     l.child.kill();
   }
   private void end(){
@@ -373,8 +371,7 @@ public final class Manager{
     if (!mountProblems.isEmpty()){ throw new Refused(Report.mountsRefused(p.alias(), mountProblems)); }
     selected = Optional.of(f);
     var l= live.get(f);
-    l.terminated = false;
-    l.stopped = false;
+    l.cut = Cut.none;
     l.todo = mains;
     l.ran = List.of();
     l.input = input;
@@ -389,8 +386,6 @@ public final class Manager{
     selected = Optional.of(f);
     if (!project(f).needsCompiling()){ upToDate(f, follow); return; }
     var l= live.get(f);
-    l.terminated = false;
-    l.stopped = false;
     l.follow = follow;
     l.compiled.setLength(0);
     view.clear(f);
@@ -427,7 +422,7 @@ public final class Manager{
   }
   private void next(Path f){
     var l= live.get(f);
-    if (l.terminated || l.todo.isEmpty()){ ended(f); return; }
+    if (l.cut != Cut.none || l.todo.isEmpty()){ ended(f); return; }
     var main= l.todo.getFirst();
     l.todo = l.todo.subList(1, l.todo.size());
     output(f, "--- running "+main+" ---\n");
@@ -466,9 +461,8 @@ public final class Manager{
     if (live.get(f) != l || l.child != child){ return; }
     l.child = null;
     if (l.job.equals(Project.compiling)){ compiled(f, l, ec); return; }
-    output(f, "--- "+l.job+(l.terminated ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
-    if (!l.stopped && (l.updated || broken(f))){ l.terminated = true; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
-    l.updated = false;
+    output(f, "--- "+l.job+(l.cut != Cut.none ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.since, Instant.now()).toSeconds()+"s ---\n");
+    if (l.cut == Cut.filesUpdated || l.cut == Cut.none && broken(f)){ l.cut = Cut.filesUpdated; output(f, Report.filesUpdated(alias(f), l.job)+"\n"); }
     next(f);
   }
   /// What the manager does after Coordinator.compile: step 1 only after a compilation with no error, step 2 always, steps 3 and 4 only with no error.
@@ -544,8 +538,7 @@ public final class Manager{
   /// Ends the running main of the project, and the run it belongs to, before the next request is applied.
   private void endMain(Path f){
     var l= live.get(f);
-    l.terminated = true;
-    l.stopped = true;
+    l.cut = Cut.stopped;
     output(f, "--- terminating "+l.job+" ---\n");
     var child= l.child;
     child.kill();
@@ -694,7 +687,11 @@ public final class Manager{
     var fresh= found.get();
     if (compiling){ return true; }
     if (!l.job.isEmpty()){
-      if (fresh.stale().isPresent() || fresh.problem().isPresent()){ l.terminated = true; l.updated = true; l.child.kill(); return true; }
+      if (fresh.stale().isPresent() || fresh.problem().isPresent()){
+        if (l.cut == Cut.none){ l.cut = Cut.filesUpdated; }
+        l.child.kill();
+        return true;
+      }
       l.scanned = fresh;
       l.facts = fresh;
       return true;
