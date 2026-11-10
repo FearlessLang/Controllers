@@ -373,7 +373,7 @@ public final class Window implements Manager.View{
       }
       @Override public boolean importData(TransferSupport support){
         var paths= Drop.paths(support.getTransferable(), Window.this::say);
-        Main.command(paths.stream().map(p -> "Register "+TaggedText.base16(p)).toArray(String[]::new));
+        Main.command(paths.stream().map(p -> (Main.isProject(p) ? "Register " : "OpenWithOrShortcut ")+TaggedText.base16(p)).toArray(String[]::new));
         return !paths.isEmpty();
       }
     };

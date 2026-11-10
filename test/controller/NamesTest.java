@@ -168,7 +168,7 @@ final class NamesTest{
     var proj= dir.resolve("proj");
     Fs.ensureDir(proj.resolve("proj.fearless"));
     Fs.ensureDir(proj.resolve("proj2"));
-    if (!Fs.isWindows()){ Fs.writeUtf8(proj.resolve("Proj.fearless"), ""); }
+    if (!Files.exists(proj.resolve("Proj.fearless"))){ Fs.writeUtf8(proj.resolve("Proj.fearless"), ""); }
     var name= Names.infer(proj, java.util.Set.of());
     assertEquals("proj2", name);
     Names.nameAs(proj, name);

@@ -14,7 +14,6 @@ import fileAssociations.Icon;
 import fileAssociations.WindowIcon;
 import naiveBackend.BackendTools;
 import tools.ChildJvm;
-import tools.Fs;
 import tools.JavacTool;
 import tools.PathClassLoader;
 import tools.SourceOracle;
@@ -50,7 +49,6 @@ public final class Deployed implements Manager.Tools{
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Path baseCache(){ return stdLib("baseCache"); }
   @Override public void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy){
-    if (Fs.isMac()){ return; }
     var launcher= Association.launcher();
     var windows= preloads.stream().map(Deployed::window).toList();
     Association.reconcile(launcher, captured, windows, claimedBy);
