@@ -1557,6 +1557,20 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
+  @Test void anArgumentThatIsNotACallWithAPortWhereNobodyListensShowsWhyTheArgumentIsNotACall(@TempDir Path dir){
+    var m= manager(dir);
+    int closed;
+    try (var server= port()){ closed= server.getLocalPort(); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    message(m, Main.messages("FearlessCommandForget Hello Port:"+closed));
+    same("[###]Fearless was started with the argument\n  \"FearlessCommandForget Hello Port:"+closed+"\"\nand that argument is not a call: \"Hello\" is not a projectName[###]", String.join("\n", view.refused));
+  }
+  @Test void theManagerStartedWithTheRootOfADriveSaysThatTheRootOfADriveIsNotAProject(@TempDir Path dir){
+    var m= manager(dir);
+    Main.messages(dir.getRoot().toString()).forEach(m::message);
+    m.settle();
+    same("Fearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]", String.join("\n", view.refused));
+  }
   @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
