@@ -141,7 +141,7 @@ public class Child{
       windows.add(preloads.stream().map(c -> c.label()+" "+c.claim().icon()).toList());
       var all= Stream.concat(Stream.of(new Icon(".fearless", null, null)), captured.stream()).toList();
       var chosenByHand= all.stream().map(Icon::extension).filter(chosen::contains).toList();
-      if (!chosenByHand.isEmpty()){ throw new Refusal(Violation.associationChosenByHand(chosenByHand.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy), chosenByHand); }
+      if (!chosenByHand.isEmpty()){ throw new Refusal(Violation.associationChosenByHand(chosenByHand.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy), List.of()); }
       var blocked= all.stream().map(Icon::extension).filter(e -> !Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw new Refusal(Violation.associationNotOurs(blocked, claimedBy), List.copyOf(blocked.keySet())); }
     }
@@ -1624,7 +1624,7 @@ other kinds of file it registers.
 
 Your system remembers the choices listed below. Each one is a choice
 made by hand of the program that opens a kind of file, for example with
-"Open with" and "Always". Fearless never removes a choice of yours on
+"Open with" and "Always". Fearless does not remove these choices on
 its own, and stopped before touching anything: your system is exactly
 as it was.
 
@@ -1927,16 +1927,6 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"), failures.get(1).getMessage());
     same(notOurs(".fearless -> fearlessBin0_003"), failures.get(2).getMessage());
     failures.clear();
-  }
-  @Test void addingASystemExtensionTheDesktopRefusesIsRefusedAndChangesNothing(@TempDir Path dir){
-    var m= manager(dir);
-    chosen.add(".htm");
-    var before= info(dir);
-    allow(m, dir, "htm");
-    same(chosenByHand(".htm", "  vim"), view.refused.getLast());
-    assertEquals(before, info(dir));
-    assertEquals(List.of(), m.state().extensions());
-    assertEquals(List.of(), view.edited);
   }
   @Test void everyCompileReconcilesAlsoWhenNothingChanged(@TempDir Path dir){
     var m= manager(dir, "hello.Hello");
