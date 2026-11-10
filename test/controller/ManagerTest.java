@@ -103,7 +103,7 @@ public class Child{
 """);
     Fs.runTool("javac", List.of("-d", classes.toString(), "-cp", PathClassLoader.jar().toString(), src.toString()));
   }
-  record Fake(Function<Path,Optional<MainsInfo>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> locked, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
+  record Fake(Function<Path,Optional<MainsInfo>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> chosen, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
     /// Writes the cache of the infos of the project; each extension written @@fapp or @@ffile is the autoselected extension of the previous cache, else is asked to the manager, as Coordinator.compile does.
     @Override public ChildJvm compile(Path folder, String alias, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
@@ -140,8 +140,8 @@ public class Child{
       associated.add(captured);
       windows.add(preloads.stream().map(c -> c.label()+" "+c.claim().icon()).toList());
       var all= Stream.concat(Stream.of(new Icon(".fearless", null, null)), captured.stream()).toList();
-      var userLocked= all.stream().map(Icon::extension).filter(locked::contains).toList();
-      if (!userLocked.isEmpty()){ throw new Refusal(Violation.associationUserLocked(userLocked.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy), userLocked); }
+      var chosenByHand= all.stream().map(Icon::extension).filter(chosen::contains).toList();
+      if (!chosenByHand.isEmpty()){ throw new Refusal(Violation.associationChosenByHand(chosenByHand.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy), chosenByHand); }
       var blocked= all.stream().map(Icon::extension).filter(e -> !Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
       if (!blocked.isEmpty()){ throw new Refusal(Violation.associationNotOurs(blocked, claimedBy), List.copyOf(blocked.keySet())); }
     }
@@ -180,7 +180,7 @@ public class Child{
   private final List<List<Icon>> associated= Collections.synchronizedList(new ArrayList<>());
   private final List<List<String>> windows= Collections.synchronizedList(new ArrayList<>());
   private final Map<String,List<String>> held= new HashMap<>();
-  private final List<String> locked= new ArrayList<>();
+  private final List<String> chosen= new ArrayList<>();
   private final List<Path> connected= new ArrayList<>();
   private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
   private final List<Manager> managers= new ArrayList<>();
@@ -201,7 +201,7 @@ public class Child{
       @Override public void fail(Throwable problem){ failures.add(problem); }
     };
     Fs.ensureDir(dir.resolve("manager"));
-    var res= new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, locked, connected, granted), v, exit);
+    var res= new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, chosen, connected, granted), v, exit);
     managers.add(res);
     return res;
   }
@@ -1617,21 +1617,24 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     assertEquals(i.png().toString().replaceAll("png$", Fs.isWindows() ? "ico" : "png"), i.ico().toString());
     return dir.relativize(i.png()).toString().replace('\\', '/');
   }
-  private static String userLocked(String... lines){
+  private static String chosenByHand(String... lines){
     return """
-Fearless cannot become the program that opens the kinds of file listed
-below.
+Fearless cannot become the program that opens Fearless projects and the
+other kinds of file it registers.
 
-Your system remembers a choice made by hand for these kinds of file,
-with "Open with" and "Always". Fearless never removes a choice of yours
-on its own, and stopped before touching anything: your system is
-exactly as it was.
+Your system remembers the choices listed below. Each one is a choice
+made by hand of the program that opens a kind of file, for example with
+"Open with" and "Always". Fearless never removes a choice of yours on
+its own, and stopped before touching anything: your system is exactly
+as it was.
 
-Removing these choices clears the way. Each choice is the registry key
-HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\<kind of file>\\UserChoice,
-together with the key UserChoiceLatest next to it.
+Removing these choices clears the way. Each choice is listed under the
+place holding the choice: a file, or a kind of file standing for the
+registry key
+HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\<kind of file>\\UserChoice
+and the key UserChoiceLatest next to it.
 
-What is locked:
+The choices:
 """+String.join("\n", lines);
   }
   private static String notOurs(String... lines){
@@ -1910,9 +1913,9 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     infos.put("hello", claiming("hello.Hello", "fapp001", "foo"));
     infos.put("other", claiming("other.Other", "fapp002", "qux"));
     compiled(m, "hello", "other");
-    locked.add(".qux");
+    chosen.add(".qux");
     manager(dir, "hello.Hello").settle();
-    locked.clear();
+    chosen.clear();
     held.put(".fapp002", List.of("vim"));
     manager(dir, "hello.Hello").settle();
     held.clear();
@@ -1920,17 +1923,17 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     manager(dir, "hello.Hello").settle();
     assertEquals(3, failures.size());
     assertEquals(List.of(UserError.class, UserError.class, UserError.class), failures.stream().map(Object::getClass).toList());
-    same(userLocked(".qux claimed by \"other.Other\" of project \"other\" -> vim"), failures.get(0).getMessage());
+    same(chosenByHand(".qux claimed by \"other.Other\" of project \"other\"", "  vim"), failures.get(0).getMessage());
     same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"), failures.get(1).getMessage());
     same(notOurs(".fearless -> fearlessBin0_003"), failures.get(2).getMessage());
     failures.clear();
   }
   @Test void addingASystemExtensionTheDesktopRefusesIsRefusedAndChangesNothing(@TempDir Path dir){
     var m= manager(dir);
-    locked.add(".htm");
+    chosen.add(".htm");
     var before= info(dir);
     allow(m, dir, "htm");
-    same(userLocked(".htm -> vim"), view.refused.getLast());
+    same(chosenByHand(".htm", "  vim"), view.refused.getLast());
     assertEquals(before, info(dir));
     assertEquals(List.of(), m.state().extensions());
     assertEquals(List.of(), view.edited);
