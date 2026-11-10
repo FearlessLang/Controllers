@@ -157,8 +157,8 @@ public final class Main implements Manager.Exit{
     Path path;
     try{ path= (arg.startsWith(Fs.isWindows() ? "Base16:" : "file:") ? PathClassLoader.pathOf(arg) : Path.of(arg)).toAbsolutePath().normalize(); }
     catch (IllegalArgumentException e){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
-    if (arg.isBlank() || path.getFileName() == null){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
-    if (isProject(path)){ return List.of("Register\n"+TaggedText.ofPath(path), "Show"); }
+    if (arg.isBlank()){ return List.of("InvalidCall\n"+Report.brokenPath(arg)); }
+    if (path.getFileName() == null || isProject(path)){ return List.of("Register\n"+TaggedText.ofPath(path), "Show"); }
     return List.of("OpenWithOrShortcut\n"+TaggedText.ofPath(path));
   }
   public static boolean isProject(Path path){ return Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Names.ext); }
