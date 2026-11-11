@@ -38,7 +38,7 @@ public final class Association{
     return List.of("-DfearlessDesk.id="+deskId(folder, main), "-DfearlessDesk.icons="+PathClassLoader.argOf(folder.resolve(Facts.outDir).resolve("icons")), "-DfearlessDesk.relaunch=\""+launcher()+"\" \""+folder+"\"", "-DfearlessManager.launcher="+launcher());
   }
   static void reconcile(Path launcher, List<Icon> extensions, List<WindowIcon> windows, Function<String,String> claimedBy){
-    FileAssociations.reconcile(identity(launcher), belongsToFamily, launcher, extensions, windows, iconFile(),
+    FileAssociations.reconcile(identity(launcher), "Fearless Manager", belongsToFamily, launcher, extensions, windows, iconFile(),
       c -> JavacTool.managerFolderOf(c).filter(d -> !JavacTool.managerFolderOf(launcher).equals(Optional.of(d))).ifPresent(Association::removeAtOnce),
       Violation::associationsAmbiguous,
       choices -> Violation.associationChosenByHand(choices, claimedBy).withRecovery("Remove these choices", () -> FileAssociations.forgetChoices(choices, Violation::associationNotWritable)),
