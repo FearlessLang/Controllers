@@ -401,6 +401,18 @@ public class Child{
     assertFalse(Files.exists(left));
     assertEquals(List.of(), view.refused);
   }
+  @Test void registeringARegisteredFolderAgainSelectsItAndWalksNothing(@RealTempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var other= registered(m, dir, "other");
+    var left= other.resolve(".fearless_sentinel_left");
+    Fs.writeUtf8(left, "");
+    send(m, "Register", TaggedText.of(hello.toString()));
+    assertEquals(Optional.of(hello), m.state().selected());
+    assertTrue(Files.exists(left));
+    assertEquals(List.of("hello "+hello, "other "+other), listed(m));
+    assertEquals(List.of(), view.refused);
+  }
   @Test void anAutoCheckFindsAProjectWhoseParentFolderBecameALinkUnreachable(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir.resolve("a"), "hello");
@@ -1630,7 +1642,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     var m= manager(dir);
     Main.messages(dir.getRoot().toString()).forEach(m::message);
     m.settle();
-    same("Fearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]", String.join("\n", view.refused));
+    same("Fearless cannot keep track of this folder as a project: a file system is\nmounted on it, as on the root of a drive or of a USB stick, and a project\nfolder is never a folder where a file system is mounted.\n[###]", String.join("\n", view.refused));
   }
   @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");

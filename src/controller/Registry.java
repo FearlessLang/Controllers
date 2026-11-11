@@ -108,8 +108,8 @@ public final class Registry{
     var hits= new ArrayList<Map.Entry<Seen,Path>>();
     try{
       var own= fresh(managerDir, marks);
-      clean(managerDir).ifPresent(e -> { throw Violation.couldNotSaveManagerFile(managerDir.resolve(own), e); });
-      marked.forEach(f -> clean(f).ifPresent(e -> res.put(f, refused(f, e))));
+      clean(managerDir).ifPresent(e -> { throw Violation.couldNotCleanManagerFolder(e.getKey(), e.getValue()); });
+      marked.forEach(f -> clean(f).ifPresent(e -> res.put(f, refused(f, e.getValue()))));
       mark(managerDir, own, marks).ifPresent(e -> { throw Violation.couldNotSaveManagerFile(managerDir.resolve(own), e); });
       marked.stream().filter(f -> !res.containsKey(f)).forEach(f -> mark(f, fresh(f, marks), marks).ifPresent(e -> res.put(f, refused(f, e))));
       marks.values().stream().collect(Collectors.toCollection(() -> new TreeSet<>(exact))).forEach(t -> walk(t, t, marks, hits));
@@ -150,11 +150,11 @@ public final class Registry{
     var name= sentinel+UUID.randomUUID();
     return marks.containsKey(name) || Files.exists(folder.resolve(name), LinkOption.NOFOLLOW_LINKS) ? fresh(folder, marks) : name;
   }
-  private static Optional<IOException> clean(Path folder){
+  private static Optional<Map.Entry<Path,IOException>> clean(Path folder){
     List<Path> old;
     try (var s= Files.list(folder)){ old= s.filter(k -> k.getFileName().toString().startsWith(sentinel)).toList(); }
-    catch (IOException e){ return Optional.of(e); }
-    return old.stream().flatMap(k -> delete(k).stream()).findFirst();
+    catch (IOException e){ return Optional.of(Map.entry(folder, e)); }
+    return old.stream().flatMap(k -> delete(k).map(e -> Map.entry(k, e)).stream()).findFirst();
   }
   private static Optional<IOException> mark(Path folder, String name, Map<String,Path> marks){
     try{ Files.createFile(folder.resolve(name)); marks.put(name, folder); return Optional.empty(); }

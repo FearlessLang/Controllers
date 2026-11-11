@@ -211,8 +211,9 @@ never part of a project, and no project is inside it.
   }
   @Test void theRootOfADriveIsNotAProject(@RealTempDir Path dir){
     refused("""
-Fearless cannot keep track of the root of a drive or of the file system as a
-project.
+Fearless cannot keep track of this folder as a project: a file system is
+mounted on it, as on the root of a drive or of a USB stick, and a project
+folder is never a folder where a file system is mounted.
 
 The folder is:
 [###]
@@ -225,8 +226,9 @@ folder.
     while (top.getParent() != null && Files.getFileStore(top).equals(Files.getFileStore(top.getParent()))){ top = top.getParent(); }
     var drive= top;
     refused("""
-Fearless cannot keep track of the root of a drive or of the file system as a
-project.
+Fearless cannot keep track of this folder as a project: a file system is
+mounted on it, as on the root of a drive or of a USB stick, and a project
+folder is never a folder where a file system is mounted.
 
 The folder is:
   %s

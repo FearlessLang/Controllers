@@ -602,11 +602,15 @@ public final class Manager{
   }
   private void register(Path path){
     var folder= projectFolder(path);
-    var away= away(folder, Registry.folders(registry.content()), dir);
-    var chosen= chosen(folder, away);
-    if (!live.containsKey(chosen)){ add(chosen, away.keySet()); }
+    var chosen= registry.of(folder).isPresent() && registry.reaches(folder) ? folder : placed(folder);
     selected = Optional.of(chosen);
     scan(chosen);
+  }
+  private Path placed(Path folder){
+    var away= away(folder, Registry.folders(registry.content()), dir);
+    var res= chosen(folder, away);
+    if (!live.containsKey(res)){ add(res, away.keySet()); }
+    return res;
   }
   private void add(Path folder, Set<Path> away){
     String alias;
