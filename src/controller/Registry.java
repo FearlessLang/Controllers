@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -37,6 +38,7 @@ import fileSupport.StringFiles;
 import managerMessages.Report;
 import managerMessages.Violation;
 import metaParser.Span;
+import realSourceOracle.Fix;
 import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
@@ -75,6 +77,7 @@ public final class Registry{
   public record Same(Path folder) implements Away{}
   private record Seen(Path walked, Path found, boolean top){}
   public static final Comparator<Path> exact= Comparator.comparing(Path::toString).thenComparing(Comparator.<Path>naturalOrder());
+  private static final Comparator<Seen> seenOrder= Comparator.comparing(Seen::walked, exact).thenComparing(Seen::found, exact).thenComparing(Seen::top);
   private static final String sentinel= ".fearless_sentinel_";
   private final Path dir;
   private final Consumer<Content> check;
@@ -91,9 +94,15 @@ public final class Registry{
   }
   public static List<Path> folders(Content c){ return c.projects().stream().map(Entry::path).toList(); }
   public static boolean same(Path a, Path b){ return exact.compare(a, b) == 0; }
+  public Set<Path> conditions(List<Path> folders){
+    var now= folders(content);
+    var unchanged= now.size() == folders.size() && IntStream.range(0, now.size()).allMatch(i -> same(now.get(i), folders.get(i)));
+    return unchanged ? away : away(folders, dir).keySet();
+  }
   public static Map<Path,Away> away(List<Path> folders, Path managerDir){
     var res= new TreeMap<Path,Away>(exact);
-    folders.forEach(f -> alone(f).ifPresent(why -> res.put(f, new Why(why))));
+    var mounted= Fix.mountPoints();
+    folders.forEach(f -> alone(f, mounted).ifPresent(why -> res.put(f, new Why(why))));
     var marked= folders.stream().filter(f -> !res.containsKey(f)).toList();
     var marks= new LinkedHashMap<String,Path>();
     var hits= new ArrayList<Map.Entry<Seen,Path>>();
@@ -103,10 +112,10 @@ public final class Registry{
       marked.forEach(f -> clean(f).ifPresent(e -> res.put(f, refused(f, e))));
       mark(managerDir, own, marks).ifPresent(e -> { throw Violation.couldNotSaveManagerFile(managerDir.resolve(own), e); });
       marked.stream().filter(f -> !res.containsKey(f)).forEach(f -> mark(f, fresh(f, marks), marks).ifPresent(e -> res.put(f, refused(f, e))));
-      marks.values().stream().distinct().forEach(t -> walk(t, t, marks, hits));
+      marks.values().stream().collect(Collectors.toCollection(() -> new TreeSet<>(exact))).forEach(t -> walk(t, t, marks, hits));
     }
     finally{ unmark(marks); }
-    var seen= hits.stream().filter(h -> Files.notExists(h.getValue(), LinkOption.NOFOLLOW_LINKS)).map(Map.Entry::getKey).collect(Collectors.toSet());
+    var seen= hits.stream().filter(h -> Files.notExists(h.getValue(), LinkOption.NOFOLLOW_LINKS)).map(Map.Entry::getKey).collect(Collectors.toCollection(() -> new TreeSet<>(seenOrder)));
     var reached= new ArrayList<Path>();
     for (var f : folders){
       if (res.containsKey(f)){ continue; }
@@ -115,12 +124,12 @@ public final class Registry{
     return res;
   }
   private static Away refused(Path f, IOException e){ return new Why(Report.registerRefused(f, Report.fileFailure(e))); }
-  private static Optional<String> alone(Path f){
+  private static Optional<String> alone(Path f, Predicate<Path> mounted){
     Optional<Path> at;
     try{ at= stray(f); }
     catch (UncheckedIOException e){ return Optional.of(Report.registerRefused(f, Report.fileFailure(e.getCause()))); }
     if (at.isPresent()){ return Optional.of(at.get().getFileName() == null ? Report.registerDriveLetter(f) : Fs.isLink(at.get()) ? Report.registerLink(f, at.get()) : Report.registerNotListed(f, at.get())); }
-    return Optional.of(Report.projectFolderIsRoot(f)).filter(_ -> driveTop(f));
+    return Optional.of(Report.projectFolderIsRoot(f)).filter(_ -> f.getFileName() == null || mounted.test(f));
   }
   private static boolean corresponds(Path folder){
     try{ return stray(folder).isEmpty(); }
@@ -132,16 +141,11 @@ public final class Registry{
     for (var name : folder){
       if (!listed(at, name.toString())){ return Optional.of(at.resolve(name)); }
       at = at.resolve(name);
-      if (!Files.isDirectory(at, LinkOption.NOFOLLOW_LINKS) || Fs.isLink(at)){ return Optional.of(at); }
+      if (!Fix.realFolder(at)){ return Optional.of(at); }
     }
     return Optional.empty();
   }
   private static boolean listed(Path folder, String name){ return Fs.of(() -> { try (var s= Files.list(folder)){ return s.anyMatch(k -> k.getFileName().toString().equals(name)); } }); }
-  private static boolean driveTop(Path folder){
-    if (folder.getFileName() == null){ return true; }
-    try{ return !Files.getFileStore(folder).equals(Files.getFileStore(folder.getParent())); }
-    catch (IOException e){ return false; }
-  }
   private static String fresh(Path folder, Map<String,Path> marks){
     var name= sentinel+UUID.randomUUID();
     return marks.containsKey(name) || Files.exists(folder.resolve(name), LinkOption.NOFOLLOW_LINKS) ? fresh(folder, marks) : name;
@@ -169,8 +173,8 @@ public final class Registry{
     try (var s= Files.list(folder)){ kids= s.toList(); }
     catch (IOException | UncheckedIOException _){ return; }
     for (var k : kids){
-      Optional.ofNullable(marks.get(k.getFileName().toString())).ifPresent(x -> hits.add(Map.entry(new Seen(top, x, folder.equals(top)), k)));
-      if (Files.isDirectory(k, LinkOption.NOFOLLOW_LINKS) && !Fs.isLink(k)){ walk(top, k, marks, hits); }
+      Optional.ofNullable(marks.get(k.getFileName().toString())).ifPresent(x -> hits.add(Map.entry(new Seen(top, x, same(folder, top)), k)));
+      if (Fix.realFolder(k)){ walk(top, k, marks, hits); }
     }
   }
   private static Optional<Away> met(Path f, Path m, List<Path> reached, Set<Seen> seen){
@@ -241,7 +245,7 @@ public final class Registry{
   public void save(Content c){
     var text= text(c);
     assert text(parse(text, infoFile())).equals(text);
-    save(c, text, away(folders(c), dir).keySet());
+    save(c, text, conditions(folders(c)));
   }
   /// writes text, the text of an EditMetadata, which holds c
   public void save(Content c, String text, Set<Path> away){

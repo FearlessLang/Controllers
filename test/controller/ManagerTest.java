@@ -390,6 +390,17 @@ public class Child{
     assertEquals(List.of("The project \"b\" connects to the folder \""+b+"\".\nThis folder is now unreachable.\nThe project \"b\" has now been removed."), view.refused);
     assertEquals(List.of("a "+a), listed(m));
   }
+  @Test void theFoldersAreWalkedWhenTheListOfTheProjectFoldersChangesAndNotWhenOnlyAKindChanges(@RealTempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var left= hello.resolve(".fearless_sentinel_left");
+    Fs.writeUtf8(left, "");
+    send(m, "Kind", "hello", "dataRead");
+    assertTrue(Files.exists(left));
+    registered(m, dir, "other");
+    assertFalse(Files.exists(left));
+    assertEquals(List.of(), view.refused);
+  }
   @Test void anAutoCheckFindsAProjectWhoseParentFolderBecameALinkUnreachable(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir.resolve("a"), "hello");

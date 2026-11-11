@@ -315,7 +315,8 @@ Fix changes the folder of project "hello":
 - Fix deletes the folders and the zips left with nothing inside;
 - Fix moves to the folder "Hello_fix" next to the project folder ("Hello_fix2" when that name is taken, and so on) what a project can not hold:
   symbolic links, junctions and the other entries that are neither files nor folders;
-  files and folders whose path is longer than 200 characters, or 250 when a name of the path starts with a dot;
+  files and folders whose path is longer than 200, or 250 when a name of the path starts with a dot
+  (counting the bytes of UTF-8 on Linux and macOS, the characters on Windows);
   zips that can not be read, whose stored names are not valid, or nested too deep;
   for the names starting with a dot and the names in a folder whose name starts with a dot: the names that are not valid Unicode
   or that some operating system can not hold, and the second of two names that differ only in letter case or in Unicode form.

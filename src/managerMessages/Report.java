@@ -113,7 +113,7 @@ The arguments are:
   public static String registerLink(Path path, Path link){ return refusedPath("Register", path)+"\nThe path goes through the symbolic link/junction\n"+path(link.toString())+"\nand Fearless does not follow symbolic links/junctions."; }
   public static String registerDriveLetter(Path path){ return refusedPath("Register", path)+"\nThe letter of the drive is lowercase: write the drive with its uppercase letter, as in \"C:\\\"."; }
   public static String registerNotListed(Path path, Path at){
-    return refusedPath("Register", path)+"\nThe folder\n"+path(at.getParent().toString())+"\nlists no folder named exactly "+disp(at.getFileName().toString())+": write each name of the path as its folder lists it, in the same letter case.";
+    return refusedPath("Register", path)+"\nThe folder\n"+path(at.getParent().toString())+"\nlists no folder named exactly "+disp(at.getFileName().toString())+": write each name of the path as its folder lists it, in the same letter case and the same Unicode form.";
   }
   public static String folderNestedWithRegistered(Path folder, Path registered){
     return refusedPath("Register", folder)+"\nA registered project has the folder\n"+path(registered.toString())+"\nOne of the two folders is inside the other: every file belongs to exactly one project.";
@@ -197,7 +197,8 @@ Fix changes the folder of project %s:
 - Fix deletes the folders and the zips left with nothing inside;
 - Fix moves to the folder %s next to the project folder (%s when that name is taken, and so on) what a project can not hold:
   symbolic links, junctions and the other entries that are neither files nor folders;
-  files and folders whose path is longer than 200 characters, or 250 when a name of the path starts with a dot;
+  files and folders whose path is longer than 200, or 250 when a name of the path starts with a dot
+  (counting the bytes of UTF-8 on Linux and macOS, the characters on Windows);
   zips that can not be read, whose stored names are not valid, or nested too deep;
   for the names starting with a dot and the names in a folder whose name starts with a dot: the names that are not valid Unicode
   or that some operating system can not hold, and the second of two names that differ only in letter case or in Unicode form.

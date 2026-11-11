@@ -204,7 +204,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     Fs.writeUtf8(dir.resolve("file"), "");
     var res= away(dir, dir.resolve("HELLO"), dir.resolve("file"), dir.resolve("file").resolve("x"), hello);
     assertEquals(Set.of(dir.resolve("HELLO"), dir.resolve("file"), dir.resolve("file").resolve("x")), res.keySet());
-    same("Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case.", why(res, dir.resolve("HELLO")));
+    same("Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case and the same Unicode form.", why(res, dir.resolve("HELLO")));
   }
   @Test void awkwardFolderNamesSurviveAReRead(@RealTempDir Path dir){
     var project= folder(dir, "a name with spaces");

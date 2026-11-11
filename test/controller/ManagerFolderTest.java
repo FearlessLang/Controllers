@@ -198,7 +198,7 @@ never part of a project, and no project is inside it.
   @Test void aPathInAnotherLetterCaseIsNotAProject(@RealTempDir Path dir){
     folder(dir, "hello");
     var upper= dir.resolve("HELLO");
-    var expected= Files.exists(upper) ? "Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case." : "Refused request \"Register\" on path\n[###]HELLO\nNothing exists at that path.";
+    var expected= Files.exists(upper) ? "Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case and the same Unicode form." : "Refused request \"Register\" on path\n[###]HELLO\nNothing exists at that path.";
     refused(expected, () -> projectFolder(upper, List.of(), folder(dir, "manager")));
   }
   @Test void aFolderInsideOrAroundARegisteredFolderIsNotAProjectAndARegisteredFolderIsItself(@RealTempDir Path dir){

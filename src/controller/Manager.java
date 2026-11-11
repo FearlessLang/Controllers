@@ -641,7 +641,7 @@ public final class Manager{
     Content parsed;
     try{ parsed= Registry.parse(text, file); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
-    var away= Registry.away(Registry.folders(parsed), dir).keySet();
+    var away= registry.conditions(Registry.folders(parsed));
     var next= Registry.inferred(parsed, registry.content(), away);
     registry.all().stream().filter(o -> !(live.get(o.path()).job instanceof Job.Idle)).forEach(o -> kept(o, next));
     granted(next);
