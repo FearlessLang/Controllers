@@ -268,11 +268,11 @@ sync tools, and file preview tools.
 """, Violation.couldNotSaveManagerFile(file, cause).getMessage());
   }
   @Test void couldNotCleanManagerFolder(){
-    var file= Path.of("C:\\Users\\ada\\AppData\\Local\\Fearless\\manager").resolve(".fearless_sentinel_1");
+    var dir= Path.of("C:\\Users\\user\\AppData\\Local\\Fearless\\manager");
+    var file= dir.resolve(".fearless_sentinel_1");
     var cause= new IOException("Access is denied");
     same("""
-Fearless could not list its manager folder, or could not remove from it a
-file that Fearless left there.
+Fearless could not remove from its manager folder a file that Fearless left there.
 
 Fearless uses one process (called the manager process)
 to keep track of other Fearless processes (the user processes).
@@ -280,14 +280,14 @@ The manager folder is the folder used by the manager process to store
 coordination information into files.
 
 The path is:
-  C:\\Users\\ada\\AppData\\Local\\Fearless\\manager[###]fearless_sentinel_1
+  C:\\Users\\user\\AppData\\Local\\Fearless\\manager[###]fearless_sentinel_1
 
 Reported reason:
 Access is denied
 Programs that may use or block this folder include security software
 (antivirus, ransomware protection, endpoint protection), backup tools,
 sync tools, and file preview tools.
-""", Violation.couldNotCleanManagerFolder(file, cause).getMessage());
+""", Violation.couldNotCleanManagerFolder(dir, file, cause).getMessage());
   }
   @Test void folderNestedWithRegistered(){
     same("""

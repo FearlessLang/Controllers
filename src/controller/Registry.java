@@ -108,7 +108,7 @@ public final class Registry{
     var hits= new ArrayList<Map.Entry<Seen,Path>>();
     try{
       var own= fresh(managerDir, marks);
-      clean(managerDir).ifPresent(e -> { throw Violation.couldNotCleanManagerFolder(e.getKey(), e.getValue()); });
+      clean(managerDir).ifPresent(e -> { throw Violation.couldNotCleanManagerFolder(managerDir, e.getKey(), e.getValue()); });
       marked.forEach(f -> clean(f).ifPresent(e -> res.put(f, refused(f, e.getValue()))));
       mark(managerDir, own, marks).ifPresent(e -> { throw Violation.couldNotSaveManagerFile(managerDir.resolve(own), e); });
       marked.stream().filter(f -> !res.containsKey(f)).forEach(f -> mark(f, fresh(f, marks), marks).ifPresent(e -> res.put(f, refused(f, e))));

@@ -208,17 +208,17 @@ using it, or the folder itself may be blocked.
 
 %s""".formatted(path(msgDir.toString()), reported(cause)), cause);
   }
-  public static UserError couldNotCleanManagerFolder(Path failed, Throwable cause){
+  public static UserError couldNotCleanManagerFolder(Path managerDir, Path failed, Throwable cause){
+    var what= failed.equals(managerDir) ? "Fearless could not list its manager folder." : "Fearless could not remove from its manager folder a file that Fearless left there.";
     return new UserError("""
-Fearless could not list its manager folder, or could not remove from it a
-file that Fearless left there.
+%s
 
 %s
 The path is:
 %s
 
 %s
-%s""".formatted(managerFolderIntro(), path(failed.toString()), reported(cause), blockingPrograms()), cause);
+%s""".formatted(what, managerFolderIntro(), path(failed.toString()), reported(cause), blockingPrograms()), cause);
   }
   public static UserError couldNotSaveManagerFile(Path file, Throwable cause){
     return new UserError("""
