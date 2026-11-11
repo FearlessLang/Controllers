@@ -9,7 +9,7 @@ import java.util.Optional;
 import javax.swing.JLabel;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import controller.Manager.State;
 import controller.Project;
@@ -17,7 +17,7 @@ import controller.Registry.Kind;
 import tools.Fs;
 
 final class TilesTest{
-  @Test void onlyTheTileOfTheShownProjectIsHighlightedWhateverTheListSelects(@TempDir Path dir){
+  @Test void onlyTheTileOfTheShownProjectIsHighlightedWhateverTheListSelects(@RealTempDir Path dir){
     Fs.ensureDir(dir.resolve("a"));
     Fs.ensureDir(dir.resolve("b"));
     var a= IconsTest.project(dir.resolve("a"), Kind.idle);

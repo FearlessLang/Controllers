@@ -267,6 +267,28 @@ Programs that may use or block this folder include security software
 sync tools, and file preview tools.
 """, Violation.couldNotSaveManagerFile(file, cause).getMessage());
   }
+  @Test void couldNotCleanManagerFolder(){
+    var dir= Path.of("C:\\Users\\user\\AppData\\Local\\Fearless\\manager");
+    var file= dir.resolve(".fearless_sentinel_1");
+    var cause= new IOException("Access is denied");
+    same("""
+Fearless could not remove from its manager folder a file that Fearless left there.
+
+Fearless uses one process (called the manager process)
+to keep track of other Fearless processes (the user processes).
+The manager folder is the folder used by the manager process to store
+coordination information into files.
+
+The path is:
+  C:\\Users\\user\\AppData\\Local\\Fearless\\manager[###]fearless_sentinel_1
+
+Reported reason:
+Access is denied
+Programs that may use or block this folder include security software
+(antivirus, ransomware protection, endpoint protection), backup tools,
+sync tools, and file preview tools.
+""", Violation.couldNotCleanManagerFolder(dir, file, cause).getMessage());
+  }
   @Test void folderNestedWithRegistered(){
     same("""
 Refused request "Register" on path
@@ -289,8 +311,9 @@ never part of a project, and no project is inside it.
   }
   @Test void projectFolderIsRoot(){
     same("""
-Fearless cannot keep track of the root of a drive or of the file system as a
-project.
+Fearless cannot keep track of this folder as a project: a file system is
+mounted on it, as on the root of a drive or of a USB stick, and a project
+folder is never a folder where a file system is mounted.
 
 The folder is:
   C:\\
@@ -298,5 +321,32 @@ Put the project in a folder inside it, and make that folder the project
 folder.
 """, Report.projectFolderIsRoot(Path.of("C:\\")));
   }
-
+  @Test void fixQuestion(){
+    same("""
+Fix changes the folder of project "hello":
+- Fix deletes the files and folders that desktops, archive programs, office programs and text editors write next to your files:
+  ".DS_Store", "._name", "__MACOSX", ".AppleDouble", "Icon\\r", "Thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", "desktop.ini",
+  "name:Zone.Identifier", ".directory", ".Trash-1000", "~$name", ".~lock.name#", "name~", "#name#" and ".name.swp";
+  a file "name~", "#name#" or ".name.swp" can hold text of yours that a text editor did not save,
+  and a folder ".Trash-1000" holds the files that you moved to the trash;
+- Fix renames the files and folders whose name a project can not hold: "My Logo.PNG" becomes "my_logo.png",
+  and a file with no extension gets "png", "jpg", "gif", "txt" or "bin" from its content;
+- Fix cleans the text of the Fearless source files: Fix removes the byte order mark, turns every line ending into a line feed,
+  the typographic quotes and dashes into ' " and -, every tab into a space, an accented letter into the letter without the accent,
+  and removes every other character that a Fearless source file can not hold;
+- Fix sets to the current time the files with no time or with a time in the future;
+- Fix deletes the folders and the zips left with nothing inside;
+- Fix moves to the folder "Hello_fix" next to the project folder ("Hello_fix2" when that name is taken, and so on) what a project can not hold:
+  symbolic links, junctions and the other entries that are neither files nor folders;
+  files and folders whose path is longer than 200, or 250 when a name of the path starts with a dot
+  (counting the bytes of UTF-8 on Linux and macOS, the characters on Windows);
+  zips that can not be read, whose stored names are not valid, or nested too deep;
+  for the names starting with a dot and the names in a folder whose name starts with a dot: the names that are not valid Unicode
+  or that some operating system can not hold, and the second of two names that differ only in letter case or in Unicode form.
+Fix does every change of this list also inside the zips of the project.
+Inside a folder whose name starts with a dot, Fix renames nothing, cleans no text, keeps the folders with nothing inside,
+and takes a zip as a file like any other.
+Fix stops at the first change the file system refuses: the Output then lists the changes done and the error.
+The Output lists every change. A change of Fix can not be undone.""", Report.fixQuestion("hello", Path.of("Hello")));
+  }
 }

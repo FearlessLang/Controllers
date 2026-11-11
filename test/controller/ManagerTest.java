@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -28,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiConsumer;
@@ -46,10 +48,9 @@ import java.util.Locale;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import controller.Manager.State;
 import controller.Registry.Kind;
@@ -71,7 +72,7 @@ import userMessages.Violation;
 /// The whole manager without a window: messages in, View calls and files out.
 /// Compiling writes a fresh cache and every run and compilation is a real child JVM running Child.
 final class ManagerTest{
-  @TempDir static Path classes;
+  @RealTempDir static Path classes;
   @BeforeAll static void child(){
     var src= classes.resolve("Child.java");
     Fs.writeUtf8(src, """
@@ -271,17 +272,17 @@ public class Child{
     return file;
   }
   private static void allow(Manager m, Path dir, String... extensions){
-    var old= Registry.parse(info(dir), dir.resolve("projects.info"), p -> p, dir.resolve("manager"));
+    var old= Registry.parse(info(dir), dir.resolve("projects.info"));
     edit(m, dir, Registry.text(new Registry.Content(old.projects(), Stream.concat(old.extensions().stream(), Stream.of(extensions)).toList())));
   }
-  @Test void showShowsTheWindow(@TempDir Path dir){
+  @Test void showShowsTheWindow(@RealTempDir Path dir){
     var m= manager(dir);
     send(m, "Show");
     assertEquals(1, view.shown);
     assertEquals(List.of(), listed(m));
     assertEquals("{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n", info(dir));
   }
-  @Test void everyRequestAfterAQuitIsRefused(@TempDir Path dir){
+  @Test void everyRequestAfterAQuitIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     send(m, "Quit");
@@ -291,14 +292,14 @@ public class Child{
     assertEquals(List.of("hello "+hello), listed(m));
     assertEquals(List.of("Refused request \"Forget\": the manager is quitting.", "Refused request \"Reset\": the manager is quitting."), view.refused);
   }
-  @Test void everyRequestAfterAResetIsRefused(@TempDir Path dir){
+  @Test void everyRequestAfterAResetIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     send(m, "Reset");
     send(m, "Quit");
     assertEquals(List.of("reset"), exits);
     assertEquals(List.of("Refused request \"Quit\": the manager is quitting."), view.refused);
   }
-  @Test void anInvalidCallIsShownAndAFatalErrorIsFatal(@TempDir Path dir){
+  @Test void anInvalidCallIsShownAndAFatalErrorIsFatal(@RealTempDir Path dir){
     var m= manager(dir);
     send(m, "InvalidCall", "Fearless was started with 2 arguments,", "and more.");
     assertEquals(List.of("Fearless was started with 2 arguments,\nand more."), view.refused);
@@ -307,7 +308,7 @@ public class Child{
     same("A Fearless process reported a failure the manager cannot recover from:\n\nthe disk is gone", failures.getFirst().getMessage());
     failures.clear();
   }
-  @Test void aFolderNamedWithANewlineOrNotUnicodeIsRegisteredByItsMessageAndRemembered(@TempDir Path dir){
+  @Test void aFolderNamedWithANewlineOrNotUnicodeIsRegisteredByItsMessageAndRemembered(@RealTempDir Path dir){
     var m= manager(dir);
     var odd= folder(dir, Fs.isWindows() ? "a\ud800b" : "a\nb");
     send(m, "Register", TaggedText.ofPath(odd));
@@ -317,8 +318,12 @@ public class Child{
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
   }
-  @Test void aFolderWhoseNameIsNotUnicodeIsRegisteredByItsMessageAndRemembered(@TempDir Path dir){
-    Assumptions.assumeFalse(Fs.isMac());
+  private static final String notUnicodeOnMac= """
+    Agent on macOS: APFS refuses a name that is not UTF-8, so this test can not make its folder in the temporary folder.
+    Investigate which volume macOS mounts that holds such a name (a FAT or exFAT disk image made with hdiutil, a share of another system),
+    then make this test use a folder on that volume: the manager handles a folder whose name is not Unicode on every desk (ControllersDesign, Base16 paths).""";
+  @Test void aFolderWhoseNameIsNotUnicodeIsRegisteredByItsMessageAndRemembered(@RealTempDir Path dir){
+    if (Fs.isMac()){ fail(notUnicodeOnMac); }
     var m= manager(dir);
     var odd= Fs.isWindows() ? dir.resolve("caf\ud800") : dir.resolve(PathBytes.path(new byte[]{'c', 'a', 'f', (byte)0xE9}));
     Fs.ensureDir(odd);
@@ -328,33 +333,105 @@ public class Child{
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
   }
-  @Test void registeringASymbolicLinkIsRefused(@TempDir Path dir){
+  @Test void registeringASymbolicLinkIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     var link= Disk.link(dir.resolve("link"), folder(dir, "target"));
     send(m, "Register", TaggedText.of(link.toString()));
-    same("Refused request \"Register\" on path\n[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", view.refused.getLast());
+    same("Refused request \"Register\" on path\n[###]link\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.", view.refused.getLast());
     assertEquals(List.of(), listed(m));
   }
-  @Test void aFolderAnEditMetadataNamesThroughALinkedFolderIsOneProjectAlsoForTheNextManager(@TempDir Path dir){
+  private static Registry.Entry idleEntry(Path folder){ return new Registry.Entry("", folder, Kind.idle, List.of(), Map.of(), Map.of()); }
+  private static String unreachable(Path folder){ return "The project connects to the folder \""+folder+"\".\nThis folder is now unreachable.\nThe project has now been removed."; }
+  @Test void aFolderAnEditMetadataNamesThroughALinkedFolderIsAFolderTheManagerCanNotReach(@RealTempDir Path dir){
     var m= manager(dir);
-    folder(folder(dir, "real"), "hello");
+    var real= folder(folder(dir, "real"), "hello");
     var linked= Disk.link(dir.resolve("linked"), dir.resolve("real")).resolve("hello");
-    edit(m, dir, Registry.text(new Registry.Content(List.of(new Registry.Entry("", linked, Kind.idle, List.of(), Map.of(), Map.of())), List.of())));
-    var again= manager(dir);
-    send(again, "Register", TaggedText.of(linked.toString()));
-    assertEquals(1, listed(again).size(), listed(again).toString());
+    edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(linked)), List.of())));
+    m.settle();
+    assertEquals(List.of(unreachable(linked)), view.refused);
+    assertEquals(List.of(), listed(m));
+    same("{\n  \"projects\": [],[###]", info(dir));
+    assertEquals(List.of(), Names.list(real));
   }
-  @Test void anEditOfOneProjectKeepsThePathOfAnotherWhoseFolderBecameALink(@TempDir Path dir){
+  @Test void aFolderAnEditMetadataNamesInAnotherLetterCaseIsAFolderTheManagerCanNotReach(@RealTempDir Path dir){
     var m= manager(dir);
-    registered(m, dir, "a");
-    var b= registered(m, dir, "b");
-    var c= folder(dir, "c");
-    Fs.rmTree(b);
-    Disk.link(b, c);
-    send(m, "Kind", "a", "dataRead");
-    assertEquals(List.of(b), m.state().projects().stream().map(Project::folder).filter(f -> f.endsWith("b") || f.endsWith("c")).toList());
+    var hello= folder(dir, "hello");
+    var upper= dir.resolve("HELLO");
+    edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(upper)), List.of())));
+    m.settle();
+    assertEquals(List.of(unreachable(upper)), view.refused);
+    assertEquals(List.of(), listed(m));
+    assertEquals(List.of(), Names.list(hello));
   }
-  @Test void aProjectFolderReplacedByALinkToAnotherProjectWhileTheManagerIsOffIsNotFatal(@TempDir Path dir){
+  @Test void anEditPlacingAProjectAroundAnEarlierOneMakesTheLaterOneAFolderTheManagerCanNotReach(@RealTempDir Path dir){
+    var m= manager(dir);
+    var outer= registered(m, dir, "outer");
+    var inner= folder(outer, "inner");
+    edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(inner), idleEntry(outer)), List.of())));
+    m.settle();
+    assertEquals(List.of("The project \"outer\" connects to the folder \""+outer+"\".\nThis folder is now unreachable.\nThe project \"outer\" has now been removed."), view.refused);
+    assertEquals(List.of("inner "+inner), listed(m));
+  }
+  @Test void aProjectsInfoWithAProjectInsideAnEarlierOneIsNotFatal(@RealTempDir Path dir){
+    var outer= folder(dir, "outer");
+    var inner= folder(outer, "inner");
+    Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), Registry.text(new Registry.Content(List.of(idleEntry(outer), idleEntry(inner)), List.of())));
+    var m= manager(dir);
+    m.settle();
+    m.settle();
+    assertEquals(List.of("outer "+outer), listed(m));
+    assertEquals(List.of(unreachable(inner)), view.refused);
+    assertEquals(List.of(), Names.list(inner));
+  }
+  @Test void anEditOfOneProjectMakesAnotherWhoseFolderBecameALinkAFolderTheManagerCanNotReach(@RealTempDir Path dir){
+    var m= manager(dir);
+    var a= registered(m, dir, "a");
+    var b= registered(m, dir, "b");
+    Fs.rmTree(b);
+    Disk.link(b, folder(dir, "c"));
+    send(m, "Kind", "a", "dataRead");
+    m.settle();
+    assertEquals(List.of("The project \"b\" connects to the folder \""+b+"\".\nThis folder is now unreachable.\nThe project \"b\" has now been removed."), view.refused);
+    assertEquals(List.of("a "+a), listed(m));
+  }
+  @Test void theFoldersAreWalkedWhenTheListOfTheProjectFoldersChangesAndNotWhenOnlyAKindChanges(@RealTempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var left= hello.resolve(".fearless_sentinel_left");
+    Fs.writeUtf8(left, "");
+    send(m, "Kind", "hello", "dataRead");
+    assertTrue(Files.exists(left));
+    registered(m, dir, "other");
+    assertFalse(Files.exists(left));
+    assertEquals(List.of(), view.refused);
+  }
+  @Test void registeringARegisteredFolderAgainSelectsItAndWalksNothing(@RealTempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var other= registered(m, dir, "other");
+    var left= other.resolve(".fearless_sentinel_left");
+    Fs.writeUtf8(left, "");
+    send(m, "Register", TaggedText.of(hello.toString()));
+    assertEquals(Optional.of(hello), m.state().selected());
+    assertTrue(Files.exists(left));
+    assertEquals(List.of("hello "+hello, "other "+other), listed(m));
+    assertEquals(List.of(), view.refused);
+  }
+  @Test void anAutoCheckFindsAProjectWhoseParentFolderBecameALinkUnreachable(@RealTempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir.resolve("a"), "hello");
+    Fs.ofV(() -> Files.move(dir.resolve("a"), dir.resolve("b")));
+    Disk.link(dir.resolve("a"), dir.resolve("b"));
+    send(m, "Check", "hello");
+    same("The project \"hello\" connects to the folder \""+hello+"\".\nThis folder is now unreachable.\nThe project \"hello\" has now been removed.\nRefused request \"Check\" on project \"hello\".\nNo project is named \"hello\".[###]", String.join("\n", view.refused));
+    assertEquals(List.of(), listed(m));
+  }
+  @Test void aFolderWithALongNameIsNamedByTheFirst64CharactersOfItsFixedSegment(@RealTempDir Path dir){
+    var m= manager(dir);
+    var folder= registered(m, dir, "Ab-".repeat(30));
+    assertEquals(List.of("ab_".repeat(21)+"a "+folder), listed(m));
+  }
+  @Test void aProjectFolderReplacedByALinkToAnotherProjectWhileTheManagerIsOffIsNotFatal(@RealTempDir Path dir){
     var m= manager(dir);
     var a= registered(m, dir, "a");
     var b= registered(m, dir, "b");
@@ -364,7 +441,7 @@ public class Child{
     again.settle();
     assertEquals(List.of(), failures);
   }
-  @Test void registeringAFolderMakesItAnIdleProjectNamedByItsMarker(@TempDir Path dir){
+  @Test void registeringAFolderMakesItAnIdleProjectNamedByItsMarker(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir, "hello");
     Fs.writeUtf8(hello.resolve(Facts.outDir).resolve("hello.built"), "");
@@ -378,7 +455,7 @@ public class Child{
     assertEquals(0, view.shown);
     assertEquals(List.of(), view.refused);
   }
-  @Test void aSecondFolderNamedComIsNamedWithTheFirstValidFreeName(@TempDir Path dir){
+  @Test void aSecondFolderNamedComIsNamedWithTheFirstValidFreeName(@RealTempDir Path dir){
     var m= manager(dir);
     var first= folder(dir.resolve("a"), "com");
     var second= folder(dir.resolve("b"), "com");
@@ -388,7 +465,7 @@ public class Child{
     assertTrue(Files.isRegularFile(second.resolve("com10.fearless")));
     assertEquals(List.of(), view.refused);
   }
-  @Test void aMarkerRenamedByHandRenamesTheProject(@TempDir Path dir){
+  @Test void aMarkerRenamedByHandRenamesTheProject(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     registered(m, dir, "other");
@@ -403,7 +480,7 @@ The projects are:
   hi
   other"""), view.refused);
   }
-  @Test void aRequestNamingTheOldNameOfAProjectRenamedByHandIsRefused(@TempDir Path dir){
+  @Test void aRequestNamingTheOldNameOfAProjectRenamedByHandIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     Fs.ofV(() -> Files.move(hello.resolve("hello.fearless"), hello.resolve("hi.fearless")));
@@ -411,7 +488,7 @@ The projects are:
     assertEquals(List.of("Refused request \"Kind\" on project \"hello\".\nNo project is named \"hello\".\nThe projects are:\n  hi"), view.refused);
     assertEquals(Kind.idle, project(m, hello).kind());
   }
-  @Test void aMissingMarkerIsWrittenAgainAtTheNextAutoCheck(@TempDir Path dir){
+  @Test void aMissingMarkerIsWrittenAgainAtTheNextAutoCheck(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     send(m, "Kind", "hello", "dataRead");
@@ -422,7 +499,7 @@ The projects are:
     assertEquals(Project.State.dataRead, project(m, hello).state());
     assertEquals(List.of(), view.refused);
   }
-  @Test void aFolderLaterInProjectsInfoWithTheMarkerNameOfAnEarlierFolderGetsItsMarkerRenamed(@TempDir Path dir){
+  @Test void aFolderLaterInProjectsInfoWithTheMarkerNameOfAnEarlierFolderGetsItsMarkerRenamed(@RealTempDir Path dir){
     var m= manager(dir);
     var first= registered(m, dir, "first");
     var second= registered(m, dir, "second");
@@ -434,7 +511,7 @@ The projects are:
     assertFalse(Files.exists(second.resolve("second.fearless")));
     assertEquals(List.of(), view.refused);
   }
-  @Test void aFolderWithSeveralMarkersKeepsItsNameAndIsInvalid(@TempDir Path dir){
+  @Test void aFolderWithSeveralMarkersKeepsItsNameAndIsInvalid(@RealTempDir Path dir){
     var m= manager(dir);
     var several= folder(dir, "several");
     Fs.writeUtf8(several.resolve("beta.fearless"), "");
@@ -448,7 +525,7 @@ The projects are:
     assertTrue(Files.isRegularFile(several.resolve("beta.fearless")));
     assertEquals(List.of(), view.refused);
   }
-  @Test void aFileRegistersTheFolderItIsInAndRegisteringAgainSelects(@TempDir Path dir){
+  @Test void aFileRegistersTheFolderItIsInAndRegisteringAgainSelects(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir, "hello");
     var other= folder(dir, "other");
@@ -464,7 +541,7 @@ The projects are:
     assertEquals(Optional.of(other), m.state().selected());
     assertEquals(List.of(), view.refused);
   }
-  @Test void aCompileThenARunOfTheOnlyMain(@TempDir Path dir){
+  @Test void aCompileThenARunOfTheOnlyMain(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
@@ -484,7 +561,7 @@ ran hello.Hello
     assertEquals(List.of("hello.Hello"), project(m, hello).entry().mains());
     assertFalse(Files.exists(hello.resolve(Facts.outDir).resolve("_error.txt")));
   }
-  @Test void aRunNeverCompiles(@TempDir Path dir){
+  @Test void aRunNeverCompiles(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     send(m, "Run", "hello", "hello.Hello");
@@ -492,7 +569,7 @@ ran hello.Hello
     assertEquals("", view.out(hello));
     assertFalse(Files.exists(hello.resolve(Facts.outDir)));
   }
-  @Test void aFailingCompileWritesItsErrorAndASucceedingOneDeletesIt(@TempDir Path dir){
+  @Test void aFailingCompileWritesItsErrorAndASucceedingOneDeletesIt(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     infos.put("hello", "fail");
@@ -506,7 +583,7 @@ ran hello.Hello
     compiled(m, "hello");
     assertFalse(Files.exists(error));
   }
-  @Test void compilingAnUpToDateProjectStartsNoJob(@TempDir Path dir){
+  @Test void compilingAnUpToDateProjectStartsNoJob(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -514,7 +591,7 @@ ran hello.Hello
     assertEquals(List.of(hello, hello), view.cleared);
     assertEquals(known("hello.Hello").apply(hello), project(m, hello).mains());
   }
-  @Test void aBusyProjectRefusesJobsDeleteCacheKindAndForgetThenTerminateEndsTheJob(@TempDir Path dir){
+  @Test void aBusyProjectRefusesJobsDeleteCacheKindAndForgetThenTerminateEndsTheJob(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -545,7 +622,7 @@ ran hello.Slow
       "Refused request to remove project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\"."), view.refused);
     assertEquals(Kind.code, project(m, hello).kind());
   }
-  @Test void aRunningCompilationRefusesTerminate(@TempDir Path dir){
+  @Test void aRunningCompilationRefusesTerminate(@RealTempDir Path dir){
     var m= manager(dir);
     var slow= code(m, dir, "slowcompile");
     var other= registered(m, dir, "other");
@@ -560,7 +637,7 @@ ran hello.Slow
     idle(m);
     same("[###]compiling\n--- compile failed with 1 ---\n", view.out(slow));
   }
-  @Test void theConnectionOfACompilationEndedByAnUnreachableFolderEndsWithTheMarkOfHowTheCompilationEnded(@TempDir Path dir){
+  @Test void theConnectionOfACompilationEndedByAnUnreachableFolderEndsWithTheMarkOfHowTheCompilationEnded(@RealTempDir Path dir){
     var m= manager(dir);
     var slow= code(m, dir, "slowcompile");
     try (var server= port()){
@@ -573,14 +650,14 @@ ran hello.Slow
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
-  @Test void compileOfACompiledProjectSaysSo(@TempDir Path dir){
+  @Test void compileOfACompiledProjectSaysSo(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     send(m, "Compile", "hello");
     assertEquals("The project \"hello\" was already up to date and compiled.\n", view.out(hello));
   }
-  @Test void everyCheckOfAnInvalidProjectWritesItsErrorFile(@TempDir Path dir){
+  @Test void everyCheckOfAnInvalidProjectWritesItsErrorFile(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= code(m, dir, "hello");
     Fs.writeUtf8(hello.resolve("other.fearless"), "");
@@ -591,7 +668,7 @@ ran hello.Slow
     send(m, "Check", "hello");
     same("More than one .fearless marker file was found in[###]keep only \"hello.fearless\".[###]", Fs.readUtf8(error));
   }
-  @Test void aRequestRightAfterATerminateFindsTheMainEnded(@TempDir Path dir){
+  @Test void aRequestRightAfterATerminateFindsTheMainEnded(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -603,7 +680,7 @@ ran hello.Slow
     assertEquals(List.of(), view.refused);
     assertEquals("The project \"hello\" is valid, and up to date.\n", view.out(hello));
   }
-  @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@TempDir Path dir){
+  @Test void terminateEndsTheWholeRunNotOnlyTheCurrentMain(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow", "hello.Two");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -613,7 +690,7 @@ ran hello.Slow
     idle(m);
     assertFalse(view.out(hello).contains("hello.Two"));
   }
-  @Test void whatAMainPrintsIsBeforeItsEndMark(@TempDir Path dir){
+  @Test void whatAMainPrintsIsBeforeItsEndMark(@RealTempDir Path dir){
     var m= manager(dir, "hello.SlowChatty");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -624,7 +701,7 @@ ran hello.Slow
     var out= view.out(hello);
     same("--- hello.SlowChatty was terminated after [###]s ---\n", out.substring(out.lastIndexOf("--- hello.SlowChatty was terminated")));
   }
-  @Test void theSelectedMainsRunInTheirOrder(@TempDir Path dir){
+  @Test void theSelectedMainsRunInTheirOrder(@RealTempDir Path dir){
     var m= manager(dir, "hello.One", "hello.Two", "hello.Three");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -642,7 +719,7 @@ ran hello.One
     assertEquals(List.of("hello.Three", "hello.One"), project(m, hello).entry().mains());
     same("[###]\"mains\": [\"hello.Three\", \"hello.One\"][###]", info(dir));
   }
-  @Test void aRunNamingAnUnknownMainIsRefused(@TempDir Path dir){
+  @Test void aRunNamingAnUnknownMainIsRefused(@RealTempDir Path dir){
     var m= manager(dir, "hello.One", "hello.Two");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -655,7 +732,7 @@ The mains are:
   hello.Two"""), view.refused);
     assertEquals(List.of(hello), view.cleared);
   }
-  @Test void forgettingAProjectForgetsItAndLeavesItsFolder(@TempDir Path dir){
+  @Test void forgettingAProjectForgetsItAndLeavesItsFolder(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     send(m, "Forget", "hello");
@@ -665,7 +742,7 @@ The mains are:
     assertEquals("Refused request \"Show\" on project \"hello\".\nNo project is named \"hello\".\nNo project is registered.", view.refused.getLast());
     assertTrue(Files.isRegularFile(hello.resolve("hello.fearless")));
   }
-  @Test void aRequestNamesARegisteredProject(@TempDir Path dir){
+  @Test void aRequestNamesARegisteredProject(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     send(m, "Compile", "other");
@@ -678,7 +755,7 @@ The projects are:
   hello""", view.refused.getFirst());
     assertTrue(view.refused.get(1).startsWith("Refused request \"Compile\" on project \""+hello+"\".\nNo project is named"));
   }
-  @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@TempDir Path dir){
+  @Test void aRequestWhoseResultIsNotAValidProjectsInfoIsRefusedAndChangesNothing(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= code(m, dir, "hello");
     send(m, "Register", TaggedText.of(data(dir).toString()));
@@ -692,7 +769,7 @@ The projects are:
     same("In file: [###]projects.info\n\n[###]The character [Tab 0x09] is outside the safe character set of Fearless[###]", view.refused.get(0));
     same("[###]The character [U+00C4] is outside the safe character set of Fearless[###]", view.refused.get(1));
   }
-  @Test void aMessageFileThatIsNotUtf8IsAFatalError(@TempDir Path dir){
+  @Test void aMessageFileThatIsNotUtf8IsAFatalError(@RealTempDir Path dir){
     var m= manager(dir);
     var messages= folder(dir.resolve("manager"), "messages");
     Fs.ofV(() -> Files.write(messages.resolve("1.msg"), new byte[]{'R', 'u', 'n', '\n', (byte)0xFF}));
@@ -701,7 +778,7 @@ The projects are:
     m.settle();
     same("A message file of the manager folder does not hold what Fearless wrote there:\nits bytes do not form valid UTF-8 text.\n\nThe message file is:\n[###]1.msg", failures.removeFirst().getMessage());
   }
-  @Test void aMessageFileLeftWhileTheManagerEndsIsAppliedByTheNextManager(@TempDir Path dir){
+  @Test void aMessageFileLeftWhileTheManagerEndsIsAppliedByTheNextManager(@RealTempDir Path dir){
     var m= manager(dir);
     managers.remove(m);
     m.stop();
@@ -712,14 +789,14 @@ The projects are:
     next.settle();
     assertEquals(1, view.shown);
   }
-  @Test void aFolderInsideARegisteredOneIsRefused(@TempDir Path dir){
+  @Test void aFolderInsideARegisteredOneIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     send(m, "Register", TaggedText.of(folder(hello, "inner").toString()));
     same("Refused request \"Register\" on path\n[###]One of the two folders is inside the other[###]", view.refused.getFirst());
     assertEquals(List.of("hello "+hello), listed(m));
   }
-  @Test void aLinkToARegisteredFolderOrIntoOneIsRefusedAsALink(@TempDir Path dir){
+  @Test void aLinkToARegisteredFolderOrIntoOneIsRefusedAsALink(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     var other= registered(m, dir, "other");
@@ -729,9 +806,9 @@ The projects are:
     send(m, "Register", TaggedText.of(inner.toString()));
     assertEquals(Optional.of(other), m.state().selected());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
-    same("[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.\n[###]inner\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", String.join("\n", view.refused));
+    same("[###]link\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.\n[###]inner\nThe path goes through the symbolic link/junction\n[###]inner\nand Fearless does not follow symbolic links/junctions.", String.join("\n", view.refused));
   }
-  @Test void kindsChangeToAnyKind(@TempDir Path dir){
+  @Test void kindsChangeToAnyKind(@RealTempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
@@ -747,7 +824,7 @@ The projects are:
     assertEquals(List.of(), view.refused);
     assertEquals(List.of(), view.cleared);
   }
-  @Test void onlyACodeProjectCompilesAndRunsAndAnyProjectIsChecked(@TempDir Path dir){
+  @Test void onlyACodeProjectCompilesAndRunsAndAnyProjectIsChecked(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
@@ -780,7 +857,7 @@ The projects are:
     send(m, "Check", "hello");
     assertEquals("The compilation cache of this project is out of date.\n", view.out(hello));
   }
-  @Test void aMountOfAProjectThatIsNotRegisteredIsRefused(@TempDir Path dir){
+  @Test void aMountOfAProjectThatIsNotRegisteredIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     code(m, dir, "hello");
     var before= info(dir);
@@ -788,7 +865,7 @@ The projects are:
     assertEquals(List.of("Refused request \"Mount\" on project \"hello\".\nNo project is named \"diary\".\nThe projects are:\n  hello"), view.refused);
     assertEquals(before, info(dir));
   }
-  @Test void mountsAreEditedByRequestAndABrokenMountOrADataReadTypeWithNoMountStopsTheRun(@TempDir Path dir){
+  @Test void mountsAreEditedByRequestAndABrokenMountOrADataReadTypeWithNoMountStopsTheRun(@RealTempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Diary"), "hello.Hello"));
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -828,7 +905,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     var folder= project(m, data).folder();
     assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder, "hello.Diary", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Diary", m.lockFile(folder)))), granted);
   }
-  @Test void attenuatorsAreSetByRequestAndARunStartsEachMainUnderItsOwn(@TempDir Path dir){
+  @Test void attenuatorsAreSetByRequestAndARunStartsEachMainUnderItsOwn(@RealTempDir Path dir){
     var m= manager(dir, known(List.of("hello.NoGui", "hello.NoNet"), "hello.One", "hello.Two"));
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -859,7 +936,7 @@ ran hello.Two
     assertEquals(1, view.refused.size());
     assertEquals(Map.of("hello.One", List.of("hello.NoNet", "hello.NoGui")), project(m, hello).entry().attenuators());
   }
-  @Test void aRunIsRefusedWhileAnAttenuatedMainOrAnAppliedAttenuatorIsNotOfTheProject(@TempDir Path dir){
+  @Test void aRunIsRefusedWhileAnAttenuatedMainOrAnAppliedAttenuatorIsNotOfTheProject(@RealTempDir Path dir){
     var m= manager(dir, known(List.of("hello.NoGui"), "hello.One", "hello.Two"));
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -886,7 +963,7 @@ The attenuators are:
     idle(m);
     same("--- running hello.One ---\nran hello.One\n--- hello.One exited with 0 after [###]s ---\n", view.out(hello));
   }
-  @Test void aMountOfADataProjectWithInvalidContentStopsTheRun(@TempDir Path dir){
+  @Test void aMountOfADataProjectWithInvalidContentStopsTheRun(@RealTempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -908,7 +985,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(1, view.refused.size());
     same("--- running hello.Hello ---\nran hello.Hello\n[###]", view.out(hello));
   }
-  @Test void aLockFileOfNoRegisteredProjectIsDeletedWhenTheManagerStarts(@TempDir Path dir){
+  @Test void aLockFileOfNoRegisteredProjectIsDeletedWhenTheManagerStarts(@RealTempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
@@ -921,8 +998,8 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     again.settle();
     assertEquals(List.of(true, true, false), Stream.of(kept, inner, stray).map(Files::exists).toList());
   }
-  @Test void eachDataProjectHasALockFileOfItsOwnAlsoWhenItsFolderNameIsNotUnicode(@TempDir Path dir){
-    Assumptions.assumeFalse(Fs.isMac());
+  @Test void eachDataProjectHasALockFileOfItsOwnAlsoWhenItsFolderNameIsNotUnicode(@RealTempDir Path dir){
+    if (Fs.isMac()){ fail(notUnicodeOnMac); }
     var m= manager(dir);
     var folders= Stream.of(0xE9, 0xE8).map(b -> Fs.isWindows() ? dir.resolve("data"+(char)(0xD800+b)) : dir.resolve(PathBytes.path(new byte[]{'d', 'a', 't', 'a', (byte)(int)b}))).toList();
     folders.forEach(f -> Fs.writeUtf8(f.resolve("readme.txt"), "hi\n"));
@@ -932,7 +1009,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(2, m.state().projects().size());
     assertEquals(2, locks.size(), locks.toString());
   }
-  @Test void theProblemOfADataProjectNamesTheZipWhoseEntryNameIsNotUtf8(@TempDir Path dir){
+  @Test void theProblemOfADataProjectNamesTheZipWhoseEntryNameIsNotUtf8(@RealTempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     var bytes= new ByteArrayOutputStream();
@@ -948,7 +1025,7 @@ Path: "pics.zip"
 An entry name of this zip is not UTF-8 text.
 Tools read such a name in different encodings, so the same entry may get a different name on each system.[###]""", project(m, data).problem().orElseThrow());
   }
-  @Test void aDataProjectThatIsGoneEndsTheRunningMainsMountingItThenIsForgotten(@TempDir Path dir){
+  @Test void aDataProjectThatIsGoneEndsTheRunningMainsMountingItThenIsForgotten(@RealTempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
     var hello= code(m, dir, "hello");
     var data= data(dir);
@@ -965,7 +1042,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     same("[###]ran hello.Slow\n--- terminating hello.Slow ---\n--- hello.Slow was terminated[###]", view.out(hello));
     assertEquals("The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getFirst());
   }
-  @Test void anUnreachableProjectIsForgottenWhileAProjectWhoseFolderBecameALinkRunsAMain(@TempDir Path dir) throws IOException{
+  @Test void anUnreachableProjectIsForgottenWhileAProjectWhoseFolderBecameALinkRunsAMain(@RealTempDir Path dir) throws IOException{
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir.resolve("a"), "hello");
     var data= data(dir);
@@ -982,7 +1059,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     send(m, "Terminate", "hello");
     assertEquals(List.of(), failures);
   }
-  @Test void anEditAddingAProjectWhoseCacheCanNotBeDeletedSaysSoInTheOutput(@TempDir Path dir){
+  @Test void anEditAddingAProjectWhoseCacheCanNotBeDeletedSaysSoInTheOutput(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     var text= info(dir);
@@ -997,7 +1074,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     }
     finally{ Disk.allow(cache); }
   }
-  @Test void aFolderWhoseMarkerCanNotBeRenamedGetsNoNameAndIsForgotten(@TempDir Path dir){
+  @Test void aFolderWhoseMarkerCanNotBeRenamedGetsNoNameAndIsForgotten(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     Fs.ofV(() -> Files.move(hello.resolve("hello.fearless"), hello.resolve("1bad.fearless")));
@@ -1009,7 +1086,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     }
     finally{ Disk.allow(hello); }
   }
-  @Test void anEditAddingTwoProjectsTheFirstWithAMarkerThatCanNotBeWrittenIsNotFatal(@TempDir Path dir){
+  @Test void anEditAddingTwoProjectsTheFirstWithAMarkerThatCanNotBeWrittenIsNotFatal(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     var text= info(dir);
@@ -1025,7 +1102,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     finally{ Disk.allow(locked); }
   }
   private static String quoted(Path p){ return "\""+TaggedText.of(p.toString()).replace("\\", "\\\\").replace("\"", "\\\"")+"\""; }
-  @Test void aKindChangeOfADataProjectMountedOnARunningMainIsRefused(@TempDir Path dir){
+  @Test void aKindChangeOfADataProjectMountedOnARunningMainIsRefused(@RealTempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
     var hello= code(m, dir, "hello");
     send(m, "Register", TaggedText.of(data(dir).toString()));
@@ -1039,7 +1116,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     send(m, "Terminate", "hello");
     idle(m);
   }
-  @Test void aRunningMainKeepsTheDataProjectsOfItsMountsUntilItEnds(@TempDir Path dir){
+  @Test void aRunningMainKeepsTheDataProjectsOfItsMountsUntilItEnds(@RealTempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of("hello.Notes"), "hello.Slow"));
     var hello= code(m, dir, "hello");
     var data= data(dir);
@@ -1070,7 +1147,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     assertEquals(Map.of("hello.Notes", "data", "hello.Pub", "data", "hello.Old", "other"), project(m, hello).entry().mounts());
     assertEquals(Kind.dataRead, project(m, other).kind());
   }
-  @Test void anEditChangingThePathOfAProjectRemovesItAndAddsAProjectWithNoCache(@TempDir Path dir){
+  @Test void anEditChangingThePathOfAProjectRemovesItAndAddsAProjectWithNoCache(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1082,7 +1159,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     assertFalse(Files.exists(other.resolve(Facts.outDir).resolve("other.built")));
     assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
   }
-  @Test void anEditChangingThePathOfAProjectWithARunningMainIsRefused(@TempDir Path dir){
+  @Test void anEditChangingThePathOfAProjectWithARunningMainIsRefused(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1095,14 +1172,14 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     send(m, "Terminate", "hello");
     idle(m);
   }
-  @Test void anEditKeepsTheTextOfItsFile(@TempDir Path dir){
+  @Test void anEditKeepsTheTextOfItsFile(@RealTempDir Path dir){
     var m= manager(dir);
     var text= "{ \"systemExtensions\": [ ],\n  \"projects\": [ ] }\n";
     edit(m, dir, text);
     assertEquals(List.of(), view.refused);
     assertEquals(text, info(dir));
   }
-  @Test void theMetadataIsEditedWholeOrNotAtAll(@TempDir Path dir){
+  @Test void theMetadataIsEditedWholeOrNotAtAll(@RealTempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
@@ -1138,7 +1215,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     b.view.refused.clear();
     send(a.m, verb);
     var managerDir= b.dir.resolve("manager");
-    edit(b.m, b.dir, edited.apply(Registry.inferred(Registry.parse(info(b.dir), managerDir.resolve("projects.info"), p -> p, managerDir), new Registry.Content(List.of(), List.of()))));
+    edit(b.m, b.dir, edited.apply(Registry.inferred(Registry.parse(info(b.dir), managerDir.resolve("projects.info")), new Registry.Content(List.of(), List.of()), Set.of())));
     var outcomes= List.of(outcome(a), outcome(b));
     for (var t : List.of(a, b)){
       t.m.state().projects().stream().filter(Project::busy).forEach(p -> send(t.m, "Terminate", p.alias()));
@@ -1164,29 +1241,29 @@ Tools read such a name in different encodings, so the same entry may get a diffe
   }
   private static final String[] none= {};
   private static final String[] slow= {"hello.Slow"};
-  @Test void forgetIsEditMetadataWithTheProjectRemoved(@TempDir Path dir){
+  @Test void forgetIsEditMetadataWithTheProjectRemoved(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "hello"), c -> without(c, "hello"), "Forget", "hello");
   }
-  @Test void forgetOfABusyProjectIsEditMetadataWithTheProjectRemoved(@TempDir Path dir){
+  @Test void forgetOfABusyProjectIsEditMetadataWithTheProjectRemoved(@RealTempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> without(c, "hello"), "Forget", "hello");
   }
-  @Test void selectMainsIsEditMetadataWithTheSelectedMainsReplaced(@TempDir Path dir){
+  @Test void selectMainsIsEditMetadataWithTheSelectedMainsReplaced(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "hello", e -> e.withMains(List.of("hello.Old", "hello.Hello"))), "SelectMains", "hello", "hello.Old", "hello.Hello");
   }
-  @Test void selectMainsNamingNoMainIsEditMetadataWithTheSelectedMainsRemoved(@TempDir Path dir){
+  @Test void selectMainsNamingNoMainIsEditMetadataWithTheSelectedMainsRemoved(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> { withData(m, d); message(m, List.of("SelectMains", "hello", "hello.Hello")); }, c -> with(c, "hello", e -> e.withMains(List.of())), "SelectMains", "hello");
   }
-  @Test void unmountIsEditMetadataWithTheMountRemoved(@TempDir Path dir){
+  @Test void unmountIsEditMetadataWithTheMountRemoved(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> { withData(m, d); send(m, "Mount", "hello", "hello.Pub data"); }, c -> with(c, "hello", e -> e.withMounts(Map.of())), "Unmount", "hello", "hello.Pub");
   }
-  @Test void aRunOfAProjectWithNoSelectedMainIsRefused(@TempDir Path dir){
+  @Test void aRunOfAProjectWithNoSelectedMainIsRefused(@RealTempDir Path dir){
     var m= manager(dir, "hello.One", "hello.Two");
     code(m, dir, "hello");
     compiled(m, "hello");
     message(m, List.of("Run", "hello"));
     assertEquals(List.of("Refused request \"Run\" on project \"hello\".\nProject \"hello\" has no selected main.\nThe mains are:\n  hello.One\n  hello.Two"), view.refused);
   }
-  @Test void aProjectWhoseFolderIsGoneWhileItsMainRunsEndsTheMainAndIsForgotten(@TempDir Path dir){
+  @Test void aProjectWhoseFolderIsGoneWhileItsMainRunsEndsTheMainAndIsForgotten(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1198,7 +1275,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     assertEquals("The project \"hello\" connects to the folder \""+hello+"\".\nThis folder is now unreachable.\nThe project \"hello\" has now been removed.", view.refused.getFirst());
     same("[###]--- terminating hello.Slow ---\n--- hello.Slow was terminated after [###]s ---\n", view.out(hello));
   }
-  @Test void theLogsOfARunningMainShowAtTheNextAutoCheck(@TempDir Path dir){
+  @Test void theLogsOfARunningMainShowAtTheNextAutoCheck(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1212,40 +1289,40 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     assertEquals(List.of("hello.Slow"), project(m, hello).ran().stream().map(Project.Ran::main).toList());
     send(m, "Terminate", "hello");
   }
-  @Test void kindFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
+  @Test void kindFromIdleIsEditMetadataWithTheKindReplaced(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> registered(m, d, "data"), c -> with(c, "data", e -> e.withKind(Kind.dataRead)), "Kind", "data", "dataRead");
   }
-  @Test void kindNotFromIdleIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
+  @Test void kindNotFromIdleIsEditMetadataWithTheKindReplaced(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> { registered(m, d, "data"); send(m, "Kind", "data", "dataRead"); }, c -> with(c, "data", e -> e.withKind(Kind.code)), "Kind", "data", "code");
   }
-  @Test void kindOfABusyProjectIsEditMetadataWithTheKindReplaced(@TempDir Path dir){
+  @Test void kindOfABusyProjectIsEditMetadataWithTheKindReplaced(@RealTempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withKind(Kind.idle)), "Kind", "hello", "idle");
   }
-  @Test void mountIsEditMetadataWithTheMountReplaced(@TempDir Path dir){
+  @Test void mountIsEditMetadataWithTheMountReplaced(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "hello", e -> e.withMounts(Map.of("hello.Diary", "data"))), "Mount", "hello", "hello.Diary data");
   }
-  @Test void mountWithNoDataProjectIsEditMetadataWithTheMountRemoved(@TempDir Path dir){
+  @Test void mountWithNoDataProjectIsEditMetadataWithTheMountRemoved(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> { withData(m, d); send(m, "Mount", "hello", "hello.Pub data"); }, c -> with(c, "hello", e -> e.withMounts(Map.of())), "Mount", "hello", "hello.Pub");
   }
-  @Test void mountWithABadTypeNameIsEditMetadataWithThatMount(@TempDir Path dir){
+  @Test void mountWithABadTypeNameIsEditMetadataWithThatMount(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "hello", e -> e.withMounts(Map.of("Lower", "data"))), "Mount", "hello", "Lower data");
   }
-  @Test void mountOnADataProjectIsEditMetadataWithThatMount(@TempDir Path dir){
+  @Test void mountOnADataProjectIsEditMetadataWithThatMount(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "data", e -> e.withMounts(Map.of("hello.Hello", "hello"))), "Mount", "data", "hello.Hello hello");
   }
-  @Test void attenuateOfADataProjectIsEditMetadataWithTheAttenuatorsReplaced(@TempDir Path dir){
+  @Test void attenuateOfADataProjectIsEditMetadataWithTheAttenuatorsReplaced(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "data", e -> e.withAttenuators(Map.of("hello.Hello", List.of("base.NoManager")))), "Attenuate", "data", "hello.Hello base.NoManager");
   }
-  @Test void attenuateIsEditMetadataWithTheAttenuatorsReplaced(@TempDir Path dir){
+  @Test void attenuateIsEditMetadataWithTheAttenuatorsReplaced(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, ManagerTest::withData, c -> with(c, "hello", e -> e.withAttenuators(Map.of("hello.Hello", List.of("hello.NoGui", "base.NoManager")))), "Attenuate", "hello", "hello.Hello hello.NoGui base.NoManager");
   }
-  @Test void attenuateWithNoAttenuatorIsEditMetadataWithTheMainRemoved(@TempDir Path dir){
+  @Test void attenuateWithNoAttenuatorIsEditMetadataWithTheMainRemoved(@RealTempDir Path dir){
     sameAsEditMetadata(dir, none, (m, d) -> { withData(m, d); send(m, "Attenuate", "hello", "hello.Hello hello.NoGui"); }, c -> with(c, "hello", e -> e.withAttenuators(Map.of())), "Attenuate", "hello", "hello.Hello");
   }
-  @Test void mountWhileAMainRunsIsEditMetadataWithThatMount(@TempDir Path dir){
+  @Test void mountWhileAMainRunsIsEditMetadataWithThatMount(@RealTempDir Path dir){
     sameAsEditMetadata(dir, slow, ManagerTest::running, c -> with(c, "hello", e -> e.withMounts(Map.of("hello.Old", "data"))), "Mount", "hello", "hello.Old data");
   }
-  @Test void aProjectWhoseFolderIsGoneAtStartIsForgottenAfterADialog(@TempDir Path dir){
+  @Test void aProjectWhoseFolderIsGoneAtStartIsForgottenAfterADialog(@RealTempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
@@ -1256,7 +1333,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     assertEquals(List.of(), listed(again));
     same("The project connects to the folder [###]\nThis folder is now unreachable.\nThe project has now been removed.", view.refused.getLast());
   }
-  @Test void aProjectWhoseFolderIsGoneIsForgottenAfterADialog(@TempDir Path dir){
+  @Test void aProjectWhoseFolderIsGoneIsForgottenAfterADialog(@RealTempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
@@ -1270,7 +1347,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     same("Refused request \"Register\" on path\n[###]data\nNothing exists at that path.", view.refused.getLast());
     assertEquals(List.of(), listed(m));
   }
-  @Test void everyRequestNamingAProjectChecksItWhileTheWindowIsHidden(@TempDir Path dir){
+  @Test void everyRequestNamingAProjectChecksItWhileTheWindowIsHidden(@RealTempDir Path dir){
     var m= manager(dir);
     var data= data(dir);
     send(m, "Register", TaggedText.of(data.toString()));
@@ -1285,7 +1362,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
       assertEquals(valid, project(m, data).problem().isPresent());
     }
   }
-  @Test void foldersTheManagerCanNotReadOrChangeAreRefusedOrInvalidNeverFatal(@TempDir Path dir){
+  @Test void foldersTheManagerCanNotReadOrChangeAreRefusedOrInvalidNeverFatal(@RealTempDir Path dir){
     var m= manager(dir);
     var closed= folder(dir, "closed");
     var readOnly= folder(dir, "readOnly");
@@ -1295,7 +1372,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     var cache= folder(cached, Facts.outDir);
     Fs.writeUtf8(cache.resolve("a.built"), "");
     Disk.noRead(closed);
-    Assumptions.assumeFalse(Files.isReadable(closed));
+    assertFalse(Files.isReadable(closed), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     Disk.noWrite(readOnly);
     Disk.noWrite(cache);
     Disk.noRead(hidden);
@@ -1330,7 +1407,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("--- the compilation cache is not deleted: access denied: [###]_unfinished.txt\n---\n", view.out(cached));
     List.of(closed, readOnly, cache, hidden).forEach(Disk::allow);
   }
-  @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@TempDir Path dir){
+  @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= code(m, dir, "hello");
     var managerDir= dir.resolve("manager");
@@ -1339,29 +1416,29 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("[###]\"Lower\" in \"mounts\" is not a Fearless DataRead type name[###]", view.refused.getLast());
     assertEquals(before, info(dir));
     Disk.noWrite(managerDir);
-    Assumptions.assumeFalse(Files.isWritable(managerDir));
+    assertFalse(Files.isWritable(managerDir), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     send(m, "Mount", "hello", "hello.Data hello");
     send(m, "Kind", "hello", "idle");
     edit(m, dir, "{\"projects\": [], \"systemExtensions\": []}");
     Disk.allow(managerDir);
     assertEquals(3, failures.size());
-    failures.forEach(f -> same("Fearless could not save the file \"projects.info\" of its manager folder.[###]", f.getMessage()));
+    failures.forEach(f -> same("Fearless could not save the file \"[###]\" of its manager folder.[###]", f.getMessage()));
     failures.clear();
     assertEquals(1, view.refused.size());
     assertEquals(before, info(dir));
   }
-  @Test void aMessageFileTheManagerCanNotReadIsFatal(@TempDir Path dir){
+  @Test void aMessageFileTheManagerCanNotReadIsFatal(@RealTempDir Path dir){
     var m= manager(dir);
     var msg= folder(dir.resolve("manager"), "messages").resolve("1.msg");
     Fs.writeUtf8(msg, "");
     Disk.noRead(msg);
-    Assumptions.assumeFalse(Files.isReadable(msg));
+    assertFalse(Files.isReadable(msg), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     m.drain();
     m.settle();
     Disk.allow(msg);
     same("Fearless could not list its manager folder, or could not read or\nremove a message file in it.[###]1.msg[###]", failures.removeFirst().getMessage());
   }
-  @Test void aFolderHoldingASymbolicLinkIsRefusedOrInvalidNeverFatal(@TempDir Path dir){
+  @Test void aFolderHoldingASymbolicLinkIsRefusedOrInvalidNeverFatal(@RealTempDir Path dir){
     var before= Fs.onSymbolicLink;
     Fs.onSymbolicLink= managerMessages.Report::symbolicLink;
     try{ symbolicLinks(dir); }
@@ -1392,19 +1469,19 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("This path is a symbolic link[###]", project(m, top).problem().orElseThrow());
     assertEquals(List.of(), failures);
   }
-  @Test void aRequestNamingNoProjectIsRefused(@TempDir Path dir){
+  @Test void aRequestNamingNoProjectIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     send(m, "Run", "hello");
     assertEquals(List.of("Refused request \"Run\" on project \"hello\".\nNo project is named \"hello\".\nNo project is registered."), view.refused);
   }
-  @Test void aProjectsInfoThatIsNotValidIsFatal(@TempDir Path dir){
+  @Test void aProjectsInfoThatIsNotValidIsFatal(@RealTempDir Path dir){
     var m= manager(dir);
     registered(m, dir, "hello");
     var file= dir.resolve("manager").resolve("projects.info");
     Fs.writeUtf8(file, info(dir).replace("\"kind\": \"idle\"", "\"kind\": \"library\""));
     Errs.err("In file: [###]projects.info[###]\"kind\" must be one of \"idle\", \"code\", \"dataRead\" or \"dataEdit\", not \"library\".[###]", () -> manager(dir));
   }
-  @Test void compilingKeepsSelectedMainsThatAreGone(@TempDir Path dir){
+  @Test void compilingKeepsSelectedMainsThatAreGone(@RealTempDir Path dir){
     var mains= new ArrayList<>(List.of("hello.One", "hello.Two", "hello.Old"));
     var m= manager(dir, f -> known(mains.toArray(String[]::new)).apply(f));
     var hello= code(m, dir, "hello");
@@ -1417,14 +1494,14 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     compiled(m, "hello");
     assertEquals(List.of("hello.Old", "hello.Two"), project(m, hello).entry().mains());
   }
-  @Test void aCompileWhoseJvmDoesNotStartIsShownOnItsProject(@TempDir Path dir){
+  @Test void aCompileWhoseJvmDoesNotStartIsShownOnItsProject(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var noJvm= code(m, dir, "nojvm");
     send(m, "Compile", "nojvm");
     assertEquals("--- compiling nojvm ---\n--- compile did not start: io: Cannot run program \"java\": error=2, No such file or directory\n---\n", view.out(noJvm));
     assertEquals(Project.State.codeOutdated, project(m, noJvm).state());
   }
-  @Test void aProjectChangedWhileItsMainsAreReadSuccessfullyIsCheckedAgainWhileTheWindowIsHidden(@TempDir Path dir){
+  @Test void aProjectChangedWhileItsMainsAreReadSuccessfullyIsCheckedAgainWhileTheWindowIsHidden(@RealTempDir Path dir){
     var reads= new ArrayList<Path>();
     var m= manager(dir, f -> {
       reads.add(f);
@@ -1446,7 +1523,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     if (Files.exists(log) && reads.size() <= 5){ Fs.ofV(() -> Files.setLastModifiedTime(log, FileTime.fromMillis(Fs.lastModified(log)+1000))); }
     return mains.apply(f);
   }
-  @Test void aLogWrittenWhileTheManagerReadsTheMainsDoesNotMakeTheManagerReadTheMainsAgain(@TempDir Path dir){
+  @Test void aLogWrittenWhileTheManagerReadsTheMainsDoesNotMakeTheManagerReadTheMainsAgain(@RealTempDir Path dir){
     var reads= new ArrayList<Path>();
     var log= dir.resolve("hello").resolve(LogFiles.runDir).resolve("logs").resolve("_base").resolve("log.log");
     var mains= known("hello.Hello");
@@ -1458,7 +1535,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Check", "hello");
     assertEquals(1, reads.size());
   }
-  @Test void aNewManagerRemembersTheProjects(@TempDir Path dir){
+  @Test void aNewManagerRemembersTheProjects(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1466,7 +1543,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     again.settle();
     assertEquals(Project.State.codeCompiled, project(again, hello).state());
   }
-  @Test void aFolderUnderAPathOutsideTheCharacterSetIsRegisteredRunAndRemembered(@TempDir Path dir){
+  @Test void aFolderUnderAPathOutsideTheCharacterSetIsRegisteredRunAndRemembered(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, folder(dir, "café 😀"), "hello");
     compiled(m, "hello");
@@ -1485,7 +1562,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
   }
   private static CompletableFuture<String> follower(ServerSocket server){ return CompletableFuture.supplyAsync(() -> listen(server)); }
   private static ServerSocket port(){ return Fs.of(() -> new ServerSocket(0, 1, InetAddress.getLoopbackAddress())); }
-  @Test void aRunWithAMountedDataProjectThatIsGoneIsRefusedAsABrokenMount(@TempDir Path dir){
+  @Test void aRunWithAMountedDataProjectThatIsGoneIsRefusedAsABrokenMount(@RealTempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
     var hello= code(m, dir, "hello");
     var data= data(dir);
@@ -1498,7 +1575,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("Refused request \"Run\" on project \"hello\".\n[###]The mount of \"data\" on \"hello.Pub\" is broken: no project \"data\" is registered.", view.refused.getLast());
     assertFalse(view.out(hello).contains("running hello.Hello"));
   }
-  @Test void anEditOfTheSystemExtensionsReconcilesTheMapInMemoryAndAMissingClaimIconIsFatal(@TempDir Path dir){
+  @Test void anEditOfTheSystemExtensionsReconcilesTheMapInMemoryAndAMissingClaimIconIsFatal(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -1509,7 +1586,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("[###]NoSuchFileException: [###]hello/.fearless_out/icons/[###].png", failures.getFirst().toString().replace('\\', '/'));
     failures.clear();
   }
-  @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEndAndAnyOtherRequestUntilItIsApplied(@TempDir Path dir){
+  @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEndAndAnyOtherRequestUntilItIsApplied(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     try (var server= port()){
@@ -1537,7 +1614,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     idle(m);
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
   }
-  @Test void aPortWhereNobodyListensIsRefused(@TempDir Path dir){
+  @Test void aPortWhereNobodyListensIsRefused(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     int closed;
@@ -1547,7 +1624,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("Refused request \"Compile\": the manager was given the port "+closed+", but no program of this machine accepts a connection there: connect: [###]", view.refused.get(0));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
-  @Test void anArgumentThatIsNotACallAnswersItsPortWithTheErrorOfTheDialog(@TempDir Path dir){
+  @Test void anArgumentThatIsNotACallAnswersItsPortWithTheErrorOfTheDialog(@RealTempDir Path dir){
     var m= manager(dir);
     try (var server= port()){
       server.setSoTimeout(10_000);
@@ -1557,7 +1634,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
-  @Test void anArgumentThatIsNotACallWithAPortWhereNobodyListensShowsWhyTheArgumentIsNotACall(@TempDir Path dir){
+  @Test void anArgumentThatIsNotACallWithAPortWhereNobodyListensShowsWhyTheArgumentIsNotACall(@RealTempDir Path dir){
     var m= manager(dir);
     int closed;
     try (var server= port()){ closed= server.getLocalPort(); }
@@ -1565,13 +1642,13 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     message(m, Main.messages("FearlessCommandForget Hello Port:"+closed));
     same("[###]Fearless was started with the argument\n  \"FearlessCommandForget Hello Port:"+closed+"\"\nand that argument is not a call: \"Hello\" is not a projectName[###]", String.join("\n", view.refused));
   }
-  @Test void theManagerStartedWithTheRootOfADriveSaysThatTheRootOfADriveIsNotAProject(@TempDir Path dir){
+  @Test void theManagerStartedWithTheRootOfADriveSaysThatTheRootOfADriveIsNotAProject(@RealTempDir Path dir){
     var m= manager(dir);
     Main.messages(dir.getRoot().toString()).forEach(m::message);
     m.settle();
-    same("Fearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]", String.join("\n", view.refused));
+    same("Fearless cannot keep track of this folder as a project: a file system is\nmounted on it, as on the root of a drive or of a USB stick, and a project\nfolder is never a folder where a file system is mounted.\n[###]", String.join("\n", view.refused));
   }
-  @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@TempDir Path dir){
+  @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     try (var server= port()){
@@ -1582,7 +1659,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     catch (IOException e){ throw new UncheckedIOException(e); }
     assertEquals("The compilation cache of this project is out of date.\n", view.out(hello));
   }
-  @Test void aCheckWhileAMainRunsIsRefusedAndLeavesTheOutputOfTheMain(@TempDir Path dir){
+  @Test void aCheckWhileAMainRunsIsRefusedAndLeavesTheOutputOfTheMain(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1594,7 +1671,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Terminate", "hello");
     idle(m);
   }
-  @Test void theConnectionOfAFixReceivesTheChangesOfTheFix(@TempDir Path dir){
+  @Test void theConnectionOfAFixReceivesTheChangesOfTheFix(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     var source= hello.resolve("_app").resolve("main.fear");
@@ -1612,7 +1689,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Fix", "hello");
     assertEquals("The project \"hello\" needs no fix.\n", view.out(hello));
   }
-  @Test void aRunningMainRefusesTheFixOfTheDataProjectsMountedOnTheProjectOfTheMain(@TempDir Path dir){
+  @Test void aRunningMainRefusesTheFixOfTheDataProjectsMountedOnTheProjectOfTheMain(@RealTempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
     var hello= code(m, dir, "hello");
     var data= data(dir);
@@ -1629,33 +1706,69 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Fix", "data");
     assertEquals("The project \"data\" needs no fix.\n", view.out(data));
   }
-  @Test void aFixEndsAtTheChangeTheFileSystemRefuses(@TempDir Path dir){
+  @Test void aRunningCompilationAcceptsTheFixOfTheDataProjectsMountedOnTheProjectOfTheCompilation(@RealTempDir Path dir){
+    var m= manager(dir);
+    var slow= code(m, dir, "slowcompile");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Mount", "slowcompile", "slowcompile.Pub data");
+    send(m, "Compile", "slowcompile");
+    until(m, _ -> view.out(slow).contains("compiling\n"));
+    send(m, "Fix", "data");
+    assertEquals(List.of(), view.refused);
+    assertEquals("The project \"data\" needs no fix.\n", view.out(data));
+    idle(m);
+  }
+  @Test void aFixMakesAnInvalidProjectValid(@RealTempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    Fs.writeUtf8(data.resolve("My File.txt"), "");
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    assertEquals(Project.State.dataReadInvalid, project(m, data).state());
+    send(m, "Fix", "data");
+    assertEquals("Renamed My File.txt to my_file.txt\n", view.out(data));
+    assertEquals(Project.State.dataRead, project(m, data).state());
+  }
+  @Test void aFixEndsAtTheChangeTheFileSystemRefuses(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
-    var locked= folder(hello, "locked");
     Fs.writeUtf8(hello.resolve(".DS_Store"), "");
-    Fs.writeUtf8(locked.resolve("notes.txt~"), "");
-    Disk.noWrite(locked);
-    try{
-      send(m, "Fix", "hello");
-      same("Deleted .DS_Store\naccess denied: [###]notes.txt~[###]\n", view.out(hello));
+    Fs.writeUtf8(hello.resolve("a.fear"), "A:{}\r\n");
+    Fs.ofV(() -> Files.createLink(dir.resolve("other.fear"), hello.resolve("a.fear")));
+    try (var server= port()){
+      var fix= follower(server);
+      send(m, "Fix", "hello", "Port:"+server.getLocalPort());
+      same("Applied\nDeleted .DS_Store\n[###]a.fear[###]this file has more than one name, so writing it changes those other names too\n", fix.join());
+      same("Deleted .DS_Store\n[###]a.fear[###]this file has more than one name, so writing it changes those other names too\n", view.out(hello));
     }
-    finally{ Disk.allow(locked); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
   }
-  @Test void aFixEndsAtASymbolicLink(@TempDir Path dir){
+  @Test void aFixMovesASymbolicLinkToTheFixFolder(@RealTempDir Path dir){
     var before= Fs.onSymbolicLink;
-    Fs.onSymbolicLink = managerMessages.Report::symbolicLink;
-    try{
-      var m= manager(dir);
-      var hello= registered(m, dir, "hello");
-      Fs.writeUtf8(hello.resolve(".DS_Store"), "");
-      Disk.link(folder(hello, "linked").resolve("link"), folder(dir, "target"));
-      send(m, "Fix", "hello");
-      same("Deleted .DS_Store\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions:\n[###]link\n", view.out(hello));
-    }
-    finally{ Fs.onSymbolicLink = before; }
+    Fs.onSymbolicLink= managerMessages.Report::symbolicLink;
+    try{ fixMovesALink(dir); }
+    finally{ Fs.onSymbolicLink= before; }
   }
-  @Test void connectingEclipseNeedsAnEclipseFolder(@TempDir Path dir){
+  private void fixMovesALink(Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    Fs.writeUtf8(hello.resolve(".DS_Store"), "");
+    Disk.link(folder(hello, "linked").resolve("link"), folder(dir, "target"));
+    var moved= dir.resolve("hello_fix").resolve("linked").resolve("link");
+    var lines= "Deleted .DS_Store\nMoved linked/link to "+moved+"\nDeleted the empty folder linked\n";
+    try (var server= port()){
+      var fix= follower(server);
+      send(m, "Fix", "hello", "Port:"+server.getLocalPort());
+      assertEquals("Applied\n"+lines, fix.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    assertEquals(lines, view.out(hello));
+    assertTrue(Fs.isLink(moved));
+    assertEquals(List.of("hello.fearless"), Names.list(hello).stream().map(p -> p.getFileName().toString()).toList());
+  }
+  @Test void connectingEclipseNeedsAnEclipseFolder(@RealTempDir Path dir){
     var m= manager(dir);
     var eclipse= dir.resolve("unzipped").resolve("eclipse");
     Fs.writeUtf8(eclipse.resolve(".eclipseproduct"), "");
@@ -1724,7 +1837,7 @@ What stood in the way:
     var src= project.resolve("_"+project.getFileName()).resolve("_rank_app.fear");
     Fs.ofV(() -> Files.setLastModifiedTime(src, FileTime.fromMillis(FakeCache.after(project))));
   }
-  @Test void aCompileClaimsTheExtensionsOfItsMainsInfoAndANewManagerClaimsThemAgain(@TempDir Path dir){
+  @Test void aCompileClaimsTheExtensionsOfItsMainsInfoAndANewManagerClaimsThemAgain(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -1742,7 +1855,7 @@ What stood in the way:
     assertEquals(Map.of(), claimed(again));
     assertEquals(Project.noClaims, project(again, hello).claims());
   }
-  @Test void projectsClaimingTheSameExtensionAreAllItsClaimantsUntilCleanedIdleOrForgotten(@TempDir Path dir){
+  @Test void projectsClaimingTheSameExtensionAreAllItsClaimantsUntilCleanedIdleOrForgotten(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     code(m, dir, "other");
@@ -1764,7 +1877,7 @@ What stood in the way:
     assertEquals(Map.of(), claimed(m));
     assertTrue(Files.exists(hello.resolve("hello.fapp042")));
   }
-  @Test void aProjectWhoseMainsInfoIsMissingOrUnreadableClaimsNothing(@TempDir Path dir){
+  @Test void aProjectWhoseMainsInfoIsMissingOrUnreadableClaimsNothing(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     var other= code(m, dir, "other");
@@ -1780,7 +1893,7 @@ What stood in the way:
     assertEquals(Map.of(), claimed(again));
     assertEquals(List.of(), view.refused);
   }
-  @Test void everyKindChangeDeletesTheCache(@TempDir Path dir){
+  @Test void everyKindChangeDeletesTheCache(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -1794,7 +1907,7 @@ What stood in the way:
     assertEquals(Map.of(), claimed(m));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
-  @Test void eachAutoselectedExtensionIsTheFirstCandidateNoClaimOfTheMapUses(@TempDir Path dir){
+  @Test void eachAutoselectedExtensionIsTheFirstCandidateNoClaimOfTheMapUses(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     var other= code(m, dir, "other");
@@ -1809,7 +1922,7 @@ What stood in the way:
     same("[###]fapp001[###]", Fs.readUtf8(mainsInfo(other)));
     assertEquals(Project.State.codeCompiled, project(m, other).state());
   }
-  @Test void noFreeExtensionLeftFailsTheCompile(@TempDir Path dir){
+  @Test void noFreeExtensionLeftFailsTheCompile(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     code(m, dir, "other");
@@ -1841,7 +1954,7 @@ What stood in the way:
   private static String iconError(String claim, String problem, String from){
     return "The icon \"hello.IconsFoo\" in \""+claim+"\" of main \"hello.Hello\" "+problem+" (from \""+from+"\"):\nan icon must be a square PNG image with a side from 64 to 1024 pixels.\n";
   }
-  @Test void aSourceUpdatedWhileAMainRunsTerminatesTheMain(@TempDir Path dir){
+  @Test void aSourceUpdatedWhileAMainRunsTerminatesTheMain(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1861,7 +1974,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
-  @Test void aSecondMarkerWrittenWhileAMainRunsTerminatesTheMain(@TempDir Path dir){
+  @Test void aSecondMarkerWrittenWhileAMainRunsTerminatesTheMain(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
@@ -1879,7 +1992,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
     assertEquals(Project.State.codeInvalid, project(m, hello).state());
   }
-  @Test void theDesktopOpensEachCapturedExtensionWithItsIconOrTheConflictIcon(@TempDir Path dir){
+  @Test void theDesktopOpensEachCapturedExtensionWithItsIconOrTheConflictIcon(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     code(m, dir, "hello");
     code(m, dir, "other");
@@ -1906,7 +2019,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(List.of(".foo manager/icons/base.IconsConflict.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
   }
-  @Test void aCompileWhoseNewExtensionTheDesktopRefusesFailsAndDeletesTheCacheOfEveryProjectClaimingIt(@TempDir Path dir){
+  @Test void aCompileWhoseNewExtensionTheDesktopRefusesFailsAndDeletesTheCacheOfEveryProjectClaimingIt(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     code(m, dir, "other");
@@ -1927,7 +2040,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(List.of(".bar manager/icons/base.IconsConflict.png", ".fapp002 other/.fearless_out/icons/_base/icons/conflict.png", ".foo other/.fearless_out/icons/art/foo.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
   }
-  @Test void aMainTheCorruptionRuleEndsGetsNoFilesUpdatedLine(@TempDir Path dir){
+  @Test void aMainTheCorruptionRuleEndsGetsNoFilesUpdatedLine(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     code(m, dir, "other");
@@ -1941,7 +2054,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertFalse(view.out(hello).contains("were updated"));
     same("Fearless crashed: either this project's compilation cache was corrupted[###]", compileError(hello));
   }
-  @Test void aCorruptedCacheThatCanNotBeDeletedMakesTheProjectInvalid(@TempDir Path dir){
+  @Test void aCorruptedCacheThatCanNotBeDeletedMakesTheProjectInvalid(@RealTempDir Path dir){
     var broken= new java.util.concurrent.atomic.AtomicBoolean();
     var m= manager(dir, f -> {
       if (broken.get()){ throw userMessages.UserError.cacheCorruptedOrCrash(new IllegalStateException("damaged")); }
@@ -1962,7 +2075,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     }
     finally{ Disk.allow(out); }
   }
-  @Test void aStartUpRefusedACapturedExtensionIsFatal(@TempDir Path dir){
+  @Test void aStartUpRefusedACapturedExtensionIsFatal(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     code(m, dir, "hello");
     code(m, dir, "other");
@@ -1985,7 +2098,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     same(notOurs(".fearless -> fearlessBin0_003"), failures.get(2).getMessage());
     failures.clear();
   }
-  @Test void everyCompileReconcilesAlsoWhenNothingChanged(@TempDir Path dir){
+  @Test void everyCompileReconcilesAlsoWhenNothingChanged(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -1997,13 +2110,13 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(calls+1, associated.size());
     assertEquals(associated.get(calls-1), associated.getLast());
   }
-  @Test void aShortcutFileTheManagerCanNotCreateFailsTheCompile(@TempDir Path dir){
+  @Test void aShortcutFileTheManagerCanNotCreateFailsTheCompile(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     compiled(m, "hello");
     infos.put("hello", info("hello.Hello", claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010"), ""));
     Disk.noWrite(hello);
-    Assumptions.assumeFalse(Files.isWritable(hello));
+    assertFalse(Files.isWritable(hello), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     touch(hello);
     compiled(m, "hello");
     Disk.allow(hello);
@@ -2014,7 +2127,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
   private static List<String> top(Path project){ return Names.list(project).stream().map(p -> p.getFileName().toString()).toList(); }
-  @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@TempDir Path dir){
+  @Test void aCompileCreatesTheMissingShortcutFilesNextToTheMarkerHoldingItsNewlineAndNeverTouchesAnExistingOne(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -2042,7 +2155,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(MakeDemo.markerContent, Fs.readUtf8(hello.resolve("foo_bar.fapp010")));
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
   }
-  @Test void aShortcutMainWithoutAFileNameOrWithAReservedOneOrSharingItsFileFailsTheCompileAndCreatesNothing(@TempDir Path dir){
+  @Test void aShortcutMainWithoutAFileNameOrWithAReservedOneOrSharingItsFileFailsTheCompileAndCreatesNothing(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     var bar= claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010");
@@ -2065,7 +2178,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     }
     assertEquals(List.of(".fapp010 manager/icons/base.IconsConflict.png"), wanted(dir));
   }
-  @Test void aShortcutFileBreakingTheProjectFileRulesFailsTheCompileAndCreatesNothing(@TempDir Path dir){
+  @Test void aShortcutFileBreakingTheProjectFileRulesFailsTheCompileAndCreatesNothing(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     var calls= associated.size();
@@ -2101,7 +2214,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
   private static String running(String main){ return running(main, ""); }
   private static String running(String main, String on){ return "--- running "+main+" ---\nran "+main+on+"\n--- "+main+" exited with 0 after [###]s ---\n"; }
   private static void open(Manager m, Path file){ send(m, "OpenWithOrShortcut", TaggedText.of(file.toString())); }
-  @Test void aFileWhoseExtensionOneMainClaimsRunsThatMainAndOneNotCompiledIsRefused(@TempDir Path dir){
+  @Test void aFileWhoseExtensionOneMainClaimsRunsThatMainAndOneNotCompiledIsRefused(@RealTempDir Path dir){
     var m= opening(dir);
     var hello= code(m, dir, "hello");
     var other= code(m, dir, "other");
@@ -2119,7 +2232,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(List.of(), view.choices);
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
   }
-  @Test void aFileOpenedLeavesTheSelectedMainsAsTheyAre(@TempDir Path dir){
+  @Test void aFileOpenedLeavesTheSelectedMainsAsTheyAre(@RealTempDir Path dir){
     var m= opening(dir);
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -2131,7 +2244,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     same(running("hello.Hello", " on a.foo"), view.out(hello));
     assertEquals(List.of("hello.Gone"), project(m, hello).entry().mains());
   }
-  @Test void aFileWhoseExtensionSeveralMainsClaimListsThemSorted(@TempDir Path dir){
+  @Test void aFileWhoseExtensionSeveralMainsClaimListsThemSorted(@RealTempDir Path dir){
     var m= opening(dir);
     var other= code(m, dir, "other");
     var hello= code(m, dir, "hello");
@@ -2158,7 +2271,7 @@ The mains opening them are:
   hello::hello.Hello
   other::other.Hello""", view.refused.getLast());
   }
-  @Test void anExtensionMatchesInAnyCaseAsTheDesktopMatchesIt(@TempDir Path dir){
+  @Test void anExtensionMatchesInAnyCaseAsTheDesktopMatchesIt(@RealTempDir Path dir){
     var m= opening(dir);
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -2168,7 +2281,7 @@ The mains opening them are:
     idle(m);
     same(running("hello.Hello", " on Report.Old.FOO"), view.out(hello));
   }
-  @Test void aFileOpenedWhileItsMainRunsIsRefused(@TempDir Path dir){
+  @Test void aFileOpenedWhileItsMainRunsIsRefused(@RealTempDir Path dir){
     var m= opening(dir);
     var slow= code(m, dir, "slow");
     allow(m, dir, "foo");
@@ -2181,7 +2294,7 @@ The mains opening them are:
     send(m, "Terminate", "slow");
     idle(m);
   }
-  @Test void aFileNobodyClaimsAMissingFileAnEmptyFileAndACapturedExtensionNoMainOpensAreRefused(@TempDir Path dir){
+  @Test void aFileNobodyClaimsAMissingFileAnEmptyFileAndACapturedExtensionNoMainOpensAreRefused(@RealTempDir Path dir){
     var m= opening(dir);
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo", "htm");
@@ -2205,7 +2318,7 @@ No main opens files with the extension "txt".""", view.refused.get(0));
     assertEquals(List.of(hello), view.cleared);
     assertEquals(List.of("hello "+hello), listed(m));
   }
-  @Test void aCompileClaimingASystemExtensionNotCapturedFailsAndOffersToCaptureIt(@TempDir Path dir){
+  @Test void aCompileClaimingASystemExtensionNotCapturedFailsAndOffersToCaptureIt(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     infos.put("hello", claiming("hello.Hello", "fapp001", "htm"));
@@ -2229,7 +2342,7 @@ in place of the program opening them now. The project then needs compiling again
     assertEquals(List.of("fapp001", "htm"), claimed(m).keySet().stream().sorted().toList());
     assertEquals(1, view.asked.size());
   }
-  @Test void anOfferToCaptureAnExtensionAcceptedAfterARegisterKeepsThatProject(@TempDir Path dir){
+  @Test void anOfferToCaptureAnExtensionAcceptedAfterARegisterKeepsThatProject(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     infos.put("hello", claiming("hello.Hello", "fapp001", "htm"));
@@ -2239,7 +2352,7 @@ in place of the program opening them now. The project then needs compiling again
     assertEquals(List.of("htm"), m.state().extensions());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
   }
-  @Test void removingASystemExtensionClaimedByAProjectWithARunningMainIsRefused(@TempDir Path dir){
+  @Test void removingASystemExtensionClaimedByAProjectWithARunningMainIsRefused(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo");
@@ -2254,14 +2367,14 @@ in place of the program opening them now. The project then needs compiling again
     send(m, "Terminate", "hello");
     idle(m);
   }
-  @Test void anEditWhoseReconcileRefusesAnExtensionTheEditDoesNotBringIsFatal(@TempDir Path dir){
+  @Test void anEditWhoseReconcileRefusesAnExtensionTheEditDoesNotBringIsFatal(@RealTempDir Path dir){
     var m= manager(dir);
     held.put(".fearless", List.of("fearlessBin0_003"));
     allow(m, dir, "htm");
     same(notOurs(".fearless -> fearlessBin0_003"), failures.getFirst().getMessage());
     failures.clear();
   }
-  @Test void anEditAddingAProjectWhoseFolderIsMissingCreatesNoFolder(@TempDir Path dir){
+  @Test void anEditAddingAProjectWhoseFolderIsMissingCreatesNoFolder(@RealTempDir Path dir){
     var m= manager(dir);
     var gone= dir.resolve("typo").resolve("proj");
     var path= TaggedText.ofPath(gone).replace("\\", "\\\\").replace("\"", "\\\"");
@@ -2270,7 +2383,7 @@ in place of the program opening them now. The project then needs compiling again
     assertFalse(Files.exists(dir.resolve("typo")));
     assertEquals(List.of(), listed(m));
   }
-  @Test void anEditChangingOnlyTheSelectedMainsDoesNotReconcile(@TempDir Path dir){
+  @Test void anEditChangingOnlyTheSelectedMainsDoesNotReconcile(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     code(m, dir, "hello");
     compiled(m, "hello");
@@ -2278,7 +2391,7 @@ in place of the program opening them now. The project then needs compiling again
     message(m, List.of("SelectMains", "hello", "hello.Hello"));
     assertEquals(calls, associated.size());
   }
-  @Test void removingASystemExtensionDeletesTheCompiledCacheOfTheProjectsOpeningIt(@TempDir Path dir){
+  @Test void removingASystemExtensionDeletesTheCompiledCacheOfTheProjectsOpeningIt(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     var other= code(m, dir, "other");

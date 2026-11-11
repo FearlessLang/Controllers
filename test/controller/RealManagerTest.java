@@ -19,7 +19,7 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import coordinator.CapabilityEnvironment;
 import coordinator.Coordinator;
@@ -36,7 +36,7 @@ import utils.Err;
 import utils.OneOr;
 
 final class RealManagerTest{
-  @TempDir static Path shared;
+  @RealTempDir static Path shared;
   public static void main(String[] args) throws IOException{
     var msgDir= Path.of(args[0]);
     var name= String.format(Locale.ROOT, "%020d-%s", System.currentTimeMillis(), UUID.randomUUID());
@@ -129,9 +129,9 @@ final class RealManagerTest{
     assertEquals(List.of(exit), exits);
     assertFalse(view.out(project).contains(exit+" returned"), view.out(project));
   }
-  @Test void aMainCallingQuitNeverReturns(@TempDir Path dir){ endsTheManagerAndNeverReturns(dir, "realmgr.Quit", "quit"); }
-  @Test void aMainCallingResetNeverReturns(@TempDir Path dir){ endsTheManagerAndNeverReturns(dir, "realmgr.Reset", "reset"); }
-  @Test void aRegisterOfTheRootOfADriveAfterAnUnpairedSurrogateIsADeterministicError(@TempDir Path dir){
+  @Test void aMainCallingQuitNeverReturns(@RealTempDir Path dir){ endsTheManagerAndNeverReturns(dir, "realmgr.Quit", "quit"); }
+  @Test void aMainCallingResetNeverReturns(@RealTempDir Path dir){ endsTheManagerAndNeverReturns(dir, "realmgr.Reset", "reset"); }
+  @Test void aRegisterOfTheRootOfADriveAfterAnUnpairedSurrogateIsADeterministicError(@RealTempDir Path dir){
     var m= manager(dir);
     var project= compiled(m, dir, "realmgr");
     message(m, "SelectMains", "realmgr", "realmgr.RegisterTests");

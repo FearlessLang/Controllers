@@ -5,16 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import managerMessages.Report;
 import tools.Fs;
@@ -27,10 +29,14 @@ final class ManagerFolderTest{
     Fs.ensureDir(res);
     return res;
   }
+  private static Path projectFolder(Path path, List<Path> registered, Path managerDir){
+    var folder= Manager.projectFolder(path);
+    return Manager.chosen(folder, Manager.away(folder, registered, managerDir));
+  }
   private static void refused(String expected, Runnable body){ same(expected, assertThrows(Refused.class, body::run).getMessage()); }
-  @Test void aStartedFolderIsTheProjectItself(@TempDir Path dir){
+  @Test void aStartedFolderIsTheProjectItself(@RealTempDir Path dir){
     var project= folder(dir, "myProject");
-    assertEquals(project, Manager.projectFolder(project, folder(dir, "manager")));
+    assertEquals(project, projectFolder(project, List.of(), folder(dir, "manager")));
   }
   private static final String hello= Fs.isWindows() ? "Base16:43003A005C0064006100740061005C00680065006C006C006F00" : "Base16:2F646174612F68656C6C6F";
   private static String message(String... args){ return OneOr.of("one message", Main.messages(args).stream()); }
@@ -43,7 +49,7 @@ final class ManagerFolderTest{
     assertEquals(List.of("Register\n"+TaggedText.ofPath(here), "Show"), Main.messages("."));
     assertEquals("Show", message());
   }
-  @Test void aDroppedFolderOrFearlessFileIsRegisteredAndAnyOtherFileIsOpened(@TempDir Path dir){
+  @Test void aDroppedFolderOrFearlessFileIsRegisteredAndAnyOtherFileIsOpened(@RealTempDir Path dir){
     assertTrue(Main.isProject(dir));
     assertTrue(Main.isProject(dir.resolve("Hello.FEARLESS")));
     assertFalse(Main.isProject(dir.resolve("notes.htm")));
@@ -86,14 +92,25 @@ final class ManagerFolderTest{
     assertEquals(invalid("FearlessCommandRegister "+odd, "\""+odd+"\" is not "+Report.callBase16+"."), message("FearlessCommandRegister "+odd));
   }
   @Test void aBase16PathThatIsNotUnicodeStaysBase16(){
-    Assumptions.assumeFalse(Fs.isMac());
     var notUnicode= Fs.isWindows() ? "Base16:43003A005C00610000D8" : "Base16:2F636166E9";
     assertEquals("Register\n"+notUnicode, message("FearlessCommandRegister "+notUnicode));
+  }
+  @Test void aWindowsDriveWithALowercaseLetterIsNotAProject(@RealTempDir Path dir){
+    Assumptions.assumeTrue(Fs.isWindows());
+    var lower= Path.of(dir.toString().substring(0, 1).toLowerCase(Locale.ROOT)+dir.toString().substring(1));
+    refused("Refused request \"Register\" on path\n[###]\nThe letter of the drive is lowercase: write the drive with its uppercase letter, as in \"C:\\\".", () -> projectFolder(lower, List.of(), folder(dir, "manager")));
   }
   @Test void aWindowsPathWithARootButNoDriveIsNotAbsolute(){
     Assumptions.assumeTrue(Fs.isWindows());
     var noDrive= "Base16:2F0064006100740061002F00680065006C006C006F00";
     assertEquals(invalid("FearlessCommandRegister "+noDrive, "\""+noDrive+"\" is not "+Report.callBase16+"."), message("FearlessCommandRegister "+noDrive));
+  }
+  @Test void theArgumentOpenedIsABadArgumentOutsideMacOS(){
+    if (Fs.isMac()){ fail("""
+      Agent on macOS: ControllersDesign says that on macOS the one argument FearlessCommandOpened leaves no message, and the manager leaves the messages of the open-file event instead.
+      Investigate how a test delivers an open-file event to a manager that is not headless (open -a on the helper bundle of the manager),
+      then make this test check that FearlessCommandOpened leaves no message and that the event leaves the messages of its paths."""); }
+    same(invalid("FearlessCommandOpened", "\"FearlessCommandOpened\" is not a command; the commands are \"FearlessCommandAttenuate\", [###], \"FearlessCommandUnmount\"."), message("FearlessCommandOpened"));
   }
   @Test void anArgumentThatIsNotACallIsAnInvalidCall(){
     same(invalid("FearlessCommandbuild hello", "\"FearlessCommandbuild\" is not a command; the commands are \"FearlessCommandAttenuate\", [###], \"FearlessCommandUnmount\"."), message("FearlessCommandbuild hello"));
@@ -133,19 +150,19 @@ The arguments are:
     same(invalid("FearlessCommandInvalidCall", "\"FearlessCommandInvalidCall\" is not a command[###]"), message("FearlessCommandInvalidCall"));
     same("InvalidCall\nFearless was started with the argument\n  \"FearlessCommandShow a\" [###] \"b\"\nand that argument is not a call: [###]", message("FearlessCommandShow a\nb"));
   }
-  @Test void aStartedFileIsTheFolderAround(@TempDir Path dir){
+  @Test void aStartedFileIsTheFolderAround(@RealTempDir Path dir){
     var project= folder(dir, "myProject");
     var file= project.resolve("hello.fearless");
     Fs.writeUtf8(file, "anything");
-    assertEquals(project, Manager.projectFolder(file, folder(dir, "manager")));
+    assertEquals(project, projectFolder(file, List.of(), folder(dir, "manager")));
   }
-  @Test void aPathNamingNothingIsRefused(@TempDir Path dir){
+  @Test void aPathNamingNothingIsRefused(@RealTempDir Path dir){
     refused("""
 Refused request "Register" on path
 [###]myProject
-Nothing exists at that path.""", () -> Manager.projectFolder(dir.resolve("myProject"), folder(dir, "manager")));
+Nothing exists at that path.""", () -> projectFolder(dir.resolve("myProject"), List.of(), folder(dir, "manager")));
   }
-  @Test void theManagerFolderIsNotAProject(@TempDir Path dir){
+  @Test void theManagerFolderIsNotAProject(@RealTempDir Path dir){
     var managerDir= folder(dir, "manager");
     refused("""
 Fearless cannot keep track of this folder as a project.
@@ -156,53 +173,74 @@ The manager folder of this Fearless is:
 [###]manager
 The manager folder holds what Fearless remembers about your projects: it is
 never part of a project, and no project is inside it.
-""", () -> Manager.projectFolder(managerDir, managerDir));
+""", () -> projectFolder(managerDir, List.of(), managerDir));
   }
-  @Test void aFileInTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
+  @Test void aFileInTheManagerFolderIsNotAProjectEither(@RealTempDir Path dir){
     var managerDir= folder(dir, "manager");
     var file= managerDir.resolve("example.fearless");
     Fs.writeUtf8(file, "anything");
-    refused("Fearless cannot keep track of this folder as a project.[###]", () -> Manager.projectFolder(file, managerDir));
+    refused("Fearless cannot keep track of this folder as a project.[###]", () -> projectFolder(file, List.of(), managerDir));
   }
-  @Test void aFolderUnderAnyPathIsAProject(@TempDir Path dir){
+  @Test void aFolderUnderAnyPathIsAProject(@RealTempDir Path dir){
     var project= folder(folder(dir, "caf\u00e9 \ud83d\ude00"), "myProject");
-    assertEquals(project, Manager.projectFolder(project, folder(dir, "manager")));
+    assertEquals(project, projectFolder(project, List.of(), folder(dir, "manager")));
   }
-  @Test void aFolderInsideTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
+  @Test void aFolderInsideTheManagerFolderIsNotAProjectEither(@RealTempDir Path dir){
     var managerDir= folder(dir, "manager");
-    refused("Fearless cannot keep track of this folder as a project.[###]", () -> Manager.projectFolder(folder(managerDir, "messages"), managerDir));
+    refused("Fearless cannot keep track of this folder as a project.[###]", () -> projectFolder(folder(managerDir, "messages"), List.of(), managerDir));
   }
-  @Test void aFolderHoldingTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
-    refused("Fearless cannot keep track of this folder as a project.[###]", () -> Manager.projectFolder(dir, folder(dir, "manager")));
+  @Test void aFolderHoldingTheManagerFolderIsNotAProjectEither(@RealTempDir Path dir){
+    refused("Fearless cannot keep track of this folder as a project.[###]", () -> projectFolder(dir, List.of(), folder(dir, "manager")));
   }
-  @Test void aLinkToTheManagerFolderIsNotAProjectEither(@TempDir Path dir){
+  @Test void aLinkToTheManagerFolderIsNotAProjectEither(@RealTempDir Path dir){
     var managerDir= folder(dir, "manager");
     var link= Disk.link(dir.resolve("link"), managerDir);
-    refused("[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", () -> Manager.projectFolder(link, managerDir));
+    refused("Refused request \"Register\" on path\n[###]link\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.", () -> projectFolder(link, List.of(), managerDir));
   }
-  @Test void theRootOfADriveIsNotAProject(@TempDir Path dir){
+  @Test void aPathThroughALinkIsNotAProject(@RealTempDir Path dir){
+    folder(folder(dir, "real"), "inner");
+    var inner= Disk.link(dir.resolve("link"), dir.resolve("real")).resolve("inner");
+    refused("Refused request \"Register\" on path\n[###]inner\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.", () -> projectFolder(inner, List.of(), folder(dir, "manager")));
+  }
+  @Test void aPathInAnotherLetterCaseIsNotAProject(@RealTempDir Path dir){
+    folder(dir, "hello");
+    var upper= dir.resolve("HELLO");
+    var expected= !Fs.isLinux() ? "Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case and the same Unicode form." : "Refused request \"Register\" on path\n[###]HELLO\nNothing exists at that path.";
+    refused(expected, () -> projectFolder(upper, List.of(), folder(dir, "manager")));
+  }
+  @Test void aFolderInsideOrAroundARegisteredFolderIsNotAProjectAndARegisteredFolderIsItself(@RealTempDir Path dir){
+    var manager= folder(dir, "manager");
+    var hello= folder(folder(dir, "around"), "hello");
+    refused("Refused request \"Register\" on path\n[###]inner\nA registered project has the folder\n[###]hello\nOne of the two folders is inside the other[###]", () -> projectFolder(folder(hello, "inner"), List.of(hello), manager));
+    refused("Refused request \"Register\" on path\n[###]around\nA registered project has the folder\n[###]hello\nOne of the two folders is inside the other[###]", () -> projectFolder(dir.resolve("around"), List.of(hello), manager));
+    assertEquals(hello, projectFolder(hello, List.of(hello), manager));
+    assertEquals(List.of("inner"), Names.list(hello).stream().map(p -> p.getFileName().toString()).toList());
+  }
+  @Test void theRootOfADriveIsNotAProject(@RealTempDir Path dir){
     refused("""
-Fearless cannot keep track of the root of a drive or of the file system as a
-project.
+Fearless cannot keep track of this folder as a project: a file system is
+mounted on it, as on the root of a drive or of a USB stick, and a project
+folder is never a folder where a file system is mounted.
 
 The folder is:
 [###]
 Put the project in a folder inside it, and make that folder the project
 folder.
-""", () -> Manager.projectFolder(dir.getRoot(), folder(dir, "manager")));
+""", () -> projectFolder(dir.getRoot(), List.of(), folder(dir, "manager")));
   }
-  @Test void theTopFolderOfADriveIsNotAProject(@TempDir Path dir) throws IOException{
-    var top= Registry.real(dir);
+  @Test void theTopFolderOfADriveIsNotAProject(@RealTempDir Path dir) throws IOException{
+    var top= dir;
     while (top.getParent() != null && Files.getFileStore(top).equals(Files.getFileStore(top.getParent()))){ top = top.getParent(); }
     var drive= top;
     refused("""
-Fearless cannot keep track of the root of a drive or of the file system as a
-project.
+Fearless cannot keep track of this folder as a project: a file system is
+mounted on it, as on the root of a drive or of a USB stick, and a project
+folder is never a folder where a file system is mounted.
 
 The folder is:
   %s
 Put the project in a folder inside it, and make that folder the project
 folder.
-""".formatted(drive), () -> Manager.projectFolder(drive, folder(dir, "manager")));
+""".formatted(drive), () -> projectFolder(drive, List.of(), folder(dir, "manager")));
   }
 }

@@ -14,7 +14,7 @@ import java.util.zip.ZipOutputStream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 import org.opentest4j.AssertionFailedError;
 
 import tools.Fs;
@@ -50,33 +50,33 @@ final class ImportZipTest{
       Err.strCmp("\""+wrong+"\" is not the URL of a zip: [###]", assertThrows(UserError.class, () -> ImportZip.zip(wrong)).getMessage());
     }
   }
-  @Test void anAppKeepsTheZipAndCopiesTheMarkerAndTheIconOut(@TempDir Path dir){
+  @Test void anAppKeepsTheZipAndCopiesTheMarkerAndTheIconOut(@RealTempDir Path dir){
     var target= imported(dir, zipFile(dir, "lights_out_app.zip", "lights_out.fearless", ".config/icon/icon.png", "_lights_out/_rank_app.fear"), Optional.empty());
     assertEquals(dir.resolve("fearless_imported_zips").resolve("lights_out_app"), target);
     assertEquals(List.of(".config/icon/icon.png", "lights_out.fearless", "lights_out_app.zip"), files(target));
   }
-  @Test void anEduAppIsUnzipped(@TempDir Path dir){
+  @Test void anEduAppIsUnzipped(@RealTempDir Path dir){
     var target= imported(dir, zipFile(dir, "tiny_bank_edu_app.zip", "tiny_bank.fearless", "_tiny_bank/_rank_app.fear"), Optional.empty());
     assertEquals(List.of("_tiny_bank/_rank_app.fear", "tiny_bank.fearless"), files(target));
   }
-  @Test void anEduAppKeepsTheFoldersWithNothingInside(@TempDir Path dir){
+  @Test void anEduAppKeepsTheFoldersWithNothingInside(@RealTempDir Path dir){
     var target= imported(dir, zipFile(dir, "tiny_bank_edu_app.zip", "tiny_bank.fearless", ".git/refs/tags/", ".git/head"), Optional.empty());
     assertEquals(List.of(".git/head", "tiny_bank.fearless"), files(target));
     assertEquals(List.of(), files(target.resolve(".git").resolve("refs").resolve("tags")));
   }
-  @Test void aLibGoesIntoTheFolderLibOfTheSelectedProject(@TempDir Path dir){
+  @Test void aLibGoesIntoTheFolderLibOfTheSelectedProject(@RealTempDir Path dir){
     var hello= dir.resolve("hello");
     assertEquals(hello.resolve("lib").resolve("text_kit_lib.zip"), imported(dir, zipFile(dir, "text_kit_lib.zip", "_text_kit/_rank_core200.fear"), Optional.of(hello)));
     imported(dir, zipFile(dir, "shapes_lab_edu_lib.zip", "_shapes_lab/_rank_worker100.fear"), Optional.of(hello));
     assertEquals(List.of("lib/shapes_lab_edu_lib/_shapes_lab/_rank_worker100.fear", "lib/text_kit_lib.zip"), files(hello));
   }
-  @Test void aFileThatIsNotAZipIsRefused(@TempDir Path dir){
+  @Test void aFileThatIsNotAZipIsRefused(@RealTempDir Path dir){
     var file= dir.resolve("bad_app.zip");
     Fs.writeUtf8(file, "not a zip");
     var z= ImportZip.zip(file.toUri().toString());
     Err.strCmp("The zip \"bad_app.zip\" cannot be imported: the file is not a zip", assertThrows(UserError.class, () -> ImportZip.entries(z, ImportZip.bytes(z))).getMessage());
   }
-  @Test void anAppWithNoMarkerIsRefused(@TempDir Path dir){
+  @Test void anAppWithNoMarkerIsRefused(@RealTempDir Path dir){
     var z= ImportZip.zip(zipFile(dir, "lights_out_app.zip", "_lights_out/_rank_app.fear").toUri().toString());
     Err.strCmp("The zip \"lights_out_app.zip\" has no \"lights_out.fearless\" at its top level: the zip of an app holds the marker of its project.", assertThrows(UserError.class, () -> ImportZip.entries(z, ImportZip.bytes(z))).getMessage());
   }

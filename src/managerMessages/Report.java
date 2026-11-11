@@ -110,7 +110,11 @@ The arguments are:
   public static String importNotWritten(Path target, IOException e){ return "The import cannot write\n"+path(target.toString())+"\n"+fileFailure(e); }
   public static String storeNotOpened(String url, IOException e){ return "The store\n"+path(url)+"\ncannot be opened: "+fileFailure(e); }
   public static String registerNothing(Path path){ return refusedPath("Register", path)+"\nNothing exists at that path."; }
-  public static String registerLink(Path path){ return refusedPath("Register", path)+"\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions."; }
+  public static String registerLink(Path path, Path link){ return refusedPath("Register", path)+"\nThe path goes through the symbolic link/junction\n"+path(link.toString())+"\nand Fearless does not follow symbolic links/junctions."; }
+  public static String registerDriveLetter(Path path){ return refusedPath("Register", path)+"\nThe letter of the drive is lowercase: write the drive with its uppercase letter, as in \"C:\\\"."; }
+  public static String registerNotListed(Path path, Path at){
+    return refusedPath("Register", path)+"\nThe folder\n"+path(at.getParent().toString())+"\nlists no folder named exactly "+disp(at.getFileName().toString())+": write each name of the path as its folder lists it, in the same letter case and the same Unicode form.";
+  }
   public static String folderNestedWithRegistered(Path folder, Path registered){
     return refusedPath("Register", folder)+"\nA registered project has the folder\n"+path(registered.toString())+"\nOne of the two folders is inside the other: every file belongs to exactly one project.";
   }
@@ -128,8 +132,9 @@ never part of a project, and no project is inside it.
   }
   public static String projectFolderIsRoot(Path root){
     return """
-Fearless cannot keep track of the root of a drive or of the file system as a
-project.
+Fearless cannot keep track of this folder as a project: a file system is
+mounted on it, as on the root of a drive or of a USB stick, and a project
+folder is never a folder where a file system is mounted.
 
 The folder is:
 %s
@@ -175,23 +180,34 @@ Replace that file with a PNG image, or remove it.
   public static String outOfDate(){ return "The compilation cache of this project is out of date."; }
   public static String filesUpdated(String name, String main){ return "Some files inside the project "+disp(name)+" were updated while main "+disp(main)+" was running."; }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of every program of the Fearless family, this manager included.\nNothing in the project folders changes."; }
-  public static String fixQuestion(String name){
+  public static String fixQuestion(String name, Path folder){
+    var f= folder.getFileName().toString();
     return """
 Fix changes the folder of project %s:
 - Fix deletes the files and folders that desktops, archive programs, office programs and text editors write next to your files:
-  ".DS_Store", "._name", "__MACOSX", ".AppleDouble", "Icon", "Thumbs.db", "ehthumbs.db", "desktop.ini", "name:Zone.Identifier",
-  ".directory", ".Trash-1000", "~$name", ".~lock.name#", "name~", "#name#" and ".name.swp";
-  a file "name~", "#name#" or ".name.swp" can hold text of yours that a text editor did not save;
+  ".DS_Store", "._name", "__MACOSX", ".AppleDouble", "Icon\\r", "Thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", "desktop.ini",
+  "name:Zone.Identifier", ".directory", ".Trash-1000", "~$name", ".~lock.name#", "name~", "#name#" and ".name.swp";
+  a file "name~", "#name#" or ".name.swp" can hold text of yours that a text editor did not save,
+  and a folder ".Trash-1000" holds the files that you moved to the trash;
 - Fix renames the files and folders whose name a project can not hold: "My Logo.PNG" becomes "my_logo.png",
   and a file with no extension gets "png", "jpg", "gif", "txt" or "bin" from its content;
 - Fix cleans the text of the Fearless source files: Fix removes the byte order mark, turns every line ending into a line feed,
-  the typographic quotes and dashes into ' " and -, every tab into a space, and removes every other character
-  that a Fearless source file can not hold;
+  the typographic quotes and dashes into ' " and -, every tab into a space, an accented letter into the letter without the accent,
+  and removes every other character that a Fearless source file can not hold;
 - Fix sets to the current time the files with no time or with a time in the future;
-- Fix deletes the folders and the zips left with nothing inside.
+- Fix deletes the folders and the zips left with nothing inside;
+- Fix moves to the folder %s next to the project folder (%s when that name is taken, and so on) what a project can not hold:
+  symbolic links, junctions and the other entries that are neither files nor folders;
+  files and folders whose path is longer than 200, or 250 when a name of the path starts with a dot
+  (counting the bytes of UTF-8 on Linux and macOS, the characters on Windows);
+  zips that can not be read, whose stored names are not valid, or nested too deep;
+  for the names starting with a dot and the names in a folder whose name starts with a dot: the names that are not valid Unicode
+  or that some operating system can not hold, and the second of two names that differ only in letter case or in Unicode form.
 Fix does every change of this list also inside the zips of the project.
-Fix renames nothing and cleans no text inside a folder whose name starts with a dot.
-The Output lists every change. A change of Fix can not be undone.""".formatted(disp(name));
+Inside a folder whose name starts with a dot, Fix renames nothing, cleans no text, keeps the folders with nothing inside,
+and takes a zip as a file like any other.
+Fix stops at the first change the file system refuses: the Output then lists the changes done and the error.
+The Output lists every change. A change of Fix can not be undone.""".formatted(disp(name), disp(f+"_fix"), disp(f+"_fix2"));
   }
   public static String needsNoFix(String name){ return "The project "+disp(name)+" needs no fix."; }
   public static String checkFine(String name, boolean code){ return "The project "+disp(name)+" is valid"+(code ? ", and up to date." : "."); }
@@ -205,7 +221,7 @@ The Output lists every change. A change of Fix can not be undone.""".formatted(d
   public static String infoUnknownKey(String key){ return "Unknown key \""+key+"\": the keys are \"projects\" and \"systemExtensions\"."; }
   public static String infoMissing(String key){ return "The key \""+key+"\" is missing: the keys are \"projects\" and \"systemExtensions\"."; }
   public static String infoProjectsNotList(){ return "\"projects\" must be a list [...] of the registered projects, each an object {...} with the metadata of that project."; }
-  public static String infoOverlap(int n, int other){ return "Project "+n+" of \"projects\" has the same path as project "+other+", or one is inside the other; every file belongs to exactly one project."; }
+  public static String infoSamePath(int n, int other){ return "Project "+n+" of \"projects\" has the same path as project "+other+"; every project folder is listed once."; }
   public static String infoProjectNotObject(){ return "Every entry in \"projects\" must be an object {...} with the metadata of a project."; }
   public static String infoUnknownAttribute(String key, List<String> keys){ return "Unknown project attribute \""+key+"\": the attributes of a project are "+quoted(keys)+"."; }
   public static String infoMissingPath(int n){ return "Project "+n+" of \"projects\" is missing its \"path\": the absolute path of the project folder."; }

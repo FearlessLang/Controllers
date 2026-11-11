@@ -20,10 +20,9 @@ import java.util.Locale;
 
 import javax.imageio.ImageIO;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import controller.Registry.Kind;
 import coordinator.Coordinator;
@@ -55,24 +54,24 @@ final class FactsTest{
   }
   static boolean upToDate(Facts f){ return f.stale().isEmpty(); }
   //A log or an Eclipse report lands after the build stamp, inside the project folder
-  @Test void recognisesThePackagesOfTheProject(@TempDir Path dir){
+  @Test void recognisesThePackagesOfTheProject(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve("_other").resolve("_rank_app.fear"), "");
     assertTrue(facts(project, "someproject", Kind.code).problem().isEmpty());
   }
-  @Test void brokenNamesAreReportedNotHidden(@TempDir Path dir){
+  @Test void brokenNamesAreReportedNotHidden(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve("_hello").resolve("Bad.fear"), "");
     var facts= facts(project, "someproject", Kind.code);
     assertFalse(facts.problem().isEmpty());
     assertTrue(facts.problem().orElseThrow().contains("Bad.fear"));
   }
-  @Test void withNoCacheThereIsSomethingToCompileAndNothingToRun(@TempDir Path dir){
+  @Test void withNoCacheThereIsSomethingToCompileAndNothingToRun(@RealTempDir Path dir){
     var facts= facts(project(dir, "someProject"), "someproject", Kind.code);
     assertEquals(Optional.of("The compilation cache of this project is out of date."), facts.stale());
     assertEquals(Optional.empty(), facts.mains());
   }
-  @Test void aCodeProjectWithNoPackageUsesOnlyBaseAndIsUpToDate(@TempDir Path dir){
+  @Test void aCodeProjectWithNoPackageUsesOnlyBaseAndIsUpToDate(@RealTempDir Path dir){
     var project= dir.resolve("someProject");
     Fs.writeUtf8(project.resolve("readme.txt"), "hi\n");
     Fs.writeUtf8(project.resolve("someproject.fearless"), "");
@@ -81,18 +80,18 @@ final class FactsTest{
     assertEquals(Optional.empty(), facts.problem());
     assertTrue(upToDate(facts));
   }
-  @Test void anOutFolderHoldingNoPackageIsOutOfDate(@TempDir Path dir){
+  @Test void anOutFolderHoldingNoPackageIsOutOfDate(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve(Facts.outDir).resolve("_error.txt"), "broken");
     var facts= facts(project, "someproject", Kind.code);
     assertEquals(Optional.of("The compilation cache of this project is out of date."), facts.stale());
   }
-  @Test void aShortcutFileAtTheTopLevelKeepsTheCacheUpToDateAndTheProjectValid(@TempDir Path dir){
+  @Test void aShortcutFileAtTheTopLevelKeepsTheCacheUpToDateAndTheProjectValid(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     at(project.resolve("bar.fapp042"), "", FakeCache.after(project)+5000);
     assertEquals(Optional.empty(), facts(project, "someproject", Kind.code).problem());
   }
-  @Test void aDataFolderNeedsNoPackageStructure(@TempDir Path dir){
+  @Test void aDataFolderNeedsNoPackageStructure(@RealTempDir Path dir){
     var project= dir.resolve("publicFiles");
     Fs.writeUtf8(project.resolve("readme.txt"), "hi\n");
     Fs.writeUtf8(project.resolve("publicfiles.fearless"), "");
@@ -100,15 +99,15 @@ final class FactsTest{
     assertEquals(Optional.empty(), facts.problem());
     assertEquals(Optional.empty(), facts.stale());
   }
-  @Test void aFolderWithTwoMarkersIsInvalid(@TempDir Path dir){
+  @Test void aFolderWithTwoMarkersIsInvalid(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve("other.fearless"), "");
     same("More than one .fearless marker file was found in[###]keep only \"someproject.fearless\".", facts(project, "someproject", Kind.code).problem().orElseThrow());
   }
-  @Test void aMissingFolderIsUnreachable(@TempDir Path dir){
+  @Test void aMissingFolderIsUnreachable(@RealTempDir Path dir){
     assertEquals(Optional.empty(), Facts.of(dir.resolve("gone"), "gone", Kind.code, _ -> new Coordinator.State.OutOfDate(), java.time.Instant.MAX));
   }
-  @Test void aFolderDeletedWhileItIsCheckedIsMissing(@TempDir Path dir){
+  @Test void aFolderDeletedWhileItIsCheckedIsMissing(@RealTempDir Path dir){
     assertTimeoutPreemptively(Duration.ofSeconds(60), () -> {
       for (var i : Range.of(0, 20)){
         var project= project(dir, "p"+i);
@@ -120,16 +119,16 @@ final class FactsTest{
       }
     });
   }
-  @Test void aFileDatedAtTheStartOf1970IsAProblem(@TempDir Path dir){
+  @Test void aFileDatedAtTheStartOf1970IsAProblem(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     Fs.ofV(() -> Files.setLastModifiedTime(project.resolve("_hello").resolve("_rank_app.fear"), FileTime.fromMillis(-5000)));
     same("[###]Path: \"_hello/_rank_app.fear\"\n\nThis file is dated 19[###]", facts(project, "someproject", Kind.code).problem().orElseThrow());
   }
-  @Test void anUnreadableFolderIsAProblemNotACrash(@TempDir Path dir){
+  @Test void anUnreadableFolderIsAProblemNotACrash(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     var hidden= project.resolve("_hello");
     Disk.noRead(hidden);
-    Assumptions.assumeFalse(Files.isReadable(hidden));
+    assertFalse(Files.isReadable(hidden), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     same("""
 The folder of this project cannot be read:
 [###]someProject
@@ -137,12 +136,12 @@ access denied: [###]_hello
 Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
     Disk.allow(hidden);
   }
-  @Test void anUnreadableSourceOfAProjectWithACacheIsAProblemNotACorruptedCache(@TempDir Path dir){
+  @Test void anUnreadableSourceOfAProjectWithACacheIsAProblemNotACorruptedCache(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     FakeCache.write(project, "hello", System.currentTimeMillis()-1_000_000);
     var source= project.resolve("_hello").resolve("_rank_app.fear");
     Disk.noRead(source);
-    Assumptions.assumeFalse(Files.isReadable(source));
+    assertFalse(Files.isReadable(source), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     same("""
 The folder of this project cannot be read:
 [###]someProject
@@ -150,7 +149,7 @@ access denied: [###]_rank_app.fear
 Give Fearless access to it, or forget this project.""", facts(project, "someproject", Kind.code).problem().orElseThrow());
     Disk.allow(source);
   }
-  @Test void aSymbolicLinkInACodeProjectIsAProblemNotACrash(@TempDir Path dir){
+  @Test void aSymbolicLinkInACodeProjectIsAProblemNotACrash(@RealTempDir Path dir){
     var before= Fs.onSymbolicLink;
     Fs.onSymbolicLink= managerMessages.Report::symbolicLink;
     try{
@@ -161,7 +160,7 @@ Give Fearless access to it, or forget this project.""", facts(project, "someproj
     }
     finally{ Fs.onSymbolicLink= before; }
   }
-  @Test void theIconIsTheSameWhileItsFileIs(@TempDir Path dir){
+  @Test void theIconIsTheSameWhileItsFileIs(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     var png= project.resolve(".config").resolve("icon").resolve("a.png");
     Fs.ensureDir(png.getParent());
@@ -174,7 +173,7 @@ Give Fearless access to it, or forget this project.""", facts(project, "someproj
     Fs.ofV(() -> Files.setLastModifiedTime(png, FileTime.fromMillis(Fs.lastModified(png)+1000)));
     assertEquals(6, facts(project, "someproject", Kind.code).icon().orElseThrow().image().getWidth());
   }
-  @Test void twoIconsAreAProjectProblem(@TempDir Path dir){
+  @Test void twoIconsAreAProjectProblem(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"), "");
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("b.png"), "");
@@ -192,7 +191,7 @@ Keep exactly one .png file there.
 """, () -> Facts.icon(project));
     assertFalse(facts(project, "someproject", Kind.code).problem().isEmpty());
   }
-  @Test void anIconThatIsNotAnImageIsAProjectProblem(@TempDir Path dir){
+  @Test void anIconThatIsNotAnImageIsAProjectProblem(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("a.png"), "not an image");
     err("""
@@ -206,7 +205,7 @@ Replace that file with a PNG image, or remove it.
 """, () -> Facts.icon(project));
     assertTrue(facts(project, "someproject", Kind.code).problem().orElseThrow().startsWith("The icon of this project is not a PNG image"));
   }
-  @Test void aProjectWithBrokenNamesKeepsItsIcon(@TempDir Path dir){
+  @Test void aProjectWithBrokenNamesKeepsItsIcon(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     Fs.writeUtf8(project.resolve("_hello").resolve("Bad.fear"), "");
     var png= project.resolve(".config").resolve("icon").resolve("a.png");
@@ -216,7 +215,7 @@ Replace that file with a PNG image, or remove it.
     assertTrue(facts.problem().orElseThrow().contains("Bad.fear"));
     assertEquals(png, facts.icon().orElseThrow().file());
   }
-  @Test void aDataFolderStillRejectsUnsafeNames(@TempDir Path dir){
+  @Test void aDataFolderStillRejectsUnsafeNames(@RealTempDir Path dir){
     var project= dir.resolve("publicFiles");
     Fs.writeUtf8(project.resolve("Bad Name.txt"), "hi\n");
     assertFalse(facts(project, "publicfiles", Kind.dataRead).problem().isEmpty());
