@@ -210,10 +210,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     var cafe= folder(dir, "caf\u00E9");
     var nfd= dir.resolve("cafe\u0301");
     var res= away(dir, nfd, cafe);
-    assertEquals(Set.of(nfd), res.keySet(), """
-      Agent on macOS: the JDK writes each name in NFD and lists the names of a folder in NFC (sun.nio.fs.MacOSXFileSystem), so a Java program does not see the bytes of a name.
-      FolderShapesDesign reads an s as bytes on macOS as on Linux, and ControllersDesign takes a path in another Unicode form as a path that corresponds to no p.
-      Investigate how Fearless can see and keep the bytes of the names on macOS, then fix the code until this test passes.""");
+    assertEquals(Set.of(nfd), res.keySet());
     same("Refused request \"Register\" on path\n[###]\nThe folder\n[###]\nlists no folder named exactly [###]: write each name of the path as its folder lists it, in the same letter case and the same Unicode form.", why(res, nfd));
   }
   @Test void awkwardFolderNamesSurviveAReRead(@RealTempDir Path dir){

@@ -40,9 +40,7 @@ final class WindowTest{
     var path= dir.resolve("a.html");
     var said= new CompletableFuture<String>();
     Window.said(said::complete, path, Fs.of(new ProcessBuilder("sh", "-c", "exit 4")::start));
-    assertEquals(Report.noProgramOpens(path), said.completeOnTimeout("nothing said", 10, TimeUnit.SECONDS).join(), """
-      Agent on macOS: check that the program open ends with an error exit code when no application opens the path,
-      then make Window.said react to that exit code as on Linux.""");
+    assertEquals(Report.noProgramOpens(path), said.completeOnTimeout("nothing said", 10, TimeUnit.SECONDS).join());
   }
   @Test void aUserErrorWhileMakingTheWindowComesThroughUnchanged(){
     var icon= Violation.couldNotDecodeIcon(Path.of("app", "icon.png"));
