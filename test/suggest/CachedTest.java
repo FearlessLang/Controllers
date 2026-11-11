@@ -13,7 +13,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import coordinator.Coordinator;
 import suggest.Cached.State;
@@ -61,36 +61,36 @@ final class CachedTest{
     assertEquals(expected, coordinator);
     assertEquals(expected, Cached.state(project, base));
   }
-  @Test void aCacheTheCoordinatorFindsCompiledIsCompiled(@TempDir Path dir){
+  @Test void aCacheTheCoordinatorFindsCompiledIsCompiled(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     same(State.compiled, project, base(dir));
   }
-  @Test void withNoCacheTheProjectIsOutOfDate(@TempDir Path dir){ same(State.outOfDate, project(dir), base(dir)); }
-  @Test void aProjectWithNoPackageAndNoCacheIsCompiled(@TempDir Path dir){
+  @Test void withNoCacheTheProjectIsOutOfDate(@RealTempDir Path dir){ same(State.outOfDate, project(dir), base(dir)); }
+  @Test void aProjectWithNoPackageAndNoCacheIsCompiled(@RealTempDir Path dir){
     var project= dir.resolve("p");
     at(project.resolve("p.fearless"), "", old);
     same(State.compiled, project, base(dir));
   }
-  @Test void aFileNewerThanTheStartOfTheLastCompileMakesTheProjectOutOfDate(@TempDir Path dir){
+  @Test void aFileNewerThanTheStartOfTheLastCompileMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     at(project.resolve("_app").resolve("a.fear"), "", old+3000);
     same(State.outOfDate, project, base(dir));
   }
-  @Test void anUnfinishedFileMakesTheProjectOutOfDate(@TempDir Path dir){
+  @Test void anUnfinishedFileMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     at(project.resolve(".fearless_out").resolve("_unfinished.txt"), "", old);
     same(State.outOfDate, project, base(dir));
   }
-  @Test void anOtherFileMakesTheProjectOutOfDate(@TempDir Path dir){
+  @Test void anOtherFileMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     at(project.resolve(".fearless_out").resolve("junk.txt"), "", old);
     same(State.outOfDate, project, base(dir));
   }
-  @Test void theErrorFileAndTheIconsAreNoOtherFiles(@TempDir Path dir){
+  @Test void theErrorFileAndTheIconsAreNoOtherFiles(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     at(project.resolve(".fearless_out").resolve("_error.txt"), "broken", old);
@@ -99,42 +99,42 @@ final class CachedTest{
     at(project.resolve(".fearless_out").resolve(".app.html.swp"), "", old);
     same(State.compiled, project, base(dir));
   }
-  @Test void aChangedMapDirectiveWithAnOldTimeMakesTheProjectOutOfDate(@TempDir Path dir){
+  @Test void aChangedMapDirectiveWithAnOldTimeMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     at(project.resolve("_app").resolve("_rank_app.fear"), "map z as _base in _app;\nmap y as _lib in _app instead of _base;\n", old);
     same(State.outOfDate, project, base(dir));
   }
-  @Test void aLowerJarWithAnotherTimeMakesTheProjectOutOfDate(@TempDir Path dir){
+  @Test void aLowerJarWithAnotherTimeMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     Fs.ofV(() -> Files.setLastModifiedTime(project.resolve(".fearless_out").resolve("lib.jar"), FileTime.fromMillis(old+1500)));
     same(State.outOfDate, project, base(dir));
   }
-  @Test void aRemovedPackageMakesTheProjectOutOfDate(@TempDir Path dir){
+  @Test void aRemovedPackageMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     Fs.rmTree(project.resolve("_lib"));
     at(project.resolve("_app").resolve("_rank_app.fear"), "", old);
     same(State.outOfDate, project, base(dir));
   }
-  @Test void aMalformedJsonMakesTheProjectOutOfDate(@TempDir Path dir){
+  @Test void aMalformedJsonMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
     at(project.resolve(".fearless_out").resolve("app.json"), "{", old+2000);
     assertEquals(State.outOfDate, Cached.state(project, base(dir)));
   }
-  @Test void aFearFileOutsideOfAPackageIsInvalid(@TempDir Path dir){
+  @Test void aFearFileOutsideOfAPackageIsInvalid(@RealTempDir Path dir){
     var project= project(dir);
     at(project.resolve("top.fear"), "", old);
     same(State.invalid, project, base(dir));
   }
-  @Test void twoRankFilesInAPackageAreInvalid(@TempDir Path dir){
+  @Test void twoRankFilesInAPackageAreInvalid(@RealTempDir Path dir){
     var project= project(dir);
     at(project.resolve("_app").resolve("_rank_tool.fear"), "", old);
     same(State.invalid, project, base(dir));
   }
-  @Test void aPackageInsideAZipIsCompiledWhenItsSnapshotNamesTheFilesInsideTheZip(@TempDir Path dir){
+  @Test void aPackageInsideAZipIsCompiledWhenItsSnapshotNamesTheFilesInsideTheZip(@RealTempDir Path dir){
     var project= dir.resolve("p");
     at(project.resolve("p.fearless"), "", old);
     var bytes= new ByteArrayOutputStream();
@@ -156,7 +156,7 @@ final class CachedTest{
     at(out.resolve("zp.jar"), "", old+1000);
     same(State.compiled, project, base(dir));
   }
-  @Test void theRankFileOfAPackageIsFoundUnderAnyFolderOfThePackage(@TempDir Path dir){
+  @Test void theRankFileOfAPackageIsFoundUnderAnyFolderOfThePackage(@RealTempDir Path dir){
     var project= dir.resolve("p");
     at(project.resolve("p.fearless"), "", old);
     at(project.resolve("a").resolve("_app").resolve("sub").resolve("_rank_app.fear"), "use base.Str as Str;\n", old);
@@ -164,7 +164,7 @@ final class CachedTest{
     assertEquals("use base.Str as Str;\n", Cached.rankText(project, "app"));
     assertEquals("", Cached.rankText(project, "lib"));
   }
-  @Test void theMapDirectivesOfAPackageAreThoseOfTheRankFileOfHighestRank(@TempDir Path dir){
+  @Test void theMapDirectivesOfAPackageAreThoseOfTheRankFileOfHighestRank(@RealTempDir Path dir){
     var project= project(dir);
     assertEquals(Map.of("y", "lib"), Cached.packages(project, "app"));
     assertEquals(Map.of(), Cached.packages(project, "lib"));

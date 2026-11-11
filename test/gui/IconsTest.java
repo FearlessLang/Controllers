@@ -17,7 +17,7 @@ import java.util.Locale;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import controller.Facts;
 import controller.Project;
@@ -47,37 +47,37 @@ final class IconsTest{
     Fs.ofV(() -> ImageIO.write(img, "png", file.toFile()));
   }
   private static BufferedImage icon(Path folder){ return (BufferedImage)Icons.of(project(folder, Kind.dataRead), 64); }
-  @Test void theIconIsThePngInDotConfigIcon(@TempDir Path dir){
+  @Test void theIconIsThePngInDotConfigIcon(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     png(project.resolve(".config").resolve("icon").resolve("whatever.png"), Color.red);
     var got= icon(project);
     assertEquals(16, got.getWidth());
     assertEquals(Color.red.getRGB(), got.getRGB(3, 3));
   }
-  @Test void aNonPngFileInDotConfigIconIsIgnored(@TempDir Path dir){
+  @Test void aNonPngFileInDotConfigIconIsIgnored(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve(".config").resolve("icon").resolve("icon.ico"), "not really an ico");
     assertEquals(64, icon(project).getWidth());
   }
-  @Test void multiplePngsInDotConfigIconMakeTheProjectInvalidAndTheIconMadeUp(@TempDir Path dir){
+  @Test void multiplePngsInDotConfigIconMakeTheProjectInvalidAndTheIconMadeUp(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     png(project.resolve(".config").resolve("icon").resolve("a.png"), Color.red);
     png(project.resolve(".config").resolve("icon").resolve("b.png"), Color.blue);
     assertEquals(Project.State.dataReadInvalid, project(project, Kind.dataRead).state());
     assertEquals(64, icon(project).getWidth());
   }
-  @Test void withNoIconOneIsMadeUpOfTheRightSize(@TempDir Path dir){
+  @Test void withNoIconOneIsMadeUpOfTheRightSize(@RealTempDir Path dir){
     var got= icon(folder(dir, "someProject"));
     assertEquals(64, got.getWidth());
     assertEquals(64, got.getHeight());
   }
-  @Test void theMadeUpIconOnlyDependsOnTheName(@TempDir Path dir){
+  @Test void theMadeUpIconOnlyDependsOnTheName(@RealTempDir Path dir){
     assertEquals(pixels(icon(folder(dir, "someProject"))), pixels(icon(folder(folder(dir, "twin"), "someProject"))));
   }
-  @Test void differentNamesAreToldApart(@TempDir Path dir){
+  @Test void differentNamesAreToldApart(@RealTempDir Path dir){
     assertNotEquals(pixels(icon(folder(dir, "someProject"))), pixels(icon(folder(dir, "otherProject"))));
   }
-  @Test void theMadeUpIconIsFourDifferentColoursUnderReadableLetters(@TempDir Path dir){
+  @Test void theMadeUpIconIsFourDifferentColoursUnderReadableLetters(@RealTempDir Path dir){
     var got= icon(folder(dir, "someProject"));
     var corners= new LinkedHashSet<>(List.of(got.getRGB(4, 4), got.getRGB(59, 4), got.getRGB(4, 59), got.getRGB(59, 59)));
     assertEquals(4, corners.size());

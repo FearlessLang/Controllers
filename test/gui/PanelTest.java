@@ -15,7 +15,7 @@ import javax.swing.JLabel;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 import org.opentest4j.AssertionFailedError;
 
 import controller.Facts;
@@ -42,7 +42,7 @@ final class PanelTest{
   private static List<String> brokenMounts(Panel panel){
     return all(panel.root).filter(c -> c instanceof JLabel).map(c -> ((JLabel)c).getText()).filter(t -> t != null && t.startsWith("The mount of")).toList();
   }
-  @Test void aShortcutWithNoValidFileNameShowsNoShortcutFile(@TempDir Path dir){
+  @Test void aShortcutWithNoValidFileNameShowsNoShortcutFile(@RealTempDir Path dir){
     var folder= dir.resolve("hello");
     Fs.writeUtf8(folder.resolve("hello.fearless"), "");
     var claim= new MainsInfo.Claim("base.IconsConflict", "icons/conflict.png", "", "", "", "fapp010");
@@ -66,7 +66,7 @@ second line
 </testcase>
 PLAN\tDISABLED\t_hello/_rank_app.fear\tLater\tLater at line: 9\t9
 """;
-  @Test void theTestsAreaShowsTheNewestUnitTestLogWithAMarkOnEachTestCase(@TempDir Path dir){
+  @Test void theTestsAreaShowsTheNewestUnitTestLogWithAMarkOnEachTestCase(@RealTempDir Path dir){
     var folder= dir.resolve("hello");
     Fs.writeUtf8(folder.resolve("hello.fearless"), "");
     Fs.writeUtf8(folder.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$20261103_000000_000Z.log"), goodBadLater);
@@ -82,7 +82,7 @@ failed unit test log of 2026-11-03T00:00:00Z: 1 passed, 1 failed, 1 disabled
   disabled Later at line: 9
 """, tests(panel));
   }
-  @Test void theTestsAreaShowsEachUnitTestLogOfTheRunUnderTheMainThatWroteIt(@TempDir Path dir){
+  @Test void theTestsAreaShowsEachUnitTestLogOfTheRunUnderTheMainThatWroteIt(@RealTempDir Path dir){
     var folder= dir.resolve("hello");
     Fs.writeUtf8(folder.resolve("hello.fearless"), "");
     var logs= folder.resolve(".out").resolve("logs").resolve("_base");
@@ -106,7 +106,7 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
   disabled Later at line: 9
 """, tests(panel));
   }
-  @Test void aRunWritingNoUnitTestLogShowsNoTest(@TempDir Path dir){
+  @Test void aRunWritingNoUnitTestLogShowsNoTest(@RealTempDir Path dir){
     var folder= dir.resolve("hello");
     Fs.writeUtf8(folder.resolve("hello.fearless"), "");
     Fs.writeUtf8(folder.resolve(".out").resolve("logs").resolve("_base").resolve("unit_test_log$20261103_000001_000Z.log"), goodBadLater);
@@ -118,7 +118,7 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     panel.render(hello, List.of(hello), 800);
     assertEquals("", tests(panel));
   }
-  @Test void aDamagedUnitTestLogStillShowsInTheTestsArea(@TempDir Path dir){
+  @Test void aDamagedUnitTestLogStillShowsInTheTestsArea(@RealTempDir Path dir){
     var folder= dir.resolve("hello");
     Fs.writeUtf8(folder.resolve("hello.fearless"), "");
     var logs= folder.resolve(".out").resolve("logs").resolve("_base");
@@ -141,7 +141,7 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     var own= depth < 0 ? "" : "  ".repeat(depth)+mark+row.text()+"\n";
     return own+java.util.Collections.list(n.children()).stream().map(c -> rows((javax.swing.tree.DefaultMutableTreeNode)c, depth+1)).collect(java.util.stream.Collectors.joining());
   }
-  @Test void theStatusLineSaysTheStateTheProblemAndTheBrokenMounts(@TempDir Path dir){
+  @Test void theStatusLineSaysTheStateTheProblemAndTheBrokenMounts(@RealTempDir Path dir){
     Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
     var hello= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.empty());
     var panel= new Panel(_ -> {});
@@ -153,14 +153,14 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     Err.strCmp("code: invalid content: [###]", statuses(panel).getFirst());
   }
   private static List<String> statuses(Panel panel){ return all(panel.root).filter(c -> "status".equals(c.getName())).map(c -> ((JLabel)c).getText()).toList(); }
-  @Test void aMountOfAProjectThatIsNotRegisteredIsMarkedAlsoBeforeACompilation(@TempDir Path dir){
+  @Test void aMountOfAProjectThatIsNotRegisteredIsMarkedAlsoBeforeACompilation(@RealTempDir Path dir){
     Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
     var hello= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.empty());
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello), 800);
     assertEquals(List.of("The mount of \"notes\" on \"hello.Diary\" is broken: no project \"notes\" is registered."), brokenMounts(panel));
   }
-  @Test void theDataAreaShowsTheMountBrokenOnceTheMountedDataProjectBecomesInvalid(@TempDir Path dir){
+  @Test void theDataAreaShowsTheMountBrokenOnceTheMountedDataProjectBecomesInvalid(@RealTempDir Path dir){
     var notesFolder= dir.resolve("notes");
     Fs.writeUtf8(notesFolder.resolve("notes.fearless"), "");
     Fs.writeUtf8(notesFolder.resolve("readme.txt"), "hi\n");

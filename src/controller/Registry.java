@@ -11,6 +11,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -18,11 +19,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import core.TName;
@@ -71,6 +74,8 @@ public final class Registry{
   public record Why(String text) implements Away{}
   public record Same(Path folder) implements Away{}
   private record Seen(Path walked, Path found, boolean top){}
+  public static final Comparator<Path> exact= Comparator.comparing(Path::toString).thenComparing(Comparator.<Path>naturalOrder());
+  private static final String sentinel= ".fearless_sentinel_";
   private final Path dir;
   private final Consumer<Content> check;
   private Content content= new Content(List.of(), List.of());
@@ -85,17 +90,22 @@ public final class Registry{
     lookup();
   }
   public static List<Path> folders(Content c){ return c.projects().stream().map(Entry::path).toList(); }
+  public static boolean same(Path a, Path b){ return exact.compare(a, b) == 0; }
   public static Map<Path,Away> away(List<Path> folders, Path managerDir){
-    var res= new LinkedHashMap<Path,Away>();
+    var res= new TreeMap<Path,Away>(exact);
+    folders.forEach(f -> alone(f).ifPresent(why -> res.put(f, new Why(why))));
+    var marked= folders.stream().filter(f -> !res.containsKey(f)).toList();
     var marks= new LinkedHashMap<String,Path>();
     var hits= new ArrayList<Map.Entry<Seen,Path>>();
     try{
       var own= fresh(managerDir, marks);
+      clean(managerDir).ifPresent(e -> { throw Violation.couldNotSaveManagerFile(managerDir.resolve(own), e); });
+      marked.forEach(f -> clean(f).ifPresent(e -> res.put(f, refused(f, e))));
       mark(managerDir, own, marks).ifPresent(e -> { throw Violation.couldNotSaveManagerFile(managerDir.resolve(own), e); });
-      folders.forEach(f -> marked(f, marks).ifPresent(why -> res.put(f, new Why(why))));
+      marked.stream().filter(f -> !res.containsKey(f)).forEach(f -> mark(f, fresh(f, marks), marks).ifPresent(e -> res.put(f, refused(f, e))));
       marks.values().stream().distinct().forEach(t -> walk(t, t, marks, hits));
     }
-    finally{ marks.forEach((name, f) -> Fs.ofV(() -> Files.delete(f.resolve(name)))); }
+    finally{ unmark(marks); }
     var seen= hits.stream().filter(h -> Files.notExists(h.getValue(), LinkOption.NOFOLLOW_LINKS)).map(Map.Entry::getKey).collect(Collectors.toSet());
     var reached= new ArrayList<Path>();
     for (var f : folders){
@@ -104,16 +114,21 @@ public final class Registry{
     }
     return res;
   }
-  private static Optional<String> marked(Path f, Map<String,Path> marks){
+  private static Away refused(Path f, IOException e){ return new Why(Report.registerRefused(f, Report.fileFailure(e))); }
+  private static Optional<String> alone(Path f){
     Optional<Path> at;
     try{ at= stray(f); }
     catch (UncheckedIOException e){ return Optional.of(Report.registerRefused(f, Report.fileFailure(e.getCause()))); }
-    if (at.isPresent()){ return Optional.of(Fs.isLink(at.get()) ? Report.registerLink(f, at.get()) : Report.registerNotListed(f, at.get())); }
-    if (driveTop(f)){ return Optional.of(Report.projectFolderIsRoot(f)); }
-    return mark(f, fresh(f, marks), marks).map(e -> Report.registerRefused(f, Report.fileFailure(e)));
+    if (at.isPresent()){ return Optional.of(at.get().getFileName() == null ? Report.registerDriveLetter(f) : Fs.isLink(at.get()) ? Report.registerLink(f, at.get()) : Report.registerNotListed(f, at.get())); }
+    return Optional.of(Report.projectFolderIsRoot(f)).filter(_ -> driveTop(f));
+  }
+  private static boolean corresponds(Path folder){
+    try{ return stray(folder).isEmpty(); }
+    catch (UncheckedIOException _){ return false; }
   }
   private static Optional<Path> stray(Path folder){
     var at= folder.getRoot();
+    if (at.toString().matches("[a-z]:.*")){ return Optional.of(at); }
     for (var name : folder){
       if (!listed(at, name.toString())){ return Optional.of(at.resolve(name)); }
       at = at.resolve(name);
@@ -128,11 +143,25 @@ public final class Registry{
     catch (IOException e){ return false; }
   }
   private static String fresh(Path folder, Map<String,Path> marks){
-    var name= "."+UUID.randomUUID();
+    var name= sentinel+UUID.randomUUID();
     return marks.containsKey(name) || Files.exists(folder.resolve(name), LinkOption.NOFOLLOW_LINKS) ? fresh(folder, marks) : name;
+  }
+  private static Optional<IOException> clean(Path folder){
+    List<Path> old;
+    try (var s= Files.list(folder)){ old= s.filter(k -> k.getFileName().toString().startsWith(sentinel)).toList(); }
+    catch (IOException e){ return Optional.of(e); }
+    return old.stream().flatMap(k -> delete(k).stream()).findFirst();
   }
   private static Optional<IOException> mark(Path folder, String name, Map<String,Path> marks){
     try{ Files.createFile(folder.resolve(name)); marks.put(name, folder); return Optional.empty(); }
+    catch (IOException e){ return Optional.of(e); }
+  }
+  private static void unmark(Map<String,Path> marks){
+    var failed= marks.entrySet().stream().flatMap(m -> delete(m.getValue().resolve(m.getKey())).stream()).toList();
+    failed.stream().findFirst().ifPresent(e -> { throw new UncheckedIOException(e); });
+  }
+  private static Optional<IOException> delete(Path file){
+    try{ Files.delete(file); return Optional.empty(); }
     catch (IOException e){ return Optional.of(e); }
   }
   private static void walk(Path top, Path folder, Map<String,Path> marks, List<Map.Entry<Seen,Path>> hits){
@@ -154,7 +183,7 @@ public final class Registry{
   public List<String> extensions(){ return content.extensions(); }
   public Content content(){ return content; }
   public static boolean isSystem(String ext){ return Fs.isExtSeg(ext) && Icon.system("."+ext); }
-  public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all().stream().filter(e -> e.path().equals(folder))); }
+  public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all().stream().filter(e -> same(e.path(), folder))); }
   public Optional<Entry> named(String alias){ return OneOr.opt("registered "+alias, all().stream().filter(e -> e.alias().equals(alias))); }
   public Optional<Entry> lookedUp(String alias){
     named(alias).ifPresentOrElse(e -> nameCheck(e.path()), this::lookup);
@@ -166,7 +195,7 @@ public final class Registry{
     if (differs){ lookup(); }
     return differs;
   }
-  public boolean reaches(Path folder){ return !away.contains(folder) && Names.reachable(folder); }
+  public boolean reaches(Path folder){ return !away.contains(folder) && corresponds(folder) && Names.reachable(folder); }
   /// a folder whose marker can not be written gets no name
   public void lookup(){ content = inferred(content, content, away, this::marked); }
   private Entry marked(Entry e){
@@ -179,21 +208,22 @@ public final class Registry{
     var taken= new HashSet<String>();
     var res= new ArrayList<Entry>();
     for (var e : c.projects()){
-      var name= !away.contains(e.path()) && Names.reachable(e.path()) ? Names.infer(e.path(), taken) : known.projects().stream().filter(k -> k.path().equals(e.path())).map(Entry::alias).filter(n -> !taken.contains(n)).findFirst().orElse("");
+      var name= !away.contains(e.path()) && Names.reachable(e.path()) ? Names.infer(e.path(), taken) : known.projects().stream().filter(k -> same(k.path(), e.path())).map(Entry::alias).filter(n -> !taken.contains(n)).findFirst().orElse("");
       var named= mark.apply(new Entry(name, e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()));
       taken.add(named.alias());
       res.add(named);
     }
     return new Content(res, c.extensions());
   }
-  public void add(String alias, Path folder){
+  public void add(String alias, Path folder, Set<Path> away){
     assert folder.isAbsolute();
-    assert all().stream().noneMatch(e -> e.path().equals(folder) || e.alias().equals(alias));
-    save(new Content(Push.of(all(), new Entry(alias, folder, Kind.idle, List.of(), Map.of(), Map.of())), extensions()));
+    assert all().stream().noneMatch(e -> same(e.path(), folder) || e.alias().equals(alias));
+    var c= new Content(Push.of(all(), new Entry(alias, folder, Kind.idle, List.of(), Map.of(), Map.of())), extensions());
+    save(c, text(c), away);
   }
   public void update(Path folder, UnaryOperator<Entry> op){
     assert of(folder).isPresent();
-    save(new Content(all().stream().map(e -> e.path().equals(folder) ? op.apply(e) : e).toList(), extensions()));
+    save(new Content(all().stream().map(e -> same(e.path(), folder) ? op.apply(e) : e).toList(), extensions()));
   }
   public static Grants grants(Content c, Entry e, List<String> dataEdit, UnaryOperator<Path> lockFile){
     var mounts= new LinkedHashMap<String,Path>();
@@ -237,8 +267,8 @@ public final class Registry{
     var entries= new ArrayList<Entry>();
     for (var item : top.items()){
       var e= entryOf(source, item, entries.size()+1);
-      var twin= entries.stream().map(Entry::path).toList().indexOf(e.path());
-      if (twin >= 0){ throw Info.err(source, pathSpan(item), Report.infoSamePath(entries.size()+1, twin+1)); }
+      var twin= IntStream.range(0, entries.size()).filter(i -> same(entries.get(i).path(), e.path())).findFirst();
+      if (twin.isPresent()){ throw Info.err(source, pathSpan(item), Report.infoSamePath(entries.size()+1, twin.getAsInt()+1)); }
       entries.add(e);
     }
     return entries;

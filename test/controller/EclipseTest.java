@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import tools.Fs;
 
@@ -19,14 +19,14 @@ final class EclipseTest{
     Fs.writeUtf8(folder.resolve("plugins").resolve("a.jar"), "");
     return folder;
   }
-  @Test void anEclipseIsFoundFromItsFolderAFileInItAFileInAFolderOfItOrTheFolderHoldingOnlyIt(@TempDir Path dir){
+  @Test void anEclipseIsFoundFromItsFolderAFileInItAFileInAFolderOfItOrTheFolderHoldingOnlyIt(@RealTempDir Path dir){
     var eclipse= eclipseAt(dir.resolve("unzipped").resolve("eclipse"));
     assertEquals(Optional.of(eclipse), Eclipse.find(eclipse));
     assertEquals(Optional.of(eclipse), Eclipse.find(eclipse.resolve("eclipse.exe")));
     assertEquals(Optional.of(eclipse), Eclipse.find(eclipse.resolve("plugins").resolve("a.jar")));
     assertEquals(Optional.of(eclipse), Eclipse.find(eclipse.getParent()));
   }
-  @Test void nothingElseLeadsToAnEclipse(@TempDir Path dir){
+  @Test void nothingElseLeadsToAnEclipse(@RealTempDir Path dir){
     var eclipse= eclipseAt(dir.resolve("unzipped").resolve("eclipse"));
     Fs.writeUtf8(dir.resolve("unzipped").resolve("readme.txt"), "");
     assertEquals(Optional.empty(), Eclipse.find(eclipse.getParent()));
@@ -34,7 +34,7 @@ final class EclipseTest{
     Fs.writeUtf8(eclipse.resolve("plugins").resolve("deep").resolve("b.jar"), "");
     assertEquals(Optional.empty(), Eclipse.find(eclipse.resolve("plugins").resolve("deep").resolve("b.jar")));
   }
-  @Test void connectingPutsThePluginAndManagerInfoInDropinsReplacingAnOlderPlugin(@TempDir Path dir){
+  @Test void connectingPutsThePluginAndManagerInfoInDropinsReplacingAnOlderPlugin(@RealTempDir Path dir){
     var plugin= dir.resolve("app").resolve("eclipsePlugin");
     Fs.writeUtf8(plugin.resolve("new.jar"), "new");
     var eclipse= eclipseAt(dir.resolve("eclipse"));

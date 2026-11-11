@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 
 import tools.Fs;
 
@@ -39,7 +39,7 @@ final class NamesTest{
     assertFalse(Names.isName("a/b"));
     assertFalse(Names.isName("a.b"));
   }
-  @Test void aFolderNameIsTurnedIntoANameFearlessAccepts(@TempDir Path dir){
+  @Test void aFolderNameIsTurnedIntoANameFearlessAccepts(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     assertEquals("helloworld", Names.free(project, "helloWorld", Set.of()));
     assertEquals("map_a_to_pkc", Names.free(project, "map_a_to_pkc", Set.of()));
@@ -51,91 +51,91 @@ final class NamesTest{
     assertEquals("_x", Names.free(project, "\u0130x", Set.of()));
     assertEquals("_rger", Names.free(project, "\u00c4rger", Set.of()));
   }
-  @Test void theNameIsTheFirst64CharactersOfTheFixedSegment(@TempDir Path dir){
+  @Test void theNameIsTheFirst64CharactersOfTheFixedSegment(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     assertEquals("ab".repeat(32), Names.free(project, "Ab".repeat(50), Set.of()));
     assertEquals("p9"+"a".repeat(62), Names.free(project, "9"+"a".repeat(100), Set.of()));
     assertEquals("ab".repeat(32)+"2", Names.free(project, "ab".repeat(50), Set.of("ab".repeat(32))));
   }
-  @Test void aTakenComSkipsTheReservedNames(@TempDir Path dir){
+  @Test void aTakenComSkipsTheReservedNames(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     assertEquals("com10", Names.free(project, "com", Set.of("com")));
     assertEquals("lpt", Names.free(project, "lpt", Set.of()));
     assertEquals("pcom1", Names.free(project, "com1", Set.of()));
   }
-  @Test void aTakenNameGetsANumber(@TempDir Path dir){
+  @Test void aTakenNameGetsANumber(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     assertEquals("hello2", Names.free(project, "hello", Set.of("hello")));
     assertEquals("hello3", Names.free(project, "hello", Set.of("hello", "hello2")));
   }
-  @Test void aFolderOfTheNameDoesNotTakeTheName(@TempDir Path dir){
+  @Test void aFolderOfTheNameDoesNotTakeTheName(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     folder(project, "hello");
     assertEquals("hello", Names.free(project, "hello", Set.of()));
   }
-  @Test void aFreeNameIsKeptAndGetsAMarkerFile(@TempDir Path dir){
+  @Test void aFreeNameIsKeptAndGetsAMarkerFile(@RealTempDir Path dir){
     var project= folder(dir, "someproject");
     assertEquals("someproject", named(project, Set.of("other")));
     assertEquals(Optional.empty(), Names.markerProblem(project, "someproject"));
     assertTrue(Files.isRegularFile(project.resolve("someproject.fearless")));
   }
-  @Test void makeUniqueIsIdempotentOnAnAlreadyMarkedFolder(@TempDir Path dir){
+  @Test void makeUniqueIsIdempotentOnAnAlreadyMarkedFolder(@RealTempDir Path dir){
     var project= folder(dir, "someproject");
     named(project, Set.of("other"));
     assertEquals("someproject", named(project, Set.of("other")));
     assertEquals(Optional.empty(), Names.markerProblem(project, "someproject"));
   }
-  @Test void anUnsafeFolderNameIsMadeAcceptableEvenWithNoCollision(@TempDir Path dir){
+  @Test void anUnsafeFolderNameIsMadeAcceptableEvenWithNoCollision(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     assertEquals("someproject", named(project, Set.of("other")));
     assertTrue(Files.isRegularFile(project.resolve("someproject.fearless")));
   }
-  @Test void aTakenNameGetsANumberAndANewFearlessFile(@TempDir Path dir){
+  @Test void aTakenNameGetsANumberAndANewFearlessFile(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     assertEquals("someproject2", named(project, Set.of("someproject")));
     assertEquals(Optional.empty(), Names.markerProblem(project, "someproject2"));
     assertFalse(Fs.readUtf8(project.resolve("someproject2.fearless")).isEmpty());
   }
-  @Test void theChosenNameIsTheFolderNameMadeAcceptableAndFree(@TempDir Path dir){
+  @Test void theChosenNameIsTheFolderNameMadeAcceptableAndFree(@RealTempDir Path dir){
     var project= folder(dir, "helloWorld");
     Fs.writeUtf8(project.resolve("start.fearless"), "");
     assertEquals("helloworld2", named(project, Set.of("start", "helloworld")));
     assertEquals(Optional.empty(), Names.markerProblem(project, "helloworld2"));
   }
-  @Test void anExistingFearlessFileIsRenamedNotDuplicated(@TempDir Path dir){
+  @Test void anExistingFearlessFileIsRenamedNotDuplicated(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("start.fearless"), "kept\n");
     assertEquals("someproject", named(project, Set.of("start")));
     assertFalse(Files.exists(project.resolve("start.fearless")));
     assertEquals("kept\n", Fs.readUtf8(project.resolve("someproject.fearless")));
   }
-  @Test void anEmptyFearlessFileIsGivenTheMarkerText(@TempDir Path dir){
+  @Test void anEmptyFearlessFileIsGivenTheMarkerText(@RealTempDir Path dir){
     var project= folder(dir, "someproject");
     Fs.writeUtf8(project.resolve("someproject.fearless"), "");
     assertEquals("someproject", named(project, Set.of("other")));
     assertEquals(mainCoordinator.MakeDemo.markerContent, Fs.readUtf8(project.resolve("someproject.fearless")));
   }
-  @Test void anEmptyFearlessFileIsRenamedAndGivenTheMarkerText(@TempDir Path dir){
+  @Test void anEmptyFearlessFileIsRenamedAndGivenTheMarkerText(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("start.fearless"), "");
     assertEquals("someproject", named(project, Set.of("start")));
     assertEquals(mainCoordinator.MakeDemo.markerContent, Fs.readUtf8(project.resolve("someproject.fearless")));
   }
-  @Test void markerProblemIsEmptyWhenTheMarkerMatchesTheAlias(@TempDir Path dir){
+  @Test void markerProblemIsEmptyWhenTheMarkerMatchesTheAlias(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("my_game.fearless"), "");
     assertEquals(Optional.empty(), Names.markerProblem(project, "my_game"));
   }
-  @Test void aMissingMarkerIsNoMarkerProblem(@TempDir Path dir){
+  @Test void aMissingMarkerIsNoMarkerProblem(@RealTempDir Path dir){
     assertEquals(Optional.empty(), Names.markerProblem(folder(dir, "someProject"), "my_game"));
   }
-  @Test void markerProblemReportsMoreThanOneMarker(@TempDir Path dir){
+  @Test void markerProblemReportsMoreThanOneMarker(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("my_game.fearless"), "");
     Fs.writeUtf8(project.resolve("other.fearless"), "");
     same("More than one .fearless marker file was found in\n[###]someProject\nA project folder holds exactly one, and its name is the project name: keep only \"my_game.fearless\".", Names.markerProblem(project, "my_game").orElseThrow());
   }
-  @Test void everyChosenNameIsAValidFreeName(@TempDir Path dir){
+  @Test void everyChosenNameIsAValidFreeName(@RealTempDir Path dir){
     var taken= new HashSet<String>();
     var names= List.of("com", "lpt", "con", "aux", "a".repeat(250), "---", "1abc", "_", "base", "rank", "caf\u00e9", "\u65e5\u672c", "\u00c4rger", "Com");
     for (var i= 0; i < 12; i += 1){
@@ -146,7 +146,7 @@ final class NamesTest{
       }
     }
   }
-  @Test void aMarkerDifferingOnlyInCaseIsRenamed(@TempDir Path dir){
+  @Test void aMarkerDifferingOnlyInCaseIsRenamed(@RealTempDir Path dir){
     var project= folder(dir, "hello");
     Fs.writeUtf8(project.resolve("Hello.fearless"), "kept\n");
     assertEquals("hello", named(project, Set.of()));
@@ -154,7 +154,7 @@ final class NamesTest{
     assertEquals("kept\n", Fs.readUtf8(project.resolve("hello.fearless")));
     assertEquals(Optional.empty(), Names.markerProblem(project, "hello"));
   }
-  @Test void theNameIsTheFirstMarkerInFileNameOrderAndTheOtherMarkersStay(@TempDir Path dir){
+  @Test void theNameIsTheFirstMarkerInFileNameOrderAndTheOtherMarkersStay(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("zeta.fearless"), "z\n");
     Fs.writeUtf8(project.resolve("alpha.fearless"), "a\n");
@@ -163,7 +163,7 @@ final class NamesTest{
     assertEquals("alpha", named(project, Set.of()));
     assertEquals(List.of(project.resolve("alpha.fearless"), project.resolve("zeta.fearless")), Names.list(project));
   }
-  @Test void aTakenFirstMarkerIsRenamedAndTheOtherMarkersStay(@TempDir Path dir){
+  @Test void aTakenFirstMarkerIsRenamedAndTheOtherMarkersStay(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("zeta.fearless"), "z\n");
     Fs.writeUtf8(project.resolve("alpha.fearless"), "a\n");
@@ -172,13 +172,13 @@ final class NamesTest{
     assertEquals("a\n", Fs.readUtf8(project.resolve("someproject.fearless")));
     assertEquals("someproject", named(project, Set.of("alpha")));
   }
-  @Test void inferringANameChangesNoFile(@TempDir Path dir){
+  @Test void inferringANameChangesNoFile(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("start.fearless"), "");
     assertEquals("someproject", Names.infer(project, Set.of("start")));
     assertEquals(List.of(project.resolve("start.fearless")), Names.list(project));
   }
-  @Test void aFolderNamedLikeTheMarkerTakesTheNameAndAFolderNamedLikeTheNameDoesNot(@TempDir Path dir){
+  @Test void aFolderNamedLikeTheMarkerTakesTheNameAndAFolderNamedLikeTheNameDoesNot(@RealTempDir Path dir){
     var proj= dir.resolve("proj");
     Fs.ensureDir(proj.resolve("proj.fearless"));
     Fs.ensureDir(proj.resolve("proj2"));
@@ -188,7 +188,7 @@ final class NamesTest{
     Names.nameAs(proj, name);
     assertTrue(Files.isRegularFile(proj.resolve("proj2.fearless")));
   }
-  @Test void aHiddenFileEndingInFearlessIsNoMarker(@TempDir Path dir){
+  @Test void aHiddenFileEndingInFearlessIsNoMarker(@RealTempDir Path dir){
     var proj= dir.resolve("proj");
     Fs.writeUtf8(proj.resolve(".old.fearless"), "");
     Fs.writeUtf8(proj.resolve("proj.fearless"), "\n");

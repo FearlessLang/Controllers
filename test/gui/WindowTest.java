@@ -15,7 +15,7 @@ import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import tempDirs.RealTempDir;
 import org.opentest4j.AssertionFailedError;
 
 import controller.Facts;
@@ -41,7 +41,7 @@ Fearless needs to show a window, but opening the window failed.
 Reported reason:
 no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new IllegalStateException("no screen"); })).getMessage());
   }
-  @Test void documentationThatIsNotThereIsSaidToTheManager(@TempDir Path dir){
+  @Test void documentationThatIsNotThereIsSaidToTheManager(@RealTempDir Path dir){
     var said= new ArrayList<String>();
     var gen= dir.resolve(Facts.outDir);
     Window.open(said::add, gen.resolve("hello.html"));
@@ -56,13 +56,13 @@ no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new
     try{ return Window.create(null, dir.resolve("manager")); }
     finally{ System.clearProperty(JavacTool.appDirKey); System.clearProperty(JavacTool.launcherKey); }
   }
-  @Test void anErrorAboutTheFileOfTheEditorNamesTheTextOfTheEditor(@TempDir Path dir){
+  @Test void anErrorAboutTheFileOfTheEditorNamesTheTextOfTheEditor(@RealTempDir Path dir){
     var file= dir.resolve("projects1.info");
     var error= "In file: "+metaParser.PrettyFileName.displayFileName(file.toUri())+"\n\n001| {\n   | ^";
     assertEquals("In the text of the editor:\n\n001| {\n   | ^", Window.editorText(java.util.Set.of(file), error));
     assertEquals(error, Window.editorText(java.util.Set.of(dir.resolve("other.info")), error));
   }
-  @Test void anEditMetadataOfAFileTheWindowDidNotWriteKeepsTheFile(@TempDir Path dir){
+  @Test void anEditMetadataOfAFileTheWindowDidNotWriteKeepsTheFile(@RealTempDir Path dir){
     var saved= dir.resolve("saved.info");
     Fs.writeUtf8(saved, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
     var window= window(dir);

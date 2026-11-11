@@ -302,7 +302,7 @@ folder.
     same("""
 Fix changes the folder of project "hello":
 - Fix deletes the files and folders that desktops, archive programs, office programs and text editors write next to your files:
-  ".DS_Store", "._name", "__MACOSX", ".AppleDouble", "Icon", "Thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", "desktop.ini",
+  ".DS_Store", "._name", "__MACOSX", ".AppleDouble", "Icon\\r", "Thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", "desktop.ini",
   "name:Zone.Identifier", ".directory", ".Trash-1000", "~$name", ".~lock.name#", "name~", "#name#" and ".name.swp";
   a file "name~", "#name#" or ".name.swp" can hold text of yours that a text editor did not save,
   and a folder ".Trash-1000" holds the files that you moved to the trash;
@@ -316,12 +316,13 @@ Fix changes the folder of project "hello":
 - Fix moves to the folder "Hello_fix" next to the project folder ("Hello_fix2" when that name is taken, and so on) what a project can not hold:
   symbolic links, junctions and the other entries that are neither files nor folders;
   files and folders whose path is longer than 200 characters, or 250 when a name of the path starts with a dot;
-  zips that can not be read or are nested too deep;
+  zips that can not be read, whose stored names are not valid, or nested too deep;
   for the names starting with a dot and the names in a folder whose name starts with a dot: the names that are not valid Unicode
   or that some operating system can not hold, and the second of two names that differ only in letter case or in Unicode form.
 Fix does every change of this list also inside the zips of the project.
 Inside a folder whose name starts with a dot, Fix renames nothing, cleans no text, keeps the folders with nothing inside,
 and takes a zip as a file like any other.
+Fix stops at the first change the file system refuses: the Output then lists the changes done and the error.
 The Output lists every change. A change of Fix can not be undone.""", Report.fixQuestion("hello", Path.of("Hello")));
   }
 }

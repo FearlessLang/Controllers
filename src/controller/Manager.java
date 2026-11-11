@@ -16,7 +16,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -25,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -89,7 +89,7 @@ public final class Manager{
     void fail(Throwable problem);
   }
   public record State(List<Project> projects, Optional<Path> selected, List<String> extensions){
-    public Optional<Project> of(Path folder){ return OneOr.opt("project "+folder, projects.stream().filter(p -> p.folder().equals(folder))); }
+    public Optional<Project> of(Path folder){ return OneOr.opt("project "+folder, projects.stream().filter(p -> Registry.same(p.folder(), folder))); }
     public Optional<Project> shown(){ return selected.flatMap(this::of); }
     public List<String> running(){ return projects.stream().filter(Project::busy).map(p -> p.alias()+" - "+(p.job() instanceof Job.Main(var main) ? main : "compiling")).toList(); }
   }
@@ -129,7 +129,7 @@ public final class Manager{
   private final View view;
   private final Exit exit;
   private final Registry registry;
-  private final Map<Path,Live> live= new HashMap<>();
+  private final Map<Path,Live> live= new TreeMap<>(Registry.exact);
   private Optional<Path> selected= Optional.empty();
   private Set<String> captured= Set.of();
   private int turn;
@@ -570,7 +570,7 @@ public final class Manager{
   }
   private void forget(Path f){
     var c= registry.content();
-    edit(new Content(c.projects().stream().filter(e -> !e.path().equals(f)).toList(), c.extensions()));
+    edit(new Content(c.projects().stream().filter(e -> !Registry.same(e.path(), f)).toList(), c.extensions()));
   }
   private void mount(Path f, String type, Optional<String> data){ edit(f, o -> o.withMounts(with(o.mounts(), type, data))); }
   private void attenuate(Path f, String main, List<String> attenuators){
@@ -578,7 +578,7 @@ public final class Manager{
   }
   private void edit(Path f, UnaryOperator<Entry> op){
     var c= registry.content();
-    edit(new Content(c.projects().stream().map(e -> e.path().equals(f) ? op.apply(e) : e).toList(), c.extensions()));
+    edit(new Content(c.projects().stream().map(e -> Registry.same(e.path(), f) ? op.apply(e) : e).toList(), c.extensions()));
   }
   private void edit(Content next){ edit(Registry.text(next), registry.infoFile()); }
   private static <T> Map<String,T> with(Map<String,T> map, String key, Optional<T> value){
@@ -586,22 +586,29 @@ public final class Manager{
     value.ifPresentOrElse(v -> out.put(key, v), () -> out.remove(key));
     return out;
   }
-  static Path projectFolder(Path path, List<Path> registered, Path managerDir){
+  static Path projectFolder(Path path){
     if (!Files.exists(path)){ throw new Refused(Report.registerNothing(path)); }
-    var folder= Files.isDirectory(path) ? path : path.getParent();
-    return switch (Registry.away(Push.of(registered.stream().filter(r -> !r.equals(folder)).toList(), folder), managerDir).get(folder)){
+    return Files.isDirectory(path) ? path : path.getParent();
+  }
+  static Map<Path,Registry.Away> away(Path folder, List<Path> registered, Path managerDir){
+    return Registry.away(Push.of(registered.stream().filter(r -> !Registry.same(r, folder)).toList(), folder), managerDir);
+  }
+  static Path chosen(Path folder, Map<Path,Registry.Away> away){
+    return switch (away.get(folder)){
       case null -> folder;
       case Registry.Same(var same) -> same;
       case Registry.Why(var why) -> throw new Refused(why);
     };
   }
   private void register(Path path){
-    var folder= projectFolder(path, Registry.folders(registry.content()), dir);
-    if (!live.containsKey(folder)){ add(folder); }
-    selected = Optional.of(folder);
-    scan(folder);
+    var folder= projectFolder(path);
+    var away= away(folder, Registry.folders(registry.content()), dir);
+    var chosen= chosen(folder, away);
+    if (!live.containsKey(chosen)){ add(chosen, away.keySet()); }
+    selected = Optional.of(chosen);
+    scan(chosen);
   }
-  private void add(Path folder){
+  private void add(Path folder, Set<Path> away){
     String alias;
     try{
       Coordinator.deleteCache(folder);
@@ -610,7 +617,7 @@ public final class Manager{
     }
     catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder, Report.fileFailure(e.getCause()))); }
     catch (UserError e){ throw new Refused(Report.registerRefused(folder, e.getMessage())); }
-    registry.add(alias, folder);
+    registry.add(alias, folder, away);
     open(registry.of(folder).orElseThrow());
   }
   private void connect(Path chosen){
@@ -657,7 +664,7 @@ public final class Manager{
     registry.all().forEach(e -> scan(e.path()));
   }
   /// the entry of c with the folder of e: a project whose folder changes is removed and added
-  private static Optional<Entry> same(Entry e, Content c){ return OneOr.opt("project "+e.path(), c.projects().stream().filter(n -> n.path().equals(e.path()))); }
+  private static Optional<Entry> same(Entry e, Content c){ return OneOr.opt("project "+e.path(), c.projects().stream().filter(n -> Registry.same(n.path(), e.path()))); }
   private void kept(Entry o, Content next){
     var l= live.get(o.path());
     var e= same(o, next);
@@ -686,7 +693,7 @@ public final class Manager{
   private void drop(Path f){
     var l= live.remove(f);
     l.follow.ifPresent(Follow::end);
-    if (selected.equals(Optional.of(f))){ selected = Optional.empty(); }
+    if (selected.filter(s -> Registry.same(s, f)).isPresent()){ selected = Optional.empty(); }
   }
   /// The 'autoCheck' of the project: false for a project folder the manager can not reach, whose Forget is then posted.
   private boolean scan(Path f){
@@ -775,7 +782,7 @@ public final class Manager{
   private void rotate(){
     if (!view.visible()){ return; }
     selected.ifPresent(this::scan);
-    var others= registry.all().stream().map(Entry::path).filter(f -> !selected.equals(Optional.of(f))).toList();
+    var others= registry.all().stream().map(Entry::path).filter(f -> selected.filter(s -> Registry.same(s, f)).isEmpty()).toList();
     if (others.isEmpty()){ return; }
     turn += 1;
     scan(others.get(turn % others.size()));
@@ -786,7 +793,7 @@ public final class Manager{
       var job= e.getValue().job;
       if (!(job instanceof Job.Main)){ continue; }
       var now= registry.of(e.getKey()).orElseThrow();
-      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> p.path().equals(e.getKey())))
+      var changed= OneOr.opt("project "+e.getKey(), next.projects().stream().filter(p -> Registry.same(p.path(), e.getKey())))
         .filter(p -> !p.mounts().equals(now.mounts()) || now.mounts().values().stream().anyMatch(d -> !data(registry.content(), d).equals(data(next, d))));
       changed.ifPresent(p -> { throw new Refused(Report.grantsWhileRunning(p.alias(), job)); });
     }
