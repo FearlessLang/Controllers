@@ -1,5 +1,5 @@
-/// The flow benchmarks: DP is a parallel flow of a list, PP the same flow after a stateful stage
-/// (limit) that pipelines what follows, Seq the sequential flow of the same list.
+// The flow benchmarks: DP is a parallel flow of a list, PP the same flow after a stateful stage
+// (limit) that pipelines what follows, Seq the sequential flow of the same list.
 
 Three: { #(f: mut Flow[Nat], tokens: Nat): mut Flow[Byte] -> f
   .map{_ -> Burn.cpu tokens}
