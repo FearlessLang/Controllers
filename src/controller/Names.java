@@ -6,7 +6,6 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -15,6 +14,7 @@ import java.util.stream.IntStream;
 import core.TName;
 import mainCoordinator.MakeDemo;
 import realSourceOracle.BuildWithZip;
+import realSourceOracle.Fix;
 import realSourceOracle.PathEntry;
 import tools.Fs;
 import managerMessages.Report;
@@ -44,13 +44,9 @@ public final class Names{
     return isName(marked) && !taken.contains(marked) ? marked : free(folder, folder.getFileName().toString(), taken);
   }
   public static String free(Path folder, String wanted, Set<String> taken){
-    var fixed= fixed(wanted);
+    var fixed= Fix.segment(wanted);
     var name= fixed.substring(0, Math.min(fixed.length(), 64));
     return IntStream.iterate(1, i -> i+1).mapToObj(i -> i == 1 ? name : name+i).filter(n -> isName(n) && isFree(folder, n, taken)).findFirst().orElseThrow();
-  }
-  private static String fixed(String text){
-    var res= text.replaceAll("[^A-Za-z0-9_]+", "_").toLowerCase(Locale.ROOT);
-    return res.matches("[a-z_][a-z0-9_]*") && !Fs.winReserved.contains(res) ? res : "p"+res;
   }
   private static boolean isFree(Path folder, String name, Set<String> taken){
     var moved= markers(folder).stream().limit(1).toList();
