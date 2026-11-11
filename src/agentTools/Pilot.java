@@ -21,6 +21,7 @@ import utils.Bug;
 
 /// Drives the desk the way a person does: the pointer glides, buttons and keys are held and released, the screen is looked at.
 /// The screen must be awake: a blanked screen captures as black and no synthetic input wakes it, so whoever uses a Pilot wakes the screen first by other means and keeps it from blanking.
+/// On macOS the JVM that runs a Pilot becomes the active application as soon as the toolkit starts, and the keys of chord then reach that JVM, not the window under test: whoever uses a Pilot on macOS starts that JVM with -Dapple.awt.UIElement=true, which keeps it from ever becoming the active application.
 /// Every coordinate is a user space pixel, the unit a screen shot is measured in; a desk scaled above 100% has more device pixels than that, and a shot is the scaled down view, so a shot and a pointer target always agree with each other and never with the device.
 /// A primitive here is a gesture that needs no knowledge of which desk it is on: the pointer goes somewhere, its buttons and the keys go down and up, the screen is looked at. Nothing here asks which system this is, so nothing here branches on one, and a test written out of these calls reaches the same result everywhere.
 /// Arranging windows is not among them. Where a title bar can be grabbed and where a resize corner lies are decided by the window's own decoration, not by the desk, so no call can place a window and mean the same thing twice: a test that needs two things beside each other asks one application to show it both.
