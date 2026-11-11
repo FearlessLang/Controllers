@@ -206,6 +206,16 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     assertEquals(Set.of(dir.resolve("HELLO"), dir.resolve("file"), dir.resolve("file").resolve("x")), res.keySet());
     same("Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case and the same Unicode form.", why(res, dir.resolve("HELLO")));
   }
+  @Test void aFolderNamedOnlyThroughAnotherUnicodeFormIsAFolderTheManagerCanNotReach(@RealTempDir Path dir){
+    var cafe= folder(dir, "caf\u00E9");
+    var nfd= dir.resolve("cafe\u0301");
+    var res= away(dir, nfd, cafe);
+    assertEquals(Set.of(nfd), res.keySet(), """
+      Agent on macOS: the JDK writes each name in NFD and lists the names of a folder in NFC (sun.nio.fs.MacOSXFileSystem), so a Java program does not see the bytes of a name.
+      FolderShapesDesign reads an s as bytes on macOS as on Linux, and ControllersDesign takes a path in another Unicode form as a path that corresponds to no p.
+      Investigate how Fearless can see and keep the bytes of the names on macOS, then fix the code until this test passes.""");
+    same("Refused request \"Register\" on path\n[###]\nThe folder\n[###]\nlists no folder named exactly [###]: write each name of the path as its folder lists it, in the same letter case and the same Unicode form.", why(res, nfd));
+  }
   @Test void awkwardFolderNamesSurviveAReRead(@RealTempDir Path dir){
     var project= folder(dir, "a name with spaces");
     registry(dir).add("spacey", project, Set.of());

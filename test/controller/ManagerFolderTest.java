@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -91,7 +92,6 @@ final class ManagerFolderTest{
     assertEquals(invalid("FearlessCommandRegister "+odd, "\""+odd+"\" is not "+Report.callBase16+"."), message("FearlessCommandRegister "+odd));
   }
   @Test void aBase16PathThatIsNotUnicodeStaysBase16(){
-    Assumptions.assumeFalse(Fs.isMac());
     var notUnicode= Fs.isWindows() ? "Base16:43003A005C00610000D8" : "Base16:2F636166E9";
     assertEquals("Register\n"+notUnicode, message("FearlessCommandRegister "+notUnicode));
   }
@@ -104,6 +104,13 @@ final class ManagerFolderTest{
     Assumptions.assumeTrue(Fs.isWindows());
     var noDrive= "Base16:2F0064006100740061002F00680065006C006C006F00";
     assertEquals(invalid("FearlessCommandRegister "+noDrive, "\""+noDrive+"\" is not "+Report.callBase16+"."), message("FearlessCommandRegister "+noDrive));
+  }
+  @Test void theArgumentOpenedIsABadArgumentOutsideMacOS(){
+    if (Fs.isMac()){ fail("""
+      Agent on macOS: ControllersDesign says that on macOS the one argument FearlessCommandOpened leaves no message, and the manager leaves the messages of the open-file event instead.
+      Investigate how a test delivers an open-file event to a manager that is not headless (open -a on the helper bundle of the manager),
+      then make this test check that FearlessCommandOpened leaves no message and that the event leaves the messages of its paths."""); }
+    same(invalid("FearlessCommandOpened", "\"FearlessCommandOpened\" is not a command; the commands are \"FearlessCommandAttenuate\", [###], \"FearlessCommandUnmount\"."), message("FearlessCommandOpened"));
   }
   @Test void anArgumentThatIsNotACallIsAnInvalidCall(){
     same(invalid("FearlessCommandbuild hello", "\"FearlessCommandbuild\" is not a command; the commands are \"FearlessCommandAttenuate\", [###], \"FearlessCommandUnmount\"."), message("FearlessCommandbuild hello"));
@@ -198,7 +205,7 @@ never part of a project, and no project is inside it.
   @Test void aPathInAnotherLetterCaseIsNotAProject(@RealTempDir Path dir){
     folder(dir, "hello");
     var upper= dir.resolve("HELLO");
-    var expected= Files.exists(upper) ? "Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case and the same Unicode form." : "Refused request \"Register\" on path\n[###]HELLO\nNothing exists at that path.";
+    var expected= !Fs.isLinux() ? "Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case and the same Unicode form." : "Refused request \"Register\" on path\n[###]HELLO\nNothing exists at that path.";
     refused(expected, () -> projectFolder(upper, List.of(), folder(dir, "manager")));
   }
   @Test void aFolderInsideOrAroundARegisteredFolderIsNotAProjectAndARegisteredFolderIsItself(@RealTempDir Path dir){

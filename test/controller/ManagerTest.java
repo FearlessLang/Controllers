@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -47,7 +48,6 @@ import java.util.Locale;
 import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import tempDirs.RealTempDir;
@@ -318,8 +318,12 @@ public class Child{
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
   }
+  private static final String notUnicodeOnMac= """
+    Agent on macOS: APFS refuses a name that is not UTF-8, so this test can not make its folder in the temporary folder.
+    Investigate which volume macOS mounts that holds such a name (a FAT or exFAT disk image made with hdiutil, a share of another system),
+    then make this test use a folder on that volume: the manager handles a folder whose name is not Unicode on every desk (ControllersDesign, Base16 paths).""";
   @Test void aFolderWhoseNameIsNotUnicodeIsRegisteredByItsMessageAndRemembered(@RealTempDir Path dir){
-    Assumptions.assumeFalse(Fs.isMac());
+    if (Fs.isMac()){ fail(notUnicodeOnMac); }
     var m= manager(dir);
     var odd= Fs.isWindows() ? dir.resolve("caf\ud800") : dir.resolve(PathBytes.path(new byte[]{'c', 'a', 'f', (byte)0xE9}));
     Fs.ensureDir(odd);
@@ -995,7 +999,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(List.of(true, true, false), Stream.of(kept, inner, stray).map(Files::exists).toList());
   }
   @Test void eachDataProjectHasALockFileOfItsOwnAlsoWhenItsFolderNameIsNotUnicode(@RealTempDir Path dir){
-    Assumptions.assumeFalse(Fs.isMac());
+    if (Fs.isMac()){ fail(notUnicodeOnMac); }
     var m= manager(dir);
     var folders= Stream.of(0xE9, 0xE8).map(b -> Fs.isWindows() ? dir.resolve("data"+(char)(0xD800+b)) : dir.resolve(PathBytes.path(new byte[]{'d', 'a', 't', 'a', (byte)(int)b}))).toList();
     folders.forEach(f -> Fs.writeUtf8(f.resolve("readme.txt"), "hi\n"));
@@ -1368,7 +1372,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     var cache= folder(cached, Facts.outDir);
     Fs.writeUtf8(cache.resolve("a.built"), "");
     Disk.noRead(closed);
-    Assumptions.assumeFalse(Files.isReadable(closed));
+    assertFalse(Files.isReadable(closed), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     Disk.noWrite(readOnly);
     Disk.noWrite(cache);
     Disk.noRead(hidden);
@@ -1412,7 +1416,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     same("[###]\"Lower\" in \"mounts\" is not a Fearless DataRead type name[###]", view.refused.getLast());
     assertEquals(before, info(dir));
     Disk.noWrite(managerDir);
-    Assumptions.assumeFalse(Files.isWritable(managerDir));
+    assertFalse(Files.isWritable(managerDir), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     send(m, "Mount", "hello", "hello.Data hello");
     send(m, "Kind", "hello", "idle");
     edit(m, dir, "{\"projects\": [], \"systemExtensions\": []}");
@@ -1428,7 +1432,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     var msg= folder(dir.resolve("manager"), "messages").resolve("1.msg");
     Fs.writeUtf8(msg, "");
     Disk.noRead(msg);
-    Assumptions.assumeFalse(Files.isReadable(msg));
+    assertFalse(Files.isReadable(msg), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     m.drain();
     m.settle();
     Disk.allow(msg);
@@ -1730,18 +1734,16 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
   @Test void aFixEndsAtTheChangeTheFileSystemRefuses(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
-    var locked= folder(hello, "locked");
     Fs.writeUtf8(hello.resolve(".DS_Store"), "");
-    Fs.writeUtf8(locked.resolve("notes.txt~"), "");
-    Disk.noWrite(locked);
+    Fs.writeUtf8(hello.resolve("a.fear"), "A:{}\r\n");
+    Fs.ofV(() -> Files.createLink(dir.resolve("other.fear"), hello.resolve("a.fear")));
     try (var server= port()){
       var fix= follower(server);
       send(m, "Fix", "hello", "Port:"+server.getLocalPort());
-      same("Applied\nDeleted .DS_Store\naccess denied: [###]notes.txt~[###]\n", fix.join());
-      same("Deleted .DS_Store\naccess denied: [###]notes.txt~[###]\n", view.out(hello));
+      same("Applied\nDeleted .DS_Store\n[###]a.fear[###]this file has more than one name, so writing it changes those other names too\n", fix.join());
+      same("Deleted .DS_Store\n[###]a.fear[###]this file has more than one name, so writing it changes those other names too\n", view.out(hello));
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
-    finally{ Disk.allow(locked); }
   }
   @Test void aFixMovesASymbolicLinkToTheFixFolder(@RealTempDir Path dir){
     var before= Fs.onSymbolicLink;
@@ -2114,7 +2116,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     compiled(m, "hello");
     infos.put("hello", info("hello.Hello", claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010"), ""));
     Disk.noWrite(hello);
-    Assumptions.assumeFalse(Files.isWritable(hello));
+    assertFalse(Files.isWritable(hello), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     touch(hello);
     compiled(m, "hello");
     Disk.allow(hello);

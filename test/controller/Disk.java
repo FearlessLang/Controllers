@@ -5,6 +5,7 @@ import static java.nio.file.attribute.AclEntryPermission.DELETE;
 import static java.nio.file.attribute.AclEntryPermission.DELETE_CHILD;
 import static java.nio.file.attribute.AclEntryPermission.READ_DATA;
 import static java.nio.file.attribute.AclEntryPermission.WRITE_DATA;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystemException;
@@ -19,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.jupiter.api.Assumptions;
 
 import tools.Fs;
 
@@ -30,7 +30,7 @@ final class Disk{
     catch (UncheckedIOException e){
       var refused= Fs.isWindows() && e.getCause() instanceof FileSystemException;
       if (!refused){ throw e; }
-      if (!Files.isDirectory(target)){ return Assumptions.abort("Windows does not give this process the privilege to create symbolic links"); }
+      if (!Files.isDirectory(target)){ return fail("Agent on Windows: this process can not create symbolic links, so this test can not check them. Turn on Developer Mode (Settings, System, For developers), or run the tests with the privilege to create symbolic links."); }
       var p= Fs.of(new ProcessBuilder("cmd", "/c", "mklink", "/J", link.toString(), target.toString()).redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD)::start);
       try{ assert p.waitFor() == 0; }
       catch (InterruptedException ie){ throw new AssertionError(ie); }

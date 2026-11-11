@@ -20,7 +20,6 @@ import java.util.Locale;
 
 import javax.imageio.ImageIO;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import tempDirs.RealTempDir;
@@ -129,7 +128,7 @@ final class FactsTest{
     var project= project(dir, "someProject");
     var hidden= project.resolve("_hello");
     Disk.noRead(hidden);
-    Assumptions.assumeFalse(Files.isReadable(hidden));
+    assertFalse(Files.isReadable(hidden), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     same("""
 The folder of this project cannot be read:
 [###]someProject
@@ -142,7 +141,7 @@ Give Fearless access to it, or forget this project.""", facts(project, "someproj
     FakeCache.write(project, "hello", System.currentTimeMillis()-1_000_000);
     var source= project.resolve("_hello").resolve("_rank_app.fear");
     Disk.noRead(source);
-    Assumptions.assumeFalse(Files.isReadable(source));
+    assertFalse(Files.isReadable(source), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     same("""
 The folder of this project cannot be read:
 [###]someProject

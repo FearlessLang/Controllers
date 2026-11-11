@@ -56,7 +56,6 @@ final class TaggedTextTest{
     pathRoundTrip(Path.of("/tmp/data"), "Str:\"/tmp/data\"");
     pathRoundTrip(Path.of("/tmp/caf\u00e9"), "UStr:\"/tmp/caf\".u\"00E9\"");
     pathRoundTrip(Path.of("/a\nb"), "Str:\"/a\" | \"b\"");
-    if (Fs.isMac()){ return; }
     pathRoundTrip(PathBytes.path(new byte[]{'/', 'c', 'a', 'f', (byte)0xE9}), "Base16:2F636166E9");
   }
   @Test void aPathReadsBackThroughItsUnitsWhateverTheTag(){
@@ -68,7 +67,6 @@ final class TaggedTextTest{
     }
     assertEquals(Path.of("/caf\u00e9"), readPath("Base16:2F636166C3A9"));
     assertEquals(Path.of("/caf\u00e9"), readPath("UStr:\"/caf\".u\"E9\""));
-    if (Fs.isMac()){ return; }
     assertEquals(PathBytes.path(new byte[]{(byte)0xFF}), readPath("Base16:FF"));
   }
   @Test void anyFormReadsBackAsTheSameText(){
