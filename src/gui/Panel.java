@@ -165,7 +165,7 @@ final class Panel{
     menu.show(projectMenu, 0, projectMenu.getHeight());
   }
   private void fix(String alias){
-    var fix= JOptionPane.showOptionDialog(root, Report.fixQuestion(alias), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Fix", "Cancel"}, "Cancel");
+    var fix= JOptionPane.showOptionDialog(root, Report.fixQuestion(alias, project.folder()), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Fix", "Cancel"}, "Cancel");
     if (fix == 0){ Main.command("Fix "+alias); }
   }
   /// the state in words, then what is running, the first line of the 'problem', and the broken mounts

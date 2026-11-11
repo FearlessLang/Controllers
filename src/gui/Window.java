@@ -184,7 +184,7 @@ public final class Window implements Manager.View{
   }
   private void capture(List<String> extensions){
     Registry.Content now;
-    try{ now= Registry.parse(Fs.readUtf8(info), info, p -> p, info.getParent()); }
+    try{ now= Registry.parse(Fs.readUtf8(info), info); }
     catch (UserError e){ say(e.getMessage()); return; }
     var all= new TreeSet<>(now.extensions());
     all.addAll(extensions);

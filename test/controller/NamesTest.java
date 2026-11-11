@@ -46,6 +46,22 @@ final class NamesTest{
     assertEquals("a_b", Names.free(project, "a - b", Set.of()));
     assertEquals("p2fast", Names.free(project, "2fast", Set.of()));
     assertEquals("pcon", Names.free(project, "con", Set.of()));
+    assertEquals("com", Names.free(project, "Com", Set.of()));
+    assertEquals("_elvin", Names.free(project, "\u212Aelvin", Set.of()));
+    assertEquals("_x", Names.free(project, "\u0130x", Set.of()));
+    assertEquals("_rger", Names.free(project, "\u00c4rger", Set.of()));
+  }
+  @Test void theNameIsTheFirst64CharactersOfTheFixedSegment(@TempDir Path dir){
+    var project= folder(dir, "someProject");
+    assertEquals("ab".repeat(32), Names.free(project, "Ab".repeat(50), Set.of()));
+    assertEquals("p9"+"a".repeat(62), Names.free(project, "9"+"a".repeat(100), Set.of()));
+    assertEquals("ab".repeat(32)+"2", Names.free(project, "ab".repeat(50), Set.of("ab".repeat(32))));
+  }
+  @Test void aTakenComSkipsTheReservedNames(@TempDir Path dir){
+    var project= folder(dir, "someProject");
+    assertEquals("com10", Names.free(project, "com", Set.of("com")));
+    assertEquals("lpt", Names.free(project, "lpt", Set.of()));
+    assertEquals("pcom1", Names.free(project, "com1", Set.of()));
   }
   @Test void aTakenNameGetsANumber(@TempDir Path dir){
     var project= folder(dir, "someProject");

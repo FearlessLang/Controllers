@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,7 +31,7 @@ final class RegistryTest{
   @AfterEach void checkedByHandOnWindows(){ Disk.checkedByHandOnWindows(); }
   private static final Path file= Path.of("projects.info").toAbsolutePath();
   private static final String root= Path.of("").toAbsolutePath().getRoot().toString().replace('\\', '/');
-  private static Content content(String text){ return Registry.parse(text, file, Registry::real, Path.of(root+"manager")); }
+  private static Content content(String text){ return Registry.parse(text, file); }
   private static List<Entry> parse(String projects){ return content("{\"projects\":"+projects+",\"systemExtensions\":[]}").projects(); }
   private static Registry registry(Path dir){ return new Registry(folder(dir, "manager"), _ -> {}); }
   private static Path folder(Path dir, String name){
@@ -123,15 +124,20 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     err("[###]\"attenuators\".\"hello.Hello1\" names no attenuator: a main with no attenuator is left out of \"attenuators\".[###]", () -> parse(a+"{\"hello.Hello1\":[]}}]"));
     assertEquals(Map.of("hello.Old", List.of("other.NoGui", "hello.NoGui", "other.NoGui")), parse(a+"{\"hello.Old\":[\"other.NoGui\",\"hello.NoGui\",\"other.NoGui\"]}}]").getFirst().attenuators());
   }
-  @Test void identicalOrNestedPathsAreRejected(){
-    err("[###]Project 2 of \"projects\" has the same path as project 1, or one is inside the other; every file belongs to exactly one project.[###]", () -> parse("[{\"path\":\"Str:\\\""+root+"same\\\"\",\"kind\":\"idle\"},{\"path\":\"Str:\\\""+root+"same\\\"\",\"kind\":\"idle\"}]"));
-    err("[###]Project 2 of \"projects\" has the same path as project 1, or one is inside the other; every file belongs to exactly one project.[###]", () -> parse("[{\"path\":\"Str:\\\""+root+"parent\\\"\",\"kind\":\"idle\"},{\"path\":\"Str:\\\""+root+"parent/child\\\"\",\"kind\":\"idle\"}]"));
+  @Test void identicalPathsAreRejectedAndNestedPathsAreRead(){
+    err("[###]Project 2 of \"projects\" has the same path as project 1; every project folder is listed once.[###]", () -> parse("[{\"path\":\"Str:\\\""+root+"same\\\"\",\"kind\":\"idle\"},{\"path\":\"Str:\\\""+root+"same\\\"\",\"kind\":\"idle\"}]"));
+    assertEquals(List.of(Path.of(root+"parent"), Path.of(root+"parent/child")), parse("[{\"path\":\"Str:\\\""+root+"parent\\\"\",\"kind\":\"idle\"},{\"path\":\"Str:\\\""+root+"parent/child\\\"\",\"kind\":\"idle\"}]").stream().map(Entry::path).toList());
   }
-  @Test void aLinkNamesTheFolderItLinksTo(@TempDir Path dir){
-    var real= Registry.real(folder(dir, "real"));
-    var link= Disk.link(dir.resolve("link"), real);
-    err("[###]Project 2 of \"projects\" has the same path as project 1, or one is inside the other; every file belongs to exactly one project.[###]", () -> parse("[{\"path\":\"Str:\\\""+unix(real)+"\\\"\",\"kind\":\"idle\"},{\"path\":\"Str:\\\""+unix(link)+"\\\"\",\"kind\":\"idle\"}]"));
-    assertEquals(real, parse("[{\"path\":\"Str:\\\""+unix(link)+"\\\"\",\"kind\":\"idle\"}]").getFirst().path());
+  @Test void aPathThroughALinkIsKeptAsWrittenAndIsAFolderTheManagerCanNotReach(@TempDir Path dir){
+    var inner= folder(folder(dir, "real"), "inner");
+    var link= Disk.link(dir.resolve("link"), dir.resolve("real"));
+    assertEquals(link.resolve("inner"), parse("[{\"path\":\"Str:\\\""+unix(link.resolve("inner"))+"\\\"\",\"kind\":\"idle\"}]").getFirst().path());
+    Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), listed(link.resolve("inner"), link, inner));
+    var r= registry(dir);
+    assertEquals(List.of("", "", "inner"), r.all().stream().map(Entry::alias).toList());
+    assertFalse(r.reaches(link));
+    assertTrue(r.reaches(inner));
+    assertEquals(List.of(inner.resolve("inner.fearless")), Names.list(inner));
   }
   @Test void printingThenParsingRoundTripsTheContent(){
     var c= new Content(List.of(new Entry("", Path.of(root+"abs/someproject"), Kind.code, List.of("some.Main1"), Map.of("some.Pub", "publicfiles"), Map.of("some.Main1", List.of("some.NoGui")))), List.of("htm"));
@@ -149,7 +155,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     var project= folder(dir, "someproject");
     var r= registry(dir);
     r.add("someproject", project);
-    assertThrows(AssertionError.class, () -> r.add("again", project.resolve("..").resolve("someproject")));
+    assertThrows(AssertionError.class, () -> r.add("again", project));
     assertThrows(AssertionError.class, () -> r.add("someproject", folder(dir, "other")));
     assertEquals(1, registry(dir).all().size());
   }
@@ -160,19 +166,29 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     r.update(project, e -> e.withMains(List.of("hello.Hello1")));
     assertEquals(List.of("hello.Hello1"), registry(dir).all().getFirst().mains());
   }
-  @Test void aFolderInsideOrAroundARegisteredOneIsFound(@TempDir Path dir){
-    var project= folder(dir, "someproject");
-    var r= registry(dir);
-    r.add("someproject", project);
-    assertEquals(project, r.overlapping(project.resolve("inside")).orElseThrow());
-    assertEquals(project, r.overlapping(dir).orElseThrow());
-    assertEquals(Optional.empty(), r.overlapping(folder(dir, "otherproject")));
-    assertEquals(Optional.empty(), r.overlapping(project));
+  private static Map<Path,Registry.Away> away(Path dir, Path... folders){ return Registry.away(List.of(folders), folder(dir, "manager")); }
+  private static String why(Map<Path,Registry.Away> away, Path folder){ return ((Registry.Why)away.get(folder)).text(); }
+  @Test void aFolderInsideOrAroundAnEarlierFolderIsAFolderTheManagerCanNotReach(@TempDir Path dir){
+    var around= folder(dir, "around");
+    var project= folder(around, "someproject");
+    var inside= folder(project, "inside");
+    var other= folder(dir, "other");
+    var res= away(dir, project, inside, other, around);
+    assertEquals(List.of(inside, around), List.copyOf(res.keySet()));
+    same("Refused request \"Register\" on path\n[###]inside\nA registered project has the folder\n[###]someproject\nOne of the two folders is inside the other: every file belongs to exactly one project.", why(res, inside));
+    same("Refused request \"Register\" on path\n[###]around\nA registered project has the folder\n[###]someproject\nOne of the two folders is inside the other[###]", why(res, around));
+    assertEquals(List.of(inside.resolve("missing"), project), List.copyOf(away(dir, inside, project, inside.resolve("missing")).keySet()));
+    assertEquals(List.of(), Names.list(inside));
   }
   @Test void aSiblingNamedLikeAPrefixIsNotNested(@TempDir Path dir){
-    var r= registry(dir);
-    r.add("some", folder(dir, "some"));
-    assertEquals(Optional.empty(), r.overlapping(folder(dir, "someproject")));
+    assertEquals(Map.of(), away(dir, folder(dir, "some"), folder(dir, "someproject")));
+  }
+  @Test void aFolderNamedOnlyThroughAnotherLetterCaseOrThroughAFileIsAFolderTheManagerCanNotReach(@TempDir Path dir){
+    var hello= folder(dir, "hello");
+    Fs.writeUtf8(dir.resolve("file"), "");
+    var res= away(dir, dir.resolve("HELLO"), dir.resolve("file"), dir.resolve("file").resolve("x"), hello);
+    assertEquals(List.of(dir.resolve("HELLO"), dir.resolve("file"), dir.resolve("file").resolve("x")), List.copyOf(res.keySet()));
+    same("Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case.", why(res, dir.resolve("HELLO")));
   }
   @Test void awkwardFolderNamesSurviveAReRead(@TempDir Path dir){
     var project= folder(dir, "a name with spaces");
@@ -238,24 +254,26 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     err("[###]\"systemExtensions\" must be a list [...] of strings.[###]", () -> content("{\"projects\":[],\"systemExtensions\":{}}"));
   }
   private static String inManager(Path folder, Path manager){
-    return "[###]\"path\": \"Str:\\\""+unix(folder)+"\\\"\"[###]^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of this folder as a project.\n\nThe folder is:\n  "+folder+"\nThe manager folder of this Fearless is:\n  "+manager+"\n[###]";
+    return "Fearless cannot keep track of this folder as a project.\n\nThe folder is:\n  "+folder+"\nThe manager folder of this Fearless is:\n  "+manager+"\n[###]";
   }
-  private static void placedAt(Path manager, Path folder, String expected){
-    var text= "{\"projects\": [\n  {\"path\": \"Str:\\\""+unix(folder)+"\\\"\", \"kind\": \"code\"}\n], \"systemExtensions\": []}\n";
-    err(expected, () -> Registry.parse(text, file, Registry::real, manager));
-  }
-  @Test void anEditPlacingAProjectAtARootOrInOrAroundTheManagerFolderIsRefusedAtThePath(@TempDir Path dir){
-    registry(dir);
-    var manager= Registry.real(dir.resolve("manager"));
-    placedAt(manager, Path.of(root), "[###]\"path\": \"Str:\\\""+root+"\\\"\"[###]^^^^^^^\n\nWhile inspecting the file\nFearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]");
-    placedAt(manager, manager, inManager(manager, manager));
-    placedAt(manager, folder(manager, "inside"), inManager(manager.resolve("inside"), manager));
-    placedAt(manager, Registry.real(dir), inManager(Registry.real(dir), manager));
-  }
-  @Test void aProjectsInfoPlacingAProjectInTheManagerFolderIsAFatalErrorAtThePath(@TempDir Path dir){
+  @Test void aRootAndTheManagerFolderAndAFolderInOrAroundItAreFoldersTheManagerCanNotReach(@TempDir Path dir){
     var manager= folder(dir, "manager");
-    Fs.writeUtf8(manager.resolve("projects.info"), "{\"projects\": [\n  {\"path\": \"Str:\\\""+unix(manager)+"\\\"\", \"kind\": \"code\"}\n], \"systemExtensions\": []}\n");
-    err(inManager(Registry.real(manager), Registry.real(manager)), () -> registry(dir));
+    var inside= folder(manager, "inside");
+    var res= away(dir, Path.of(root), manager, inside, dir);
+    assertEquals(List.of(Path.of(root), manager, inside, dir), List.copyOf(res.keySet()));
+    same("Fearless cannot keep track of the root of a drive or of the file system as a\nproject.\n[###]", why(res, Path.of(root)));
+    same(inManager(manager, manager), why(res, manager));
+    same(inManager(inside, manager), why(res, inside));
+    same(inManager(dir, manager), why(res, dir));
+    assertEquals(List.of(), Names.list(inside));
+  }
+  @Test void aProjectsInfoPlacingAProjectInTheManagerFolderGivesAFolderTheManagerCanNotReach(@TempDir Path dir){
+    var manager= folder(dir, "manager");
+    var hello= folder(dir, "hello");
+    Fs.writeUtf8(manager.resolve("projects.info"), listed(manager, hello));
+    assertEquals(List.of("", "hello"), registry(dir).all().stream().map(Entry::alias).toList());
+    assertEquals(List.of(manager.resolve("projects.info")), Names.list(manager));
+    assertEquals(List.of(hello.resolve("hello.fearless")), Names.list(hello));
   }
   private static Entry entry(String alias, Kind kind, Map<String,String> mounts){ return new Entry(alias, Path.of(root+alias), kind, List.of(), mounts, Map.of()); }
   @Test void onlyAMountOfADataEditProjectOnADataEditTypeIsGrantedForEditing(){
@@ -309,7 +327,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     Fs.writeUtf8(first.resolve("same.fearless"), "1\n");
     Fs.writeUtf8(second.resolve("same.fearless"), "2\n");
     Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), listed(second, first));
-    var inferred= Registry.inferred(content(listed(second, first)), content(listed(second, first)));
+    var inferred= Registry.inferred(content(listed(second, first)), content(listed(second, first)), Set.of());
     assertEquals(List.of("same", "first"), inferred.projects().stream().map(Entry::alias).toList());
     assertEquals(List.of(first.resolve("same.fearless")), Names.list(first));
     var r= registry(dir);

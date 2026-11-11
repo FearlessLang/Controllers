@@ -298,5 +298,30 @@ Put the project in a folder inside it, and make that folder the project
 folder.
 """, Report.projectFolderIsRoot(Path.of("C:\\")));
   }
+  @Test void fixQuestion(){
+    same("""
+Fix changes the folder of project "hello":
+- Fix deletes the files and folders that desktops, archive programs, office programs and text editors write next to your files:
+  ".DS_Store", "._name", "__MACOSX", ".AppleDouble", "Icon", "Thumbs.db", "ehthumbs.db", "desktop.ini", "name:Zone.Identifier",
+  ".directory", ".Trash-1000", "~$name", ".~lock.name#", "name~", "#name#" and ".name.swp";
+  a file "name~", "#name#" or ".name.swp" can hold text of yours that a text editor did not save;
+- Fix renames the files and folders whose name a project can not hold: "My Logo.PNG" becomes "my_logo.png",
+  and a file with no extension gets "png", "jpg", "gif", "txt" or "bin" from its content;
+- Fix cleans the text of the Fearless source files: Fix removes the byte order mark, turns every line ending into a line feed,
+  the typographic quotes and dashes into ' " and -, every tab into a space, and removes every other character
+  that a Fearless source file can not hold;
+- Fix sets to the current time the files with no time or with a time in the future;
+- Fix deletes the folders and the zips left with nothing inside;
+- Fix moves to the folder "Hello_fix" next to the project folder ("Hello_fix2" when that name is taken, and so on) what a project can not hold:
+  symbolic links, junctions and the other entries that are neither files nor folders;
+  files and folders whose path is longer than 200 characters, or 250 when a name of the path starts with a dot;
+  zips that can not be read or are nested too deep;
+  for the names starting with a dot and the names in a folder whose name starts with a dot: the names that are not valid Unicode
+  or that some operating system can not hold, and the second of two names that differ only in letter case or in Unicode form.
+Fix does every change of this list also inside the zips of the project.
+Inside a folder whose name starts with a dot, Fix renames nothing, cleans no text, keeps the folders with nothing inside,
+and takes a zip as a file like any other.
+The Output lists every change. A change of Fix can not be undone.""", Report.fixQuestion("hello", Path.of("Hello")));
+  }
 
 }

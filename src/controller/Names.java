@@ -44,10 +44,13 @@ public final class Names{
     return isName(marked) && !taken.contains(marked) ? marked : free(folder, folder.getFileName().toString(), taken);
   }
   public static String free(Path folder, String wanted, Set<String> taken){
-    var lower= wanted.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]+", "_");
-    var cut= lower.substring(0, Math.min(lower.length(), 64));
-    var name= isName(cut) ? cut : ("p"+cut).substring(0, Math.min(cut.length()+1, 64));
+    var fixed= fixed(wanted);
+    var name= fixed.substring(0, Math.min(fixed.length(), 64));
     return IntStream.iterate(1, i -> i+1).mapToObj(i -> i == 1 ? name : name+i).filter(n -> isName(n) && isFree(folder, n, taken)).findFirst().orElseThrow();
+  }
+  private static String fixed(String text){
+    var res= text.replaceAll("[^A-Za-z0-9_]+", "_").toLowerCase(Locale.ROOT);
+    return res.matches("[a-z_][a-z0-9_]*") && !Fs.winReserved.contains(res) ? res : "p"+res;
   }
   private static boolean isFree(Path folder, String name, Set<String> taken){
     var moved= markers(folder).stream().limit(1).toList();

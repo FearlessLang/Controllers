@@ -9,7 +9,6 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
@@ -195,7 +194,7 @@ public final class Manager{
   }
   private void load(){
     registry.all().forEach(e -> live.put(e.path(), new Live()));
-    registry.all().stream().filter(e -> e.kind() == Kind.code).forEach(e -> uncached(e.path(), () -> Coordinator.dropUnfinished(e.path())));
+    registry.all().stream().filter(e -> e.kind() == Kind.code && registry.reaches(e.path())).forEach(e -> uncached(e.path(), () -> Coordinator.dropUnfinished(e.path())));
     Map.of(conflict, "conflict.png", fearless, "fearless.png").forEach((icon, png) -> ClaimIcons.materialise(dir.resolve("icons"), icon, Fs.of(() -> Fs.readAllBytes(tools.stdLibBase().resolve("icons").resolve(png)))));
     rebuild();
     dropLocks();
@@ -581,26 +580,28 @@ public final class Manager{
     var c= registry.content();
     edit(new Content(c.projects().stream().map(e -> e.path().equals(f) ? op.apply(e) : e).toList(), c.extensions()));
   }
-  private void edit(Content next){ edit(Registry.text(next), registry.infoFile(), p -> p); }
+  private void edit(Content next){ edit(Registry.text(next), registry.infoFile()); }
   private static <T> Map<String,T> with(Map<String,T> map, String key, Optional<T> value){
     var out= new LinkedHashMap<>(map);
     value.ifPresentOrElse(v -> out.put(key, v), () -> out.remove(key));
     return out;
   }
-  static Path projectFolder(Path path, Path managerDir){
+  static Path projectFolder(Path path, List<Path> registered, Path managerDir){
     if (!Files.exists(path)){ throw new Refused(Report.registerNothing(path)); }
     var folder= Files.isDirectory(path) ? path : path.getParent();
-    if (Fs.isLink(folder)){ throw new Refused(Report.registerLink(folder)); }
-    return Registry.placed(Registry.real(folder), managerDir, Refused::new);
+    return switch (Registry.away(Push.of(registered.stream().filter(r -> !r.equals(folder)).toList(), folder), managerDir).get(folder)){
+      case null -> folder;
+      case Registry.Same(var same) -> same;
+      case Registry.Why(var why) -> throw new Refused(why);
+    };
   }
   private void register(Path path){
-    var folder= projectFolder(path, dir);
+    var folder= projectFolder(path, Registry.folders(registry.content()), dir);
     if (!live.containsKey(folder)){ add(folder); }
     selected = Optional.of(folder);
     scan(folder);
   }
   private void add(Path folder){
-    registry.overlapping(folder).ifPresent(o -> { throw new Refused(Report.folderNestedWithRegistered(folder, o)); });
     String alias;
     try{
       Coordinator.deleteCache(folder);
@@ -624,25 +625,28 @@ public final class Manager{
   }
   private void editMetadata(Path file){
     if (!Files.isRegularFile(file)){ throw new Refused(Report.metadataNoFile(file)); }
-    try{ edit(UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(), file, Registry::real); }
+    try{ edit(UTF_8.newDecoder().decode(ByteBuffer.wrap(Files.readAllBytes(file))).toString(), file); }
     catch (CharacterCodingException e){ throw new Refused(Report.metadataNotUtf8(file)); }
     catch (IOException e){ throw new Refused(Report.metadataUnreadable(file, e)); }
     view.edited(file);
   }
-  private void edit(String text, Path file, UnaryOperator<Path> identity){
-    Content next;
-    try{ next= Registry.inferred(Registry.parse(text, file, identity, dir), registry.content()); }
+  private void edit(String text, Path file){
+    Content parsed;
+    try{ parsed= Registry.parse(text, file); }
     catch (UserError e){ throw new Refused(e.getMessage()); }
+    var away= Registry.away(Registry.folders(parsed), dir).keySet();
+    var next= Registry.inferred(parsed, registry.content(), away);
     registry.all().stream().filter(o -> !(live.get(o.path()).job instanceof Job.Idle)).forEach(o -> kept(o, next));
     granted(next);
     if (!registry.extensions().equals(next.extensions())){ reconcile(next.extensions()); }
     var old= registry.content();
-    registry.save(next, text);
+    registry.save(next, text, away);
     var removed= old.projects().stream().filter(o -> same(o, next).isEmpty()).toList();
     var added= next.projects().stream().filter(e -> same(e, old).isEmpty()).toList();
     removed.forEach(o -> drop(o.path()));
     added.forEach(e -> live.put(e.path(), new Live()));
-    added.forEach(e -> { uncached(e.path(), () -> Coordinator.deleteCache(e.path())); scan(e.path()); });
+    added.stream().filter(e -> registry.reaches(e.path())).forEach(e -> uncached(e.path(), () -> Coordinator.deleteCache(e.path())));
+    added.forEach(e -> scan(e.path()));
     var dropped= old.extensions().stream().filter(x -> !next.extensions().contains(x)).toList();
     var kinds= old.projects().stream().filter(o -> same(o, next).filter(e -> e.kind() != o.kind()).isPresent()).map(Entry::path).toList();
     var claiming= live.entrySet().stream().filter(e -> Project.claimants(e.getKey(), alias(e.getKey()), e.getValue().claims).anyMatch(c -> dropped.contains(c.claim().extension()))).map(Map.Entry::getKey).toList();
@@ -690,7 +694,7 @@ public final class Manager{
     var l= live.get(f);
     var compiling= l.job instanceof Job.Compile;
     var named= !alias(f).isEmpty();
-    var found= !named ? Optional.<Facts>empty() : compiling ? Optional.of(l.facts).filter(_ -> Files.isDirectory(f, LinkOption.NOFOLLOW_LINKS)) : checked(f);
+    var found= !named || !registry.reaches(f) ? Optional.<Facts>empty() : compiling ? Optional.of(l.facts) : checked(f);
     if (found.isEmpty()){
       if (l.facts == null){ l.facts = Facts.invalid(Report.unreachable(alias(f), f)); }
       post(() -> unreachable(f));

@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiConsumer;
@@ -271,7 +272,7 @@ public class Child{
     return file;
   }
   private static void allow(Manager m, Path dir, String... extensions){
-    var old= Registry.parse(info(dir), dir.resolve("projects.info"), p -> p, dir.resolve("manager"));
+    var old= Registry.parse(info(dir), dir.resolve("projects.info"));
     edit(m, dir, Registry.text(new Registry.Content(old.projects(), Stream.concat(old.extensions().stream(), Stream.of(extensions)).toList())));
   }
   @Test void showShowsTheWindow(@TempDir Path dir){
@@ -332,27 +333,67 @@ public class Child{
     var m= manager(dir);
     var link= Disk.link(dir.resolve("link"), folder(dir, "target"));
     send(m, "Register", TaggedText.of(link.toString()));
-    same("Refused request \"Register\" on path\n[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", view.refused.getLast());
+    same("Refused request \"Register\" on path\n[###]link\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.", view.refused.getLast());
     assertEquals(List.of(), listed(m));
   }
-  @Test void aFolderAnEditMetadataNamesThroughALinkedFolderIsOneProjectAlsoForTheNextManager(@TempDir Path dir){
+  private static Registry.Entry idleEntry(Path folder){ return new Registry.Entry("", folder, Kind.idle, List.of(), Map.of(), Map.of()); }
+  private static String unreachable(Path folder){ return "The project connects to the folder \""+folder+"\".\nThis folder is now unreachable.\nThe project has now been removed."; }
+  @Test void aFolderAnEditMetadataNamesThroughALinkedFolderIsAFolderTheManagerCanNotReach(@TempDir Path dir){
     var m= manager(dir);
-    folder(folder(dir, "real"), "hello");
+    var real= folder(folder(dir, "real"), "hello");
     var linked= Disk.link(dir.resolve("linked"), dir.resolve("real")).resolve("hello");
-    edit(m, dir, Registry.text(new Registry.Content(List.of(new Registry.Entry("", linked, Kind.idle, List.of(), Map.of(), Map.of())), List.of())));
-    var again= manager(dir);
-    send(again, "Register", TaggedText.of(linked.toString()));
-    assertEquals(1, listed(again).size(), listed(again).toString());
+    edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(linked)), List.of())));
+    m.settle();
+    assertEquals(List.of(unreachable(linked)), view.refused);
+    assertEquals(List.of(), listed(m));
+    same("{\n  \"projects\": [],[###]", info(dir));
+    assertEquals(List.of(), Names.list(real));
   }
-  @Test void anEditOfOneProjectKeepsThePathOfAnotherWhoseFolderBecameALink(@TempDir Path dir){
+  @Test void aFolderAnEditMetadataNamesInAnotherLetterCaseIsAFolderTheManagerCanNotReach(@TempDir Path dir){
     var m= manager(dir);
-    registered(m, dir, "a");
+    var hello= folder(dir, "hello");
+    var upper= dir.resolve("HELLO");
+    edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(upper)), List.of())));
+    m.settle();
+    assertEquals(List.of(unreachable(upper)), view.refused);
+    assertEquals(List.of(), listed(m));
+    assertEquals(List.of(), Names.list(hello));
+  }
+  @Test void anEditPlacingAProjectAroundAnEarlierOneMakesTheLaterOneAFolderTheManagerCanNotReach(@TempDir Path dir){
+    var m= manager(dir);
+    var outer= registered(m, dir, "outer");
+    var inner= folder(outer, "inner");
+    edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(inner), idleEntry(outer)), List.of())));
+    m.settle();
+    assertEquals(List.of("The project \"outer\" connects to the folder \""+outer+"\".\nThis folder is now unreachable.\nThe project \"outer\" has now been removed."), view.refused);
+    assertEquals(List.of("inner "+inner), listed(m));
+  }
+  @Test void aProjectsInfoWithAProjectInsideAnEarlierOneIsNotFatal(@TempDir Path dir){
+    var outer= folder(dir, "outer");
+    var inner= folder(outer, "inner");
+    Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), Registry.text(new Registry.Content(List.of(idleEntry(outer), idleEntry(inner)), List.of())));
+    var m= manager(dir);
+    m.settle();
+    m.settle();
+    assertEquals(List.of("outer "+outer), listed(m));
+    assertEquals(List.of(unreachable(inner)), view.refused);
+    assertEquals(List.of(), Names.list(inner));
+  }
+  @Test void anEditOfOneProjectMakesAnotherWhoseFolderBecameALinkAFolderTheManagerCanNotReach(@TempDir Path dir){
+    var m= manager(dir);
+    var a= registered(m, dir, "a");
     var b= registered(m, dir, "b");
-    var c= folder(dir, "c");
     Fs.rmTree(b);
-    Disk.link(b, c);
+    Disk.link(b, folder(dir, "c"));
     send(m, "Kind", "a", "dataRead");
-    assertEquals(List.of(b), m.state().projects().stream().map(Project::folder).filter(f -> f.endsWith("b") || f.endsWith("c")).toList());
+    m.settle();
+    assertEquals(List.of("The project \"b\" connects to the folder \""+b+"\".\nThis folder is now unreachable.\nThe project \"b\" has now been removed."), view.refused);
+    assertEquals(List.of("a "+a), listed(m));
+  }
+  @Test void aFolderWithALongNameIsNamedByTheFirst64CharactersOfItsFixedSegment(@TempDir Path dir){
+    var m= manager(dir);
+    var folder= registered(m, dir, "Ab-".repeat(30));
+    assertEquals(List.of("ab_".repeat(21)+"a "+folder), listed(m));
   }
   @Test void aProjectFolderReplacedByALinkToAnotherProjectWhileTheManagerIsOffIsNotFatal(@TempDir Path dir){
     var m= manager(dir);
@@ -729,7 +770,7 @@ The projects are:
     send(m, "Register", TaggedText.of(inner.toString()));
     assertEquals(Optional.of(other), m.state().selected());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
-    same("[###]link\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.\n[###]inner\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions.", String.join("\n", view.refused));
+    same("[###]link\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.\n[###]inner\nThe path goes through the symbolic link/junction\n[###]inner\nand Fearless does not follow symbolic links/junctions.", String.join("\n", view.refused));
   }
   @Test void kindsChangeToAnyKind(@TempDir Path dir){
     var m= manager(dir);
@@ -1138,7 +1179,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     b.view.refused.clear();
     send(a.m, verb);
     var managerDir= b.dir.resolve("manager");
-    edit(b.m, b.dir, edited.apply(Registry.inferred(Registry.parse(info(b.dir), managerDir.resolve("projects.info"), p -> p, managerDir), new Registry.Content(List.of(), List.of()))));
+    edit(b.m, b.dir, edited.apply(Registry.inferred(Registry.parse(info(b.dir), managerDir.resolve("projects.info")), new Registry.Content(List.of(), List.of()), Set.of())));
     var outcomes= List.of(outcome(a), outcome(b));
     for (var t : List.of(a, b)){
       t.m.state().projects().stream().filter(Project::busy).forEach(p -> send(t.m, "Terminate", p.alias()));
@@ -1345,7 +1386,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     edit(m, dir, "{\"projects\": [], \"systemExtensions\": []}");
     Disk.allow(managerDir);
     assertEquals(3, failures.size());
-    failures.forEach(f -> same("Fearless could not save the file \"projects.info\" of its manager folder.[###]", f.getMessage()));
+    failures.forEach(f -> same("Fearless could not save the file \"[###]\" of its manager folder.[###]", f.getMessage()));
     failures.clear();
     assertEquals(1, view.refused.size());
     assertEquals(before, info(dir));
@@ -1629,6 +1670,31 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Fix", "data");
     assertEquals("The project \"data\" needs no fix.\n", view.out(data));
   }
+  @Test void aRunningCompilationAcceptsTheFixOfTheDataProjectsMountedOnTheProjectOfTheCompilation(@TempDir Path dir){
+    var m= manager(dir);
+    var slow= code(m, dir, "slowcompile");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Mount", "slowcompile", "slowcompile.Pub data");
+    send(m, "Compile", "slowcompile");
+    until(m, _ -> view.out(slow).contains("compiling\n"));
+    send(m, "Fix", "data");
+    assertEquals(List.of(), view.refused);
+    assertEquals("The project \"data\" needs no fix.\n", view.out(data));
+    idle(m);
+  }
+  @Test void aFixMakesAnInvalidProjectValid(@TempDir Path dir){
+    var m= manager(dir);
+    var data= data(dir);
+    Fs.writeUtf8(data.resolve("My File.txt"), "");
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataRead");
+    assertEquals(Project.State.dataReadInvalid, project(m, data).state());
+    send(m, "Fix", "data");
+    assertEquals("Renamed My File.txt to my_file.txt\n", view.out(data));
+    assertEquals(Project.State.dataRead, project(m, data).state());
+  }
   @Test void aFixEndsAtTheChangeTheFileSystemRefuses(@TempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
@@ -1642,18 +1708,28 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     }
     finally{ Disk.allow(locked); }
   }
-  @Test void aFixEndsAtASymbolicLink(@TempDir Path dir){
+  @Test void aFixMovesASymbolicLinkToTheFixFolder(@TempDir Path dir){
     var before= Fs.onSymbolicLink;
     Fs.onSymbolicLink = managerMessages.Report::symbolicLink;
-    try{
-      var m= manager(dir);
-      var hello= registered(m, dir, "hello");
-      Fs.writeUtf8(hello.resolve(".DS_Store"), "");
-      Disk.link(folder(hello, "linked").resolve("link"), folder(dir, "target"));
-      send(m, "Fix", "hello");
-      same("Deleted .DS_Store\nThis path is a symbolic link/junction, and Fearless does not follow symbolic links/junctions:\n[###]link\n", view.out(hello));
-    }
+    try{ fixMovesALink(dir); }
     finally{ Fs.onSymbolicLink = before; }
+  }
+  private void fixMovesALink(Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    Fs.writeUtf8(hello.resolve(".DS_Store"), "");
+    Disk.link(folder(hello, "linked").resolve("link"), folder(dir, "target"));
+    var moved= dir.resolve("hello_fix").resolve("linked").resolve("link");
+    var lines= "Deleted .DS_Store\nMoved linked/link to "+moved+"\nDeleted the empty folder linked\n";
+    try (var server= port()){
+      var fix= follower(server);
+      send(m, "Fix", "hello", "Port:"+server.getLocalPort());
+      assertEquals("Applied\n"+lines, fix.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    assertEquals(lines, view.out(hello));
+    assertTrue(Fs.isLink(moved));
+    assertEquals(List.of("hello.fearless"), Names.list(hello).stream().map(p -> p.getFileName().toString()).toList());
   }
   @Test void connectingEclipseNeedsAnEclipseFolder(@TempDir Path dir){
     var m= manager(dir);
