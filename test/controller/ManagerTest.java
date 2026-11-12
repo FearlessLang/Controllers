@@ -185,7 +185,8 @@ public class Child{
   private final List<Path> connected= new ArrayList<>();
   private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
   private final List<Manager> managers= new ArrayList<>();
-  @AfterEach void nothingFailed(){ managers.forEach(Manager::stop); assertEquals(List.of(), failures); Disk.checkedByHandOnWindows(); }
+  private final List<Runnable> unshare= new ArrayList<>();
+  @AfterEach void nothingFailed(){ managers.forEach(Manager::stop); unshare.forEach(Runnable::run); assertEquals(List.of(), failures); Disk.checkedByHandOnWindows(); }
   private Manager manager(Path dir, String... mains){ return manager(dir, view, known(mains)); }
   private static Function<Path,Optional<MainsInfo>> known(String... mains){ return known(List.of(), mains); }
   private static Function<Path,Optional<MainsInfo>> known(List<String> attenuators, String... mains){ return known(attenuators, List.of(), List.of(), mains); }
@@ -318,14 +319,27 @@ public class Child{
     again.settle();
     assertEquals(Kind.idle, project(again, odd).kind());
   }
-  private static final String notUnicodeOnMac= """
-    Agent on macOS: APFS refuses a name that is not UTF-8, so this test can not make its folder in the temporary folder.
-    Investigate which volume macOS mounts that holds such a name (a FAT or exFAT disk image made with hdiutil, a share of another system),
-    then make this test use a folder on that volume: the manager handles a folder whose name is not Unicode on every desk (ControllersDesign, Base16 paths).""";
+  private static final String needsShare= "On macOS this test mounts the NFS share LocalResources.nfsShare with \"sudo -n mount\": a folder that a Linux machine exports with NFS version 3.";
+  private Path share(Path dir){
+    var at= dir.resolve("share");
+    Fs.ensureDir(at);
+    if (!Fs.isMac()){ return at; }
+    run("sudo", "-n", "mount", "-t", "nfs", "-o", "vers=3,nolocks,resvport,nobrowse", LocalResources.nfsShare, at.toString());
+    var mine= at.resolve(dir.getFileName().toString());
+    unshare.add(() -> run("rm", "-rf", mine.toString()));
+    unshare.add(() -> run("sudo", "-n", "umount", at.toString()));
+    Fs.ensureDir(mine);
+    return mine;
+  }
+  private static void run(String... cmd){
+    var p= Fs.of(() -> new ProcessBuilder(cmd).redirectErrorStream(true).start());
+    var out= new String(Fs.of(() -> p.getInputStream().readAllBytes()));
+    assertEquals(0, p.onExit().join().exitValue(), needsShare+"\n"+String.join(" ", cmd)+"\n"+out);
+  }
   @Test void aFolderWhoseNameIsNotUnicodeIsRegisteredByItsMessageAndRemembered(@RealTempDir Path dir){
-    if (Fs.isMac()){ fail(notUnicodeOnMac); }
     var m= manager(dir);
-    var odd= Fs.isWindows() ? dir.resolve("caf\ud800") : dir.resolve(PathBytes.path(new byte[]{'c', 'a', 'f', (byte)0xE9}));
+    var share= share(dir);
+    var odd= Fs.isWindows() ? share.resolve("caf\ud800") : share.resolve(PathBytes.path(new byte[]{'c', 'a', 'f', (byte)0xE9}));
     Fs.ensureDir(odd);
     send(m, "Register", TaggedText.ofPath(odd));
     same("[###]\"path\": \"Base16:[###]\",[###]", info(dir));
@@ -999,9 +1013,9 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     assertEquals(List.of(true, true, false), Stream.of(kept, inner, stray).map(Files::exists).toList());
   }
   @Test void eachDataProjectHasALockFileOfItsOwnAlsoWhenItsFolderNameIsNotUnicode(@RealTempDir Path dir){
-    if (Fs.isMac()){ fail(notUnicodeOnMac); }
     var m= manager(dir);
-    var folders= Stream.of(0xE9, 0xE8).map(b -> Fs.isWindows() ? dir.resolve("data"+(char)(0xD800+b)) : dir.resolve(PathBytes.path(new byte[]{'d', 'a', 't', 'a', (byte)(int)b}))).toList();
+    var share= share(dir);
+    var folders= Stream.of(0xE9, 0xE8).map(b -> Fs.isWindows() ? share.resolve("data"+(char)(0xD800+b)) : share.resolve(PathBytes.path(new byte[]{'d', 'a', 't', 'a', (byte)(int)b}))).toList();
     folders.forEach(f -> Fs.writeUtf8(f.resolve("readme.txt"), "hi\n"));
     folders.forEach(f -> send(m, "Register", TaggedText.ofPath(f)));
     m.state().projects().forEach(p -> send(m, "Kind", p.alias(), "dataRead"));
