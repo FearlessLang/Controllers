@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import tempDirs.RealTempDir;
@@ -73,8 +72,8 @@ final class ManagerFolderTest{
     var windows= Fs.isWindows();
     var ab= windows ? "Base16:43003A005C0061006200" : "Base16:2F6162";
     assertEquals("Register\n"+ab, message("FearlessCommandRegister "+ab));
-    var relative= windows ? "Base16:61006200" : "Base16:6162";
-    assertEquals(invalid("FearlessCommandRegister "+relative, "\""+relative+"\" is not "+Report.callBase16+"."), message("FearlessCommandRegister "+relative));
+    var notAbsolute= windows ? List.of("Base16:61006200", "Base16:2F0064006100740061002F00680065006C006C006F00") : List.of("Base16:6162");
+    for (var relative : notAbsolute){ assertEquals(invalid("FearlessCommandRegister "+relative, "\""+relative+"\" is not "+Report.callBase16+"."), message("FearlessCommandRegister "+relative)); }
     var nul= windows ? "Base16:2F000000" : "Base16:2F00";
     assertEquals(invalid("FearlessCommandRegister "+nul, "\""+nul+"\" is not "+Report.callBase16+"."), message("FearlessCommandRegister "+nul));
     assertEquals(invalid("FearlessCommandRegister Base16:", "\"Base16:\" is not "+Report.callBase16+"."), message("FearlessCommandRegister Base16:"));
@@ -94,16 +93,6 @@ final class ManagerFolderTest{
   @Test void aBase16PathThatIsNotUnicodeStaysBase16(){
     var notUnicode= Fs.isWindows() ? "Base16:43003A005C00610000D8" : "Base16:2F636166E9";
     assertEquals("Register\n"+notUnicode, message("FearlessCommandRegister "+notUnicode));
-  }
-  @Test void aWindowsDriveWithALowercaseLetterIsNotAProject(@RealTempDir Path dir){
-    Assumptions.assumeTrue(Fs.isWindows());
-    var lower= Path.of(dir.toString().substring(0, 1).toLowerCase(Locale.ROOT)+dir.toString().substring(1));
-    refused("Refused request \"Register\" on path\n[###]\nThe letter of the drive is lowercase: write the drive with its uppercase letter, as in \"C:\\\".", () -> projectFolder(lower, List.of(), folder(dir, "manager")));
-  }
-  @Test void aWindowsPathWithARootButNoDriveIsNotAbsolute(){
-    Assumptions.assumeTrue(Fs.isWindows());
-    var noDrive= "Base16:2F0064006100740061002F00680065006C006C006F00";
-    assertEquals(invalid("FearlessCommandRegister "+noDrive, "\""+noDrive+"\" is not "+Report.callBase16+"."), message("FearlessCommandRegister "+noDrive));
   }
   @Test void theArgumentOpenedIsABadArgumentOutsideMacOS(){
     if (Fs.isMac()){ fail("""
@@ -207,6 +196,9 @@ never part of a project, and no project is inside it.
     var upper= dir.resolve("HELLO");
     var expected= !Fs.isLinux() ? "Refused request \"Register\" on path\n[###]HELLO\nThe folder\n[###]\nlists no folder named exactly \"HELLO\": write each name of the path as its folder lists it, in the same letter case and the same Unicode form." : "Refused request \"Register\" on path\n[###]HELLO\nNothing exists at that path.";
     refused(expected, () -> projectFolder(upper, List.of(), folder(dir, "manager")));
+    if (!Fs.isWindows()){ return; }
+    var lower= Path.of(dir.toString().substring(0, 1).toLowerCase(Locale.ROOT)+dir.toString().substring(1));
+    refused("Refused request \"Register\" on path\n[###]\nThe letter of the drive is lowercase: write the drive with its uppercase letter, as in \"C:\\\".", () -> projectFolder(lower, List.of(), folder(dir, "manager")));
   }
   @Test void aFolderInsideOrAroundARegisteredFolderIsNotAProjectAndARegisteredFolderIsItself(@RealTempDir Path dir){
     var manager= folder(dir, "manager");
