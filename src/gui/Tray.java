@@ -14,8 +14,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeListener;
 import java.util.Arrays;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JWindow;
 import javax.swing.SwingUtilities;
@@ -31,8 +33,12 @@ import tools.Fs;
 /// The icon lives for the whole process life and is removed by process death.
 public final class Tray{
   public static boolean install(Window window){
-    if (Fs.isMac()){ Desktop.getDesktop().addAppEventListener((AppReopenedListener)_ -> Main.command("Show")); return true; }
-    var menu= menu();
+    if (Fs.isMac()){
+      Desktop.getDesktop().addAppEventListener((AppReopenedListener)_ -> Main.command("Show"));
+      Desktop.getDesktop().setQuitHandler((_, _) -> Main.command("Quit"));
+      return true;
+    }
+    var menu= menu(Window::item);
     var anchor= new JWindow();
     anchor.setType(java.awt.Window.Type.POPUP);
     anchor.setAlwaysOnTop(true);
@@ -56,11 +62,11 @@ public final class Tray{
     tray.addPropertyChangeListener("trayIcons", gone);
     return true;
   }
-  private static JPopupMenu menu(){
+  static JPopupMenu menu(BiFunction<String,Runnable,JMenuItem> item){
     var res= new JPopupMenu();
-    res.add(Window.item("Show manager", () -> Main.command("Show")));
+    res.add(item.apply("Show manager", () -> Main.command("Show")));
     res.addSeparator();
-    res.add(Window.item("Quit manager", () -> Main.command("Quit")));
+    res.add(item.apply("Quit manager", () -> Main.command("Quit")));
     return res;
   }
   //A desktop takes the pointer input over its panels, also where a window covers them: the menu stays inside the usable area of the screen holding the click.

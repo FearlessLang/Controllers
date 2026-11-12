@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,6 +35,8 @@ final class RegistryTest{
   private static Content content(String text){ return Registry.parse(text, file); }
   private static List<Entry> parse(String projects){ return content("{\"projects\":"+projects+",\"systemExtensions\":[]}").projects(); }
   private static Registry registry(Path dir){ return new Registry(folder(dir, "manager"), _ -> {}); }
+  private static void update(Registry r, Path folder, UnaryOperator<Entry> op){ save(r, new Content(r.all().stream().map(e -> Registry.same(e.path(), folder) ? op.apply(e) : e).toList(), r.extensions())); }
+  private static void save(Registry r, Content c){ r.save(c, Registry.text(c), r.conditions(Registry.folders(c))); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
     Fs.ensureDir(res);
@@ -163,7 +166,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     var project= folder(dir, "someproject");
     var r= registry(dir);
     r.add("someproject", project, Set.of());
-    r.update(project, e -> e.withMains(List.of("hello.Hello1")));
+    update(r, project, e -> e.withMains(List.of("hello.Hello1")));
     assertEquals(List.of("hello.Hello1"), registry(dir).all().getFirst().mains());
   }
   private static Map<Path,Registry.Away> away(Path dir, Path... folders){ return Registry.away(List.of(folders), folder(dir, "manager")); }
@@ -235,8 +238,8 @@ Every entry in "projects" must be an object {...} with the metadata of a project
   @Test void changingTheMountsKeepsTheirOrderInTheFile(@RealTempDir Path dir){
     var code= folder(dir, "code");
     var r= registry(dir);
-    r.save(content("{\"projects\": [{\"path\": \"Str:\\\""+unix(code)+"\\\"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}], \"systemExtensions\": []}"));
-    r.update(code, e -> e.withMounts(remounted(e.mounts())));
+    save(r, content("{\"projects\": [{\"path\": \"Str:\\\""+unix(code)+"\\\"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}], \"systemExtensions\": []}"));
+    update(r, code, e -> e.withMounts(remounted(e.mounts())));
     assertEquals("""
 {
   "projects": [
@@ -270,7 +273,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
   }
   @Test void theSystemExtensionsSurviveAReReadAndAMalformedListRefusesToLoad(@RealTempDir Path dir){
     var r= registry(dir);
-    r.save(new Content(List.of(), List.of("pdf", "htm")));
+    save(r, new Content(List.of(), List.of("pdf", "htm")));
     assertEquals(List.of("pdf", "htm"), registry(dir).extensions());
     err("[###]\"fapp001\" in \"systemExtensions\" is not a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\".[###]", () -> content("{\"projects\":[],\"systemExtensions\":[\"htm\", \"fapp001\"]}"));
     err("[###]\"htm\" is repeated in \"systemExtensions\".[###]", () -> content("{\"projects\":[],\"systemExtensions\":[\"htm\", \"htm\"]}"));
@@ -312,7 +315,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     var code= folder(dir, "mycode");
     var r= registry(dir);
     r.add("mycode", code, Set.of());
-    r.update(code, e -> e.withKind(Kind.code).withMounts(Map.of("mycode.Pub", "pub", "mycode.Diary", "notes")));
+    update(r, code, e -> e.withKind(Kind.code).withMounts(Map.of("mycode.Pub", "pub", "mycode.Diary", "notes")));
     assertEquals(Map.of("mycode.Pub", "pub", "mycode.Diary", "notes"), registry(dir).of(code).orElseThrow().mounts());
   }
 
@@ -323,7 +326,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     var alpha= folder(dir, "alpha");
     r.add("zeta", zeta, Set.of());
     r.add("alpha", alpha, Set.of());
-    r.update(alpha, e -> e.withKind(Kind.dataRead));
+    update(r, alpha, e -> e.withKind(Kind.dataRead));
     assertEquals("""
 {
   "projects": [

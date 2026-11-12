@@ -16,9 +16,11 @@ import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,8 +33,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -78,7 +82,7 @@ final class ManagerTest{
     Fs.writeUtf8(src, """
 public class Child{
   public static void main(String[] a) throws Exception{
-    if (a[0].equals("take")){ take(a); return; }
+    if (a[0].endsWith("take")){ take(a); return; }
     System.out.print(a[0]+"\\n");
     while (a[0].contains("Chatty")){ System.out.print("chat\\n"); System.out.flush(); }
     System.out.flush();
@@ -96,6 +100,7 @@ public class Child{
       json= json.replaceFirst("@@[a-z]*", answer);
     }
     java.nio.file.Files.writeString(tools.PathClassLoader.pathOf(a[2]), json);
+    if (a[0].equals("slowtake")){ System.out.print("answered\\n"); System.out.flush(); Thread.sleep(3000); }
     System.out.print("compiled\\n");
     System.out.flush();
     System.exit(0);
@@ -104,7 +109,7 @@ public class Child{
 """);
     Fs.runTool("javac", List.of("-d", classes.toString(), "-cp", PathClassLoader.jar().toString(), src.toString()));
   }
-  record Fake(Function<Path,Optional<MainsInfo>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> windows, Map<String,List<String>> held, List<String> chosen, List<Path> connected, List<Registry.Grants> granted) implements Manager.Tools{
+  record Fake(Function<Path,Optional<MainsInfo>> read, Map<String,String> infos, List<List<Icon>> associated, List<List<String>> takes, List<List<String>> windows, Map<String,String> held, List<String> kept, List<String> identities, List<Path> connected, List<Registry.Grants> granted, List<Runnable> refusing) implements Manager.Tools{
     /// Writes the cache of the infos of the project; each extension written @@fapp or @@ffile is the autoselected extension of the previous cache, else is asked to the manager, as Coordinator.compile does.
     @Override public ChildJvm compile(Path folder, String alias, Consumer<String> out){
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
@@ -126,7 +131,7 @@ public class Child{
       var template= outDir.resolve("template.txt");
       Fs.writeUtf8(template, FakeCache.json(FakeCache.manifest(mains)));
       var asks= Pattern.compile("@@(fapp|ffile)").matcher(mains).results().map(r -> IntStream.range(0, 1000).mapToObj(n -> r.group(1)+String.format(Locale.ROOT, "%03d", n)).collect(Collectors.joining(","))).toList();
-      return ChildJvm.start(Stream.concat(Stream.of("-cp", classes+File.pathSeparator+PathClassLoader.jar(), "Child", "take", PathClassLoader.argOf(template), PathClassLoader.argOf(outDir.resolve(alias+".json"))), asks.stream()).toList(), out);
+      return ChildJvm.start(Stream.concat(Stream.of("-cp", classes+File.pathSeparator+PathClassLoader.jar(), "Child", folder.getFileName().toString().startsWith("slow") ? "slowtake" : "take", PathClassLoader.argOf(template), PathClassLoader.argOf(outDir.resolve(alias+".json"))), asks.stream()).toList(), out);
     }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
       granted.add(grants);
@@ -135,16 +140,18 @@ public class Child{
     @Override public Coordinator.State check(Path folder){ return FakeCache.check(folder, read); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
     @Override public Path baseCache(){ return classes.resolve("baseCache"); }
-    @Override public void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy){
+    @Override public void associate(List<Icon> captured, List<String> taken, List<Project.Claimant> preloads){
       captured.forEach(i -> Fs.of(() -> Files.readAllBytes(i.png())));
-      preloads.forEach(c -> Fs.of(() -> Files.readAllBytes(c.icon(".png"))));
+      preloads.forEach(c -> Fs.of(() -> Files.readAllBytes(c.png())));
       associated.add(captured);
+      takes.add(taken);
       windows.add(preloads.stream().map(c -> c.label()+" "+c.claim().icon()).toList());
-      var all= Stream.concat(Stream.of(new Icon(".fearless", null, null)), captured.stream()).toList();
-      var chosenByHand= all.stream().map(Icon::extension).filter(chosen::contains).toList();
-      if (!chosenByHand.isEmpty()){ throw Violation.associationChosenByHand(chosenByHand.stream().collect(Collectors.toMap(e -> e, _ -> List.of("vim"), (a, _) -> a, LinkedHashMap::new)), claimedBy); }
-      var blocked= all.stream().map(Icon::extension).filter(e -> !Icon.system(e) && held.containsKey(e)).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
-      if (!blocked.isEmpty()){ throw new NotOurs(blocked, claimedBy); }
+      if (identities.size() > 1){ throw Violation.associationsAmbiguous(String.join("\n", identities)); }
+      var blocked= captured.stream().map(Icon::extension).filter(e -> held.containsKey(e) && !taken.contains(e)).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
+      if (!blocked.isEmpty()){ refusing.forEach(Runnable::run); throw new mainCoordinator.Main.Held(blocked); }
+      var refused= taken.stream().filter(kept::contains).collect(Collectors.toMap(e -> e, held::get, (a,_) -> a, LinkedHashMap::new));
+      taken.stream().filter(e -> !kept.contains(e)).forEach(held::remove);
+      if (!refused.isEmpty()){ throw new mainCoordinator.Main.Held(refused); }
     }
     @Override public void connect(Path eclipse, Path managerDir){ connected.add(eclipse); }
     private static ChildJvm jvm(Consumer<String> out, String... args){
@@ -158,10 +165,13 @@ public class Child{
     final List<Path> cleared= new ArrayList<>();
     final List<List<String>> choices= new ArrayList<>();
     final List<String> asked= new ArrayList<>();
-    final List<List<String>> offered= new ArrayList<>();
+    final List<String> offered= new ArrayList<>();
+    final List<String> questions= new ArrayList<>();
     final List<Path> edited= new ArrayList<>();
     int shown;
     boolean visible= true;
+    boolean takes= true;
+    BooleanSupplier answer= () -> takes;
     @Override public void show(){ shown += 1; }
     @Override public void state(State s){}
     @Override public synchronized void output(Path folder, String text){ outputs.computeIfAbsent(folder, _ -> new StringBuilder()).append(text); }
@@ -170,7 +180,8 @@ public class Child{
     @Override public void tell(String text){ shown += 1; told.add(text); }
     @Override public boolean visible(){ return visible; }
     @Override public void choose(Path file, List<Project.Claimant> cs){ choices.add(Stream.concat(Stream.of(file.getFileName().toString()), cs.stream().map(Project.Claimant::label)).toList()); }
-    @Override public void allow(String question, List<String> extensions){ asked.add(question); offered.add(extensions); }
+    @Override public void allow(Map<String,String> questions){ asked.addAll(questions.values()); offered.addAll(questions.keySet()); }
+    @Override public boolean take(String question){ shown += 1; questions.add(question); return answer.getAsBoolean(); }
     @Override public void edited(Path file){ edited.add(file); }
     synchronized String out(Path folder){ return outputs.getOrDefault(folder, new StringBuilder()).toString(); }
   }
@@ -179,11 +190,14 @@ public class Child{
   private final View view= new View();
   private final Map<String,String> infos= new HashMap<>();
   private final List<List<Icon>> associated= Collections.synchronizedList(new ArrayList<>());
+  private final List<List<String>> takes= Collections.synchronizedList(new ArrayList<>());
   private final List<List<String>> windows= Collections.synchronizedList(new ArrayList<>());
-  private final Map<String,List<String>> held= new HashMap<>();
-  private final List<String> chosen= new ArrayList<>();
+  private final Map<String,String> held= new HashMap<>();
+  private final List<String> kept= new ArrayList<>();
+  private final List<String> identities= new ArrayList<>();
   private final List<Path> connected= new ArrayList<>();
   private final List<Registry.Grants> granted= Collections.synchronizedList(new ArrayList<>());
+  private final List<Runnable> refusing= new ArrayList<>();
   private final List<Manager> managers= new ArrayList<>();
   private final List<Runnable> unshare= new ArrayList<>();
   @AfterEach void nothingFailed(){ managers.forEach(Manager::stop); unshare.forEach(Runnable::run); assertEquals(List.of(), failures); Disk.checkedByHandOnWindows(); }
@@ -203,7 +217,7 @@ public class Child{
       @Override public void fail(Throwable problem){ failures.add(problem); }
     };
     Fs.ensureDir(dir.resolve("manager"));
-    var res= new Manager(dir.resolve("manager"), new Fake(read, infos, associated, windows, held, chosen, connected, granted), v, exit);
+    var res= new Manager(dir.resolve("manager"), new Fake(read, infos, associated, takes, windows, held, kept, identities, connected, granted, refusing), v, exit);
     managers.add(res);
     return res;
   }
@@ -283,14 +297,23 @@ public class Child{
     assertEquals(List.of(), listed(m));
     assertEquals("{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n", info(dir));
   }
-  @Test void everyRequestAfterAQuitIsRefused(@RealTempDir Path dir){
+  private Manager refusedAfter(Path dir, Consumer<Manager> ending){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
-    send(m, "Quit");
+    var slow= code(m, dir, "slowcompile");
+    send(m, "Compile", "slowcompile");
+    var calls= associated.size();
+    ending.accept(m);
     send(m, "Forget", "hello");
-    send(m, "Reset");
+    idle(m);
+    assertEquals(calls, associated.size());
+    assertEquals(List.of("hello "+hello, "slowcompile "+slow), listed(m));
+    assertEquals("Refused request \"Forget\": the manager is quitting.", view.refused.getFirst());
+    return m;
+  }
+  @Test void everyRequestAfterAQuitIsRefusedAndACompilationEndingAfterTheQuitReconcilesNothing(@RealTempDir Path dir){
+    send(refusedAfter(dir, m -> send(m, "Quit")), "Reset");
     assertEquals(List.of("quit"), exits);
-    assertEquals(List.of("hello "+hello), listed(m));
     assertEquals(List.of("Refused request \"Forget\": the manager is quitting.", "Refused request \"Reset\": the manager is quitting."), view.refused);
   }
   @Test void everyRequestAfterAResetIsRefused(@RealTempDir Path dir){
@@ -299,6 +322,16 @@ public class Child{
     send(m, "Quit");
     assertEquals(List.of("reset"), exits);
     assertEquals(List.of("Refused request \"Quit\": the manager is quitting."), view.refused);
+  }
+  @Test void everyRequestAfterAFatalErrorIsRefused(@RealTempDir Path dir){
+    refusedAfter(dir, m -> send(m, "FatalError", "the disk is gone"));
+    assertEquals(List.of("A Fearless process reported a failure the manager cannot recover from:\n\nthe disk is gone"), failures.stream().map(Throwable::getMessage).toList());
+    failures.clear();
+  }
+  @Test void everyRequestAfterAFailureOutsideTheThreadOfTheManagerIsRefused(@RealTempDir Path dir){
+    refusedAfter(dir, m -> CompletableFuture.runAsync(() -> m.fail(new Error("the window is gone"))).join());
+    assertEquals(List.of("the window is gone"), failures.stream().map(Throwable::getMessage).toList());
+    failures.clear();
   }
   @Test void anInvalidCallIsShownAndAFatalErrorIsFatal(@RealTempDir Path dir){
     var m= manager(dir);
@@ -559,11 +592,11 @@ The projects are:
     var m= manager(dir, "hello.Hello");
     var hello= code(m, dir, "hello");
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
-    assertEquals(Project.Action.compile, project(m, hello).action());
+    assertEquals(Project.Action.Compile, project(m, hello).action());
     compiled(m, "hello");
     same("--- compiling hello ---\ncompiled\n--- compile done ---\n", view.out(hello));
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
-    assertEquals(Project.Action.run, project(m, hello).action());
+    assertEquals(Project.Action.Run, project(m, hello).action());
     send(m, "Run", "hello", "hello.Hello");
     idle(m);
     same("""
@@ -612,7 +645,7 @@ ran hello.Hello
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     assertEquals(List.of("hello - hello.Slow"), m.state().running());
-    assertEquals(Project.Action.terminate, project(m, hello).action());
+    assertEquals(Project.Action.Terminate, project(m, hello).action());
     send(m, "Run", "hello", "hello.Slow");
     send(m, "Compile", "hello");
     send(m, "DeleteCache", "hello");
@@ -863,7 +896,7 @@ The projects are:
     assertEquals(Project.State.dataReadInvalid, project(m, data).state());
     send(m, "Kind", "data", "dataEdit");
     assertEquals(Project.State.dataEditInvalid, project(m, data).state());
-    assertEquals(Project.Action.check, project(m, data).action());
+    assertEquals(Project.Action.Check, project(m, data).action());
     Fs.ofV(() -> Files.delete(data.resolve("Bad Name.txt")));
     send(m, "Check", "data");
     assertEquals("The project \"data\" is valid.\n", view.out(data));
@@ -1429,11 +1462,14 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     send(m, "Mount", "hello", "Lower hello");
     same("[###]\"Lower\" in \"mounts\" is not a Fearless DataRead type name[###]", view.refused.getLast());
     assertEquals(before, info(dir));
+    var byKind= manager(dir);
+    var byEdit= manager(dir);
+    Stream.of(byKind, byEdit).forEach(Manager::settle);
     Disk.noWrite(managerDir);
     assertFalse(Files.isWritable(managerDir), "This test needs a user that the permission denies: run the tests as a normal user, not as root.");
     send(m, "Mount", "hello", "hello.Data hello");
-    send(m, "Kind", "hello", "idle");
-    edit(m, dir, "{\"projects\": [], \"systemExtensions\": []}");
+    send(byKind, "Kind", "hello", "idle");
+    edit(byEdit, dir, "{\"projects\": [], \"systemExtensions\": []}");
     Disk.allow(managerDir);
     assertEquals(3, failures.size());
     failures.forEach(f -> same("Fearless could not save the file \"[###]\" of its manager folder.[###]", f.getMessage()));
@@ -1801,37 +1837,19 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     assertEquals(i.png().toString().replaceAll("png$", Fs.isWindows() ? "ico" : "png"), i.ico().toString());
     return dir.relativize(i.png()).toString().replace('\\', '/');
   }
-  private static String chosenByHand(String... lines){
+  private static String question(String no, String... lines){
     return """
-Fearless cannot become the program that opens Fearless projects and the
-other kinds of file it registers.
-
-Your system remembers the choices listed below. Each one is a choice
-made by hand of the program that opens a kind of file, for example with
-"Open with" and "Always". Fearless does not remove these choices on
-its own, and stopped before touching anything: your system is exactly
-as it was.
-
-Removing these choices clears the way. Each choice is listed under the
-place holding the choice: a file, or a kind of file standing for the
-registry key
-HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\<kind of file>\\UserChoice
-and the key UserChoiceLatest next to it.
-
-The choices:
-"""+String.join("\n", lines);
+The desktop opens the files with the extensions listed below with other programs.
+Fearless needs the desktop to open those files with Fearless:
+"""+Stream.of(lines).map(l -> "  "+l+"\n").collect(Collectors.joining())+"Let the desktop open the files with these extensions with Fearless?\nAnswering No "+no+".";
   }
   private static String notOurs(String... lines){
     return """
-Fearless cannot become the program that opens the kinds of file listed
-below.
-
-Another program already answers for these kinds of file. Fearless
-stopped before touching anything: your system is exactly as it was.
-
-What stood in the way:
-"""+String.join("\n", lines);
+Fearless needs the desktop to open the files with the extensions listed below with Fearless.
+The desktop opens those files with other programs:
+"""+Stream.of(lines).map(l -> "  "+l).collect(Collectors.joining("\n"));
   }
+  private static List<String> questions(String... lines){ return List.of(question("ends Fearless", lines)); }
   private static String merged(String... infos){ return Stream.of(infos).map(i -> i.strip().substring(1, i.strip().length()-1)).collect(Collectors.joining(", ", "{", "}\n")); }
   /// The preloaded icons are the icons of the claims, as the Coordinator records them.
   private static String info(String main, String shortcuts, String openWiths){
@@ -2033,26 +2051,69 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertEquals(List.of(".foo manager/icons/base.IconsConflict.png"), wanted(dir));
     assertEquals(List.of(), view.refused);
   }
-  @Test void aCompileWhoseNewExtensionTheDesktopRefusesFailsAndDeletesTheCacheOfEveryProjectClaimingIt(@RealTempDir Path dir){
+  private static final String heldByFoo= "\".fapp003\" claimed by \"hello.Hello\" of project \"hello\" is opened with \"Foo\"";
+  private Manager fooHolds(Path dir){
     var m= manager(dir, "hello.Hello");
-    var hello= code(m, dir, "hello");
-    code(m, dir, "other");
-    allow(m, dir, "foo", "bar");
-    infos.put("other", claiming("other.Other", "fapp002", "foo"));
-    infos.put("hello", claiming("hello.Hello", "fapp001", "bar"));
-    compiled(m, "other", "hello");
-    held.put(".fapp003", List.of("vim"));
-    infos.put("hello", claiming("hello.Hello", "fapp003", "bar"));
-    touch(hello);
+    code(m, dir, "hello");
+    held.put(".fapp003", "Foo");
+    infos.put("hello", info("hello.Hello", claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp003"), ""));
+    return m;
+  }
+  @Test void aCompileClaimingAnExtensionAnotherProgramHoldsAsksOnceAndTheManagerHoldsIt(@RealTempDir Path dir){
+    var m= fooHolds(dir);
     compiled(m, "hello");
-    var error= notOurs(".fapp003 claimed by \"hello.Hello\" of project \"hello\" -> vim");
-    same("[###]--- compiling hello ---\ncompiled\n"+error+"\n--- compile failed ---\n", view.out(hello));
-    same(error, compileError(hello));
-    assertTrue(project(m, hello).needsCompiling());
-    assertFalse(Files.exists(mainsInfo(hello)));
-    assertEquals(Project.noClaims, project(m, hello).claims());
-    assertEquals(List.of(".bar manager/icons/base.IconsConflict.png", ".fapp002 other/.fearless_out/icons/_base/icons/conflict.png", ".foo other/.fearless_out/icons/art/foo.png"), wanted(dir));
-    assertEquals(List.of(), view.refused);
+    same("--- compiling hello ---\ncompiled\n--- compile done ---\n", view.out(dir.resolve("hello")));
+    assertEquals(questions(heldByFoo), view.questions);
+    assertEquals(List.of(List.of(), List.of(".fapp003")), takes.subList(takes.size()-2, takes.size()));
+    assertEquals(Map.of(), held);
+    assertEquals(List.of(".fapp003 hello/.fearless_out/icons/_base/icons/conflict.png"), wanted(dir));
+    assertEquals(Project.State.codeCompiled, project(m, dir.resolve("hello")).state());
+  }
+  @Test void aRejectedQuestionToHoldAnExtensionAnotherProgramHoldsIsFatal(@RealTempDir Path dir){
+    var m= fooHolds(dir);
+    view.takes = false;
+    send(m, "Compile", "hello");
+    until(m, _ -> !failures.isEmpty());
+    assertEquals(List.of(UserError.class), failures.stream().map(Object::getClass).toList());
+    same(notOurs(heldByFoo), failures.getFirst().getMessage());
+    assertEquals(questions(heldByFoo), view.questions);
+    assertEquals(List.of(), takes.getLast());
+    failures.clear();
+  }
+  private void stoppedWhileAsking(Path dir, CountDownLatch open) throws InterruptedException{
+    var m= fooHolds(dir);
+    managers.remove(m);
+    send(m, "Compile", "hello");
+    open.await();
+    m.stop();
+    assertEquals(List.of(notOurs(heldByFoo)), failures.stream().map(Throwable::getMessage).toList());
+    assertEquals(List.of(), takes.getLast());
+    failures.clear();
+  }
+  @Test void theEndOfTheManagerClosesAnOpenQuestionAsARejection(@RealTempDir Path dir) throws InterruptedException{
+    var open= new CountDownLatch(1);
+    view.answer = () -> unanswered(open);
+    stoppedWhileAsking(dir, open);
+  }
+  @Test void theEndOfTheManagerLetsAWriteOfTheSetupEndAndAsksNothing(@RealTempDir Path dir) throws InterruptedException{
+    var open= new CountDownLatch(1);
+    var stopping= Thread.currentThread();
+    refusing.add(() -> writtenWhileStopping(open, stopping, dir.resolve("setup.txt")));
+    stoppedWhileAsking(dir, open);
+    assertEquals("written", Fs.readUtf8(dir.resolve("setup.txt")));
+    assertEquals(List.of(), view.questions);
+  }
+  private static void writtenWhileStopping(CountDownLatch open, Thread stopping, Path file){
+    open.countDown();
+    while (stopping.getState() != Thread.State.TIMED_WAITING){ Thread.onSpinWait(); }
+    try (var ch= FileChannel.open(file, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)){ ch.write(ByteBuffer.wrap("written".getBytes(StandardCharsets.UTF_8))); }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+  }
+  private static boolean unanswered(CountDownLatch open){
+    open.countDown();
+    try{ new CountDownLatch(1).await(); }
+    catch (InterruptedException e){ Thread.currentThread().interrupt(); }
+    return false;
   }
   @Test void aMainTheCorruptionRuleEndsGetsNoFilesUpdatedLine(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
@@ -2089,27 +2150,57 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     }
     finally{ Disk.allow(out); }
   }
-  @Test void aStartUpRefusedACapturedExtensionIsFatal(@RealTempDir Path dir){
+  @Test void aManagerStartingWhileAnotherProgramHoldsCapturedExtensionsAsksOnceForAllOfThem(@RealTempDir Path dir){
+    var m= manager(dir);
+    allow(m, dir, "md");
+    held.put(".fearless", "Foo");
+    held.put(".md", "Foo");
+    manager(dir).settle();
+    assertEquals(questions("\".fearless\" is opened with \"Foo\"", "\".md\" is opened with \"Foo\""), view.questions);
+    assertEquals(List.of(".fearless", ".md"), takes.getLast());
+    assertEquals(Map.of(), held);
+  }
+  @Test void aPreferenceOfTheSystemForAnotherProgramIsAskedAtTheNextReconcile(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
-    code(m, dir, "hello");
-    code(m, dir, "other");
-    allow(m, dir, "foo", "qux");
-    infos.put("hello", claiming("hello.Hello", "fapp001", "foo"));
-    infos.put("other", claiming("other.Other", "fapp002", "qux"));
-    compiled(m, "hello", "other");
-    chosen.add(".qux");
-    manager(dir, "hello.Hello").settle();
-    chosen.clear();
-    held.put(".fapp002", List.of("vim"));
-    manager(dir, "hello.Hello").settle();
-    held.clear();
-    held.put(".fearless", List.of("fearlessBin0_003"));
-    manager(dir, "hello.Hello").settle();
-    assertEquals(3, failures.size());
-    assertEquals(List.of(UserError.class, UserError.class, UserError.class), failures.stream().map(Object::getClass).toList());
-    same(chosenByHand(".qux claimed by \"other.Other\" of project \"other\"", "  vim"), failures.get(0).getMessage());
-    same(notOurs(".fapp002 claimed by \"other.Other\" of project \"other\" -> vim"), failures.get(1).getMessage());
-    same(notOurs(".fearless -> fearlessBin0_003"), failures.get(2).getMessage());
+    var hello= code(m, dir, "hello");
+    infos.put("hello", info("hello.Hello", claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp123"), ""));
+    compiled(m, "hello");
+    assertEquals(List.of(), view.questions);
+    held.put(".fapp123", "Foo");
+    touch(hello);
+    compiled(m, "hello");
+    assertEquals(questions("\".fapp123\" claimed by \"hello.Hello\" of project \"hello\" is opened with \"Foo\""), view.questions);
+    assertEquals(List.of(".fapp123"), takes.getLast());
+    held.put(".fearless", "Foo");
+    view.takes = false;
+    touch(hello);
+    send(m, "Compile", "hello");
+    until(m, _ -> !failures.isEmpty());
+    same(notOurs("\".fearless\" is opened with \"Foo\""), failures.getFirst().getMessage());
+    failures.clear();
+  }
+  @Test void theClaimsOfAProjectWhoseCompilationRunsStayUntilTheCompilationEnds(@RealTempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "slowhello");
+    code(m, dir, "world");
+    infos.put("slowhello", info("hello.Hello", claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp123"), ""));
+    compiled(m, "slowhello");
+    assertEquals(List.of("slowhello::hello.Hello base.IconsConflict"), windows.getLast());
+    infos.put("slowhello", info("hello.Hello", "", ""));
+    touch(hello);
+    send(m, "Compile", "slowhello");
+    until(m, _ -> view.out(hello).contains("answered"));
+    send(m, "Forget", "world");
+    assertEquals(List.of(".fapp123 slowhello/.fearless_out/icons/_base/icons/conflict.png"), wanted(dir));
+    assertEquals(List.of(), windows.getLast());
+    idle(m);
+    assertEquals(List.of(), wanted(dir));
+  }
+  @Test void twoProgramsOfTheFamilyOnTheSystemAreFatal(@RealTempDir Path dir){
+    identities.addAll(List.of("fearlessBin0_001", "fearlessManaged0_002"));
+    manager(dir).settle();
+    same("[###]\nfearlessBin0_001\nfearlessManaged0_002", failures.getFirst().getMessage());
+    assertEquals(1, failures.size());
     failures.clear();
   }
   @Test void everyCompileReconcilesAlsoWhenNothingChanged(@RealTempDir Path dir){
@@ -2123,6 +2214,40 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     compiled(m, "hello");
     assertEquals(calls+1, associated.size());
     assertEquals(associated.get(calls-1), associated.getLast());
+  }
+  @Test void aManagerWhoseManagerFolderIsGoneReconcilesNothingWhenACompilationEnds(@RealTempDir Path dir){
+    var m= manager(dir);
+    var slow= code(m, dir, "slowcompile");
+    var calls= associated.size();
+    send(m, "Compile", "slowcompile");
+    until(m, _ -> view.out(slow).contains("compiling\n"));
+    Fs.rmTree(dir.resolve("manager"));
+    until(m, _ -> !failures.isEmpty());
+    send(m, "Show");
+    assertEquals(calls, associated.size());
+    assertEquals(List.of("Expected a directory for the manager folder: "+dir.resolve("manager")), failures.stream().map(Throwable::getMessage).toList());
+    assertEquals(List.of("Refused request \"Show\": the manager is quitting."), view.refused);
+    failures.clear();
+  }
+  @Test void aManagerWhoseManagerFolderIsDeletedWhileTheQuestionIsOpenDoesNotReconcileAgain(@RealTempDir Path dir){
+    var m= fooHolds(dir);
+    refusing.add(() -> Fs.rmTree(dir.resolve("manager")));
+    send(m, "Compile", "hello");
+    until(m, _ -> !failures.isEmpty());
+    assertEquals(List.of(), takes.getLast());
+    assertEquals(Map.of(".fapp003", "Foo"), held);
+    assertEquals(List.of("Expected a directory for the manager folder: "+dir.resolve("manager")), failures.stream().map(Throwable::getMessage).toList());
+    failures.clear();
+  }
+  @Test void aManagerWhoseManagerFolderIsGoneDoesNotMakeTheManagerFolderAgain(@RealTempDir Path dir){
+    var m= manager(dir);
+    registered(m, dir, "data");
+    send(m, "Kind", "data", "dataRead");
+    Fs.rmTree(dir.resolve("manager"));
+    send(m, "Check", "data");
+    assertFalse(Files.exists(dir.resolve("manager")));
+    assertEquals(1, failures.size());
+    failures.clear();
   }
   @Test void aShortcutFileTheManagerCanNotCreateFailsTheCompile(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -2308,7 +2433,7 @@ The mains opening them are:
     send(m, "Terminate", "slow");
     idle(m);
   }
-  @Test void aFileNobodyClaimsAMissingFileAnEmptyFileAndACapturedExtensionNoMainOpensAreRefused(@RealTempDir Path dir){
+  @Test void aFileNobodyClaimsShowsTheConflictDialogWithNoEntryAndAMissingFileOrAnEmptyFileIsRefused(@RealTempDir Path dir){
     var m= opening(dir);
     var hello= code(m, dir, "hello");
     allow(m, dir, "foo", "htm");
@@ -2321,14 +2446,14 @@ The mains opening them are:
     open(m, empty);
     open(m, doc(dir, "page.htm"));
     open(m, dir.resolve("desk"));
-    same("""
-Refused request to open
-[###]a.txt
-No main opens files with the extension "txt".""", view.refused.get(0));
-    same("Refused request to open\n[###]gone.foo\nNo file is at that path.", view.refused.get(1));
-    same("Refused request to open\n[###]e.foo\nThe file \"e.foo\" is empty. File associations do not reliably work for empty files on all operating systems.", view.refused.get(2));
-    same("[###]page.htm\nNo main opens files with the extension \"htm\".", view.refused.get(3));
-    same("[###]desk\nNo file is at that path.", view.refused.get(4));
+    assertEquals(List.of(), view.choices);
+    same("Nothing is opened at\n[###]a.txt\nNo main opens files with the extension \"txt\".", view.told.get(0));
+    same("Nothing is opened at\n[###]page.htm\nNo main opens files with the extension \"htm\".", view.told.get(1));
+    assertEquals(2, view.told.size());
+    same("Refused request to open\n[###]gone.foo\nNo file is at that path.", view.refused.get(0));
+    same("Refused request to open\n[###]e.foo\nThe file \"e.foo\" is empty. File associations do not reliably work for empty files on all operating systems.", view.refused.get(1));
+    same("[###]desk\nNo file is at that path.", view.refused.get(2));
+    assertEquals(3, view.refused.size());
     assertEquals(List.of(hello), view.cleared);
     assertEquals(List.of("hello "+hello), listed(m));
   }
@@ -2341,16 +2466,16 @@ No main opens files with the extension "txt".""", view.refused.get(0));
     same("--- compiling hello ---\ncompiled\n"+error+"\n--- compile failed ---\n", view.out(hello));
     same(error, compileError(hello));
     same("""
-Add these system extensions to "systemExtensions" of projects.info?
+Add this system extension to "systemExtensions" of projects.info?
   "htm" for "base.OpenWith[hello.IconsFoo,\\"htm\\"]" of main "hello.Hello" of project "hello"
 
-The manager becomes the program opening every file with these extensions,
-in place of the program opening them now. The project then needs compiling again.""", String.join("\n", view.asked));
+The manager becomes the program opening every file with this extension,
+in place of the program opening those files now. The project then needs compiling again.""", String.join("\n", view.asked));
     assertEquals(List.of("fapp001", "htm"), claimed(m).keySet().stream().sorted().toList());
     assertEquals(List.of(".fapp001 hello/.fearless_out/icons/_base/icons/conflict.png"), wanted(dir));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
-    assertEquals(List.of(List.of("htm")), view.offered);
-    allow(m, dir, view.offered.getLast().toArray(String[]::new));
+    assertEquals(List.of("htm"), view.offered);
+    allow(m, dir, view.offered.getLast());
     assertEquals(List.of("htm"), m.state().extensions());
     compiled(m, "hello");
     assertEquals(List.of("fapp001", "htm"), claimed(m).keySet().stream().sorted().toList());
@@ -2362,7 +2487,7 @@ in place of the program opening them now. The project then needs compiling again
     infos.put("hello", claiming("hello.Hello", "fapp001", "htm"));
     compiled(m, "hello");
     var other= registered(m, dir, "other");
-    allow(m, dir, view.offered.getLast().toArray(String[]::new));
+    allow(m, dir, view.offered.getLast());
     assertEquals(List.of("htm"), m.state().extensions());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
   }
@@ -2381,12 +2506,37 @@ in place of the program opening them now. The project then needs compiling again
     send(m, "Terminate", "hello");
     idle(m);
   }
-  @Test void anEditWhoseReconcileRefusesAnExtensionTheEditDoesNotBringIsFatal(@RealTempDir Path dir){
+  @Test void addingASystemExtensionAnotherProgramHoldsAsksOnceAndTheEditApplies(@RealTempDir Path dir){
     var m= manager(dir);
-    held.put(".fearless", List.of("fearlessBin0_003"));
-    allow(m, dir, "htm");
-    same(notOurs(".fearless -> fearlessBin0_003"), failures.getFirst().getMessage());
-    failures.clear();
+    held.put(".md", "Foo");
+    allow(m, dir, "md");
+    assertEquals(List.of("md"), m.state().extensions());
+    assertEquals(List.of(question("refuses the edit of the project metadata", "\".md\" is opened with \"Foo\"")), view.questions);
+    assertEquals(List.of(".md"), takes.getLast());
+    assertEquals(List.of(".md manager/icons/base.IconsConflict.png"), wanted(dir));
+  }
+  private void editRefusedWhileFooHoldsMd(Path dir, boolean takes){
+    var m= manager(dir);
+    held.put(".md", "Foo");
+    view.takes = takes;
+    var before= info(dir);
+    allow(m, dir, "md");
+    idle(m);
+    assertEquals(before, info(dir));
+    assertEquals(List.of(), m.state().extensions());
+    assertEquals(List.of(question("refuses the edit of the project metadata", "\".md\" is opened with \"Foo\"")), view.questions);
+    same("Refused request \"EditMetadata\" on path[###]edited.info[###]\n"+notOurs("\".md\" is opened with \"Foo\""), view.refused.getLast());
+    assertEquals(List.of(), view.edited);
+    assertEquals(Map.of(".md", "Foo"), held);
+  }
+  @Test void aRejectedQuestionForASystemExtensionOfAnEditRefusesTheEditAndTheManagerHoldsOnlyFearless(@RealTempDir Path dir){
+    editRefusedWhileFooHoldsMd(dir, false);
+    assertEquals(List.of(), takes.getLast());
+  }
+  @Test void aConfirmedQuestionWhoseSecondReconcileRefusesRefusesTheEdit(@RealTempDir Path dir){
+    kept.add(".md");
+    editRefusedWhileFooHoldsMd(dir, true);
+    assertEquals(List.of(".md"), takes.getLast());
   }
   @Test void anEditAddingAProjectWhoseFolderIsMissingCreatesNoFolder(@RealTempDir Path dir){
     var m= manager(dir);
@@ -2420,5 +2570,76 @@ in place of the program opening them now. The project then needs compiling again
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
     assertEquals(Project.State.codeCompiled, project(m, other).state());
     assertEquals(List.of(".fapp002 other/.fearless_out/icons/_base/icons/conflict.png", ".qux other/.fearless_out/icons/art/foo.png"), wanted(dir));
+  }
+  @Test void anExtensionAnsweredToACompilationThatHasNotEndedIsNotAnsweredAgain(@RealTempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "slowhello");
+    code(m, dir, "other");
+    infos.put("slowhello", info("hello.Hello", claim("base.IconsConflict", "icons/conflict.png", "", "", ""), ""));
+    infos.put("other", info("other.Other", claim("base.IconsConflict", "icons/conflict.png", "", "", ""), ""));
+    send(m, "Compile", "slowhello");
+    until(m, _ -> view.out(hello).contains("answered"));
+    compiled(m, "other");
+    assertEquals(Map.of("fapp000", List.of("slowhello::hello.Hello shortcut base.IconsConflict"), "fapp001", List.of("other::other.Other shortcut base.IconsConflict")), claimed(m));
+  }
+  @Test void eachSystemExtensionNotCapturedIsOfferedInADialogOfItsOwnAlsoWhenAShortcutFailsTheCompile(@RealTempDir Path dir){
+    var m= manager(dir, "hello.Hello");
+    var hello= code(m, dir, "hello");
+    infos.put("hello", merged(
+      info("hello.Foo'", claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010"), claim("hello.IconsFoo", "art/foo.png", "", "", "md")),
+      info("hello.Hello", "", claim("hello.IconsFoo", "art/foo.png", "", "", "htm"))));
+    compiled(m, "hello");
+    same("--- compiling hello ---\ncompiled\nMain \"hello.Foo'\" can not have a Shortcut: [###]\n--- compile failed ---\n", view.out(hello));
+    assertEquals(List.of("htm", "md"), view.offered);
+    same("""
+Add this system extension to "systemExtensions" of projects.info?
+  "md" for "base.OpenWith[hello.IconsFoo,\\"md\\"]" of main "hello.Foo'" of project "hello"
+
+The manager becomes the program opening every file with this extension,
+in place of the program opening those files now. The project then needs compiling again.""", view.asked.get(1));
+    allow(m, dir, view.offered.get(1));
+    assertEquals(List.of("md"), m.state().extensions());
+  }
+  @Test void aFileOpenedWithAMainNoLongerOpeningItsExtensionIsRefusedNamingTheMainsOpeningIt(@RealTempDir Path dir){
+    var m= opening(dir);
+    var hello= code(m, dir, "hello");
+    allow(m, dir, "foo");
+    infos.put("hello", claiming("hello.Hello", "fapp001", "foo"));
+    compiled(m, "hello");
+    send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "gone", "gone.Hello");
+    infos.put("hello", info("hello.Hello", "", ""));
+    touch(hello);
+    compiled(m, "hello");
+    send(m, "OpenWithOrShortcut", TaggedText.of(doc(dir, "a.foo").toString()), "hello", "hello.Hello");
+    assertEquals(2, view.refused.size());
+    same("""
+Refused request to open
+[###]a.foo
+Main "gone.Hello" of project "gone" does not open files with the extension "foo".
+The mains opening them are:
+  hello::hello.Hello""", view.refused.getFirst());
+    same("""
+Refused request to open
+[###]a.foo
+Main "hello.Hello" of project "hello" does not open files with the extension "foo".
+No main opens them.""", view.refused.getLast());
+  }
+  @Test void aShortcutFileWhoseExtensionNoMainClaimsAnyMoreStaysAndOpensTheConflictDialogWithNoEntry(@RealTempDir Path dir){
+    var m= opening(dir);
+    var hello= code(m, dir, "hello");
+    infos.put("hello", info("hello.Hello", claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010"), ""));
+    compiled(m, "hello");
+    var shortcut= hello.resolve("hello.fapp010");
+    open(m, shortcut);
+    idle(m);
+    same(running("hello.Hello", " on hello.fapp010"), view.out(hello));
+    infos.put("hello", info("hello.Hello", "", ""));
+    touch(hello);
+    compiled(m, "hello");
+    assertEquals(MakeDemo.markerContent, Fs.readUtf8(shortcut));
+    open(m, shortcut);
+    assertEquals(List.of(), view.choices);
+    same("Nothing is opened at\n[###]hello.fapp010\nNo main opens files with the extension \"fapp010\".", view.told.getFirst());
+    assertEquals(List.of(), view.refused);
   }
 }

@@ -187,7 +187,7 @@ public final class Main implements Manager.Exit{
       if (watcher != null){ Fs.ofV(watcher::close); }
       if (lock != null){ Fs.ofV(() -> lock.channel().close()); }
       Fs.rmTree(managerDir);
-      Association.eradicateAll();
+      mainCoordinator.Main.eradicateAll();
       return Optional.empty();
     }
     catch (UncheckedIOException w){ return Optional.of(Violation.notWiped(managerDir, w.getCause())); }
@@ -239,12 +239,13 @@ public final class Main implements Manager.Exit{
     catch (IOException|UnsupportedOperationException|SecurityException e){ throw Violation.couldNotWatchMessageFolder(msgDir(), e); }
     probe(watcher);
     Thread.setDefaultUncaughtExceptionHandler((_,t) -> fail(t));
-    var window= Window.create(this, managerDir);
-    manager = new Manager(managerDir, new Deployed(), window, this);
+    var window= Window.create(managerDir);
     UserError.owner(window.frame);
-    userMessages.Violation.running(() -> manager.state().running());
     window.tray();
     window.hide();
+    manager = new Manager(managerDir, new Deployed(), window, this);
+    Thread.setDefaultUncaughtExceptionHandler((_,t) -> manager.fail(t));
+    userMessages.Violation.running(() -> manager.state().running());
     manager.drain();
     Thread.startVirtualThread(() -> watch(watcher));
     if (Fs.isMac()){ takeOpened(); Thread.startVirtualThread(() -> { while (true){ leaveOpened(Long.MAX_VALUE); } }); }
@@ -279,7 +280,7 @@ public final class Main implements Manager.Exit{
       catch (InterruptedException e){ throw Bug.of(e); }
       key.pollEvents();
       manager.drain();
-      if (!key.reset()){ fail(Violation.messageFolderNotWatchable(msgDir())); return; }
+      if (!key.reset()){ throw Violation.messageFolderNotWatchable(msgDir()); }
     }
   }
 }
