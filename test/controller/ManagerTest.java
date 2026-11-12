@@ -351,7 +351,7 @@ public class Child{
     var m= manager(dir);
     var link= Disk.link(dir.resolve("link"), folder(dir, "target"));
     send(m, "Register", TaggedText.of(link.toString()));
-    same("Refused request \"Register\" on path\n[###]link\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.", view.refused.getLast());
+    same("Refused request \"Register\" on path\n[###]link\nThe path goes through the symbolic link/junction/mount point\n[###]link\nand Fearless does not follow symbolic links/junctions/mount points.", view.refused.getLast());
     assertEquals(List.of(), listed(m));
   }
   private static Registry.Entry idleEntry(Path folder){ return new Registry.Entry("", folder, Kind.idle, List.of(), Map.of(), Map.of()); }
@@ -820,7 +820,7 @@ The projects are:
     send(m, "Register", TaggedText.of(inner.toString()));
     assertEquals(Optional.of(other), m.state().selected());
     assertEquals(List.of("hello "+hello, "other "+other), listed(m));
-    same("[###]link\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.\n[###]inner\nThe path goes through the symbolic link/junction\n[###]inner\nand Fearless does not follow symbolic links/junctions.", String.join("\n", view.refused));
+    same("[###]link\nThe path goes through the symbolic link/junction/mount point\n[###]link\nand Fearless does not follow symbolic links/junctions/mount points.\n[###]inner\nThe path goes through the symbolic link/junction/mount point\n[###]inner\nand Fearless does not follow symbolic links/junctions/mount points.", String.join("\n", view.refused));
   }
   @Test void kindsChangeToAnyKind(@RealTempDir Path dir){
     var m= manager(dir);

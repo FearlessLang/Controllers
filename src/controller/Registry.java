@@ -101,8 +101,7 @@ public final class Registry{
   }
   public static Map<Path,Away> away(List<Path> folders, Path managerDir){
     var res= new TreeMap<Path,Away>(exact);
-    var mounted= Fix.mountPoints();
-    folders.forEach(f -> alone(f, mounted).ifPresent(why -> res.put(f, new Why(why))));
+    folders.forEach(f -> alone(f).ifPresent(why -> res.put(f, new Why(why))));
     var marked= folders.stream().filter(f -> !res.containsKey(f)).toList();
     var marks= new LinkedHashMap<String,Path>();
     var hits= new ArrayList<Map.Entry<Seen,Path>>();
@@ -124,12 +123,12 @@ public final class Registry{
     return res;
   }
   private static Away refused(Path f, IOException e){ return new Why(Report.registerRefused(f, Report.fileFailure(e))); }
-  private static Optional<String> alone(Path f, Predicate<Path> mounted){
+  private static Optional<String> alone(Path f){
     Optional<Path> at;
     try{ at= stray(f); }
     catch (UncheckedIOException e){ return Optional.of(Report.registerRefused(f, Report.fileFailure(e.getCause()))); }
     if (at.isPresent()){ return Optional.of(at.get().getFileName() == null ? Report.registerDriveLetter(f) : Fs.isLink(at.get()) ? Report.registerLink(f, at.get()) : Report.registerNotListed(f, at.get())); }
-    return Optional.of(Report.projectFolderIsRoot(f)).filter(_ -> f.getFileName() == null || mounted.test(f));
+    return Optional.of(Report.projectFolderIsRoot(f)).filter(_ -> f.getFileName() == null);
   }
   private static boolean corresponds(Path folder){
     try{ return stray(folder).isEmpty(); }

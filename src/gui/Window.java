@@ -436,6 +436,7 @@ public final class Window implements Manager.View{
   }
   static void open(Consumer<String> refuse, Path path){
     if (!Files.exists(path)){ refuse.accept(Report.nothingToOpen(path)); return; }
+    if (Fs.isWindows() && OpenPath.noProgramOpens(path)){ refuse.accept(Report.noProgramOpens(path)); return; }
     try{ said(refuse, path, OpenPath.open(path)); }
     catch (UncheckedIOException e){ refuse.accept(Report.notOpened(path, e.getCause())); }
   }

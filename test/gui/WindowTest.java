@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
@@ -33,12 +32,15 @@ import utils.Err;
 final class WindowTest{
   static{ Err.setUp(AssertionFailedError.class, Assertions::assertEquals, Assertions::assertTrue); }
   @Test void anOpenerEndingWithAnErrorSaysThatNoProgramOpensThePath(@RealTempDir Path dir){
-    if (Fs.isWindows()){ fail("""
-      Agent on Windows: explorer.exe ends with the same exit code whether or not a program opens the path, so the manager never says that no program of the system opens it.
-      Investigate how to tell that no program opens a path (ShellExecuteEx giving SE_ERR_NOASSOC, the Open with dialog),
-      then make Window.open say Report.noProgramOpens there, and make this test check it."""); }
-    var path= dir.resolve("a.html");
     var said= new CompletableFuture<String>();
+    if (Fs.isWindows()){
+      var file= dir.resolve("a.fearless_test_no_program");
+      Fs.writeUtf8(file, "");
+      Window.open(said::complete, file);
+      assertEquals(Report.noProgramOpens(file), said.getNow("nothing said"));
+      return;
+    }
+    var path= dir.resolve("a.html");
     Window.said(said::complete, path, Fs.of(new ProcessBuilder("sh", "-c", "exit 4")::start));
     assertEquals(Report.noProgramOpens(path), said.completeOnTimeout("nothing said", 10, TimeUnit.SECONDS).join());
   }

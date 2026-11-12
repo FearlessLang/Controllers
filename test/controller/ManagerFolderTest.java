@@ -195,12 +195,12 @@ never part of a project, and no project is inside it.
   @Test void aLinkToTheManagerFolderIsNotAProjectEither(@RealTempDir Path dir){
     var managerDir= folder(dir, "manager");
     var link= Disk.link(dir.resolve("link"), managerDir);
-    refused("Refused request \"Register\" on path\n[###]link\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.", () -> projectFolder(link, List.of(), managerDir));
+    refused("Refused request \"Register\" on path\n[###]link\nThe path goes through the symbolic link/junction/mount point\n[###]link\nand Fearless does not follow symbolic links/junctions/mount points.", () -> projectFolder(link, List.of(), managerDir));
   }
   @Test void aPathThroughALinkIsNotAProject(@RealTempDir Path dir){
     folder(folder(dir, "real"), "inner");
     var inner= Disk.link(dir.resolve("link"), dir.resolve("real")).resolve("inner");
-    refused("Refused request \"Register\" on path\n[###]inner\nThe path goes through the symbolic link/junction\n[###]link\nand Fearless does not follow symbolic links/junctions.", () -> projectFolder(inner, List.of(), folder(dir, "manager")));
+    refused("Refused request \"Register\" on path\n[###]inner\nThe path goes through the symbolic link/junction/mount point\n[###]link\nand Fearless does not follow symbolic links/junctions/mount points.", () -> projectFolder(inner, List.of(), folder(dir, "manager")));
   }
   @Test void aPathInAnotherLetterCaseIsNotAProject(@RealTempDir Path dir){
     folder(dir, "hello");
@@ -232,6 +232,10 @@ folder.
     var top= dir;
     while (top.getParent() != null && Files.getFileStore(top).equals(Files.getFileStore(top.getParent()))){ top = top.getParent(); }
     var drive= top;
+    if (drive.getParent() != null){
+      refused("Refused request \"Register\" on path\n[###]\nThe path goes through the symbolic link/junction/mount point\n[###]\nand Fearless does not follow symbolic links/junctions/mount points.", () -> projectFolder(drive, List.of(), folder(dir, "manager")));
+      return;
+    }
     refused("""
 Fearless cannot keep track of this folder as a project: a file system is
 mounted on it, as on the root of a drive or of a USB stick, and a project
