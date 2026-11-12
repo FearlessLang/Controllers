@@ -1660,7 +1660,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     var m= manager(dir);
     Main.messages(dir.getRoot().toString()).forEach(m::message);
     m.settle();
-    same("Fearless cannot keep track of this folder as a project: a file system is\nmounted on it, as on the root of a drive or of a USB stick, and a project\nfolder is never a folder where a file system is mounted.\n[###]", String.join("\n", view.refused));
+    same("Refused request \"Register\" on path\n[###]\nThe path goes through the symbolic link/junction/mount point\n[###]\nand Fearless does not follow symbolic links/junctions/mount points.", String.join("\n", view.refused));
   }
   @Test void theConnectionOfACheckReceivesTheReportOfTheCheck(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
