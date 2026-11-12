@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.awt.SystemTray;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.StandardProtocolFamily;
@@ -26,7 +28,9 @@ import java.util.function.Consumer;
 import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import controller.TestApp;
 import gui.Sni.Msg;
 import gui.Sni.Reader;
 import gui.Sni.Writer;
@@ -34,6 +38,23 @@ import tools.Fs;
 import utils.Bug;
 
 final class SniTest{
+  public static void main(String[] args){
+    var out= Path.of(System.getProperty("fearlessTest.out"));
+    if (args.length == 1){ Fs.writeUtf8(out.resolve("shown"), args[0]); return; }
+    assertTrue(Tray.install(null));
+    Fs.writeUtf8(out.resolve("installed"), "");
+    TestApp.until(out.resolve("shown"));
+    System.exit(0);
+  }
+  private static void aClickOnTheDockIconShowsTheManager(Path tmp) throws IOException{
+    var dir= tmp.toRealPath();
+    var app= TestApp.create(dir.resolve("dock.app"), "gui.SniTest", "-ea", "--enable-native-access=ALL-UNNAMED", "-DfearlessTest.out="+dir);
+    var started= TestApp.open("-W", "-n", "-a", app.toString());
+    TestApp.until(dir.resolve("installed"));
+    TestApp.ended(TestApp.open("-a", app.toString()));
+    TestApp.ended(started);
+    assertEquals("FearlessCommandShow", Fs.readUtf8(dir.resolve("shown")));
+  }
   @Test void aCallIsFramedAndParsedBack(){
     var bytes= Sni.frame(7, 1, 0, "org.kde.StatusNotifierWatcher", "/StatusNotifierWatcher", "org.kde.StatusNotifierWatcher", "RegisterStatusNotifierItem", null, "s", new Writer().str("/StatusNotifierItem"));
     var m= Sni.parse(bytes);
@@ -150,8 +171,8 @@ final class SniTest{
     assertEquals(":1.5", m.fields()[6]);
     assertEquals("after", m.body().str());
   }
-  @Test void aFakeBusDrivesTheItemAndTheWatcherLeavingIsTheTrayGoingAway() throws Exception{
-    if (Fs.isMac()){ fail(macDock); }
+  @Test void aFakeBusDrivesTheItemAndTheWatcherLeavingIsTheTrayGoingAway(@TempDir Path tmp) throws Exception{
+    if (Fs.isMac()){ aClickOnTheDockIconShowsTheManager(tmp); return; }
     if (Fs.isWindows()){ fail("""
       Agent on Windows: on Windows the icon of a passive manager is the AWT tray icon that Tray.install adds to SystemTray,
       and Tray.install calls Window.trayed(false) when the system tray goes away or no longer holds that icon.
@@ -223,13 +244,12 @@ final class SniTest{
     answer(c, 2, 17);
     Sni.write(c, msg(4, 0, 5, new Writer().str("org.kde.StatusNotifierWatcher").str(":1.9").str(""), busSignal("NameOwnerChanged").andThen(g("sss"))));
   }
-  private static final String macDock= """
-    Agent on macOS: ControllersDesign says that on macOS the icon is the Dock icon of the manager, and the manager shows no tray icon:
-    Tray.install adds a listener for the Dock icon being clicked again and nothing to SystemTray.
-    Make this test check that on macOS Tray.install leaves SystemTray with no icon of the manager and that a click on the Dock icon shows the manager,
-    as it checks on Linux the StatusNotifierItem that a desktop with a tray shows.""";
   @Test void withNoWatcherTheItemIsNotServedAndTheBusIsLeft() throws Exception{
-    if (Fs.isMac()){ fail(macDock); }
+    if (Fs.isMac()){
+      assertTrue(Tray.install(null));
+      assertEquals(0, SystemTray.getSystemTray().getTrayIcons().length);
+      return;
+    }
     if (Fs.isWindows()){ fail("""
       Agent on Windows: ControllersDesign says that on a system with no tray the manager shows the 'tray icon window', and Tray.install returns false when SystemTray.isSupported() is false.
       Investigate whether a Windows desk can run without a system tray (no explorer.exe shell, a session of a service),

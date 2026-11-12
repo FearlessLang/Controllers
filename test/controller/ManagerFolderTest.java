@@ -1,13 +1,15 @@
 package controller;
 
 import static controller.Errs.same;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -19,6 +21,7 @@ import tempDirs.RealTempDir;
 
 import managerMessages.Report;
 import tools.Fs;
+import tools.JavacTool;
 import utils.OneOr;
 
 final class ManagerFolderTest{
@@ -94,12 +97,23 @@ final class ManagerFolderTest{
     var notUnicode= Fs.isWindows() ? "Base16:43003A005C00610000D8" : "Base16:2F636166E9";
     assertEquals("Register\n"+notUnicode, message("FearlessCommandRegister "+notUnicode));
   }
-  @Test void theArgumentOpenedIsABadArgumentOutsideMacOS(){
-    if (Fs.isMac()){ fail("""
-      Agent on macOS: ControllersDesign says that on macOS the one argument FearlessCommandOpened leaves no message, and the manager leaves the messages of the open-file event instead.
-      Investigate how a test delivers an open-file event to a manager that is not headless (open -a on the helper bundle of the manager),
-      then make this test check that FearlessCommandOpened leaves no message and that the event leaves the messages of its paths."""); }
+  @Test void theArgumentOpenedIsABadArgumentOutsideMacOS(@RealTempDir Path dir) throws IOException{
+    if (Fs.isMac()){ openedByAnEvent(dir); return; }
     same(invalid("FearlessCommandOpened", "\"FearlessCommandOpened\" is not a command; the commands are \"FearlessCommandAttenuate\", [###], \"FearlessCommandUnmount\"."), message("FearlessCommandOpened"));
+  }
+  private static void openedByAnEvent(Path dir) throws IOException{
+    var app= TestApp.create(dir.resolve("fearlessManaged0_999.app"), "controller.Main", "-ea", "--enable-native-access=ALL-UNNAMED",
+      "-D"+JavacTool.appDirKey+"=$APPDIR", "-D"+JavacTool.launcherKey+"=console", "-D"+JavacTool.versionIdKey+"=0_999");
+    var messages= folder(folder(dir, "fearless0_999"), "messages");
+    var notes= dir.resolve("notes.htm");
+    var data= dir.resolve("data.txt");
+    Fs.writeUtf8(notes, "");
+    Fs.writeUtf8(data, "");
+    try (var lock= FileChannel.open(messages.resolveSibling("instance.lock"), CREATE, WRITE); var _= lock.lock()){
+      TestApp.ended(TestApp.open("-W", "-n", "-a", app.toString(), notes.toString(), data.toString(), "--args", "FearlessCommandOpened"));
+    }
+    var left= Fs.of(() -> { try (var s= Files.list(messages)){ return s.map(Fs::readUtf8).sorted().toList(); }});
+    assertEquals(List.of("OpenWithOrShortcut\n"+TaggedText.ofPath(data), "OpenWithOrShortcut\n"+TaggedText.ofPath(notes)), left);
   }
   @Test void anArgumentThatIsNotACallIsAnInvalidCall(){
     same(invalid("FearlessCommandbuild hello", "\"FearlessCommandbuild\" is not a command; the commands are \"FearlessCommandAttenuate\", [###], \"FearlessCommandUnmount\"."), message("FearlessCommandbuild hello"));
