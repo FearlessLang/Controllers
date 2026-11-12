@@ -4,9 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static suggest.DocsTest.same;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,12 +12,11 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
-import resources.ResolveResource;
 import suggest.Api.Ty;
 import suggest.Resolver.Row;
 import suggest.Resolver.Suggestions;
 
-final class ResolverTest{
+public final class ResolverTest{
   static String x(String n){ return "[\"x\",\""+n+"\"]"; }
   static String c(String n, String... args){ return "[\"c\",\"imm\",\""+n+"\""+Stream.of(args).map(a -> ","+a).collect(Collectors.joining())+"]"; }
   static String sup(String n, String... args){ return "[\""+n+"\""+Stream.of(args).map(a -> ","+a).collect(Collectors.joining())+"]"; }
@@ -65,9 +61,9 @@ final class ResolverTest{
     type("test.Pairs", bs(), "[]", m("#", bs("E"), list(x("E"), x("E")), c("base.Opt", x("E")))),
     type("test.Student", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))),
     type("test._Shy", bs(), list(sup("test.Person"), sup("base.OrderHash", c("test.Person")))));
-  static final Api compiled= new Api(ApiTest.types(api));
-  static final String head= Stream.of("Str", "Nat", "List", "Flow", "Opt", "Opts", "OptMatch", "F", "Block", "OrderHash", "Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
-  static final String file= """
+  public static final Api compiled= new Api(ApiTest.types(api));
+  public static final String head= Stream.of("Str", "Nat", "List", "Flow", "Opt", "Opts", "OptMatch", "F", "Block", "OrderHash", "Bool").map(n -> "use base."+n+" as "+n+";").collect(Collectors.joining("\n"));
+  public static final String file= """
 Cats: { #(name: Str, weight: Nat): Cat -> Cat: { .name: Str -> name; .weight: Nat -> weight; } }
 Persons: { #(age: Nat, name: Str, cats: List[Cat]): Person -> Person: OrderHash[Person] { 'self
   read .name: Str -> name;
@@ -410,24 +406,5 @@ Names: { #(ps: List[Person]): List[Str] ->\s""";
     same("lib.Bool", r.written(new Ty("base.Bool", List.of())));
     same("Cat", r.written(new Ty("test.Cat", List.of())));
     same("test.Person", r.written(new Ty("test.Person", List.of())));
-  }
-  @Test void noTextNorCursorMakesTheSuggestionsThrow() throws IOException{
-    var heads= head+"\nuse Foo as B;\nuse base. as C;\nuse as D;\nuse lib.Str as;\nuse lib.Nat as N;";
-    List<Path> fear;
-    try (var all= Files.walk(ResolveResource.stLibPath)){ fear= all.filter(p -> p.toString().endsWith(".fear")).sorted().toList(); }
-    for (var p : fear){
-      var t= Files.readString(p);
-      var r= Resolver.of(compiled, "base", Map.of("lib", "base"), heads, t);
-      IntStream.rangeClosed(0, t.length()).forEach(r::suggest);
-    }
-    for (var t : List.of(file, Files.readString(ResolveResource.stLibPath.resolve("pipes.fear")))){
-      IntStream.rangeClosed(0, t.length()).forEach(k -> suggest(heads, t.substring(0, k), k));
-      IntStream.range(0, t.length()).forEach(k -> suggest(heads, t.substring(0, k)+t.substring(k+1), k));
-    }
-  }
-  static void suggest(String head, String text, int pos){
-    var r= Resolver.of(compiled, "base", Map.of("lib", "base"), head, text);
-    r.suggest(pos);
-    r.expected(pos);
   }
 }

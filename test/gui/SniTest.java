@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -24,7 +25,6 @@ import java.util.concurrent.FutureTask;
 import java.util.function.Consumer;
 import java.util.Locale;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import gui.Sni.Msg;
@@ -151,7 +151,12 @@ final class SniTest{
     assertEquals("after", m.body().str());
   }
   @Test void aFakeBusDrivesTheItemAndTheWatcherLeavingIsTheTrayGoingAway() throws Exception{
-    Assumptions.assumeTrue(Fs.isLinux());
+    if (Fs.isMac()){ fail(macDock); }
+    if (Fs.isWindows()){ fail("""
+      Agent on Windows: on Windows the icon of a passive manager is the AWT tray icon that Tray.install adds to SystemTray,
+      and Tray.install calls Window.trayed(false) when the system tray goes away or no longer holds that icon.
+      Make this test check that on Windows (for example by removing the icon with SystemTray.remove), as it checks on Linux that the StatusNotifierItem
+      leaving with its watcher calls trayed(false)."""); }
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
     var icon= new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
@@ -218,8 +223,17 @@ final class SniTest{
     answer(c, 2, 17);
     Sni.write(c, msg(4, 0, 5, new Writer().str("org.kde.StatusNotifierWatcher").str(":1.9").str(""), busSignal("NameOwnerChanged").andThen(g("sss"))));
   }
+  private static final String macDock= """
+    Agent on macOS: ControllersDesign says that on macOS the icon is the Dock icon of the manager, and the manager shows no tray icon:
+    Tray.install adds a listener for the Dock icon being clicked again and nothing to SystemTray.
+    Make this test check that on macOS Tray.install leaves SystemTray with no icon of the manager and that a click on the Dock icon shows the manager,
+    as it checks on Linux the StatusNotifierItem that a desktop with a tray shows.""";
   @Test void withNoWatcherTheItemIsNotServedAndTheBusIsLeft() throws Exception{
-    Assumptions.assumeTrue(Fs.isLinux());
+    if (Fs.isMac()){ fail(macDock); }
+    if (Fs.isWindows()){ fail("""
+      Agent on Windows: ControllersDesign says that on a system with no tray the manager shows the 'tray icon window', and Tray.install returns false when SystemTray.isSupported() is false.
+      Investigate whether a Windows desk can run without a system tray (no explorer.exe shell, a session of a service),
+      then make this test check there that Tray.install returns false, as it checks on Linux that with no StatusNotifierWatcher no item is served."""); }
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
     try (var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
