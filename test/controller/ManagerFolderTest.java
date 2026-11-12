@@ -217,34 +217,15 @@ never part of a project, and no project is inside it.
     assertEquals(List.of("inner"), Names.list(hello).stream().map(p -> p.getFileName().toString()).toList());
   }
   @Test void theRootOfADriveIsNotAProject(@RealTempDir Path dir){
-    refused("""
-Fearless cannot keep track of this folder as a project: a file system is
-mounted on it, as on the root of a drive or of a USB stick, and a project
-folder is never a folder where a file system is mounted.
-
-The folder is:
-[###]
-Put the project in a folder inside it, and make that folder the project
-folder.
-""", () -> projectFolder(dir.getRoot(), List.of(), folder(dir, "manager")));
+    refused("Refused request \"Register\" on path\n[###]\nThe path goes through the symbolic link/junction/mount point\n[###]\nand Fearless does not follow symbolic links/junctions/mount points.", () -> projectFolder(dir.getRoot(), List.of(), folder(dir, "manager")));
   }
-  @Test void theTopFolderOfADriveIsNotAProject(@RealTempDir Path dir) throws IOException{
+  @Test void theTopFolderOfADriveIsNotAProjectAndAFolderInsideItIs(@RealTempDir Path dir) throws IOException{
     var top= dir;
     while (top.getParent() != null && Files.getFileStore(top).equals(Files.getFileStore(top.getParent()))){ top = top.getParent(); }
     var drive= top;
-    if (drive.getParent() != null){
-      refused("Refused request \"Register\" on path\n[###]\nThe path goes through the symbolic link/junction/mount point\n[###]\nand Fearless does not follow symbolic links/junctions/mount points.", () -> projectFolder(drive, List.of(), folder(dir, "manager")));
-      return;
-    }
-    refused("""
-Fearless cannot keep track of this folder as a project: a file system is
-mounted on it, as on the root of a drive or of a USB stick, and a project
-folder is never a folder where a file system is mounted.
-
-The folder is:
-  %s
-Put the project in a folder inside it, and make that folder the project
-folder.
-""".formatted(drive), () -> projectFolder(drive, List.of(), folder(dir, "manager")));
+    var manager= folder(dir, "manager");
+    refused("Refused request \"Register\" on path\n[###]\nThe path goes through the symbolic link/junction/mount point\n[###]\nand Fearless does not follow symbolic links/junctions/mount points.", () -> projectFolder(drive, List.of(), manager));
+    var hello= folder(dir, "hello");
+    assertEquals(hello, projectFolder(hello, List.of(), manager));
   }
 }

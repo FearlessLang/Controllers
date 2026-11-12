@@ -39,6 +39,7 @@ import managerMessages.Report;
 import managerMessages.Violation;
 import metaParser.Span;
 import realSourceOracle.Fix;
+import realSourceOracle.LongPath;
 import tools.Fs;
 import userMessages.UserError;
 import utils.Join;
@@ -128,8 +129,9 @@ public final class Registry{
     try{ at= stray(f); }
     catch (UncheckedIOException e){ return Optional.of(Report.registerRefused(f, Report.fileFailure(e.getCause()))); }
     if (at.isPresent()){ return Optional.of(at.get().getFileName() == null ? Report.registerDriveLetter(f) : Fs.isLink(at.get()) ? Report.registerLink(f, at.get()) : Report.registerNotListed(f, at.get())); }
-    return Optional.of(Report.projectFolderIsRoot(f)).filter(_ -> f.getFileName() == null);
+    return Optional.of(Report.registerLink(f, f)).filter(_ -> f.getFileName() == null || !Fix.realFolder(f));
   }
+  private static boolean reached(Path p){ return Fs.isWindows() ? Fix.realFolder(p) || Fs.of(LongPath::mountPoints).contains(p) : Files.isDirectory(p, LinkOption.NOFOLLOW_LINKS); }
   private static boolean corresponds(Path folder){
     try{ return stray(folder).isEmpty(); }
     catch (UncheckedIOException _){ return false; }
@@ -140,7 +142,7 @@ public final class Registry{
     for (var name : folder){
       if (!listed(at, name.toString())){ return Optional.of(at.resolve(name)); }
       at = at.resolve(name);
-      if (!Fix.realFolder(at)){ return Optional.of(at); }
+      if (!reached(at)){ return Optional.of(at); }
     }
     return Optional.empty();
   }
@@ -173,7 +175,7 @@ public final class Registry{
     catch (IOException | UncheckedIOException _){ return; }
     for (var k : kids){
       Optional.ofNullable(marks.get(k.getFileName().toString())).ifPresent(x -> hits.add(Map.entry(new Seen(top, x, same(folder, top)), k)));
-      if (Fix.realFolder(k)){ walk(top, k, marks, hits); }
+      if (reached(k)){ walk(top, k, marks, hits); }
     }
   }
   private static Optional<Away> met(Path f, Path m, List<Path> reached, Set<Seen> seen){

@@ -309,18 +309,6 @@ The manager folder holds what Fearless remembers about your projects: it is
 never part of a project, and no project is inside it.
 """, Report.managerFolderNotAProject(Path.of("C:\\Users\\ada\\fearless0_007\\messages"), Path.of("C:\\Users\\ada\\fearless0_007")));
   }
-  @Test void projectFolderIsRoot(){
-    same("""
-Fearless cannot keep track of this folder as a project: a file system is
-mounted on it, as on the root of a drive or of a USB stick, and a project
-folder is never a folder where a file system is mounted.
-
-The folder is:
-  C:\\
-Put the project in a folder inside it, and make that folder the project
-folder.
-""", Report.projectFolderIsRoot(Path.of("C:\\")));
-  }
   @Test void fixQuestion(){
     same("""
 Fix changes the folder of project "hello":

@@ -284,7 +284,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     var inside= folder(manager, "inside");
     var res= away(dir, Path.of(root), manager, inside, dir);
     assertEquals(Set.of(Path.of(root), manager, inside, dir), res.keySet());
-    same("Fearless cannot keep track of this folder as a project: a file system is\nmounted on it, as on the root of a drive or of a USB stick, and a project\nfolder is never a folder where a file system is mounted.\n[###]", why(res, Path.of(root)));
+    same("Refused request \"Register\" on path\n[###]\nThe path goes through the symbolic link/junction/mount point\n[###]\nand Fearless does not follow symbolic links/junctions/mount points.", why(res, Path.of(root)));
     same(inManager(manager, manager), why(res, manager));
     same(inManager(inside, manager), why(res, inside));
     same(inManager(dir, manager), why(res, dir));
