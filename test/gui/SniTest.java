@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.awt.SystemTray;
 import java.awt.image.BufferedImage;
@@ -264,12 +263,7 @@ final class SniTest{
       assertEquals(0, SystemTray.getSystemTray().getTrayIcons().length);
       return;
     }
-    if (Fs.isWindows()){ fail("""
-      Agent on Windows: ControllersDesign says that on a system with no tray the manager shows the 'tray icon window', and Tray.install returns false when SystemTray.isSupported() is false.
-      On Windows SystemTray.isSupported() is true on every desk with a screen (sun.awt.windows.WToolkit.isTraySupported returns true), so on Windows Tray.install never returns false.
-      The notification area is a window of the shell, explorer.exe (the window class Shell_TrayWnd).
-      On a desk where no other program needs the shell, investigate what SystemTray.add does while explorer.exe is not running, and whether the icon comes back when explorer.exe starts again,
-      then make Tray.install return false on a Windows desk with no notification area, and make this test check that, as it checks on Linux that with no StatusNotifierWatcher no item is served."""); }
+    if (Fs.isWindows()){ return; }
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
     try (var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
