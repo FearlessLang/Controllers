@@ -25,7 +25,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.FutureTask;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import java.util.Locale;
+
+import javax.swing.SwingUtilities;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -36,6 +39,7 @@ import gui.Sni.Reader;
 import gui.Sni.Writer;
 import tools.Fs;
 import utils.Bug;
+import utils.OneOr;
 
 final class SniTest{
   public static void main(String[] args){
@@ -173,11 +177,7 @@ final class SniTest{
   }
   @Test void aFakeBusDrivesTheItemAndTheWatcherLeavingIsTheTrayGoingAway(@TempDir Path tmp) throws Exception{
     if (Fs.isMac()){ aClickOnTheDockIconShowsTheManager(tmp); return; }
-    if (Fs.isWindows()){ fail("""
-      Agent on Windows: on Windows the icon of a passive manager is the AWT tray icon that Tray.install adds to SystemTray,
-      and Tray.install calls Window.trayed(false) when the system tray goes away or no longer holds that icon.
-      Make this test check that on Windows (for example by removing the icon with SystemTray.remove), as it checks on Linux that the StatusNotifierItem
-      leaving with its watcher calls trayed(false)."""); }
+    if (Fs.isWindows()){ trayIconRemoved(tmp.toRealPath()); return; }
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
     var icon= new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
@@ -191,6 +191,20 @@ final class SniTest{
       assertEquals(List.of("activate", "activate", "activate", "menu 5,6", "menu 7,8", "quit", "tray false", "tray false"), log);
     }
     finally{ Files.deleteIfExists(socket); Files.delete(dir); }
+  }
+  private static Stream<java.awt.Window> standIns(){ return Stream.of(java.awt.Window.getWindows()).filter(w -> "standIn".equals(w.getName()) && w.isVisible()); }
+  private static void trayIconRemoved(Path tmp) throws Exception{
+    var window= WindowTest.window(tmp);
+    try{
+      assertTrue(Window.onEdt(() -> Tray.install(window)));
+      var tray= SystemTray.getSystemTray();
+      var icon= OneOr.of("one tray icon", Stream.of(tray.getTrayIcons()));
+      assertEquals(0, standIns().count());
+      Window.onEdt(() -> { tray.remove(icon); return null; });
+      SwingUtilities.invokeAndWait(() -> {});
+      assertEquals(1, standIns().count());
+    }
+    finally{ Stream.of(java.awt.Window.getWindows()).forEach(java.awt.Window::dispose); }
   }
   private static void busScript(SocketChannel c, BufferedImage icon) throws IOException{
     assertEquals("\0AUTH EXTERNAL "+hex(""+Files.getAttribute(Path.of("/proc/self"), "unix:uid")), Sni.line(c));
@@ -252,8 +266,10 @@ final class SniTest{
     }
     if (Fs.isWindows()){ fail("""
       Agent on Windows: ControllersDesign says that on a system with no tray the manager shows the 'tray icon window', and Tray.install returns false when SystemTray.isSupported() is false.
-      Investigate whether a Windows desk can run without a system tray (no explorer.exe shell, a session of a service),
-      then make this test check there that Tray.install returns false, as it checks on Linux that with no StatusNotifierWatcher no item is served."""); }
+      On Windows SystemTray.isSupported() is true on every desk with a screen (sun.awt.windows.WToolkit.isTraySupported returns true), so on Windows Tray.install never returns false.
+      The notification area is a window of the shell, explorer.exe (the window class Shell_TrayWnd).
+      On a desk where no other program needs the shell, investigate what SystemTray.add does while explorer.exe is not running, and whether the icon comes back when explorer.exe starts again,
+      then make Tray.install return false on a Windows desk with no notification area, and make this test check that, as it checks on Linux that with no StatusNotifierWatcher no item is served."""); }
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
     try (var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){

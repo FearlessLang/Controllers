@@ -63,7 +63,7 @@ no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new
     Window.open(said::add, gen.resolve("hello.html"));
     assertEquals(List.of("Nothing is opened: nothing exists at\n  "+gen.resolve("hello.html")), said);
   }
-  private static Window window(Path dir){
+  static Window window(Path dir){
     var app= dir.resolve("app");
     Fs.ensureDir(app);
     Fs.ofV(() -> ImageIO.write(new BufferedImage(64, 64, BufferedImage.TYPE_INT_RGB), "png", app.resolve("icon.png").toFile()));
