@@ -62,7 +62,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
     Coordinator.State state= new Coordinator.State.OutOfDate();
     try{
       problem= Names.markerProblem(folder, alias);
-      if (kind != Kind.code){ new RealSourceOracleWithZip(folder); }
+      if (kind.isData()){ new RealSourceOracleWithZip(folder); }
     }
     catch (UserError e){ problem = Optional.of(e.getMessage()); }
     Optional<Icon> icon= Optional.empty();

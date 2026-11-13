@@ -805,7 +805,7 @@ public final class Manager{
     autoCheck(others.get(turn % others.size()));
   }
   private void autoCheck(Path f){
-    if (untouched(f, live.get(f).read)){ return; }
+    if (registry.of(f).orElseThrow().kind() != Kind.idle && untouched(f, live.get(f).read)){ return; }
     scan(f);
   }
   private static boolean untouched(Path f, long since){
