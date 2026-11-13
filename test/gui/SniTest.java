@@ -263,7 +263,7 @@ final class SniTest{
       assertEquals(0, SystemTray.getSystemTray().getTrayIcons().length);
       return;
     }
-    if (Fs.isWindows()){ return; }
+    if (Fs.isWindows()){ assertTrue(SystemTray.isSupported()); return; }
     var dir= Files.createTempDirectory("sni");
     var socket= dir.resolve("bus");
     try (var server= ServerSocketChannel.open(StandardProtocolFamily.UNIX)){
