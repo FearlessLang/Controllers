@@ -22,21 +22,6 @@ final class SystemExtensionTest extends ManagerTest{
     on("arch_sway", () -> region(val(1306), val(152), val(1000), val(80))),
     on("void_i3", () -> region(val(1306), val(115), val(1000), val(80))),
     on("omarchy_hyprland", () -> region(val(1311), val(135), val(1000), val(80))));
-  final Action centerArea= action("centerArea",
-    on("ubuntu_gnome", () -> region(val(760), val(460), val(400), val(160))),
-    on("kubuntu_plasma", () -> region(val(null), val(null), val(null), val(null))),
-    on("windows", () -> region(val(null), val(null), val(null), val(null))),
-    on("opensuse_plasma", () -> region(val(null), val(null), val(null), val(null))),
-    on("debian_cinnamon", () -> region(val(null), val(null), val(null), val(null))),
-    on("lubuntu_lxqt", () -> region(val(null), val(null), val(null), val(null))),
-    on("fedora_gnome", () -> region(val(null), val(null), val(null), val(null))),
-    on("debian_gnome_x11", () -> region(val(null), val(null), val(null), val(null))),
-    on("fedora_cosmic", () -> region(val(null), val(null), val(null), val(null))),
-    on("debian_mate", () -> region(val(null), val(null), val(null), val(null))),
-    on("xubuntu_xfce", () -> region(val(760), val(460), val(400), val(160))),
-    on("arch_sway", () -> region(val(null), val(null), val(null), val(null))),
-    on("void_i3", () -> region(val(null), val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> region(val(null), val(null), val(null), val(null))));
   final Action becomeCode= action("becomeCode",
     on("ubuntu_gnome", () -> waitClick(val(0), val(980), val(113))),
     on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
@@ -142,66 +127,6 @@ final class SystemExtensionTest extends ManagerTest{
     on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
     on("void_i3", () -> waitClick(val(null), val(null), val(null))),
     on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
-  final Action questionShown= action("questionShown",
-    on("ubuntu_gnome", () -> waitAfter(val(21000))),
-    on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
-    on("opensuse_plasma", () -> waitAfter(val(null))),
-    on("debian_cinnamon", () -> waitAfter(val(null))),
-    on("lubuntu_lxqt", () -> waitAfter(val(null))),
-    on("fedora_gnome", () -> waitAfter(val(null))),
-    on("debian_gnome_x11", () -> waitAfter(val(null))),
-    on("fedora_cosmic", () -> waitAfter(val(null))),
-    on("debian_mate", () -> waitAfter(val(null))),
-    on("xubuntu_xfce", () -> waitAfter(val(26000))),
-    on("arch_sway", () -> waitAfter(val(null))),
-    on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
-  final Action yesButton= action("yesButton",
-    on("ubuntu_gnome", () -> waitClick(val(null), val(null), val(null))),
-    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
-    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
-    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
-    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
-    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
-    on("xubuntu_xfce", () -> waitClick(val(null), val(null), val(null))),
-    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
-    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
-  final Action allowed= action("allowed",
-    on("ubuntu_gnome", () -> waitAfter(val(4500))),
-    on("kubuntu_plasma", () -> waitAfter(val(null))),
-    on("windows", () -> waitAfter(val(null))),
-    on("opensuse_plasma", () -> waitAfter(val(null))),
-    on("debian_cinnamon", () -> waitAfter(val(null))),
-    on("lubuntu_lxqt", () -> waitAfter(val(null))),
-    on("fedora_gnome", () -> waitAfter(val(null))),
-    on("debian_gnome_x11", () -> waitAfter(val(null))),
-    on("fedora_cosmic", () -> waitAfter(val(null))),
-    on("debian_mate", () -> waitAfter(val(null))),
-    on("xubuntu_xfce", () -> waitAfter(val(5500))),
-    on("arch_sway", () -> waitAfter(val(null))),
-    on("void_i3", () -> waitAfter(val(null))),
-    on("omarchy_hyprland", () -> waitAfter(val(null))));
-  final Action compileAgain= action("compileAgain",
-    on("ubuntu_gnome", () -> waitClick(val(0), val(533), val(113))),
-    on("kubuntu_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("windows", () -> waitClick(val(null), val(null), val(null))),
-    on("opensuse_plasma", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_cinnamon", () -> waitClick(val(null), val(null), val(null))),
-    on("lubuntu_lxqt", () -> waitClick(val(null), val(null), val(null))),
-    on("fedora_gnome", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_gnome_x11", () -> waitClick(val(null), val(null), val(null))),
-    on("fedora_cosmic", () -> waitClick(val(null), val(null), val(null))),
-    on("debian_mate", () -> waitClick(val(null), val(null), val(null))),
-    on("xubuntu_xfce", () -> waitClick(val(0), val(492), val(93))),
-    on("arch_sway", () -> waitClick(val(null), val(null), val(null))),
-    on("void_i3", () -> waitClick(val(null), val(null), val(null))),
-    on("omarchy_hyprland", () -> waitClick(val(null), val(null), val(null))));
   final Action compiled= action("compiled",
     on("ubuntu_gnome", () -> waitAfter(val(21000))),
     on("kubuntu_plasma", () -> waitAfter(val(null))),
@@ -279,16 +204,8 @@ final class SystemExtensionTest extends ManagerTest{
     projectShown.go();
     becomeCode.go();
     codeShown.go();
-    var before= look();
     compile.go();
-    questionShown.go();
-    centerArea.go();
-    var center= region;
-    changed(before, center);
-    stabilize();
-    checkContent(files.resolve("opens/.fearless_out/_error.txt"), "The system extension \"fzz\" of [###] of main \"hello.Hello\" is not in \"systemExtensions\" of projects.info.");
-    yesButton.go();
-    allowed.go();
+    compiled.go();
     stabilize();
     checkContent(info, """
 {
@@ -298,11 +215,9 @@ final class SystemExtensionTest extends ManagerTest{
       "kind": "code"
     }
   ],
-  "systemExtensions": ["fzz"]
+  "reserve": ["fzz"]
 }
 """.formatted(slashed(opens)));
-    compileAgain.go();
-    compiled.go();
     var compiledLook= look();
     toFiles();
     openOpens.go();

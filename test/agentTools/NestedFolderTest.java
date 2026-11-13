@@ -280,7 +280,7 @@ final class NestedFolderTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(inner));
     start();

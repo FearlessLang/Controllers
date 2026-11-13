@@ -306,7 +306,7 @@ final class KindWhileBusyTest extends ManagerTest{
       "kind": "code"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(gui));
     var compiledLook= look();

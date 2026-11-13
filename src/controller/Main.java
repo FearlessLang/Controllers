@@ -185,8 +185,8 @@ public final class Main implements Manager.Exit{
     try{
       if (manager != null){ manager.stop(); }
       if (watcher != null){ Fs.ofV(watcher::close); }
-      if (lock != null){ Fs.ofV(() -> lock.channel().close()); }
       Fs.rmTree(managerDir);
+      if (lock != null){ Fs.ofV(() -> lock.channel().close()); }
       mainCoordinator.Main.eradicateAll();
       return Optional.empty();
     }

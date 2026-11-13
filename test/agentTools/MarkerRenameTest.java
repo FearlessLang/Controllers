@@ -134,7 +134,7 @@ final class MarkerRenameTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(old)));
     var named= look();

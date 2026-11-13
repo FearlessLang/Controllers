@@ -163,7 +163,7 @@ final class LaunchOnFileTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project));
     start();

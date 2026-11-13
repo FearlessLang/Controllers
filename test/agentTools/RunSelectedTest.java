@@ -277,7 +277,7 @@ final class RunSelectedTest extends ManagerTest{
       "mains": ["hello.Hello1", "hello.Hello4"]
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project)));
     managerMenu.go();

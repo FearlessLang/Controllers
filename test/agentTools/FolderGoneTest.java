@@ -204,7 +204,7 @@ final class FolderGoneTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(gone)));
     assertFalse(Files.exists(gone));

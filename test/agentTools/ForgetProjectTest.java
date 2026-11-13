@@ -168,7 +168,7 @@ final class ForgetProjectTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project)));
     assertEquals(files, files(other));

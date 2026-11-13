@@ -54,7 +54,7 @@ final class EditMetadataCommitTest extends ManagerTest{
       "kind": "%s"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """;
   final Action openHelloWorld= action("openHelloWorld",

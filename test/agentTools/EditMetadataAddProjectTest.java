@@ -230,7 +230,7 @@ final class EditMetadataAddProjectTest extends ManagerTest{
     var project= project("helloWorld");
     var other= project("helloStackTraces");
     var both= """
-{"projects": [{"path": "Str:\\"%s\\"", "kind": "idle"}, {"path": "Str:\\"%s\\"", "kind": "idle"}], "systemExtensions": []}
+{"projects": [{"path": "Str:\\"%s\\"", "kind": "idle"}, {"path": "Str:\\"%s\\"", "kind": "idle"}], "reserve": []}
 """.formatted(slashed(project), slashed(other));
     var bare= look();
     start();
@@ -260,7 +260,7 @@ final class EditMetadataAddProjectTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project), slashed(other)));
     secondTile.go();

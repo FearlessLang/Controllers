@@ -224,7 +224,7 @@ final class AliasClashTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(first), slashed(second)));
     assertEquals(List.of("a/twin/_twin/_rank_app.fear", "a/twin/twin.fearless", "b/twin/_twin/_rank_app.fear", "b/twin/twin2.fearless"),

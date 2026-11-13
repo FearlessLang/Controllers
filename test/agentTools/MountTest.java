@@ -688,7 +688,7 @@ Write: Main{s -> base.Block#
       "kind": "%s"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(journal), mounts, slashed(notes), notesKind);
   }

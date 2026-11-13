@@ -151,7 +151,7 @@ final class SecondLaunchOnFileTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project), slashed(other)));
     managerMenu.go();
