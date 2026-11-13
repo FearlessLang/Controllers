@@ -40,14 +40,10 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public record Claimant(Path folder, String alias, String main, String kind, MainsInfo.Claim claim){
     public boolean shortcut(){ return kind.equals("Shortcut"); }
     public String label(){ return alias+"::"+main; }
-    public Path icon(String suffix){
-      var files= Coordinator.iconFiles(folder, claim);
-      return suffix.equals(".png") ? files.getFirst() : files.getLast();
-    }
-    public Path shortcutFile(){ return folder.resolve(Project.shortcutFile(folder, main, claim.extension())); }
+    public Path png(){ return Coordinator.iconFiles(folder, claim).getFirst(); }
     /// none for a main whose Shortcut gives no valid file name: its compilation failed
     public Optional<Path> namedShortcutFile(){
-      try{ return Optional.of(shortcutFile()); }
+      try{ return Optional.of(folder.resolve(Project.shortcutFile(folder, main, claim.extension()))); }
       catch (UserError e){ return Optional.empty(); }
     }
   }
@@ -76,7 +72,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
     var target= OneOr.opt("project "+data, all.stream().filter(p -> p.alias().equals(data)));
     if (target.isEmpty()){ return Optional.of(Report.mountNotRegistered(data)); }
     var kind= target.get().kind();
-    if (!kind.isData()){ return Optional.of(Report.mountNotData(data, kind.text)); }
+    if (!kind.isData()){ return Optional.of(Report.mountNotData(data, kind.name())); }
     if (kind == Kind.dataRead && mains.isPresent() && mains.get().dataEdit().contains(type)){ return Optional.of(Report.mountNotEditable(data, type)); }
     return target.get().problem().map(why -> Report.mountInvalid(data, why));
   }
@@ -124,11 +120,11 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
       case code -> !needsCompiling() ? State.codeCompiled : State.codeOutdated;
     };
   }
-  public enum Action{ check, compile, run, terminate }
+  public enum Action{ Check, Compile, Run, Terminate }
   public Action action(){
-    if (busy()){ return Action.terminate; }
-    if (kind() != Kind.code || problem().isPresent()){ return Action.check; }
-    if (needsCompiling()){ return Action.compile; }
-    return Action.run;
+    if (busy()){ return Action.Terminate; }
+    if (kind() != Kind.code || problem().isPresent()){ return Action.Check; }
+    if (needsCompiling()){ return Action.Compile; }
+    return Action.Run;
   }
 }

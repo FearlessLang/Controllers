@@ -39,7 +39,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -164,10 +163,7 @@ final class Panel{
     menu.add(fix);
     menu.show(projectMenu, 0, projectMenu.getHeight());
   }
-  private void fix(String alias){
-    var fix= JOptionPane.showOptionDialog(root, Report.fixQuestion(alias, project.folder()), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Fix", "Cancel"}, "Cancel");
-    if (fix == 0){ Main.command("Fix "+alias); }
-  }
+  private void fix(String alias){ if (Window.confirm(root, Report.fixQuestion(alias, project.folder()), "Fix")){ Main.command("Fix "+alias); } }
   /// the state in words, then what is running, the first line of the 'problem', and the broken mounts
   static String status(Project p, List<Project> all){
     var running= p.job() instanceof Project.Job.Main(var main) ? ", running "+main : ", compiling";
@@ -179,7 +175,7 @@ final class Panel{
     var menu= new JPopupMenu();
     var alias= project.alias();
     List.of(Kind.idle, Kind.dataRead, Kind.dataEdit, Kind.code).stream().filter(k -> k != project.kind())
-      .forEach(k -> menu.add(named(Window.item(k == Kind.idle ? "Back to idle" : "Become "+k.text, () -> Main.command("Kind "+alias+" "+k.text)), k.text)));
+      .forEach(k -> menu.add(named(Window.item(k == Kind.idle ? "Back to idle" : "Become "+k.name(), () -> Main.command("Kind "+alias+" "+k.name())), k.name())));
     menu.show(kind, 0, kind.getHeight());
   }
   /// one node per unit test log, named after the main of the Run that wrote it; the nodes with a failure start expanded
@@ -230,13 +226,8 @@ final class Panel{
     root.revalidate();
   }
   private void act(){
-    var alias= project.alias();
-    switch (project.action()){
-      case check -> Main.command("Check "+alias);
-      case compile -> Main.command("Compile "+alias);
-      case terminate -> Main.command("Terminate "+alias);
-      case run -> run();
-    }
+    if (project.action() == Project.Action.Run){ run(); return; }
+    Main.command(project.action()+" "+project.alias());
   }
   private void run(){
     var alias= project.alias();
@@ -266,7 +257,7 @@ final class Panel{
   }
   void render(Project p, List<Project> all, int height){
     var claimed= Project.claimed(all);
-    var stamps= claimed.values().stream().flatMap(List::stream).map(c -> c.icon(".png").toFile().lastModified()).toList();
+    var stamps= claimed.values().stream().flatMap(List::stream).map(c -> c.png().toFile().lastModified()).toList();
     var next= List.of(p, all, stamps, height);
     if (next.equals(shown)){ return; }
     shown = next;
@@ -276,13 +267,13 @@ final class Panel{
     name.setText(p.alias());
     status.setText(status(p, all));
     var a= p.action();
-    var several= a == Project.Action.run && p.knownMains().size() > 1;
-    action.setText(switch (a){ case check -> "Check"; case compile -> "Compile"; case run -> "Run"; case terminate -> "Terminate"; });
+    var several= a == Project.Action.Run && p.knownMains().size() > 1;
+    action.setText(a.name());
     action.setIcon(several ? new Arrow() : null);
     action.setHorizontalTextPosition(JButton.LEADING);
-    action.setEnabled(!(p.job() instanceof Project.Job.Compile) && (a != Project.Action.run || !p.knownMains().isEmpty()));
+    action.setEnabled(!(p.job() instanceof Project.Job.Compile) && (a != Project.Action.Run || !p.knownMains().isEmpty()));
     openDocs.setEnabled(p.mains().isPresent());
-    kind.setText("Kind: "+p.kind().text);
+    kind.setText("Kind: "+p.kind().name());
     kind.setEnabled(!p.busy());
     fillSelected(p, several);
     fillShortcuts(p, claimed);

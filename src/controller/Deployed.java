@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import coordinator.CapabilityEnvironment;
 import coordinator.Coordinator;
@@ -48,13 +47,11 @@ public final class Deployed implements Manager.Tools{
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Path baseCache(){ return stdLib("baseCache"); }
-  @Override public void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy){
-    var launcher= Association.launcher();
-    var windows= preloads.stream().map(Deployed::window).toList();
-    Association.reconcile(launcher, captured, windows, claimedBy);
+  @Override public void associate(List<Icon> captured, List<String> taken, List<Project.Claimant> preloads){
+    mainCoordinator.Main.reconcile(Association.launcher(), "Fearless Manager", captured, taken, preloads.stream().map(Deployed::window).toList(), Association.iconFile(), Violation::associationsAmbiguous);
   }
   private static WindowIcon window(Project.Claimant c){
-    return new WindowIcon(Association.deskId(c.folder(), c.main())+"-"+c.claim().icon(), c.main().substring(c.main().lastIndexOf('.')+1), c.folder(), c.icon(".png"));
+    return new WindowIcon(Association.deskId(c.folder(), c.main())+"-"+c.claim().icon(), c.main().substring(c.main().lastIndexOf('.')+1), c.folder(), c.png());
   }
   @Override public void connect(Path eclipse, Path managerDir){
     Eclipse.connect(eclipse, appDir().resolve("eclipsePlugin"), Main.programDir(), Association.launcher(), managerDir, stdLib("baseCache"));

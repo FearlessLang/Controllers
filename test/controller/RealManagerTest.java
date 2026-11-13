@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -68,7 +67,7 @@ final class RealManagerTest{
     @Override public Coordinator.State check(Path folder){ return coordinator(folder).check(folder); }
     @Override public Path stdLibBase(){ return ResolveResource.stLibPath; }
     @Override public Path baseCache(){ return RealManagerTest.baseCache(); }
-    @Override public void associate(List<Icon> captured, List<Project.Claimant> preloads, Function<String,String> claimedBy){}
+    @Override public void associate(List<Icon> captured, List<String> taken, List<Project.Claimant> preloads){}
     @Override public void connect(Path eclipse, Path managerDir){ throw Bug.unreachable(); }
   }
   private final List<String> exits= Collections.synchronizedList(new ArrayList<>());

@@ -28,6 +28,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -81,7 +83,6 @@ public final class Window implements Manager.View{
   //on every future selection, silently reopening each panel too narrow to see.
   private static final int minPanelWidth= 300;
   public final JFrame frame= new JFrame("Fearless Manager");
-  private final Main main;
   private final Path info;
   final Tiles tiles= new Tiles();
   final JSplitPane split= new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
@@ -95,8 +96,7 @@ public final class Window implements Manager.View{
   private volatile boolean onScreen;
   private boolean surfaced;
   private boolean tray= true;
-  private Window(Main main, Path info){
-    this.main= main;
+  private Window(Path info){
     this.info= info;
     split.setDividerLocation(320);
     frame.setJMenuBar(menuBar());
@@ -123,7 +123,7 @@ public final class Window implements Manager.View{
     var leaves= e.getID() == MouseEvent.MOUSE_PRESSED && owner instanceof JTextField && owner != e.getSource() && SwingUtilities.isDescendingFrom(owner, frame);
     if (leaves){ focus.clearFocusOwner(); }
   }
-  public static Window create(Main main, Path managerDir){ return onEdt(() -> new Window(main, managerDir.resolve("projects.info"))); }
+  public static Window create(Path managerDir){ return onEdt(() -> new Window(managerDir.resolve("projects.info"))); }
   public void tray(){ tray = onEdt(() -> Tray.install(this)); }
   /// A tray that goes away gives the 'tray icon window' to a hidden manager window; a tray that comes back takes it away.
   void trayed(boolean present){ SwingUtilities.invokeLater(() -> trayedNow(present)); }
@@ -175,12 +175,21 @@ public final class Window implements Manager.View{
   @Override public void tell(String text){ refuse(text); }
   private void say(String text){ JOptionPane.showMessageDialog(frame, text, "Fearless", JOptionPane.PLAIN_MESSAGE); }
   @Override public void choose(Path file, List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(file, choices)); }
-  @Override public void allow(String question, List<String> extensions){
-    SwingUtilities.invokeLater(() -> ask(question, extensions));
+  @Override public void allow(Map<String,String> questions){ SwingUtilities.invokeLater(() -> allowNow(questions)); }
+  private void allowNow(Map<String,String> questions){
+    var accepted= questions.keySet().stream().filter(x -> ask(questions.get(x))).toList();
+    if (!accepted.isEmpty()){ capture(accepted); }
   }
-  private void ask(String question, List<String> extensions){
+  @Override public boolean take(String question){
+    var asked= new FutureTask<>(() -> ask(question));
+    SwingUtilities.invokeLater(asked);
+    try{ return asked.get(); }
+    catch (InterruptedException e){ SwingUtilities.invokeLater(() -> Stream.of(frame.getOwnedWindows()).forEach(java.awt.Window::dispose)); return false; }
+    catch (ExecutionException e){ throw Bug.of(e); }
+  }
+  private boolean ask(String question){
     showNow();
-    if (JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){ capture(extensions); }
+    return JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
   }
   private void capture(List<String> extensions){
     Registry.Content now;
@@ -204,21 +213,31 @@ public final class Window implements Manager.View{
     return file;
   }
   private void chooser(Path file, List<Project.Claimant> choices){
+    showNow();
     var list= choices(choices);
     var dialog= new JDialog(frame, "Open with", false);
     Runnable pick= () -> pick(dialog, list, file);
     var run= small("Run", pick);
     doubleClicked(list, pick);
-    var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    buttons.add(run);
     dialog.add(new JScrollPane(list), BorderLayout.CENTER);
-    dialog.add(buttons, BorderLayout.SOUTH);
-    dialog.getRootPane().setDefaultButton(run);
+    dialog.add(right(run), BorderLayout.SOUTH);
+    showDialog(dialog, run);
+    list.requestFocusInWindow();
+  }
+  private static JPanel right(JButton... buttons){
+    var res= new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    Stream.of(buttons).forEach(res::add);
+    return res;
+  }
+  private void showDialog(JDialog dialog, JButton main){
+    dialog.getRootPane().setDefaultButton(main);
     dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
     dialog.pack();
     dialog.setLocationRelativeTo(frame);
     dialog.setVisible(true);
-    list.requestFocusInWindow();
+  }
+  static boolean confirm(Component parent, String question, String yes){
+    return JOptionPane.showOptionDialog(parent, question, "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{yes, "Cancel"}, "Cancel") == 0;
   }
   private static void pick(JDialog dialog, JList<Project.Claimant> list, Path file){
     if (list.isSelectionEmpty()){ return; }
@@ -242,7 +261,7 @@ public final class Window implements Manager.View{
   //A desktop that refuses to show a window reports it as iconified and never deiconifies it.
   private void checkSurfaced(){
     var hidden= frame.isVisible() && (frame.getExtendedState() & Frame.ICONIFIED) != 0;
-    if (hidden && !surfaced){ main.fail(Violation.desktopHidesWindow()); }
+    if (hidden && !surfaced){ throw Violation.desktopHidesWindow(); }
   }
   private Panel panel(Path folder){ return panels.computeIfAbsent(folder, _ -> new Panel(this::say)); }
   private void render(State s){
@@ -307,11 +326,7 @@ public final class Window implements Manager.View{
     top.add(go, BorderLayout.EAST);
     dialog.add(top, BorderLayout.NORTH);
     dialog.add(new JScrollPane(status), BorderLayout.CENTER);
-    dialog.getRootPane().setDefaultButton(go);
-    dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-    dialog.pack();
-    dialog.setLocationRelativeTo(frame);
-    dialog.setVisible(true);
+    showDialog(dialog, go);
   }
   private void fetch(JDialog dialog, JTextField url, JTextArea status){
     if (!url.isEditable()){ return; }
@@ -322,8 +337,7 @@ public final class Window implements Manager.View{
     if (!z.app() && selected.isEmpty()){ status.setText(Report.importSelectProject()); return; }
     var target= ImportZip.target(z, info.getParent(), selected);
     if (Files.exists(target) && state.of(z.app() ? target : selected.orElseThrow()).filter(Project::busy).isPresent()){ status.setText(Report.importBusy(target)); return; }
-    var kept= Files.exists(target) && JOptionPane.showOptionDialog(dialog, Report.importReplace(target), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Replace", "Cancel"}, "Cancel") != 0;
-    if (kept){ return; }
+    if (Files.exists(target) && !confirm(dialog, Report.importReplace(target), "Replace")){ return; }
     url.setEditable(false);
     status.setText("Downloading "+z.file()+"...");
     Thread.startVirtualThread(() -> fetched(dialog, url, status, z, selected));
@@ -349,10 +363,7 @@ public final class Window implements Manager.View{
     var kind= p.kind() == Registry.Kind.code ? Stream.<String>of() : Stream.of("Kind "+p.alias()+" code");
     Main.command(Stream.concat(kind, Stream.of("Compile "+p.alias())).toArray(String[]::new));
   }
-  private void reset(){
-    var reset= JOptionPane.showOptionDialog(frame, Report.resetQuestion(), "Fearless", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Reset", "Cancel"}, "Cancel");
-    if (reset == 0){ Main.command("Reset"); }
-  }
+  private void reset(){ if (confirm(frame, Report.resetQuestion(), "Reset")){ Main.command("Reset"); } }
   private void info(){
     String line;
     try{ line = Deployed.coordinator(Deployed.stdLib("base")).drawing().replace(". ", ".\n"); }
@@ -390,12 +401,8 @@ public final class Window implements Manager.View{
     var area= mono(new JTextArea(base, 30, 100));
     var dialog= new JDialog(frame, "projects.info", true);
     var commit= small("Commit", () -> commit(dialog, base, area.getText()));
-    var close= small("Close", dialog::dispose);
-    var buttons= new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    buttons.add(commit);
-    buttons.add(close);
     dialog.add(new JScrollPane(area), BorderLayout.CENTER);
-    dialog.add(buttons, BorderLayout.SOUTH);
+    dialog.add(right(commit, small("Close", dialog::dispose)), BorderLayout.SOUTH);
     dialog.pack();
     dialog.setLocationRelativeTo(frame);
     dialog.setVisible(true);

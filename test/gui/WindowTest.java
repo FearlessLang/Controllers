@@ -69,7 +69,7 @@ no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new
     Fs.ofV(() -> ImageIO.write(new BufferedImage(64, 64, BufferedImage.TYPE_INT_RGB), "png", app.resolve("icon.png").toFile()));
     System.setProperty(JavacTool.appDirKey, app.toString());
     System.setProperty(JavacTool.launcherKey, JavacTool.consoleKey);
-    try{ return Window.create(null, dir.resolve("manager")); }
+    try{ return Window.create(dir.resolve("manager")); }
     finally{ System.clearProperty(JavacTool.appDirKey); System.clearProperty(JavacTool.launcherKey); }
   }
   @Test void anErrorAboutTheFileOfTheEditorNamesTheTextOfTheEditor(@RealTempDir Path dir){

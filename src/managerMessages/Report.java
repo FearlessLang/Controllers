@@ -227,6 +227,7 @@ The Output lists every change. A change of Fix can not be undone.""".formatted(d
   public static String infoAttenuatorsNotObject(){ return "\"attenuators\" must be an object {...} mapping a main name to a list of attenuator names."; }
   public static String infoAttenuatorsEmpty(String label){ return label+" names no attenuator: a main with no attenuator is left out of \"attenuators\"."; }
   public static String metadataNoFile(Path file){ return refusedPath("EditMetadata", file)+"\nNo file is at that path."; }
+  public static String metadataHeld(Path file, String held){ return refusedPath("EditMetadata", file)+"\n"+held; }
   public static String metadataNotUtf8(Path file){ return refusedPath("EditMetadata", file)+"\nThe bytes of the file do not form valid UTF-8 text."; }
   public static String metadataUnreadable(Path file, IOException e){ return refusedPath("EditMetadata", file)+"\nThe file cannot be read: "+fileFailure(e); }
   public static String metadataChanged(){ return "The project metadata is not committed: projects.info changed while it was edited.\nClose the editor, and choose Edit project metadata again to edit what projects.info holds now."; }
@@ -241,8 +242,8 @@ The Output lists every change. A change of Fix can not be undone.""".formatted(d
   //-- opening a file
   public static String openNoFile(Path file){ return refusedOpen(file)+"\nNo file is at that path."; }
   public static String emptyFile(Path file){ return refusedOpen(file)+"\nThe file "+disp(file.getFileName().toString())+" is empty. File associations do not reliably work for empty files on all operating systems."; }
-  public static String noMainOpens(Path file, String ext){ return refusedOpen(file)+"\nNo main opens files with the extension "+disp(ext)+"."; }
-  public static String notOpening(Path file, String name, String main, String ext, List<String> opening){ return refusedOpen(file)+"\nMain "+disp(main)+" of project "+disp(name)+" does not open files with the extension "+disp(ext)+"."+Join.of(opening.stream().map(m -> "\n  "+m), "\nThe mains opening them are:", "", ""); }
+  public static String noMainOpens(Path file, String ext){ return "Nothing is opened at\n"+path(file.toString())+"\nNo main opens files with the extension "+disp(ext)+"."; }
+  public static String notOpening(Path file, String name, String main, String ext, List<String> opening){ return refusedOpen(file)+"\nMain "+disp(main)+" of project "+disp(name)+" does not open files with the extension "+disp(ext)+"."+Join.of(opening.stream().map(m -> "\n  "+m), "\nThe mains opening them are:", "", "", "\nNo main opens them."); }
 
   //-- the claims of the mains of a project
   private static String claim(String kind, String icon, String ext){ return "\"base."+kind+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
@@ -259,9 +260,9 @@ The Output lists every change. A change of Fix can not be undone.""".formatted(d
   public static String extensionsNotAllowed(List<Project.Claimant> cs){
     return Join.of(cs.stream().map(c -> "The system extension "+disp(c.claim().extension())+" of "+claim(c)+" of main "+disp(c.main())+" is not in \"systemExtensions\" of projects.info."), "", "\n", "");
   }
-  public static String allowExtensions(List<Project.Claimant> cs){
+  public static String allowExtension(List<Project.Claimant> cs){
     return Join.of(cs.stream().map(c -> "  "+disp(c.claim().extension())+" for "+claim(c)+" of main "+disp(c.main())+" of project "+disp(c.alias())),
-      "Add these system extensions to \"systemExtensions\" of projects.info?\n", "\n", "\n\nThe manager becomes the program opening every file with these extensions,\nin place of the program opening them now. The project then needs compiling again.");
+      "Add this system extension to \"systemExtensions\" of projects.info?\n", "\n", "\n\nThe manager becomes the program opening every file with this extension,\nin place of the program opening those files now. The project then needs compiling again.");
   }
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c -> disp(c.main())+" of project "+disp(c.alias())), " claimed by ", " and ", "", ""); }
 

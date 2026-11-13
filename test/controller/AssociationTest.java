@@ -5,10 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import tempDirs.RealTempDir;
+import tools.Fs;
 import tools.JavacTool;
 
 /// Association is a thin adapter over Commons' fileAssociations; these pin the
@@ -19,24 +23,40 @@ final class AssociationTest{
   private static final String macLauncher= "/Applications/fearlessManaged0_001.app/Contents/MacOS/fearlessManaged0_001";
   private static final String identity= "fearlessManaged0_001";
   @Test void theLauncherNamesTheProgramAndTheManagerIsNotThePortable(){
-    assertEquals(identity, Association.identity(Path.of(linuxLauncher)));
-    assertEquals(identity, Association.identity(Path.of("fearlessManaged0_001.exe")));
-    assertEquals(identity, Association.identity(Path.of(macLauncher)));
-    assertNotEquals(Association.identity(Path.of(linuxLauncher)), Association.identity(Path.of("/home/me/fearlessBin0_001/bin/fearlessBin0_001")));
+    assertEquals(identity, mainCoordinator.Main.identity(Path.of(linuxLauncher)));
+    assertEquals(identity, mainCoordinator.Main.identity(Path.of("fearlessManaged0_001.exe")));
+    assertEquals(identity, mainCoordinator.Main.identity(Path.of(macLauncher)));
+    assertNotEquals(mainCoordinator.Main.identity(Path.of(linuxLauncher)), mainCoordinator.Main.identity(Path.of("/home/me/fearlessBin0_001/bin/fearlessBin0_001")));
   }
   @Test void theTwoLaunchersOfOneFearlessAreTwoIdentitiesWithOneManagerFolder(){
     assertEquals(JavacTool.managerFolderOf(Path.of(linuxLauncher)), JavacTool.managerFolderOf(Path.of(linuxLauncher+"w")));
-    assertEquals(identity+"w", Association.identity(Path.of(linuxLauncher+"w")));
+    assertEquals(identity+"w", mainCoordinator.Main.identity(Path.of(linuxLauncher+"w")));
     assertEquals(Path.of("/Applications/fearless0_001"), JavacTool.managerFolderOf(Path.of(macLauncher)).get());
     assertEquals(JavacTool.managerFolderOf(Path.of(macLauncher)), JavacTool.managerFolderOf(Path.of(macLauncher+"w")));
-    assertEquals(identity+"w", Association.identity(Path.of("fearlessManaged0_001w.exe")));
+    assertEquals(identity+"w", mainCoordinator.Main.identity(Path.of("fearlessManaged0_001w.exe")));
     assertEquals(JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001.exe")), JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001w.exe")));
     assertTrue(JavacTool.managerFolderOf(Path.of("fearlessManaged0_001/fearlessManaged0_001.exe")).isPresent());
   }
   @Test void everyLauncherOfTheFamilyNamesItInItsOwnFile(){
-    assertTrue(Association.belongsToFamily.test("fearlessManaged0_001"));
-    assertTrue(Association.belongsToFamily.test("FearlessApp_001"));
-    assertFalse(Association.belongsToFamily.test("SomeOtherEditor"));
+    assertTrue(mainCoordinator.Main.belongsToFamily.test("fearlessManaged0_001"));
+    assertTrue(mainCoordinator.Main.belongsToFamily.test("FearlessApp_001"));
+    assertFalse(mainCoordinator.Main.belongsToFamily.test("SomeOtherEditor"));
+  }
+  @Test void aReplacedManagerLosesItsManagerFolderAndTheOtherLauncherOfTheSameFolderKeepsIt(@RealTempDir Path dir){
+    var old= dir.resolve("a").resolve(identity).resolve("bin").resolve(identity);
+    var moved= dir.resolve("b").resolve(identity).resolve("bin").resolve(identity);
+    var oldFolder= dir.resolve("a").resolve("fearless0_001");
+    var folder= dir.resolve("b").resolve("fearless0_001");
+    Fs.writeUtf8(oldFolder.resolve("projects.info"), "");
+    Fs.writeUtf8(folder.resolve("projects.info"), "");
+    mainCoordinator.Main.replaced(moved.resolveSibling(identity+"w"), moved);
+    mainCoordinator.Main.replaced(moved, dir.resolve("a").resolve("fearlessBin0_001").resolve("bin").resolve("fearlessBin0_001"));
+    mainCoordinator.Main.replaced(moved, dir.resolve("c").resolve(identity).resolve("bin").resolve(identity));
+    assertTrue(Files.exists(oldFolder.resolve("projects.info")));
+    mainCoordinator.Main.replaced(moved, old);
+    assertFalse(Files.exists(oldFolder));
+    assertEquals(List.of("fearless0_001"), Names.list(dir.resolve("b")).stream().map(p -> p.getFileName().toString()).toList());
+    assertEquals(List.of(), Names.list(dir.resolve("a")));
   }
   @Test void theLauncherIsTheOneJpackageNames(){
     Errs.err("Error: Fearless has been started without using its launcher.[###]", Association::launcher);
