@@ -41,14 +41,14 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
   }
   private static final Map<Path,Icon> decoded= new ConcurrentHashMap<>();
   /// A Coordinator.State that is Error.cacheCorrupted is raised: the manager applies the corruption rule.
-  /// None for a folder the manager can not reach.
+  /// None for a folder the manager cannot reach.
   /// The tests are the unit test logs written since `since`, oldest first; with no `since` (Instant.MAX), the newest unit test log.
   public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check, Instant since){
     if (!Names.reachable(folder)){ return Optional.empty(); }
     try{ return Optional.of(retried(() -> read(folder, alias, kind, check, since))); }
     catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
   }
-  /// the facts of a project shown as 'invalid' with that problem, until its Forget: the folder of the project can not be reached
+  /// the facts of a project shown as 'invalid' with that problem, until its Forget: the folder of the project cannot be reached
   static Facts invalid(String problem){ return new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), List.of(), Optional.of(problem)); }
   static <T> T retried(Supplier<T> read){
     for (var left= 10;; left -= 1){

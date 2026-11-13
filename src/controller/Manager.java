@@ -549,7 +549,7 @@ public final class Manager{
     if (UserError.cacheCorrupted(why)){ corrupted(f, why); return; }
     errorFile(f, why);
   }
-  /// _error.txt passes the error on to Eclipse: a folder where it can not be written gets none
+  /// _error.txt passes the error on to Eclipse: a folder where it cannot be written gets none
   private void errorFile(Path f, String why){
     try{ Coordinator.writeError(f, why); }
     catch (UncheckedIOException | UserError _){}
@@ -714,7 +714,7 @@ public final class Manager{
     l.follow.ifPresent(Follow::end);
     if (selected.filter(s -> Registry.same(s, f)).isPresent()){ selected = Optional.empty(); }
   }
-  /// The 'autoCheck' of the project: false for a project folder the manager can not reach, whose Forget is then posted.
+  /// The 'autoCheck' of the project: false for a project folder the manager cannot reach, whose Forget is then posted.
   private boolean scan(Path f){
     renaming(() -> registry.nameCheck(f));
     var l= live.get(f);
@@ -770,7 +770,7 @@ public final class Manager{
     try{ return dir.resolve("locks").resolve(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(TaggedText.base16(folder.toAbsolutePath()).getBytes(UTF_8)))+".lock"); }
     catch (NoSuchAlgorithmException ex){ throw Bug.of(ex); }
   }
-  /// The 'autoCheck' of a project folder the manager can not reach: the job of the project ends, and so does every running main
+  /// The 'autoCheck' of a project folder the manager cannot reach: the job of the project ends, and so does every running main
   /// of a project with a mount of that project; a dialog says so, then the project is forgotten.
   private void unreachable(Path f){
     var l= live.get(f);

@@ -199,7 +199,7 @@ public final class Registry{
     return differs;
   }
   public boolean reaches(Path folder){ return !away.contains(folder) && corresponds(folder) && Names.reachable(folder); }
-  /// a folder whose marker can not be written gets no name
+  /// a folder whose marker cannot be written gets no name
   public void lookup(){ content = inferred(content, content, away, this::marked); }
   private Entry marked(Entry e){
     if (e.alias().isEmpty() || !reaches(e.path()) || Names.marker(e.path()).equals(e.alias())){ return e; }
