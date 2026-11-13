@@ -702,6 +702,24 @@ ran hello.Slow
     send(m, "Compile", "hello");
     assertEquals("The project \"hello\" was already up to date and compiled.\n", view.out(hello));
   }
+  @Test void theAutoCheckKeepsItsOutcomeWhileNothingInTheProjectIsNewerThanItsLastReadAndACheckReadsFromScratch(@RealTempDir Path dir){
+    var m= manager(dir);
+    var data= registered(m, dir, "data");
+    var probe= registered(m, dir, "probe");
+    send(m, "Kind", "data", "dataRead");
+    send(m, "Kind", "probe", "dataRead");
+    send(m, "Show", "data");
+    var old= FileTime.fromMillis(System.currentTimeMillis()-60_000);
+    Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
+    Fs.ofV(() -> Files.setLastModifiedTime(data.resolve("Bad Name.txt"), old));
+    Fs.ofV(() -> Files.setLastModifiedTime(data, old));
+    Fs.writeUtf8(probe.resolve("Bad Name.txt"), "");
+    m.start();
+    until(m, _ -> project(m, probe).state() == Project.State.dataReadInvalid);
+    assertEquals(Project.State.dataRead, project(m, data).state());
+    send(m, "Check", "data");
+    assertEquals(Project.State.dataReadInvalid, project(m, data).state());
+  }
   @Test void everyCheckOfAnInvalidProjectWritesItsErrorFile(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= code(m, dir, "hello");

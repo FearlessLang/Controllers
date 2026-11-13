@@ -124,6 +124,7 @@ public final class Manager{
     StringBuilder line= new StringBuilder();
     List<Project.Ran> ran= List.of();
     ConcurrentLinkedQueue<String> printed= new ConcurrentLinkedQueue<>();
+    long read;
   }
   private static final String conflict= "base.IconsConflict";
   private static final String fearless= "base.IconsFearless";
@@ -749,9 +750,13 @@ public final class Manager{
     try{ return facts(f); }
     catch (UserError err){ return Optional.of(Facts.invalid(err.getMessage())); }
   }
+  private Optional<Facts> read(Path f, Entry e){
+    live.get(f).read = System.currentTimeMillis();
+    return Facts.of(f, e.alias(), e.kind(), tools::check, live.get(f).ran.stream().findFirst().map(Project.Ran::since).orElse(Instant.MAX));
+  }
   private Optional<Facts> facts(Path f){
     var e= registry.of(f).orElseThrow();
-    Supplier<Optional<Facts>> read= () -> Facts.of(f, e.alias(), e.kind(), tools::check, live.get(f).ran.stream().findFirst().map(Project.Ran::since).orElse(Instant.MAX));
+    Supplier<Optional<Facts>> read= () -> read(f, e);
     if (!e.kind().isData()){ return read.get(); }
     var known= live.get(f).facts;
     try (var ch= FileChannel.open(lockFile(f), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)){
@@ -793,11 +798,19 @@ public final class Manager{
   }
   private void rotate(){
     if (ending || !view.visible()){ return; }
-    selected.ifPresent(this::scan);
+    selected.ifPresent(this::autoCheck);
     var others= registry.all().stream().map(Entry::path).filter(f -> selected.filter(s -> Registry.same(s, f)).isEmpty()).toList();
     if (others.isEmpty()){ return; }
     turn += 1;
-    scan(others.get(turn % others.size()));
+    autoCheck(others.get(turn % others.size()));
+  }
+  private void autoCheck(Path f){
+    if (untouched(f, live.get(f).read)){ return; }
+    scan(f);
+  }
+  private static boolean untouched(Path f, long since){
+    try{ return Fs.walk(f, s -> s.allMatch(p -> Fs.lastModified(p) < since)); }
+    catch (UncheckedIOException _){ return false; }
   }
   /// Refuses a change of the mounts of a project with a running main, and of the kind or the folder of a data project mounted there.
   private void granted(Content next){
