@@ -287,7 +287,7 @@ final class ChooserNavigationTest extends ManagerTest{
     openAttic.go();
     atticShown.go();
     stabilize();
-    checkContent(info, "{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n");
+    checkContent(info, "{\n  \"projects\": [],\n  \"reserve\": []\n}\n");
     assertEquals(atticFiles, Fs.walk(attic, s -> s.sorted().toList()));
     pickInner.go();
     open.go();
@@ -301,7 +301,7 @@ final class ChooserNavigationTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(inner)));
     assertEquals(List.of(), Fs.walk(attic, s -> s.filter(p -> p.getParent().equals(attic) && Files.isRegularFile(p)).toList()));

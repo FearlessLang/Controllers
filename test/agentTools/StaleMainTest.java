@@ -43,7 +43,7 @@ final class StaleMainTest extends ManagerTest{
       "mains": [%s]
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """;
   final Action openMenu= action("openMenu",

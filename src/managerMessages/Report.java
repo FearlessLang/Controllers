@@ -82,7 +82,7 @@ The arguments are:
   }
   public static String kindWhileBusy(String name, String kind, Job job){ return "Refused request to change the kind of project "+disp(name)+" to "+disp(kind)+".\n"+running(name, job); }
   public static String removedWhileBusy(String name, Job job){ return "Refused request to remove project "+disp(name)+".\n"+running(name, job); }
-  public static String extensionWhileBusy(String name, String ext, Job job){ return "Refused request to remove "+disp(ext)+" from \"systemExtensions\": a main of project "+disp(name)+" claims "+disp(ext)+".\n"+running(name, job); }
+  public static String extensionWhileBusy(String name, String ext, Job job){ return "Refused request to remove "+disp(ext)+" from \"reserve\": a main of project "+disp(name)+" claims "+disp(ext)+".\n"+running(name, job); }
   public static String mountsRefused(String name, List<String> problems){
     return refused("Run", name)+"\nProject "+disp(name)+" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:"+Join.of(problems.stream().map(p -> "\n  "+p.replace("\n", "\n  ")), "", "", "");
   }
@@ -205,9 +205,9 @@ The Output lists every change. A change of Fix can not be undone.""".formatted(d
   public static String notWritten(String file, IOException e){ return "--- "+file+" is not written: "+fileFailure(e)+"\n---\n"; }
 
   //-- projects.info
-  public static String infoNotObject(){ return "The whole file must be an object {...} with \"projects\" and \"systemExtensions\"."; }
-  public static String infoUnknownKey(String key){ return "Unknown key \""+key+"\": the keys are \"projects\" and \"systemExtensions\"."; }
-  public static String infoMissing(String key){ return "The key \""+key+"\" is missing: the keys are \"projects\" and \"systemExtensions\"."; }
+  public static String infoNotObject(){ return "The whole file must be an object {...} with \"projects\" and \"reserve\"."; }
+  public static String infoUnknownKey(String key){ return "Unknown key \""+key+"\": the keys are \"projects\" and \"reserve\"."; }
+  public static String infoMissing(String key){ return "The key \""+key+"\" is missing: the keys are \"projects\" and \"reserve\"."; }
   public static String infoProjectsNotList(){ return "\"projects\" must be a list [...] of the registered projects, each an object {...} with the metadata of that project."; }
   public static String infoSamePath(int n, int other){ return "Project "+n+" of \"projects\" has the same path as project "+other+"; every project folder is listed once."; }
   public static String infoProjectNotObject(){ return "Every entry in \"projects\" must be an object {...} with the metadata of a project."; }
@@ -246,8 +246,6 @@ The Output lists every change. A change of Fix can not be undone.""".formatted(d
   public static String notOpening(Path file, String name, String main, String ext, List<String> opening){ return refusedOpen(file)+"\nMain "+disp(main)+" of project "+disp(name)+" does not open files with the extension "+disp(ext)+"."+Join.of(opening.stream().map(m -> "\n  "+m), "\nThe mains opening them are:", "", "", "\nNo main opens them."); }
 
   //-- the claims of the mains of a project
-  private static String claim(String kind, String icon, String ext){ return "\"base."+kind+"["+icon+(ext.isEmpty() ? "" : ",\\\""+ext+"\\\"")+"]\""; }
-  private static String claim(Project.Claimant c){ return claim(c.kind(), c.claim().icon(), c.claim().extension()); }
   public static UserError shortcutNoFileName(String main){
     return new UserError("Main "+disp(main)+" can not have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\".");
   }
@@ -257,13 +255,7 @@ The Output lists every change. A change of Fix can not be undone.""".formatted(d
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" cannot both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
-  public static String extensionsNotAllowed(List<Project.Claimant> cs){
-    return Join.of(cs.stream().map(c -> "The system extension "+disp(c.claim().extension())+" of "+claim(c)+" of main "+disp(c.main())+" is not in \"systemExtensions\" of projects.info."), "", "\n", "");
-  }
-  public static String allowExtension(List<Project.Claimant> cs){
-    return Join.of(cs.stream().map(c -> "  "+disp(c.claim().extension())+" for "+claim(c)+" of main "+disp(c.main())+" of project "+disp(c.alias())),
-      "Add this system extension to \"systemExtensions\" of projects.info?\n", "\n", "\n\nThe manager becomes the program opening every file with this extension,\nin place of the program opening those files now. The project then needs compiling again.");
-  }
+  public static final String releasing= "removes those extensions from the reserve of the manager, and deletes the compilation cache of every project with a main claiming one of those extensions";
   public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c -> disp(c.main())+" of project "+disp(c.alias())), " claimed by ", " and ", "", ""); }
 
   //-- what the window opens

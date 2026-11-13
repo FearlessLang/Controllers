@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -175,11 +174,6 @@ public final class Window implements Manager.View{
   @Override public void tell(String text){ refuse(text); }
   private void say(String text){ JOptionPane.showMessageDialog(frame, text, "Fearless", JOptionPane.PLAIN_MESSAGE); }
   @Override public void choose(Path file, List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(file, choices)); }
-  @Override public void allow(Map<String,String> questions){ SwingUtilities.invokeLater(() -> allowNow(questions)); }
-  private void allowNow(Map<String,String> questions){
-    var accepted= questions.keySet().stream().filter(x -> ask(questions.get(x))).toList();
-    if (!accepted.isEmpty()){ capture(accepted); }
-  }
   @Override public boolean take(String question){
     var asked= new FutureTask<>(() -> ask(question));
     SwingUtilities.invokeLater(asked);
@@ -190,14 +184,6 @@ public final class Window implements Manager.View{
   private boolean ask(String question){
     showNow();
     return JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
-  }
-  private void capture(List<String> extensions){
-    Registry.Content now;
-    try{ now= Registry.parse(Fs.readUtf8(info), info); }
-    catch (UserError e){ say(e.getMessage()); return; }
-    var all= new TreeSet<>(now.extensions());
-    all.addAll(extensions);
-    commit(Registry.text(new Registry.Content(now.projects(), List.copyOf(all))));
   }
   @Override public void edited(Path file){
     SwingUtilities.invokeLater(() -> { var editor= editors.remove(file); if (editor != null){ editor.dispose(); } });

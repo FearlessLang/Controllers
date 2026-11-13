@@ -80,7 +80,7 @@ no screen""", assertThrows(UserError.class, () -> Window.onEdt(() -> { throw new
   }
   @Test void anEditMetadataOfAFileTheWindowDidNotWriteKeepsTheFile(@RealTempDir Path dir){
     var saved= dir.resolve("saved.info");
-    Fs.writeUtf8(saved, "{\n  \"projects\": {},\n  \"systemExtensions\": []\n}\n");
+    Fs.writeUtf8(saved, "{\n  \"projects\": {},\n  \"reserve\": []\n}\n");
     var window= window(dir);
     try{ window.edited(saved); }
     finally{ window.frame.dispose(); }

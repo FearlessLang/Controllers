@@ -150,7 +150,7 @@ final class DropFolderTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(dropped)));
     assertEquals(List.of("dropped/_dropped/_rank_app.fear", "dropped/dropped.fearless"), Fs.walk(drops, s -> s.filter(Files::isRegularFile).map(p -> slashed(drops.relativize(p))).sorted().toList()));

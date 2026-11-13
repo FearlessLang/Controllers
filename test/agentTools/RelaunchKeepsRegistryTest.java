@@ -186,7 +186,7 @@ final class RelaunchKeepsRegistryTest extends ManagerTest{
       "kind": "code"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project));
     stabilize();

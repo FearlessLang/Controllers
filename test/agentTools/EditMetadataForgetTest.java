@@ -200,7 +200,7 @@ final class EditMetadataForgetTest extends ManagerTest{
     var project= project("helloWorld");
     var other= project("helloStackTraces");
     var only= """
-{"projects": [{"path": "Str:\\"%s\\"", "kind": "idle"}], "systemExtensions": []}
+{"projects": [{"path": "Str:\\"%s\\"", "kind": "idle"}], "reserve": []}
 """.formatted(slashed(project));
     var bare= look();
     start();
@@ -229,7 +229,7 @@ final class EditMetadataForgetTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project)));
     managerMenu.go();

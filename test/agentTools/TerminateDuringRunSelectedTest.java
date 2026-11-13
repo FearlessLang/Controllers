@@ -364,7 +364,7 @@ Note: Consumer[mut Frame]{:: .title "chain" .content.pane{:: .label{:: .text "te
       "mains": ["chain.Show", "chain.Tell"]
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(chain)));
     outputArea.go();

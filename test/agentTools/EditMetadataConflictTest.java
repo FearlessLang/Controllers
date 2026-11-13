@@ -28,7 +28,7 @@ final class EditMetadataConflictTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """;
   final Action openHelloWorld= action("openHelloWorld",

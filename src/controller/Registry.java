@@ -46,7 +46,7 @@ import utils.Join;
 import utils.OneOr;
 import utils.Push;
 
-/// The registered projects and the system extensions of `projects.info`: read once, then
+/// The registered projects and the reserve of `projects.info`: read once, then
 /// kept in memory and written back whole on every change.
 public final class Registry{
   public enum Kind{
@@ -61,8 +61,8 @@ public final class Registry{
     public Entry withMounts(Map<String,String> m){ return new Entry(alias, path, kind, mains, m, attenuators); }
     public Entry withAttenuators(Map<String,List<String>> a){ return new Entry(alias, path, kind, mains, mounts, a); }
   }
-  public record Content(List<Entry> projects, List<String> extensions){
-    public Content{ projects = List.copyOf(projects); extensions = List.copyOf(extensions); }
+  public record Content(List<Entry> projects, List<String> reserve){
+    public Content{ projects = List.copyOf(projects); reserve = List.copyOf(reserve); }
   }
   public record Grants(Map<String,Path> mounts, Map<String,Path> locks){}
   private static final List<String> keys= List.of("path", "kind", "mains", "mounts", "attenuators");
@@ -183,7 +183,7 @@ public final class Registry{
   private static boolean meets(Set<Seen> seen, Path a, Path b){ return Stream.of(new Seen(a, b, true), new Seen(a, b, false), new Seen(b, a, false)).anyMatch(seen::contains); }
   public Path infoFile(){ return dir.resolve("projects.info"); }
   public List<Entry> all(){ return content.projects(); }
-  public List<String> extensions(){ return content.extensions(); }
+  public List<String> reserve(){ return content.reserve(); }
   public Content content(){ return content; }
   public static boolean isSystem(String ext){ return Fs.isExtSeg(ext) && Icon.system("."+ext); }
   public Optional<Entry> of(Path folder){ return OneOr.opt("registered "+folder, all().stream().filter(e -> same(e.path(), folder))); }
@@ -216,12 +216,12 @@ public final class Registry{
       taken.add(named.alias());
       res.add(named);
     }
-    return new Content(res, c.extensions());
+    return new Content(res, c.reserve());
   }
   public void add(String alias, Path folder, Set<Path> away){
     assert folder.isAbsolute();
     assert all().stream().noneMatch(e -> same(e.path(), folder) || e.alias().equals(alias));
-    var c= new Content(Push.of(all(), new Entry(alias, folder, Kind.idle, List.of(), Map.of(), Map.of())), extensions());
+    var c= new Content(Push.of(all(), new Entry(alias, folder, Kind.idle, List.of(), Map.of(), Map.of())), reserve());
     save(c, text(c), away);
   }
   public static Grants grants(Content c, Entry e, List<String> dataEdit, UnaryOperator<Path> lockFile){
@@ -234,7 +234,7 @@ public final class Registry{
   private static boolean granted(Kind k, boolean editType){ return editType ? k == Kind.dataEdit : k.isData(); }
   public static String text(Content c){
     var projects= Join.of(c.projects().stream().map(e -> "    "+Info.print(entryToInfo(e)).strip().replace("\n", "\n    ")), "[\n", ",\n", "\n  ]", "[]");
-    return "{\n  \"projects\": "+projects+",\n  \"systemExtensions\": "+Info.print(strList(c.extensions())).strip()+"\n}\n";
+    return "{\n  \"projects\": "+projects+",\n  \"reserve\": "+Info.print(strList(c.reserve())).strip()+"\n}\n";
   }
   /// writes text, the text of an EditMetadata, which holds c
   public void save(Content c, String text, Set<Path> away){
@@ -249,11 +249,11 @@ public final class Registry{
     var root= Info.parse(source, file.toUri());
     if (!(root instanceof Obj top)){ throw Info.err(source, root.span(), Report.infoNotObject()); }
     for (var f : top.fields()){
-      if (!List.of("projects", "systemExtensions").contains(f.key())){ throw Info.err(source, f.keySpan(), Report.infoUnknownKey(f.key())); }
+      if (!List.of("projects", "reserve").contains(f.key())){ throw Info.err(source, f.keySpan(), Report.infoUnknownKey(f.key())); }
     }
     var projects= top.field("projects").orElseThrow(() -> Info.err(source, top.span(), Report.infoMissing("projects")));
-    var extensions= top.field("systemExtensions").orElseThrow(() -> Info.err(source, top.span(), Report.infoMissing("systemExtensions")));
-    return new Content(entries(source, projects.value()), names(source, extensions.value(), "\"systemExtensions\"", Registry::isSystem, systemShape));
+    var reserve= top.field("reserve").orElseThrow(() -> Info.err(source, top.span(), Report.infoMissing("reserve")));
+    return new Content(entries(source, projects.value()), names(source, reserve.value(), "\"reserve\"", Registry::isSystem, systemShape));
   }
   private static List<Entry> entries(String source, Info root){
     if (!(root instanceof Info.Lst top)){ throw Info.err(source, root.span(), Report.infoProjectsNotList()); }

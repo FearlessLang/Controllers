@@ -242,7 +242,7 @@ final class TerminateTest extends ManagerTest{
       "kind": "code"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(gui)));
     managerMenu.go();

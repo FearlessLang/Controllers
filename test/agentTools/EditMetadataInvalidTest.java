@@ -206,7 +206,7 @@ final class EditMetadataInvalidTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project));
     var bare= look();

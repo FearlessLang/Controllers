@@ -315,7 +315,7 @@ final class OpenWithChoiceTest extends ManagerTest{
       "mains": ["hello.Second"]
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(choice)));
     managerMenu.go();

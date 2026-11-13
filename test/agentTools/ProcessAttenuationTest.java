@@ -507,7 +507,7 @@ final class ProcessAttenuationTest extends ManagerTest{
       "kind": "%s"%s
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(proc), kind, more);
   }

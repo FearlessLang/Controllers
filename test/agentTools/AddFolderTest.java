@@ -182,7 +182,7 @@ final class AddFolderTest extends ManagerTest{
     chooserGone.go();
     same(empty, center);
     stabilize();
-    checkContent(info, "{\n  \"projects\": [],\n  \"systemExtensions\": []\n}\n");
+    checkContent(info, "{\n  \"projects\": [],\n  \"reserve\": []\n}\n");
     managerMenu.go();
     addFolder.go();
     chooserShownAgain.go();
@@ -202,7 +202,7 @@ final class AddFolderTest extends ManagerTest{
       "kind": "idle"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project)));
     managerMenu.go();

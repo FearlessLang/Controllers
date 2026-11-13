@@ -33,9 +33,9 @@ final class RegistryTest{
   private static final Path file= Path.of("projects.info").toAbsolutePath();
   private static final String root= Path.of("").toAbsolutePath().getRoot().toString().replace('\\', '/');
   private static Content content(String text){ return Registry.parse(text, file); }
-  private static List<Entry> parse(String projects){ return content("{\"projects\":"+projects+",\"systemExtensions\":[]}").projects(); }
+  private static List<Entry> parse(String projects){ return content("{\"projects\":"+projects+",\"reserve\":[]}").projects(); }
   private static Registry registry(Path dir){ return new Registry(folder(dir, "manager"), _ -> {}); }
-  private static void update(Registry r, Path folder, UnaryOperator<Entry> op){ save(r, new Content(r.all().stream().map(e -> Registry.same(e.path(), folder) ? op.apply(e) : e).toList(), r.extensions())); }
+  private static void update(Registry r, Path folder, UnaryOperator<Entry> op){ save(r, new Content(r.all().stream().map(e -> Registry.same(e.path(), folder) ? op.apply(e) : e).toList(), r.reserve())); }
   private static void save(Registry r, Content c){ r.save(c, Registry.text(c), r.conditions(Registry.folders(c))); }
   private static Path folder(Path dir, String name){
     var res= dir.resolve(name);
@@ -70,16 +70,16 @@ final class RegistryTest{
     assertEquals(Kind.dataEdit, parse("[{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"dataEdit\"}]").getFirst().kind());
   }
   @Test void theWholeFileMustBeAnObjectWithProjectsAndSystemExtensions(){
-    err("[###]The whole file must be an object {...} with \"projects\" and \"systemExtensions\".[###]", () -> content("\"not an object\""));
+    err("[###]The whole file must be an object {...} with \"projects\" and \"reserve\".[###]", () -> content("\"not an object\""));
     err("[###]\"projects\" must be a list [...] of the registered projects, each an object {...} with the metadata of that project.[###]", () -> parse("{\"a\":{\"path\":\"Str:\\\""+root+"a\\\"\",\"kind\":\"idle\"}}"));
-    err("[###]The key \"systemExtensions\" is missing: the keys are \"projects\" and \"systemExtensions\".[###]", () -> content("{\"projects\":[]}"));
-    err("[###]Unknown key \"other\": the keys are \"projects\" and \"systemExtensions\".[###]", () -> content("{\"projects\":[],\"systemExtensions\":[],\"other\":[]}"));
+    err("[###]The key \"reserve\" is missing: the keys are \"projects\" and \"reserve\".[###]", () -> content("{\"projects\":[]}"));
+    err("[###]Unknown key \"other\": the keys are \"projects\" and \"reserve\".[###]", () -> content("{\"projects\":[],\"reserve\":[],\"other\":[]}"));
   }
   @Test void everyProjectIsAnObject(){
     err("""
 In file: [###]projects.info
 
-001| {"projects":[{"path":"Str:\\"%sa\\"","kind":"idle"}, "b"],"systemExtensions":[]}
+001| {"projects":[{"path":"Str:\\"%sa\\"","kind":"idle"}, "b"],"reserve":[]}
    |                                     [###]^^^
 
 While inspecting the file
@@ -238,7 +238,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
   @Test void changingTheMountsKeepsTheirOrderInTheFile(@RealTempDir Path dir){
     var code= folder(dir, "code");
     var r= registry(dir);
-    save(r, content("{\"projects\": [{\"path\": \"Str:\\\""+unix(code)+"\\\"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}], \"systemExtensions\": []}"));
+    save(r, content("{\"projects\": [{\"path\": \"Str:\\\""+unix(code)+"\\\"\", \"kind\": \"code\", \"mounts\": {\"code.Zeta\": \"zeta\", \"code.Alpha\": \"alpha\", \"code.Mid\": \"mid\"}}], \"reserve\": []}"));
     update(r, code, e -> e.withMounts(remounted(e.mounts())));
     assertEquals("""
 {
@@ -254,7 +254,7 @@ Every entry in "projects" must be an object {...} with the metadata of a project
       }
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(written(code)), Fs.readUtf8(folder(dir, "manager").resolve("projects.info")));
   }
@@ -267,17 +267,17 @@ Every entry in "projects" must be an object {...} with the metadata of a project
     assertEquals("""
 {
   "projects": [],
-  "systemExtensions": []
+  "reserve": []
 }
 """, Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
   }
   @Test void theSystemExtensionsSurviveAReReadAndAMalformedListRefusesToLoad(@RealTempDir Path dir){
     var r= registry(dir);
     save(r, new Content(List.of(), List.of("pdf", "htm")));
-    assertEquals(List.of("pdf", "htm"), registry(dir).extensions());
-    err("[###]\"fapp001\" in \"systemExtensions\" is not a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\".[###]", () -> content("{\"projects\":[],\"systemExtensions\":[\"htm\", \"fapp001\"]}"));
-    err("[###]\"htm\" is repeated in \"systemExtensions\".[###]", () -> content("{\"projects\":[],\"systemExtensions\":[\"htm\", \"htm\"]}"));
-    err("[###]\"systemExtensions\" must be a list [...] of strings.[###]", () -> content("{\"projects\":[],\"systemExtensions\":{}}"));
+    assertEquals(List.of("pdf", "htm"), registry(dir).reserve());
+    err("[###]\"fapp001\" in \"reserve\" is not a system extension: 1 to 16 lowercase letters or digits, other than \"fearless\", \"fapp000\" to \"fapp999\" and \"ffile000\" to \"ffile999\".[###]", () -> content("{\"projects\":[],\"reserve\":[\"htm\", \"fapp001\"]}"));
+    err("[###]\"htm\" is repeated in \"reserve\".[###]", () -> content("{\"projects\":[],\"reserve\":[\"htm\", \"htm\"]}"));
+    err("[###]\"reserve\" must be a list [...] of strings.[###]", () -> content("{\"projects\":[],\"reserve\":{}}"));
   }
   private static String inManager(Path folder, Path manager){
     return "Fearless cannot keep track of this folder as a project.\n\nThe folder is:\n  "+folder+"\nThe manager folder of this Fearless is:\n  "+manager+"\n[###]";
@@ -339,13 +339,13 @@ Every entry in "projects" must be an object {...} with the metadata of a project
       "kind": "dataRead"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(written(zeta), written(alpha)), Fs.readUtf8(dir.resolve("manager").resolve("projects.info")));
     assertEquals(List.of("zeta", "alpha"), registry(dir).all().stream().map(Entry::alias).toList());
   }
   private static String listed(Path... folders){
-    return Stream.of(folders).map(f -> "{\"path\": \"Str:\\\""+unix(f)+"\\\"\", \"kind\": \"idle\"}").collect(Collectors.joining(", ", "{\"projects\": [", "], \"systemExtensions\": []}"));
+    return Stream.of(folders).map(f -> "{\"path\": \"Str:\\\""+unix(f)+"\\\"\", \"kind\": \"idle\"}").collect(Collectors.joining(", ", "{\"projects\": [", "], \"reserve\": []}"));
   }
   @Test void aFolderWithTheMarkerOfAnEarlierFolderGetsItsMarkerRenamedAtTheLookup(@RealTempDir Path dir){
     var first= folder(dir, "first");

@@ -329,7 +329,7 @@ final class NothingTickedTest extends ManagerTest{
       "kind": "code"
     }
   ],
-  "systemExtensions": []
+  "reserve": []
 }
 """.formatted(slashed(project)));
     managerMenu.go();
