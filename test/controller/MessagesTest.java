@@ -317,24 +317,24 @@ Fix changes the folder of project "hello":
   "name:Zone.Identifier", ".directory", ".Trash-1000", "~$name", ".~lock.name#", "name~", "#name#" and ".name.swp";
   a file "name~", "#name#" or ".name.swp" can hold text of yours that a text editor did not save,
   and a folder ".Trash-1000" holds the files that you moved to the trash;
-- Fix renames the files and folders whose name a project can not hold: "My Logo.PNG" becomes "my_logo.png",
+- Fix renames the files and folders whose name a project cannot hold: "My Logo.PNG" becomes "my_logo.png",
   and a file with no extension gets "png", "jpg", "gif", "txt" or "bin" from its content;
 - Fix cleans the text of the Fearless source files: Fix removes the byte order mark, turns every line ending into a line feed,
   the typographic quotes and dashes into ' " and -, every tab into a space, an accented letter into the letter without the accent,
-  and removes every other character that a Fearless source file can not hold;
+  and removes every other character that a Fearless source file cannot hold;
 - Fix sets to the current time the files with no time or with a time in the future;
 - Fix deletes the folders and the zips left with nothing inside;
-- Fix moves to the folder "Hello_fix" next to the project folder ("Hello_fix2" when that name is taken, and so on) what a project can not hold:
+- Fix moves to the folder "Hello_fix" next to the project folder ("Hello_fix2" when that name is taken, and so on) what a project cannot hold:
   symbolic links, junctions and the other entries that are neither files nor folders;
   files and folders whose path is longer than 200, or 250 when a name of the path starts with a dot
   (counting the bytes of UTF-8 on Linux and macOS, the characters on Windows);
-  zips that can not be read, whose stored names are not valid, or nested too deep;
+  zips that cannot be read, whose stored names are not valid, or nested too deep;
   for the names starting with a dot and the names in a folder whose name starts with a dot: the names that are not valid Unicode
-  or that some operating system can not hold, and the second of two names that differ only in letter case or in Unicode form.
+  or that some operating system cannot hold, and the second of two names that differ only in letter case or in Unicode form.
 Fix does every change of this list also inside the zips of the project.
 Inside a folder whose name starts with a dot, Fix renames nothing, cleans no text, keeps the folders with nothing inside,
 and takes a zip as a file like any other.
 Fix stops at the first change the file system refuses: the Output then lists the changes done and the error.
-The Output lists every change. A change of Fix can not be undone.""", Report.fixQuestion("hello", Path.of("Hello")));
+The Output lists every change. A change of Fix cannot be undone.""", Report.fixQuestion("hello", Path.of("Hello")));
   }
 }
