@@ -112,7 +112,6 @@ public final class Main implements Manager.Exit{
     return Follow.isPort(last) ? "\n"+last : "";
   }
   private static final String typeNames= "typeName1..typeNamen";
-  private static final Pattern projectName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$)[a-z_][a-z0-9_]{0,190}");
   private static final Pattern typeName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])[.])[a-z][a-z0-9_]*[.]_*[A-Z][A-Za-z0-9_]*'*");
   /// The message of a call: the verb, then the arguments of the verb and the port, one per line.
   private static String call(String call){
@@ -132,7 +131,7 @@ public final class Main implements Manager.Exit{
   }
   private static void word(String kind, String w){
     switch (kind){
-      case "projectName" -> check(w, projectName.matcher(w).matches(), Report.callProjectName);
+      case "projectName" -> check(w, Names.isName(w), Report.callProjectName);
       case "typeName", typeNames -> check(w, typeName.matcher(w).matches(), Report.callTypeName);
       case "kind" -> check(w, Registry.Kind.of(w).isPresent(), Report.callKind);
       case "base16" -> check(w, base16(w), Report.callBase16);
