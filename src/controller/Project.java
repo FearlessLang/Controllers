@@ -23,17 +23,19 @@ import realSourceOracle.BuildWithZip;
 import realSourceOracle.PathEntry;
 import managerMessages.Report;
 import userMessages.UserError;
+import utils.Bug;
 import utils.OneOr;
 import tools.Fs;
 
 /// One registered project as the manager knows it at one moment: its metadata, what its
 /// folder holds, its mains once known, and its job, if any.
-public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, Project.Job job, List<Project.Ran> ran){
+public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, MainsInfo claims, Project.Job job, Optional<Project.Busy> busyBy, List<Project.Ran> ran){
   public sealed interface Job{
     record Idle() implements Job{}
     record Compile() implements Job{}
-    record Main(String main) implements Job{}
+    record Main(String main, Optional<String> waits) implements Job{}
   }
+  public record Busy(String project, Job job){}
   /// a main of the last Run of the project, and when it started
   public record Ran(String main, Instant since){}
   public static final MainsInfo noClaims= new MainsInfo(Map.of());
@@ -49,17 +51,14 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   }
   public enum State{
     codeInvalid("code: invalid content"), dataReadInvalid("dataRead: invalid content"), dataEditInvalid("dataEdit: invalid content"), idle("idle"), dataRead("dataRead"), dataEdit("dataEdit"),
-    codeOutdated("code: compilation cache out of date"), codeCompiled("code: compiled"), busy("code: busy");
+    codeOutdated("code: compilation cache out of date"), codeCompiled("code: compiled"), codeBusy("code: busy"), dataReadBusy("dataRead: busy"), dataEditBusy("dataEdit: busy");
     public final String text;
     State(String text){ this.text= text; }
   }
   public Path folder(){ return entry.path(); }
   public String alias(){ return entry.alias(); }
   public Kind kind(){ return entry.kind(); }
-  public boolean busy(){ return !(job instanceof Job.Idle); }
-  public Optional<Project> usedBy(List<Project> all){
-    return all.stream().filter(p -> p.busy() && (p.equals(this) || p.job instanceof Job.Main && p.entry.mounts().containsValue(alias()))).findFirst();
-  }
+  public boolean busy(){ return busyBy.isPresent(); }
   public boolean needsCompiling(){ return kind() == Kind.code && facts.stale().isPresent(); }
   public Optional<String> problem(){ return facts.problem(); }
   public List<String> knownMains(){ return mains.map(m -> List.copyOf(m.mains().keySet())).orElse(List.of()); }
@@ -111,7 +110,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
     return file;
   }
   public State state(){
-    if (busy()){ return State.busy; }
+    if (busy()){ return switch (kind()){ case code -> State.codeBusy; case dataRead -> State.dataReadBusy; case dataEdit -> State.dataEditBusy; case idle -> throw Bug.unreachable(); }; }
     if (problem().isPresent() && kind() != Kind.idle){ return kind() == Kind.code ? State.codeInvalid : kind() == Kind.dataRead ? State.dataReadInvalid : State.dataEditInvalid; }
     return switch (kind()){
       case idle -> State.idle;
@@ -122,7 +121,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   }
   public enum Action{ Check, Compile, Run, Terminate }
   public Action action(){
-    if (busy()){ return Action.Terminate; }
+    if (!(job instanceof Job.Idle)){ return Action.Terminate; }
     if (kind() != Kind.code || problem().isPresent()){ return Action.Check; }
     if (needsCompiling()){ return Action.Compile; }
     return Action.Run;

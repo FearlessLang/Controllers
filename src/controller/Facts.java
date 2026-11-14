@@ -27,6 +27,7 @@ import realSourceOracle.RealSourceOracleWithZip;
 import tools.Fs;
 import managerMessages.Report;
 import userMessages.UserError;
+import suggest.Shapes;
 
 /// What the file system says about a project folder: its compilation cache under
 /// `.fearless_out` and why it is out of date, its icon, its logs, and why it is invalid if it is.
@@ -44,7 +45,7 @@ public record Facts(Optional<String> stale, Optional<MainsInfo> mains, List<Stri
   /// None for a folder the manager cannot reach.
   /// The tests are the unit test logs written since `since`, oldest first; with no `since` (Instant.MAX), the newest unit test log.
   public static Optional<Facts> of(Path folder, String alias, Kind kind, Function<Path,Coordinator.State> check, Instant since){
-    if (!Names.reachable(folder)){ return Optional.empty(); }
+    if (!Shapes.reachable(folder)){ return Optional.empty(); }
     try{ return Optional.of(retried(() -> read(folder, alias, kind, check, since))); }
     catch (UncheckedIOException e){ return Optional.of(new Facts(Optional.empty(), Optional.empty(), List.of(), Optional.empty(), List.of(), List.of(), Optional.of(Report.folderUnreadable(folder, e.getCause())).filter(_ -> kind != Kind.idle))); }
   }

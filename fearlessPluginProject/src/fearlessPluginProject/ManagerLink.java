@@ -7,12 +7,12 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.FileLocator;
 import org.osgi.framework.FrameworkUtil;
 
 import suggest.Api;
+import suggest.Shapes;
 
 /// The manager this plugin was connected to (see controller.Eclipse in Controllers).
 /// manager.info, next to the plugins folder holding this plugin, names the manager program,
@@ -43,14 +44,17 @@ public final class ManagerLink{
   static final Path baseCache= path(link.get("baseCache"));
   static Map<String,Project> projects(){
     var res= new LinkedHashMap<String,Project>();
-    Info.lst(Info.parse(manager.resolve("projects.info")).get("projects")).stream().map(p -> project(Info.obj(p))).forEach(p -> marker(p.folder()).ifPresent(name -> res.putIfAbsent(name, p)));
+    var taken= new HashSet<String>();
+    for (var p : Info.lst(Info.parse(manager.resolve("projects.info")).get("projects")).stream().map(o -> project(Info.obj(o))).toList()){
+      try{
+        if (!Shapes.reachable(p.folder())){ continue; }
+        var name= Shapes.infer(p.folder(), taken);
+        taken.add(name);
+        if (!Shapes.markers(p.folder()).isEmpty()){ res.put(name, p); }
+      }
+      catch (UncheckedIOException e){ if (!(e.getCause() instanceof NoSuchFileException)){ throw e; } }
+    }
     return res;
-  }
-  private static Optional<String> marker(Path folder){
-    if (!Files.isDirectory(folder, LinkOption.NOFOLLOW_LINKS) || !Files.isReadable(folder)){ return Optional.empty(); }
-    try (var files= Files.list(folder)){ return files.filter(p -> p.getFileName().toString().endsWith(".fearless") && !p.getFileName().toString().startsWith(".") && Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS)).map(p -> p.getFileName().toString()).sorted().findFirst().map(n -> n.substring(0, n.length()-".fearless".length())); }
-    catch (NoSuchFileException e){ return Optional.empty(); }
-    catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static Project project(Map<String,Object> o){
     var mains= o.containsKey("mains") ? Info.lst(o.get("mains")).stream().map(m -> (String)m).toList() : List.<String>of();

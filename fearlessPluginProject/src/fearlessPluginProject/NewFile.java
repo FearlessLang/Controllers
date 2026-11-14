@@ -13,7 +13,9 @@ public final class NewFile extends BasicNewResourceWizard{
     page = new WizardNewFileCreationPage("file", getSelection()){
       @Override protected boolean validatePage(){
         if (!super.validatePage()){ return false; }
-        Names.problem(getContainerFullPath(), getFileName(), true).ifPresent(p -> setMessage(p, IMessageProvider.WARNING));
+        var problem= Names.problem(getContainerFullPath(), getFileName(), true, null);
+        if (problem.isPresent()){ setErrorMessage(problem.get()); return false; }
+        Names.outside(getContainerFullPath()).ifPresent(p -> setMessage(p, IMessageProvider.WARNING));
         return true;
       }
     };

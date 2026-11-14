@@ -58,6 +58,7 @@ import controller.Registry.Kind;
 import fileSupport.LogFiles;
 import managerMessages.Report;
 import tools.Fs;
+import utils.Bug;
 import utils.Push;
 
 /// The right half of the window: everything about one registered project, and the
@@ -97,7 +98,6 @@ final class Panel{
   private final JLabel status= named(new JLabel(), "status");
   private Object shown= List.of();
   private Project project;
-  private List<Project> all= List.of();
   Panel(Consumer<String> refuse){
     this.refuse= refuse;
     output.setEditable(false);
@@ -156,20 +156,23 @@ final class Panel{
     var menu= new JPopupMenu();
     var alias= project.alias();
     menu.add(Window.item("Browse", () -> Window.open(refuse, project.folder())));
-    Stream.of(named(Window.item("Forget", () -> Main.command("Forget "+alias)), "forget"), named(Window.item("Delete cache", () -> Main.command("DeleteCache "+alias)), "deleteCache"))
+    Stream.of(named(Window.item("Forget", () -> Main.command("Forget "+alias)), "forget"), named(Window.item("Delete cache", () -> Main.command("DeleteCache "+alias)), "deleteCache"), named(Window.item("Fix", () -> fix(alias)), "fix"))
       .forEach(i -> { i.setEnabled(!project.busy()); menu.add(i); });
-    var fix= named(Window.item("Fix", () -> fix(alias)), "fix");
-    fix.setEnabled(project.usedBy(all).isEmpty());
-    menu.add(fix);
     menu.show(projectMenu, 0, projectMenu.getHeight());
   }
   private void fix(String alias){ if (Window.confirm(root, Report.fixQuestion(alias, project.folder()), "Fix")){ Main.command("Fix "+alias); } }
   /// the state in words, then what is running, the first line of the 'problem', and the broken mounts
   static String status(Project p, List<Project> all){
-    var running= p.job() instanceof Project.Job.Main(var main) ? ", running "+main : ", compiling";
-    var detail= p.busy() ? running : p.problem().map(pr -> ": "+pr.lines().findFirst().orElse("")).orElse("");
+    var detail= p.busyBy().map(b -> running(p, b)).orElse(p.problem().map(pr -> ": "+pr.lines().findFirst().orElse("")).orElse(""));
     var broken= p.entry().mounts().keySet().stream().filter(t -> p.brokenMount(t, all).isPresent()).map(t -> "; the mount on "+t+" is broken (see Data)").collect(Collectors.joining());
     return p.state().text+detail+broken;
+  }
+  private static String running(Project p, Project.Busy b){
+    return switch (b.job()){
+      case Project.Job.Main(var main, var waits) -> waits.map(d -> ", "+main+" waits for "+d).orElse(", running "+main+(b.project().equals(p.alias()) ? "" : " of project "+b.project()));
+      case Project.Job.Compile _ -> ", compiling";
+      case Project.Job.Idle _ -> throw Bug.unreachable();
+    };
   }
   private void kinds(){
     var menu= new JPopupMenu();
@@ -262,7 +265,6 @@ final class Panel{
     if (next.equals(shown)){ return; }
     shown = next;
     project = p;
-    this.all = all;
     icon.setIcon(new ImageIcon(Icons.of(p, iconSize).getScaledInstance(iconSize, iconSize, Image.SCALE_SMOOTH)));
     name.setText(p.alias());
     status.setText(status(p, all));

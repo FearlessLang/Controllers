@@ -21,7 +21,7 @@ public final class Eclipse{
   static Optional<Path> find(Path chosen){
     var parent= Optional.ofNullable(chosen.getParent());
     var only= Files.isDirectory(chosen) ? Optional.of(Names.list(chosen)).filter(l -> l.size() == 1).map(List::getFirst) : Optional.<Path>empty();
-    return Stream.of(Optional.of(chosen), parent, parent.map(Path::getParent), only).flatMap(Optional::stream)
+    return Stream.of(Optional.of(chosen), parent, parent.map(Path::getParent), Optional.of(chosen.resolve("Contents").resolve("Eclipse")), only).flatMap(Optional::stream)
       .filter(d -> Files.isRegularFile(d.resolve(".eclipseproduct"))).findFirst();
   }
   public static void connect(Path eclipse, Path plugin, Path program, Path launcher, Path managerDir, Path baseCache){

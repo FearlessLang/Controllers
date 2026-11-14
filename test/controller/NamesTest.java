@@ -15,6 +15,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import tempDirs.RealTempDir;
 
+import suggest.Shapes;
 import tools.Fs;
 
 final class NamesTest{
@@ -24,7 +25,7 @@ final class NamesTest{
     return res;
   }
   private static String named(Path folder, Set<String> taken){
-    var res= Names.infer(folder, taken);
+    var res= Shapes.infer(folder, taken);
     Names.nameAs(folder, res);
     return res;
   }
@@ -38,40 +39,8 @@ final class NamesTest{
     assertFalse(Names.isName(""));
     assertFalse(Names.isName("a/b"));
     assertFalse(Names.isName("a.b"));
-  }
-  @Test void aFolderNameIsTurnedIntoANameFearlessAccepts(@RealTempDir Path dir){
-    var project= folder(dir, "someProject");
-    assertEquals("helloworld", Names.free(project, "helloWorld", Set.of()));
-    assertEquals("map_a_to_pkc", Names.free(project, "map_a_to_pkc", Set.of()));
-    assertEquals("a_b", Names.free(project, "a - b", Set.of()));
-    assertEquals("p2fast", Names.free(project, "2fast", Set.of()));
-    assertEquals("pcon", Names.free(project, "con", Set.of()));
-    assertEquals("com", Names.free(project, "Com", Set.of()));
-    assertEquals("_elvin", Names.free(project, "\u212Aelvin", Set.of()));
-    assertEquals("_x", Names.free(project, "\u0130x", Set.of()));
-    assertEquals("_rger", Names.free(project, "\u00c4rger", Set.of()));
-  }
-  @Test void theNameIsTheFirst64CharactersOfTheFixedSegment(@RealTempDir Path dir){
-    var project= folder(dir, "someProject");
-    assertEquals("ab".repeat(32), Names.free(project, "Ab".repeat(50), Set.of()));
-    assertEquals("p9"+"a".repeat(62), Names.free(project, "9"+"a".repeat(100), Set.of()));
-    assertEquals("ab".repeat(32)+"2", Names.free(project, "ab".repeat(50), Set.of("ab".repeat(32))));
-  }
-  @Test void aTakenComSkipsTheReservedNames(@RealTempDir Path dir){
-    var project= folder(dir, "someProject");
-    assertEquals("com10", Names.free(project, "com", Set.of("com")));
-    assertEquals("lpt", Names.free(project, "lpt", Set.of()));
-    assertEquals("pcom1", Names.free(project, "com1", Set.of()));
-  }
-  @Test void aTakenNameGetsANumber(@RealTempDir Path dir){
-    var project= folder(dir, "someProject");
-    assertEquals("hello2", Names.free(project, "hello", Set.of("hello")));
-    assertEquals("hello3", Names.free(project, "hello", Set.of("hello", "hello2")));
-  }
-  @Test void aFolderOfTheNameDoesNotTakeTheName(@RealTempDir Path dir){
-    var project= folder(dir, "someProject");
-    folder(project, "hello");
-    assertEquals("hello", Names.free(project, "hello", Set.of()));
+    assertTrue(Names.isName("a".repeat(191)));
+    assertFalse(Names.isName("a".repeat(192)));
   }
   @Test void aFreeNameIsKeptAndGetsAMarkerFile(@RealTempDir Path dir){
     var project= folder(dir, "someproject");
@@ -158,7 +127,7 @@ final class NamesTest{
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("zeta.fearless"), "z\n");
     Fs.writeUtf8(project.resolve("alpha.fearless"), "a\n");
-    assertEquals("alpha", Names.marker(project));
+    assertEquals("alpha", Shapes.marker(project));
     assertEquals("alpha", named(project, Set.of()));
     assertEquals("alpha", named(project, Set.of()));
     assertEquals(List.of(project.resolve("alpha.fearless"), project.resolve("zeta.fearless")), Names.list(project));
@@ -175,7 +144,7 @@ final class NamesTest{
   @Test void inferringANameChangesNoFile(@RealTempDir Path dir){
     var project= folder(dir, "someProject");
     Fs.writeUtf8(project.resolve("start.fearless"), "");
-    assertEquals("someproject", Names.infer(project, Set.of("start")));
+    assertEquals("someproject", Shapes.infer(project, Set.of("start")));
     assertEquals(List.of(project.resolve("start.fearless")), Names.list(project));
   }
   @Test void aFolderNamedLikeTheMarkerTakesTheNameAndAFolderNamedLikeTheNameDoesNot(@RealTempDir Path dir){
@@ -183,7 +152,7 @@ final class NamesTest{
     Fs.ensureDir(proj.resolve("proj.fearless"));
     Fs.ensureDir(proj.resolve("proj2"));
     if (!Files.exists(proj.resolve("Proj.fearless"))){ Fs.writeUtf8(proj.resolve("Proj.fearless"), ""); }
-    var name= Names.infer(proj, java.util.Set.of());
+    var name= Shapes.infer(proj, java.util.Set.of());
     assertEquals("proj2", name);
     Names.nameAs(proj, name);
     assertTrue(Files.isRegularFile(proj.resolve("proj2.fearless")));
@@ -192,7 +161,7 @@ final class NamesTest{
     var proj= dir.resolve("proj");
     Fs.writeUtf8(proj.resolve(".old.fearless"), "");
     Fs.writeUtf8(proj.resolve("proj.fearless"), "\n");
-    assertEquals("proj", Names.infer(proj, java.util.Set.of()));
+    assertEquals("proj", Shapes.infer(proj, java.util.Set.of()));
     assertEquals(Optional.empty(), Names.markerProblem(proj, "proj"));
   }
 }

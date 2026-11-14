@@ -82,7 +82,7 @@ public final class Icons{
         case codeOutdated -> dot(g2, x, y, new Color(0xEF6C00), "!");
         case codeInvalid, dataReadInvalid, dataEditInvalid -> dot(g2, x, y, new Color(0xC62828), "X");
         case codeCompiled -> dot(g2, x, y, new Color(0x2E7D32), ">");
-        case busy -> busy(g2, x, y);
+        case codeBusy, dataReadBusy, dataEditBusy -> busy(g2, x, y);
       }
       g2.dispose();
     }
