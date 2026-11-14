@@ -527,6 +527,7 @@ public final class Manager{
   private void unwait(Live l){
     release(l);
     l.job = new Job.Idle();
+    if (l.ran.isEmpty()){ l.follow.ifPresent(Follow::applied); }
     l.follow.ifPresent(Follow::end);
     l.follow = Optional.empty();
   }
@@ -667,6 +668,7 @@ public final class Manager{
     var l= live.get(f);
     if (l.job instanceof Job.Compile){ throw new Refused(Report.busy(Verb.Terminate.name(), alias(f), new Project.Busy(alias(f), l.job))); }
     selected = Optional.of(f);
+    if (l.job instanceof Job.Wait){ unwait(l); }
     if (l.child != null){ endMain(f); }
   }
   /// Ends the running main of the project, and the run it belongs to, before the next request is applied.

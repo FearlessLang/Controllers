@@ -122,7 +122,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   }
   public enum Action{ Check, Compile, Run, Terminate }
   public Action action(){
-    if (job instanceof Job.Main || job instanceof Job.Compile){ return Action.Terminate; }
+    if (!(job instanceof Job.Idle)){ return Action.Terminate; }
     if (kind() != Kind.code || problem().isPresent()){ return Action.Check; }
     if (needsCompiling()){ return Action.Compile; }
     return Action.Run;

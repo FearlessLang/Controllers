@@ -145,7 +145,7 @@ public class Child{
     }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
       granted.add(grants);
-      return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse("")+(attenuators.isEmpty() ? "" : " under "+String.join(" ", attenuators)), "0", main.contains("Slow") ? "60000" : "0");
+      return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse("")+(attenuators.isEmpty() ? "" : " under "+String.join(" ", attenuators)), "0", main.contains("Slow") ? "60000" : main.contains("Pause") ? "3000" : "0");
     }
     @Override public Coordinator.State check(Path folder){ return FakeCache.check(folder, read); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
@@ -1757,6 +1757,52 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
     finally{ locker.kill(); }
+    assertEquals(1, granted.size());
+  }
+  @Test void terminateOfAMainWaitingForTheLocksEndsTheWaitAndTheRun(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of(), List.of("hello.Diary"), "hello.Hello", "hello.Two"));
+    var hello= code(m, dir, "hello");
+    var locker= locker(m, mounted(m, dir, "dataEdit", "hello.Diary"), "read");
+    try (var server= port()){
+      var run= follower(server);
+      send(m, "Run", "hello", "hello.Hello hello.Two", "Port:"+server.getLocalPort());
+      assertEquals(Project.Action.Terminate, project(m, hello).action());
+      send(m, "Terminate", "hello");
+      assertEquals("Applied\n", run.join());
+      assertFalse(project(m, hello).busy());
+      locker.kill();
+      send(m, "Run", "hello", "hello.Two");
+      idle(m);
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    finally{ locker.kill(); }
+    assertEquals(List.of(), view.refused);
+    assertEquals(1, granted.size());
+    same("--- running hello.Two ---\nran hello.Two\n--- hello.Two exited with 0 after [###]s ---\n", view.out(hello));
+  }
+  @Test void aMainAfterTheFirstWithABrokenMountDoesNotStartAndTheOutputListsEachBrokenMount(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Pause", "hello.Hello", "hello.Two"));
+    var hello= code(m, dir, "hello");
+    var data= mounted(m, dir, "dataRead", "hello.Pub");
+    try (var server= port()){
+      var run= follower(server);
+      send(m, "Run", "hello", "hello.Pause hello.Hello hello.Two", "Port:"+server.getLocalPort());
+      until(m, _ -> view.out(hello).contains("ran hello.Pause"));
+      Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
+      var out= """
+--- running hello.Pause ---
+ran hello.Pause
+--- hello.Pause exited with 0 after [###]s ---
+Refused request "Run" on project "hello".
+Project "hello" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:
+  The mount of "data" on "hello.Pub" is broken: the content of project "data" is invalid:
+[###]Bad Name.txt[###]""";
+      same("Applied\n"+out, run.join());
+      idle(m);
+      same(out, view.out(hello));
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    assertEquals(List.of(), view.refused);
     assertEquals(1, granted.size());
   }
   @Test void aRunReadingADataProjectTakesAReadLockBesideTheReadLockOfAnotherProcess(@RealTempDir Path dir){

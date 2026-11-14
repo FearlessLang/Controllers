@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import javax.swing.JButton;
 import javax.swing.JLabel;
 
 import org.junit.jupiter.api.Assertions;
@@ -25,6 +26,7 @@ import controller.Registry.Kind;
 import coordinator.MainsInfo;
 import tools.Fs;
 import utils.Err;
+import utils.OneOr;
 
 /// What the project area shows, from the projects handed to it.
 final class PanelTest{
@@ -177,7 +179,7 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     Err.strCmp("The mount of \"notes\" on \"hello.Diary\" is broken: the content of project \"notes\" is invalid: More than one .fearless marker file was found in[###]", brokenMounts(panel).getFirst());
   }
   private static Project busy(Project p, Project.Job job, Project.Busy by){ return new Project(p.entry(), p.facts(), p.mains(), p.claims(), job, Optional.of(by), p.ran()); }
-  @Test void theStatusLineOfABusyProjectSaysWhatMakesTheProjectBusy(@RealTempDir Path dir){
+  @Test void theStatusLineOfABusyProjectSaysWhatMakesTheProjectBusyAndAWaitingMainShowsTerminate(@RealTempDir Path dir){
     Fs.writeUtf8(dir.resolve("notes").resolve("notes.fearless"), "");
     Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
     var notes= busy(project(dir.resolve("notes"), Kind.dataEdit, Map.of(), Optional.empty()), new Project.Job.Idle(), new Project.Busy("hello", new Project.Job.Main("hello.Slow")));
@@ -190,6 +192,8 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     var hello= busy(project(dir.resolve("hello"), Kind.code, Map.of(), Optional.of(diary)), wait, new Project.Busy("hello", wait));
     panel.render(hello, List.of(hello, notes), 800);
     assertEquals(List.of("code: busy, hello.Hello waits for notes"), statuses(panel));
+    var action= (JButton)OneOr.of("action", all(panel.root).filter(c -> "action".equals(c.getName())));
+    assertEquals(List.of("Terminate", true), List.of(action.getText(), action.isEnabled()));
   }
   @Test void aProjectBackToIdleShowsItsMountsAsWhenItWasACodeProject(@RealTempDir Path dir){
     Fs.writeUtf8(dir.resolve("notes").resolve("notes.fearless"), "");
