@@ -28,6 +28,9 @@
   <extension point="org.eclipse.ui.perspectiveExtensions">
     <perspectiveExtension targetID="fearlessPluginProject.perspective">
       <hiddenMenuItem id="org.eclipse.ui.run"/>
+      <hiddenMenuItem id="build"/>
+      <hiddenMenuItem id="buildProject"/>
+      <hiddenToolBarItem id="build"/>
       <hiddenToolBarItem id="newWizardDropDown"/>
       <hiddenToolBarItem id="org.eclipse.ui.file.saveAll"/>
       <hiddenToolBarItem id="org.eclipse.ui.window.pinEditor"/>

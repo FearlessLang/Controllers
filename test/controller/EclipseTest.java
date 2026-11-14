@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import resources.ResolveResource;
 import tempDirs.RealTempDir;
 
 import tools.Fs;
@@ -66,5 +67,16 @@ final class EclipseTest{
 }
 """.stripIndent().formatted(at, sep), Fs.readUtf8(fearless.resolve("manager.info")));
     assertEquals(List.of("manager.info", "plugins"), Fs.of(() -> { try (var s= Files.list(fearless)){ return s.map(p -> p.getFileName().toString()).sorted().toList(); } }));
+  }
+  @Test void theFearlessPerspectiveHasNoRunMenuNoBuildProjectAndNoBuildAll(){
+    var xml= Fs.readUtf8(ResolveResource.controllerPluginSrc.resolve("plugin.xml"));
+    var start= xml.indexOf("<perspectiveExtension targetID=\"fearlessPluginProject.perspective\">");
+    var hidden= xml.substring(start, xml.indexOf("</perspectiveExtension>", start)).lines().map(String::strip).filter(l -> l.startsWith("<hidden")).toList();
+    Errs.same("""
+<hiddenMenuItem id="org.eclipse.ui.run"/>
+<hiddenMenuItem id="build"/>
+<hiddenMenuItem id="buildProject"/>
+<hiddenToolBarItem id="build"/>
+[###]""", String.join("\n", hidden));
   }
 }
