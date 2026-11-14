@@ -1772,7 +1772,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
       send(m, "Run", "hello", "hello.Hello", "Port:"+server.getLocalPort());
       until(m, _ -> project(m, hello).busyBy().equals(Optional.of(new Project.Busy("hello", new Project.Job.Main("hello.Hello", Optional.of("data"))))));
       assertEquals(Project.State.codeBusy, project(m, hello).state());
-      assertEquals(Project.State.dataEdit, project(m, data).state());
+      assertEquals(Project.State.dataEditBusy, project(m, data).state());
       send(m, "Check", "other");
       assertEquals("The project \"other\" is valid.\n", view.out(other));
       send(m, "Check", "hello");
@@ -1885,6 +1885,44 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Terminate", "hello");
     idle(m);
     assertEquals(Project.State.dataEdit, project(m, data).state());
+  }
+  @Test void aDataProjectMountedOnAMainWaitingForItsLocksIsBusy(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of(), List.of("hello.Diary"), "hello.Hello"));
+    var hello= code(m, dir, "hello");
+    var data= mounted(m, dir, "dataEdit", "hello.Diary");
+    var locker= locker(m, data, "edit");
+    try{
+      send(m, "Run", "hello", "hello.Hello");
+      until(m, _ -> project(m, hello).job().equals(new Project.Job.Main("hello.Hello", Optional.of("data"))));
+      assertEquals(Project.State.dataEditBusy, project(m, data).state());
+      send(m, "Kind", "data", "dataRead");
+      assertEquals(List.of("Refused request to change the kind of project \"data\" to \"dataRead\".\nMain \"hello.Hello\" of project \"hello\" waits for the lock of data project \"data\".\nProject \"hello\" has a mount of project \"data\"."), view.refused);
+      send(m, "Terminate", "hello");
+      idle(m);
+    }
+    finally{ locker.kill(); }
+    assertEquals(Project.State.dataEdit, project(m, data).state());
+  }
+  @Test void aMainWaitingForItsLocksEndsWhenTheManagerHoldingTheLocksFindsADataProjectGone(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of(), List.of("hello.Diary"), "hello.Hello"));
+    var hello= code(m, dir, "hello");
+    var data= mounted(m, dir, "dataEdit", "hello.Diary");
+    var locker= locker(m, data, "edit");
+    try (var server= port()){
+      var run= follower(server);
+      send(m, "Run", "hello", "hello.Hello", "Port:"+server.getLocalPort());
+      until(m, _ -> project(m, hello).job().equals(new Project.Job.Main("hello.Hello", Optional.of("data"))));
+      Fs.rmTree(data);
+      locker.kill();
+      assertEquals("Applied\n", run.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    finally{ locker.kill(); }
+    until(m, _ -> listed(m).equals(List.of("hello "+hello)));
+    assertEquals(List.of(unreachable(data)), view.unreachable);
+    assertFalse(project(m, hello).busy());
+    assertEquals(List.of(), view.refused);
+    same("--- compiling hello ---\ncompiled\n--- compile done ---\n", view.out(hello));
   }
   @Test void locateGivesTheProjectThePickedFolderAndTheProjectKeepsItsMounts(@RealTempDir Path dir){
     var m= manager(dir);

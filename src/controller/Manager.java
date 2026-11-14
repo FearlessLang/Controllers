@@ -464,6 +464,7 @@ public final class Manager{
     project(f).entry().mounts().values().stream().flatMap(d -> registry.named(d).stream()).map(Entry::path).filter(d -> !scan(d)).toList().forEach(this::unreachable);
     var problems= project(f).mountProblems(projects());
     checking = Set.of();
+    if (l.child == null){ return; }
     if (problems.isEmpty()){ started(f, l, main); return; }
     var child= l.child;
     l.child = null;
@@ -852,7 +853,7 @@ public final class Manager{
   }
   private boolean mounts(Path g, Path f){
     var l= live.get(g);
-    return l.child != null && l.job instanceof Job.Main && l.started && l.grants.mounts().containsValue(f);
+    return l.child != null && l.job instanceof Job.Main && l.grants.mounts().containsValue(f);
   }
   private void rotate(){
     if (ending || !view.visible()){ return; }
