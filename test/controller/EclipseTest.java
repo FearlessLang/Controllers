@@ -26,6 +26,18 @@ final class EclipseTest{
     assertEquals(Optional.of(eclipse), Eclipse.find(eclipse.resolve("plugins").resolve("a.jar")));
     assertEquals(Optional.of(eclipse), Eclipse.find(eclipse.getParent()));
   }
+  @Test void anEclipseIsFoundAsContentsEclipseInsideThePath(@RealTempDir Path dir){
+    var app= dir.resolve("Eclipse.app");
+    var eclipse= eclipseAt(app.resolve("Contents").resolve("Eclipse"));
+    Fs.writeUtf8(app.resolve("Contents").resolve("Info.plist"), "");
+    assertEquals(Optional.of(eclipse), Eclipse.find(app));
+    assertEquals(Optional.empty(), Eclipse.find(app.resolve("Contents")));
+  }
+  @Test void theFirstFolderContainingEclipseproductWins(@RealTempDir Path dir){
+    var outer= eclipseAt(dir.resolve("outer"));
+    eclipseAt(outer.resolve("Contents").resolve("Eclipse"));
+    assertEquals(Optional.of(outer), Eclipse.find(outer));
+  }
   @Test void nothingElseLeadsToAnEclipse(@RealTempDir Path dir){
     var eclipse= eclipseAt(dir.resolve("unzipped").resolve("eclipse"));
     Fs.writeUtf8(dir.resolve("unzipped").resolve("readme.txt"), "");

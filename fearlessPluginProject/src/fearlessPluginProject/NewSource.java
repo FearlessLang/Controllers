@@ -9,17 +9,16 @@ import java.util.stream.Stream;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.SWT;
@@ -32,25 +31,27 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
 
+import suggest.Shapes;
+
 public final class NewSource extends AbstractHandler{
   @Override public Object execute(ExecutionEvent event){
     var window= HandlerUtil.getActiveWorkbenchWindow(event);
-    var part= window.getActivePage().getActivePart();
-    Object on= part instanceof IEditorPart e ? e.getEditorInput() : window.getSelectionService().getSelection() instanceof IStructuredSelection s ? s.getFirstElement() : null;
-    var resource= Optional.ofNullable(Adapters.adapt(on, IResource.class)).filter(r -> Nature.marks(r.getProject()));
-    var project= resource.map(IResource::getProject).orElseThrow();
+    var resource= MainButton.target(window).orElseThrow();
     var what= event.getParameter("fearlessPluginProject.what");
-    if (what.equals("folder")){ return folder(window, resource.orElseThrow()); }
-    var type= what.equals("type");
-    new Dialog(window.getShell(), window.getActivePage(), project, type, resource.map(NewSource::start).orElse("")).open();
+    if (what.equals("folder")){ return folder(window, resource); }
+    new Dialog(window.getShell(), window.getActivePage(), resource.getProject(), what.equals("type"), start(resource)).open();
     return null;
+  }
+  @Override public void setEnabled(Object context){
+    var window= ((IEvaluationContext)context).getVariable(ISources.ACTIVE_WORKBENCH_WINDOW_NAME);
+    setBaseEnabled(window instanceof IWorkbenchWindow w && MainButton.target(w).isPresent());
   }
   private static Object folder(IWorkbenchWindow window, IResource on){
     var wizard= new NewFolder();
@@ -136,7 +137,7 @@ public final class NewSource extends AbstractHandler{
     }
     private Optional<String> problem(String t){
       if (path.getText().isBlank()){ return Optional.of(type ? "Write the path of the type, like \"_pkg/point\"." : "Write the path of the package, like \"_pkg\" or \"lib/_pkg\"."); }
-      var p= Names.problem(t, type);
+      var p= Shapes.fearless(t, type);
       if (p.isPresent()){ return p; }
       var last= t.substring(t.lastIndexOf('/')+1);
       if (!type && !last.startsWith("_")){ return Optional.of("\""+last+"\" is not a package folder: the name of a package folder starts with \"_\", like \"_"+last+"\"."); }

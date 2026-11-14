@@ -64,6 +64,7 @@ import utils.Bug;
 import utils.DistinctBy;
 import utils.OneOr;
 import utils.Range;
+import suggest.Shapes;
 
 /// The manager without its window: the registered projects, their jobs, and every message
 /// made of them. Everything runs on one thread, one step at a time; after each step the
@@ -726,7 +727,7 @@ public final class Manager{
     String alias;
     try{
       Coordinator.deleteCache(folder);
-      alias= Names.infer(folder, registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
+      alias= Shapes.infer(folder, registry.all().stream().map(Entry::alias).collect(Collectors.toSet()));
       Names.nameAs(folder, alias);
     }
     catch (UncheckedIOException e){ throw new Refused(Report.registerRefused(folder, Report.fileFailure(e.getCause()))); }

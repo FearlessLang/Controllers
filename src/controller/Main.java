@@ -45,6 +45,7 @@ import utils.Bug;
 import utils.Join;
 import utils.OneOr;
 import utils.Range;
+import suggest.Shapes;
 
 /// The manager process. Every launch leaves one message file (its arguments, turned into a
 /// message) in the manager folder, then tries to take the instance lock: the one process
@@ -152,7 +153,7 @@ public final class Main implements Manager.Exit{
     if (path.getFileName() == null || isProject(path)){ return List.of("Register\n"+TaggedText.ofPath(path), "Show"); }
     return List.of("OpenWithOrShortcut\n"+TaggedText.ofPath(path));
   }
-  public static boolean isProject(Path path){ return Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Names.ext); }
+  public static boolean isProject(Path path){ return Files.isDirectory(path) || path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(Shapes.ext); }
   private static final ExecutorService sender= Executors.newSingleThreadExecutor(Thread.ofVirtual().factory());
   /// Runs the manager program with each call in turn, each once the process before has ended, also across the calls of
   /// several GUI operations, so the messages arrive in that order.

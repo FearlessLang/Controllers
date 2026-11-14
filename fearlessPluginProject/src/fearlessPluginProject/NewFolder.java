@@ -53,9 +53,9 @@ public final class NewFolder extends BasicNewResourceWizard{
     }
     private void validate(){
       var n= name.getText();
-      var error= n.isEmpty() ? "Write the name of the folder." : n.contains("/") ? "A folder name holds no \"/\"." : parent.findMember(n) != null ? "\""+n+"\" already exists." : null;
+      var error= n.isEmpty() ? "Write the name of the folder." : n.contains("/") ? "A folder name holds no \"/\"." : parent.findMember(n) != null ? "\""+n+"\" already exists." : Names.problem(parent.getFullPath(), n, false, null).orElse(null);
       setErrorMessage(error);
-      setMessage(error != null ? null : Names.problem(parent.getFullPath(), n, false).orElse(null), IMessageProvider.WARNING);
+      setMessage(error != null ? null : Names.outside(parent.getFullPath()).orElse(null), IMessageProvider.WARNING);
       setPageComplete(error == null);
     }
   }

@@ -125,33 +125,23 @@
     </handler>
   </extension>
 
-  <extension point="org.eclipse.ui.commands">
-    <command id="fearlessPluginProject.main" name="Fearless Main Button" defaultHandler="fearlessPluginProject.MainButton"/>
-    <command id="fearlessPluginProject.newSource" name="New Fearless Package, Type or Folder">
-      <commandParameter id="fearlessPluginProject.what" name="What" optional="false"/>
-    </command>
+  <extension point="org.eclipse.ltk.core.refactoring.renameParticipants">
+    <renameParticipant id="fearlessPluginProject.rename" name="Fearless file names" class="fearlessPluginProject.Refuse$Rename">
+      <enablement><instanceof value="org.eclipse.core.resources.IResource"/></enablement>
+    </renameParticipant>
   </extension>
 
-  <extension point="org.eclipse.ui.handlers">
-    <handler commandId="fearlessPluginProject.newSource" class="fearlessPluginProject.NewSource">
-      <enabledWhen>
-        <or>
-          <with variable="selection">
-            <count value="1"/>
-            <iterate>
-              <adapt type="org.eclipse.core.resources.IResource">
-                <test property="org.eclipse.core.resources.projectNature" value="fearlessPluginProject.nature"/>
-              </adapt>
-            </iterate>
-          </with>
-          <with variable="activeEditorInput">
-            <adapt type="org.eclipse.core.resources.IResource">
-              <test property="org.eclipse.core.resources.projectNature" value="fearlessPluginProject.nature"/>
-            </adapt>
-          </with>
-        </or>
-      </enabledWhen>
-    </handler>
+  <extension point="org.eclipse.ltk.core.refactoring.moveParticipants">
+    <moveParticipant id="fearlessPluginProject.move" name="Fearless file names" class="fearlessPluginProject.Refuse$Move">
+      <enablement><instanceof value="org.eclipse.core.resources.IResource"/></enablement>
+    </moveParticipant>
+  </extension>
+
+  <extension point="org.eclipse.ui.commands">
+    <command id="fearlessPluginProject.main" name="Fearless Main Button" defaultHandler="fearlessPluginProject.MainButton"/>
+    <command id="fearlessPluginProject.newSource" name="New Fearless Package, Type or Folder" defaultHandler="fearlessPluginProject.NewSource">
+      <commandParameter id="fearlessPluginProject.what" name="What" optional="false"/>
+    </command>
   </extension>
 
   <extension point="org.eclipse.ui.menus">
