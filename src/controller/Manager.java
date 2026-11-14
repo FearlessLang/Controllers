@@ -109,7 +109,7 @@ public final class Manager{
     final List<List<String>> forms;
     Verb(String... forms){ this.forms= Stream.of(forms).map(f -> List.of((name()+" "+f).split(" "))).toList(); }
   }
-  private enum Cut{ none, filesUpdated, stopped }
+  private enum Cut{ none, filesUpdated, dataInvalid, stopped }
   private static final class Live{
     Facts facts;
     Optional<MainsInfo> mains= Optional.empty();
@@ -117,6 +117,7 @@ public final class Manager{
     Job job= new Job.Idle();
     ChildJvm child;
     Cut cut= Cut.none;
+    String invalid;
     Optional<String> corruption= Optional.empty();
     List<String> todo= List.of();
     Optional<Path> input= Optional.empty();
@@ -564,6 +565,7 @@ public final class Manager{
     flushLine(f, l);
     if (l.started){ output(f, "--- "+main+(l.cut != Cut.none ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.ran.getLast().since(), Instant.now()).toSeconds()+"s ---\n"); }
     if (l.cut == Cut.filesUpdated || l.cut == Cut.none && broken(f)){ l.cut = Cut.filesUpdated; output(f, Report.filesUpdated(alias(f), main)+"\n"); }
+    if (l.cut == Cut.dataInvalid){ output(f, Report.dataInvalid(l.invalid, main)+"\n"); }
     next(f);
   }
   /// What the manager does after Coordinator.compile: step 1 only after a compilation with no error, step 2 always, steps 3 and 4 only with no error.
@@ -792,7 +794,13 @@ public final class Manager{
     fresh.problem().ifPresent(why -> errorFile(f, why));
     l.facts = fresh;
     l.mains = fresh.mains();
+    if (fresh.problem().isPresent()){ registry.all().stream().map(Entry::path).filter(g -> mounts(g, f)).forEach(g -> invalidated(g, f)); }
     return true;
+  }
+  private void invalidated(Path g, Path data){
+    var l= live.get(g);
+    if (l.cut == Cut.none){ l.cut = Cut.dataInvalid; l.invalid = alias(data); }
+    l.child.kill();
   }
   /// a cache the corruption rule could not delete is shown as 'invalid' until the next compilation, not corrected again
   private Optional<Facts> checked(Path f){

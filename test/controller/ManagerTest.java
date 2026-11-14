@@ -2383,6 +2383,29 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
     assertEquals(Project.State.codeInvalid, project(m, hello).state());
   }
+  @Test void anAutoCheckFindingAMountedDataProjectInvalidEndsTheRunningMain(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Diary"), List.of(), "hello.Slow"));
+    var hello= code(m, dir, "hello");
+    var diary= dir.resolve("diary");
+    Fs.writeUtf8(diary.resolve("y2026").resolve("notes.txt"), "hi\n");
+    send(m, "Register", TaggedText.of(diary.toString()));
+    send(m, "Kind", "diary", "dataRead");
+    send(m, "Mount", "hello", "hello.Diary diary");
+    compiled(m, "hello");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    Fs.ofV(() -> Fs.move(diary.resolve("y2026"), diary.resolve("y2026_")));
+    Fs.ofV(() -> Fs.move(diary.resolve("y2026_"), diary.resolve("Y2026")));
+    m.start();
+    idle(m);
+    same("""
+--- running hello.Slow ---
+ran hello.Slow
+--- hello.Slow was terminated after [###]s ---
+The data project "diary" became invalid while main "hello.Slow" was running.
+""", view.out(hello));
+    assertEquals(Project.State.dataReadInvalid, project(m, diary).state());
+  }
   @Test void theDesktopOpensEachCapturedExtensionWithItsIconOrTheConflictIcon(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
     code(m, dir, "hello");

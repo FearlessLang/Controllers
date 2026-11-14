@@ -165,6 +165,7 @@ Replace that file with a PNG image, or remove it.
   }
   public static String outOfDate(){ return "The compilation cache of this project is out of date."; }
   public static String filesUpdated(String name, String main){ return "Some files inside the project "+disp(name)+" were updated while main "+disp(main)+" was running."; }
+  public static String dataInvalid(String data, String main){ return "The data project "+disp(data)+" became invalid while main "+disp(main)+" was running."; }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of every program of the Fearless family, this manager included.\nNothing in the project folders changes."; }
   public static String fixQuestion(String name, Path folder){
     var f= folder.getFileName().toString();
