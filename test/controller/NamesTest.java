@@ -38,6 +38,8 @@ final class NamesTest{
     assertFalse(Names.isName(""));
     assertFalse(Names.isName("a/b"));
     assertFalse(Names.isName("a.b"));
+    assertTrue(Names.isName("a".repeat(191)));
+    assertFalse(Names.isName("a".repeat(192)));
   }
   @Test void aFolderNameIsTurnedIntoANameFearlessAccepts(@RealTempDir Path dir){
     var project= folder(dir, "someProject");

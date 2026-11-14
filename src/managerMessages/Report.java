@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 
-import controller.Project;
 import controller.Project.Job;
 import userMessages.UserError;
 import userMessages.Violation;
@@ -250,13 +249,11 @@ The Output lists every change. A change of Fix cannot be undone.""".formatted(di
     return new UserError("Main "+disp(main)+" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\".");
   }
   public static UserError shortcutBadFileName(String main, String file){
-    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
+    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot has at most 191 characters and is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
   }
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" cannot both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
-  public static final String releasing= "removes those extensions from the reserve of the manager, and deletes the compilation cache of every project with a main claiming one of those extensions";
-  public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c -> disp(c.main())+" of project "+disp(c.alias())), " claimed by ", " and ", "", ""); }
 
   //-- what the window opens
   public static String nothingToOpen(Path path){ return "Nothing is opened: nothing exists at\n"+path(path.toString()); }

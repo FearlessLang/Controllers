@@ -9,20 +9,22 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 
 import tempDirs.RealTempDir;
 import tools.Fs;
 import tools.JavacTool;
+import utils.Range;
 
 /// Association is a thin adapter over Commons' fileAssociations; these pin the
 /// adapter's identity/family rules.
@@ -67,59 +69,73 @@ final class AssociationTest{
     assertEquals(List.of("fearless0_001"), Names.list(dir.resolve("b")).stream().map(p -> p.getFileName().toString()).toList());
     assertEquals(List.of(), Names.list(dir.resolve("a")));
   }
-  public static void main(String[] args) throws IOException{
-    try (var ch= FileChannel.open(Path.of(args[0]), StandardOpenOption.CREATE, StandardOpenOption.WRITE)){
+  public static void main(String[] args) throws IOException, InterruptedException{
+    var lock= Path.of(args[0]);
+    var stuck= args[1].equals("stuck");
+    try (var ch= FileChannel.open(lock, StandardOpenOption.CREATE, StandardOpenOption.WRITE)){
       ch.lock();
       System.out.print("locked\n");
       System.out.flush();
-      while (System.in.read() >= 0){}
+      var quit= arrived(lock.resolveSibling("messages"));
+      System.out.print(quit.replace('\n', ' ').replaceFirst("[0-9]+$", "N")+"\n");
+      System.out.flush();
+      try (var s= new Socket(InetAddress.getLoopbackAddress(), Integer.parseInt(quit.substring(quit.lastIndexOf(':') + 1))); var out= s.getOutputStream()){
+        out.write((ProcessHandle.current().pid()+"\n").getBytes(StandardCharsets.UTF_8));
+        for (int i : Range.of(0, stuck ? Integer.MAX_VALUE : 3)){
+          out.write(("Ending the mains: "+(stuck ? 0 : i)+" of 3 ended.\n").getBytes(StandardCharsets.UTF_8));
+          out.flush();
+          Thread.sleep(stuck ? 2000 : 100);
+        }
+      }
     }
   }
-  private static Process locking(Path lock){
+  private static String arrived(Path messages) throws IOException, InterruptedException{
+    while (true){
+      try (var s= Files.list(messages)){
+        var msg= s.filter(p -> p.toString().endsWith(".msg")).findFirst();
+        if (msg.isPresent()){ return Files.readString(msg.get()); }
+      }
+      Thread.sleep(50);
+    }
+  }
+  private static BufferedReader locking(Path folder, String mode){
+    Fs.ensureDir(folder.resolve("messages"));
     var java= Path.of(System.getProperty("java.home"), "bin", "java");
-    var p= Fs.of(new ProcessBuilder(java.toString(), "-cp", System.getProperty("java.class.path"), "controller.AssociationTest", lock.toString()).redirectErrorStream(true)::start);
-    assertEquals("locked", Fs.of(() -> new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8)).readLine()));
-    return p;
+    var p= Fs.of(new ProcessBuilder(java.toString(), "-cp", System.getProperty("java.class.path"), "controller.AssociationTest", folder.resolve("instance.lock").toString(), mode).redirectErrorStream(true)::start);
+    var out= new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
+    assertEquals("locked", Fs.of(out::readLine));
+    return out;
   }
-  private static void quits(Process manager, List<Path> sent, Path command){
-    sent.add(command);
-    Fs.ofV(() -> manager.getOutputStream().close());
+  private static void replaced(Path dir){
+    mainCoordinator.Main.replaced(dir.resolve("b").resolve(identity).resolve("bin").resolve(identity), dir.resolve("a").resolve(identity).resolve("bin").resolve(identity));
   }
-  private static Path replacedFolder(Path dir, Consumer<Path> quit){
-    var old= dir.resolve("a").resolve(identity).resolve("bin").resolve(identity);
+  @Test void aReplacedRunningManagerIsSentQuitWithAPortAndItsManagerFolderIsDeletedOnceItHasQuit(@RealTempDir Path dir){
     var oldFolder= dir.resolve("a").resolve("fearless0_001");
-    Fs.writeUtf8(oldFolder.resolve("messages").resolve("m.msg"), "Show");
-    var before= mainCoordinator.Main.quit;
-    mainCoordinator.Main.quit = quit;
-    try{ mainCoordinator.Main.replaced(dir.resolve("b").resolve(identity).resolve("bin").resolve(identity), old); }
-    finally{ mainCoordinator.Main.quit = before; }
-    return oldFolder;
-  }
-  @Test void aReplacedRunningManagerIsSentQuitAndItsManagerFolderIsDeletedOnceItHasQuit(@RealTempDir Path dir){
-    Fs.ensureDir(dir.resolve("a").resolve("fearless0_001"));
-    var manager= locking(dir.resolve("a").resolve("fearless0_001").resolve("instance.lock"));
-    var sent= new ArrayList<Path>();
-    var oldFolder= replacedFolder(dir, c -> quits(manager, sent, c));
-    assertEquals(List.of(dir.resolve("a").resolve(identity).resolve("bin").resolve(identity)), sent);
-    assertEquals(0, manager.onExit().join().exitValue());
+    var manager= locking(oldFolder, "ends");
+    var start= System.nanoTime();
+    replaced(dir);
+    assertTrue(Duration.ofNanos(System.nanoTime() - start).toSeconds() < 10);
+    assertEquals("Quit Port:N", Fs.of(manager::readLine));
     assertFalse(Files.exists(oldFolder));
-    assertEquals(List.of(), Names.list(dir.resolve("a")).stream().filter(p -> !p.getFileName().toString().equals(identity)).toList());
+    assertEquals(List.of(), Names.list(dir.resolve("a")));
   }
-  @Test void aReplacedManagerThatDoesNotQuitLosesTheFilesOfItsManagerFolderAfterTheWait(@RealTempDir Path dir){
-    Fs.ensureDir(dir.resolve("a").resolve("fearless0_001"));
-    Fs.writeUtf8(dir.resolve("a").resolve("fearless0_001").resolve("projects.info"), "{}");
-    var manager= locking(dir.resolve("a").resolve("fearless0_001").resolve("instance.lock"));
-    var wait= mainCoordinator.Main.quitWaitMillis;
-    mainCoordinator.Main.quitWaitMillis = 500;
-    try{ replacedFolder(dir, _ -> {}); }
-    finally{ mainCoordinator.Main.quitWaitMillis = wait; manager.destroy(); }
-    assertFalse(Files.exists(dir.resolve("a").resolve("fearless0_001").resolve("projects.info")));
+  @Test void aReplacedRunningManagerSendingTheSameProgressLineFor10SecondsIsEndedAndItsManagerFolderIsDeleted(@RealTempDir Path dir){
+    var oldFolder= dir.resolve("a").resolve("fearless0_001");
+    var manager= locking(oldFolder, "stuck");
+    var start= System.nanoTime();
+    replaced(dir);
+    assertTrue(Duration.ofNanos(System.nanoTime() - start).toSeconds() >= 10);
+    assertEquals("Quit Port:N", Fs.of(manager::readLine));
+    assertFalse(Files.exists(oldFolder));
+    assertEquals(List.of(), Names.list(dir.resolve("a")));
   }
   @Test void aManagerFolderWhoseInstanceLockIsOpenIsDeleted(@RealTempDir Path dir){
-    var lock= dir.resolve("a").resolve("fearless0_001").resolve("instance.lock");
+    var oldFolder= dir.resolve("a").resolve("fearless0_001");
+    Fs.writeUtf8(oldFolder.resolve("messages").resolve("m.msg"), "Show");
+    var lock= oldFolder.resolve("instance.lock");
     Fs.writeUtf8(lock, "");
     try (var _= FileChannel.open(lock, StandardOpenOption.WRITE)){
-      var oldFolder= replacedFolder(dir, c -> { throw new AssertionError(c); });
+      replaced(dir);
       assertFalse(Files.exists(oldFolder));
     }
     catch (IOException e){ throw new UncheckedIOException(e); }

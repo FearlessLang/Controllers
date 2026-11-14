@@ -25,6 +25,7 @@ import coordinator.Coordinator;
 import core.E.Literal;
 import core.OtherPackages;
 import fileAssociations.Icon;
+import mainCoordinator.Main.Refusal;
 import naiveBackend.BackendTools;
 import resources.ResolveResource;
 import tools.ChildJvm;
@@ -67,7 +68,7 @@ final class RealManagerTest{
     @Override public Coordinator.State check(Path folder){ return coordinator(folder).check(folder); }
     @Override public Path stdLibBase(){ return ResolveResource.stLibPath; }
     @Override public Path baseCache(){ return RealManagerTest.baseCache(); }
-    @Override public void associate(List<Icon> captured, List<String> taken, List<Project.Claimant> preloads){}
+    @Override public Optional<Refusal> associate(List<Icon> captured, List<String> taken, List<Project.Claimant> preloads){ return Optional.empty(); }
     @Override public void connect(Path eclipse, Path managerDir){ throw Bug.unreachable(); }
   }
   private final List<String> exits= Collections.synchronizedList(new ArrayList<>());
