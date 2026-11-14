@@ -85,6 +85,7 @@ final class ManagerTest{
 public class Child{
   public static void main(String[] a) throws Exception{
     if (a[0].endsWith("take")){ take(a); return; }
+    if (a[0].equals("lock")){ lock(a); return; }
     System.out.print(a[0]+"\\n");
     while (a[0].contains("Chatty")){ System.out.print("chat\\n"); System.out.flush(); }
     System.out.flush();
@@ -106,6 +107,13 @@ public class Child{
     System.out.print("compiled\\n");
     System.out.flush();
     System.exit(0);
+  }
+  static void lock(String[] a) throws Exception{
+    var ch= java.nio.channels.FileChannel.open(tools.PathClassLoader.pathOf(a[1]), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.READ, java.nio.file.StandardOpenOption.WRITE);
+    ch.lock(0, Long.MAX_VALUE, a[2].equals("read"));
+    System.out.print("locked\\n");
+    System.out.flush();
+    Thread.sleep(Long.MAX_VALUE);
   }
 }
 """);
@@ -190,6 +198,14 @@ public class Child{
     @Override public boolean visible(){ return visible; }
     @Override public void choose(Path file, List<Project.Claimant> cs){ choices.add(Stream.concat(Stream.of(file.getFileName().toString()), cs.stream().map(Project.Claimant::label)).toList()); }
     @Override public Answer ask(Refusal refusal){ shown += 1; questions.add(refusal.getMessage()); return answer.apply(heldBy.get(refusal)); }
+    final List<String> unreachable= new ArrayList<>();
+    final List<Path> locate= new ArrayList<>();
+    @Override public Optional<Path> unreachable(String error, Optional<String> refusal){
+      shown += 1;
+      refusal.ifPresent(refused::add);
+      unreachable.add(error);
+      return locate.isEmpty() ? Optional.empty() : Optional.of(locate.removeFirst());
+    }
     @Override public void edited(Path file){ edited.add(file); }
     synchronized String out(Path folder){ return outputs.getOrDefault(folder, new StringBuilder()).toString(); }
   }
@@ -429,25 +445,29 @@ public class Child{
     assertEquals(List.of(), listed(m));
   }
   private static Registry.Entry idleEntry(Path folder){ return new Registry.Entry("", folder, Kind.idle, List.of(), Map.of(), Map.of()); }
-  private static String unreachable(Path folder){ return "The project connects to the folder \""+folder+"\".\nThis folder is now unreachable.\nThe project has now been removed."; }
-  @Test void aFolderAnEditMetadataNamesThroughALinkedFolderIsAFolderTheManagerCanNotReach(@RealTempDir Path dir){
+  private static String unreachable(Path folder){ return "The folder \""+folder+"\" of a registered project is unreachable."; }
+  private static String notReached(String folder){ return "Refused request \"EditMetadata\" on path\n[###]edited.info\nThe edit adds a project with the folder\n[###]"+folder+"\nand the manager can not reach that folder."; }
+  @Test void anEditMetadataAddingAFolderThroughALinkedFolderIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     var real= folder(folder(dir, "real"), "hello");
     var linked= Disk.link(dir.resolve("linked"), dir.resolve("real")).resolve("hello");
     edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(linked)), List.of())));
     m.settle();
-    assertEquals(List.of(unreachable(linked)), view.refused);
+    assertEquals(1, view.refused.size());
+    same(notReached("hello"), view.refused.getFirst());
+    assertEquals(List.of(), view.unreachable);
     assertEquals(List.of(), listed(m));
     same("{\n  \"projects\": [],[###]", info(dir));
     assertEquals(List.of(), Names.list(real));
   }
-  @Test void aFolderAnEditMetadataNamesInAnotherLetterCaseIsAFolderTheManagerCanNotReach(@RealTempDir Path dir){
+  @Test void anEditMetadataAddingAFolderInAnotherLetterCaseIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= folder(dir, "hello");
     var upper= dir.resolve("HELLO");
     edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(upper)), List.of())));
     m.settle();
-    assertEquals(List.of(unreachable(upper)), view.refused);
+    assertEquals(1, view.refused.size());
+    same(notReached("HELLO"), view.refused.getFirst());
     assertEquals(List.of(), listed(m));
     assertEquals(List.of(), Names.list(hello));
   }
@@ -457,7 +477,8 @@ public class Child{
     var inner= folder(outer, "inner");
     edit(m, dir, Registry.text(new Registry.Content(List.of(idleEntry(inner), idleEntry(outer)), List.of())));
     m.settle();
-    assertEquals(List.of("The project \"outer\" connects to the folder \""+outer+"\".\nThis folder is now unreachable.\nThe project \"outer\" has now been removed."), view.refused);
+    assertEquals(List.of(unreachable(outer)), view.unreachable);
+    assertEquals(List.of(), view.refused);
     assertEquals(List.of("inner "+inner), listed(m));
   }
   @Test void aProjectsInfoWithAProjectInsideAnEarlierOneIsNotFatal(@RealTempDir Path dir){
@@ -468,7 +489,7 @@ public class Child{
     m.settle();
     m.settle();
     assertEquals(List.of("outer "+outer), listed(m));
-    assertEquals(List.of(unreachable(inner)), view.refused);
+    assertEquals(List.of(unreachable(inner)), view.unreachable);
     assertEquals(List.of(), Names.list(inner));
   }
   @Test void anEditOfOneProjectMakesAnotherWhoseFolderBecameALinkAFolderTheManagerCanNotReach(@RealTempDir Path dir){
@@ -479,7 +500,7 @@ public class Child{
     Disk.link(b, folder(dir, "c"));
     send(m, "Kind", "a", "dataRead");
     m.settle();
-    assertEquals(List.of("The project \"b\" connects to the folder \""+b+"\".\nThis folder is now unreachable.\nThe project \"b\" has now been removed."), view.refused);
+    assertEquals(List.of(unreachable(b)), view.unreachable);
     assertEquals(List.of("a "+a), listed(m));
   }
   @Test void theFoldersAreWalkedWhenTheListOfTheProjectFoldersChangesAndNotWhenOnlyAKindChanges(@RealTempDir Path dir){
@@ -511,7 +532,8 @@ public class Child{
     Fs.ofV(() -> Files.move(dir.resolve("a"), dir.resolve("b")));
     Disk.link(dir.resolve("a"), dir.resolve("b"));
     send(m, "Check", "hello");
-    same("The project \"hello\" connects to the folder \""+hello+"\".\nThis folder is now unreachable.\nThe project \"hello\" has now been removed.\nRefused request \"Check\" on project \"hello\".\nNo project is named \"hello\".[###]", String.join("\n", view.refused));
+    assertEquals(List.of(unreachable(hello)), view.unreachable);
+    same("Refused request \"Check\" on project \"hello\".\nNo project is named \"hello\".[###]", String.join("\n", view.refused));
     assertEquals(List.of(), listed(m));
   }
   @Test void aFolderWithALongNameIsNamedByTheFirst64CharactersOfItsFixedSegment(@RealTempDir Path dir){
@@ -1147,7 +1169,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     assertEquals(List.of("hello "+hello), listed(m));
     assertFalse(project(m, hello).busy());
     same("[###]ran hello.Slow\n--- terminating hello.Slow ---\n--- hello.Slow was terminated[###]", view.out(hello));
-    assertEquals("The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.", view.refused.getFirst());
+    assertEquals(unreachable(data), view.unreachable.getFirst());
   }
   @Test void anUnreachableProjectIsForgottenWhileAProjectWhoseFolderBecameALinkRunsAMain(@RealTempDir Path dir) throws IOException{
     var m= manager(dir, "hello.Slow");
@@ -1161,7 +1183,8 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     Disk.link(dir.resolve("a"), dir.resolve("b"));
     Fs.rmTree(data);
     send(m, "Check", "data");
-    same("[###]The project \"data\" connects to the folder [###]\nThis folder is now unreachable.\nThe project \"data\" has now been removed.\nRefused request \"Check\" on project \"data\".\nNo project is named \"data\".[###]", String.join("\n", view.refused));
+    same("[###]The folder [###] of a registered project is unreachable.", String.join("\n", view.unreachable));
+    same("[###]Refused request \"Check\" on project \"data\".\nNo project is named \"data\".[###]", String.join("\n", view.refused));
     assertEquals(List.of("hello "+hello), listed(m));
     send(m, "Terminate", "hello");
     assertEquals(List.of(), failures);
@@ -1193,7 +1216,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     }
     finally{ Disk.allow(hello); }
   }
-  @Test void anEditAddingTwoProjectsTheFirstWithAMarkerThatCanNotBeWrittenIsNotFatal(@RealTempDir Path dir){
+  @Test void anEditAddingAFolderWhereNoFileCanBeCreatedIsRefused(@RealTempDir Path dir){
     var m= manager(dir);
     var hello= registered(m, dir, "hello");
     var text= info(dir);
@@ -1202,8 +1225,9 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     Disk.noWrite(locked);
     try{
       edit(m, dir, text.replace("  ]", "  ,\n    {\"path\": "+quoted(locked)+", \"kind\": \"idle\"},\n    {\"path\": "+quoted(other)+", \"kind\": \"idle\"}\n  ]"));
-      until(m, s -> s.projects().size() == 2);
-      assertEquals(List.of("hello "+hello, "other "+other), listed(m));
+      same(notReached("locked"), view.refused.getLast());
+      assertEquals(text, info(dir));
+      assertEquals(List.of("hello "+hello), listed(m));
       assertEquals(List.of(), failures);
     }
     finally{ Disk.allow(locked); }
@@ -1219,7 +1243,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     send(m, "Kind", "data", "dataRead");
-    assertEquals(List.of("Refused request to change the data projects mounted on the DataRead types of project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".\nThe data projects of a main stay the same while the main runs."), view.refused);
+    assertEquals(List.of("Refused request to change the kind of project \"data\" to \"dataRead\".\nMain \"hello.Slow\" is currently running inside project \"hello\".\nProject \"hello\" has a mount of project \"data\"."), view.refused);
     send(m, "Terminate", "hello");
     idle(m);
   }
@@ -1243,11 +1267,14 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     send(m, "Forget", "data");
     edit(m, dir, before.replace("\"hello.Pub\"", "\"hello.Journal\""));
     assertEquals(before, info(dir));
-    assertEquals(Collections.nCopies(4, "Refused request to change the data projects mounted on the DataRead types of project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".\nThe data projects of a main stay the same while the main runs."), view.refused);
+    var grants= "Refused request to change the data projects mounted on the DataRead types of project \"hello\".\nMain \"hello.Slow\" is currently running inside project \"hello\".\nThe data projects of a main stay the same while the main runs.";
+    var running= "Main \"hello.Slow\" is currently running inside project \"hello\".\nProject \"hello\" has a mount of project \"data\".";
+    assertEquals(List.of(grants, "Refused request to change the kind of project \"data\" to \"dataRead\".\n"+running, "Refused request to remove project \"data\".\n"+running, grants), view.refused);
     send(m, "Mount", "hello", "hello.Notes data");
     send(m, "Kind", "other", "dataRead");
     send(m, "Check", "data");
-    assertEquals(4, view.refused.size());
+    assertEquals(5, view.refused.size());
+    assertEquals("Refused request \"Check\" on project \"data\".\n"+running, view.refused.getLast());
     send(m, "Terminate", "hello");
     idle(m);
     send(m, "Mount", "hello", "hello.Old other");
@@ -1379,7 +1406,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     Fs.rmTree(hello);
     send(m, "Check", "hello");
     until(m, s -> s.projects().isEmpty());
-    assertEquals("The project \"hello\" connects to the folder \""+hello+"\".\nThis folder is now unreachable.\nThe project \"hello\" has now been removed.", view.refused.getFirst());
+    assertEquals(unreachable(hello), view.unreachable.getFirst());
     same("[###]--- terminating hello.Slow ---\n--- hello.Slow was terminated after [###]s ---\n", view.out(hello));
   }
   @Test void theLogsOfARunningMainShowAtTheNextAutoCheck(@RealTempDir Path dir){
@@ -1438,7 +1465,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     again.settle();
     again.settle();
     assertEquals(List.of(), listed(again));
-    same("The project connects to the folder [###]\nThis folder is now unreachable.\nThe project has now been removed.", view.refused.getLast());
+    assertEquals(List.of(unreachable(data)), view.unreachable);
   }
   @Test void aProjectWhoseFolderIsGoneIsForgottenAfterADialog(@RealTempDir Path dir){
     var m= manager(dir);
@@ -1446,9 +1473,8 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     send(m, "Register", TaggedText.of(data.toString()));
     Fs.rmTree(data);
     send(m, "Show", "data");
-    assertEquals(List.of(
-      "The project \"data\" connects to the folder \""+data+"\".\nThis folder is now unreachable.\nThe project \"data\" has now been removed.",
-      "Refused request \"Show\" on project \"data\".\nNo project is named \"data\".\nNo project is registered."), view.refused);
+    assertEquals(List.of(unreachable(data)), view.unreachable);
+    assertEquals(List.of("Refused request \"Show\" on project \"data\".\nNo project is named \"data\".\nNo project is registered."), view.refused);
     assertEquals(List.of(), listed(m));
     send(m, "Register", TaggedText.of(data.toString()));
     same("Refused request \"Register\" on path\n[###]data\nNothing exists at that path.", view.refused.getLast());
@@ -1695,6 +1721,149 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     reserve(m, dir, "htm");
     same("[###]NoSuchFileException: [###]hello/.fearless_out/icons/[###].png", failures.getFirst().toString().replace('\\', '/'));
     failures.clear();
+  }
+  private static ChildJvm locker(Manager m, Path data, String mode){
+    var said= new StringBuffer();
+    var res= ChildJvm.start(List.of("-cp", classes+File.pathSeparator+PathClassLoader.jar(), "Child", "lock", PathClassLoader.argOf(m.lockFile(data)), mode), said::append);
+    until(m, _ -> said.toString().contains("locked"));
+    return res;
+  }
+  private Path mounted(Manager m, Path dir, String kind, String type){
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", kind);
+    send(m, "Mount", "hello", type+" data");
+    compiled(m, "hello");
+    return project(m, data).folder();
+  }
+  @Test void aRunWaitsForTheLockOfItsDataProjectWhileTheManagerAppliesOtherRequests(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of(), List.of("hello.Diary"), "hello.Hello"));
+    var hello= code(m, dir, "hello");
+    var data= mounted(m, dir, "dataEdit", "hello.Diary");
+    var other= registered(m, dir, "other");
+    var locker= locker(m, data, "read");
+    try (var server= port()){
+      var run= follower(server);
+      send(m, "Run", "hello", "hello.Hello", "Port:"+server.getLocalPort());
+      assertEquals(Optional.of(new Project.Busy("hello", new Project.Job.Wait("hello.Hello", "data"))), project(m, hello).busyBy());
+      assertEquals(Project.State.codeBusy, project(m, hello).state());
+      send(m, "Check", "other");
+      assertEquals("The project \"other\" is valid.\n", view.out(other));
+      send(m, "Check", "hello");
+      assertEquals(List.of("Refused request \"Check\" on project \"hello\".\nMain \"hello.Hello\" of project \"hello\" waits for the lock of data project \"data\"."), view.refused);
+      assertEquals(List.of(), granted);
+      locker.kill();
+      same("Applied\n--- running hello.Hello ---\nran hello.Hello\n--- hello.Hello exited with 0 after [###]s ---\n", run.join());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    finally{ locker.kill(); }
+    assertEquals(1, granted.size());
+  }
+  @Test void aRunReadingADataProjectTakesAReadLockBesideTheReadLockOfAnotherProcess(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
+    var hello= code(m, dir, "hello");
+    var locker= locker(m, mounted(m, dir, "dataRead", "hello.Pub"), "read");
+    try{
+      send(m, "Run", "hello", "hello.Hello");
+      assertEquals(1, granted.size());
+      idle(m);
+      same("--- running hello.Hello ---\nran hello.Hello\n[###]", view.out(hello));
+    }
+    finally{ locker.kill(); }
+  }
+  @Test void aRunThatWaitedForTheLocksIsRefusedWhenTheManagerHoldingTheLocksFindsABrokenMount(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
+    var hello= code(m, dir, "hello");
+    var data= mounted(m, dir, "dataRead", "hello.Pub");
+    var locker= locker(m, data, "edit");
+    try (var server= port()){
+      var run= follower(server);
+      send(m, "Run", "hello", "hello.Hello", "Port:"+server.getLocalPort());
+      assertTrue(project(m, hello).busy());
+      Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
+      locker.kill();
+      var refusal= "Refused request \"Run\" on project \"hello\".\nProject \"hello\" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:\n  The mount of \"data\" on \"hello.Pub\" is broken: the content of project \"data\" is invalid:\n[###]Bad Name.txt[###]";
+      same("Refused\n"+refusal, run.join());
+      same(refusal, view.refused.getLast());
+    }
+    catch (IOException e){ throw new UncheckedIOException(e); }
+    finally{ locker.kill(); }
+    assertEquals(List.of(), granted);
+    assertFalse(project(m, hello).busy());
+    same("--- compiling hello ---\ncompiled\n--- compile done ---\n", view.out(hello));
+  }
+  @Test void aDataProjectMountedOnARunningMainIsBusy(@RealTempDir Path dir){
+    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Slow"));
+    var hello= code(m, dir, "hello");
+    var data= mounted(m, dir, "dataEdit", "hello.Pub");
+    send(m, "Run", "hello", "hello.Slow");
+    until(m, _ -> view.out(hello).contains("ran hello.Slow"));
+    assertEquals(Project.State.dataEditBusy, project(m, data).state());
+    for (var verb : List.of("Check", "DeleteCache", "Fix")){ send(m, verb, "data"); }
+    send(m, "Forget", "data");
+    var running= "Main \"hello.Slow\" is currently running inside project \"hello\".\nProject \"hello\" has a mount of project \"data\".";
+    assertEquals(List.of(
+      "Refused request \"Check\" on project \"data\".\n"+running,
+      "Refused request \"DeleteCache\" on project \"data\".\n"+running,
+      "Refused request \"Fix\" on project \"data\".\n"+running,
+      "Refused request to remove project \"data\".\n"+running), view.refused);
+    send(m, "Terminate", "hello");
+    idle(m);
+    assertEquals(Project.State.dataEdit, project(m, data).state());
+  }
+  @Test void locateGivesTheProjectThePickedFolderAndTheProjectKeepsItsMounts(@RealTempDir Path dir){
+    var m= manager(dir);
+    var hello= code(m, dir, "hello");
+    var data= data(dir);
+    send(m, "Register", TaggedText.of(data.toString()));
+    send(m, "Kind", "data", "dataEdit");
+    send(m, "Mount", "hello", "hello.Diary data");
+    var moved= folder(dir, "old").resolve("hello");
+    Fs.ofV(() -> Files.move(hello, moved));
+    view.locate.add(moved);
+    send(m, "Check", "hello");
+    assertEquals(List.of(unreachable(hello)), view.unreachable);
+    assertEquals(List.of("hello "+moved, "data "+data), listed(m));
+    assertEquals(Map.of("hello.Diary", "data"), project(m, moved).entry().mounts());
+    assertEquals(Kind.code, project(m, moved).kind());
+    assertEquals("The compilation cache of this project is out of date.\n", view.out(moved));
+    assertEquals(List.of(), view.refused);
+  }
+  @Test void aRefusedLocateShowsItsErrorThenTheUnreachableDialogAgain(@RealTempDir Path dir){
+    var m= manager(dir);
+    var a= registered(m, dir, "a");
+    var b= registered(m, dir, "b");
+    Fs.rmTree(b);
+    view.locate.add(folder(a, "inner"));
+    send(m, "Check", "b");
+    assertEquals(List.of(unreachable(b), unreachable(b)), view.unreachable);
+    same("Refused request \"EditMetadata\" on path\n[###]projects.info\nThe edit adds a project with the folder\n[###]inner\nand the manager can not reach that folder.", view.refused.getFirst());
+    same("Refused request \"Check\" on project \"b\".\nNo project is named \"b\".[###]", view.refused.getLast());
+    assertEquals(List.of("a "+a), listed(m));
+  }
+  @Test void theUnreachableDialogsOfTwoProjectsShowOneAfterTheOther(@RealTempDir Path dir){
+    var m= manager(dir);
+    var hello= registered(m, dir, "hello");
+    var world= registered(m, dir, "world");
+    Fs.rmTree(hello);
+    Fs.rmTree(world);
+    var again= manager(dir);
+    again.settle();
+    again.settle();
+    assertEquals(List.of(unreachable(hello), unreachable(world)), view.unreachable);
+    assertEquals(List.of(), listed(again));
+  }
+  @Test void anEditGivingAProjectAMemberOtherThanPathKindMainsMountsAndAttenuatorsIsRefused(@RealTempDir Path dir){
+    var m= manager(dir);
+    registered(m, dir, "hello");
+    var before= info(dir);
+    edit(m, dir, before.replace("\"kind\": \"idle\"", "\"kind\": \"idle\", \"name\": \"hello\""));
+    same("In file: [###]edited.info\n[###]Unknown project attribute \"name\": the attributes of a project are \"path\", \"kind\", \"mains\", \"mounts\", \"attenuators\".[###]", view.refused.getLast());
+    assertEquals(before, info(dir));
+  }
+  @Test void aProjectsInfoWithAMemberOtherThanProjectsAndReserveIsFatal(@RealTempDir Path dir){
+    Fs.writeUtf8(folder(dir, "manager").resolve("projects.info"), "{\"projects\": [], \"reserve\": [], \"names\": []}\n");
+    Errs.err("In file: [###]projects.info\n[###]Unknown key \"names\": the keys are \"projects\" and \"reserve\".[###]", () -> manager(dir));
   }
   @Test void aPortFollowsTheJobOfARunOrACompileFromItsStartToItsEndAndAnyOtherRequestUntilItIsApplied(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");

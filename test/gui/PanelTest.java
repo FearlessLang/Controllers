@@ -33,7 +33,7 @@ final class PanelTest{
   private static Project project(Path folder, Kind kind, Map<String,String> mounts, Optional<MainsInfo> mains){
     var alias= folder.getFileName().toString();
     var entry= new Entry(alias, folder.toAbsolutePath().normalize(), kind, List.of(), mounts, Map.of());
-    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate(), java.time.Instant.MAX).orElseThrow(), mains, Project.noClaims, new Project.Job.Idle(), List.of());
+    return new Project(entry, Facts.of(entry.path(), alias, kind, _ -> new coordinator.Coordinator.State.OutOfDate(), java.time.Instant.MAX).orElseThrow(), mains, Project.noClaims, new Project.Job.Idle(), Optional.empty(), List.of());
   }
   private static Stream<Component> all(Component c){
     if (!(c instanceof Container k)){ return Stream.of(c); }
@@ -48,7 +48,7 @@ final class PanelTest{
     var claim= new MainsInfo.Claim("base.IconsConflict", "icons/conflict.png", "", "", "", "fapp010");
     var claims= new MainsInfo(Map.of("hello.Foo'", new MainsInfo.Main(List.of(claim), List.of(), List.of(claim))), List.of(), List.of(), List.of());
     var p= project(folder, Kind.code, Map.of(), Optional.of(claims));
-    var withClaims= new Project(p.entry(), p.facts(), p.mains(), claims, new Project.Job.Idle(), List.of());
+    var withClaims= new Project(p.entry(), p.facts(), p.mains(), claims, new Project.Job.Idle(), Optional.empty(), List.of());
     var panel= new Panel(_ -> {});
     panel.render(withClaims, List.of(withClaims), 800);
     assertEquals(List.of(), all(panel.root).filter(c -> c.getName() != null && c.getName().startsWith("shortcut ")).toList());
@@ -92,7 +92,7 @@ failed unit test log of 2026-11-03T00:00:00Z: 1 passed, 1 failed, 1 disabled
     var start= java.time.Instant.parse("2026-11-03T00:00:00Z");
     var facts= Facts.of(entry.path(), "hello", Kind.code, _ -> new coordinator.Coordinator.State.OutOfDate(), start).orElseThrow();
     var ran= List.of(new Project.Ran("hello.Auto", start), new Project.Ran("hello.Mine", start.plusSeconds(2)));
-    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, new Project.Job.Idle(), ran);
+    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, new Project.Job.Idle(), Optional.empty(), ran);
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello), 800);
     assertEquals("""
@@ -113,7 +113,7 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     var entry= new Entry("hello", folder.toAbsolutePath().normalize(), Kind.code, List.of(), Map.of(), Map.of());
     var start= java.time.Instant.parse("2026-11-03T00:00:05Z");
     var facts= Facts.of(entry.path(), "hello", Kind.code, _ -> new coordinator.Coordinator.State.OutOfDate(), start).orElseThrow();
-    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, new Project.Job.Idle(), List.of(new Project.Ran("hello.Hello", start)));
+    var hello= new Project(entry, facts, Optional.empty(), Project.noClaims, new Project.Job.Idle(), Optional.empty(), List.of(new Project.Ran("hello.Hello", start)));
     var panel= new Panel(_ -> {});
     panel.render(hello, List.of(hello), 800);
     assertEquals("", tests(panel));
@@ -175,5 +175,35 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
     panel.render(hello, List.of(hello, gone), 800);
     assertEquals(1, brokenMounts(panel).size());
     Err.strCmp("The mount of \"notes\" on \"hello.Diary\" is broken: the content of project \"notes\" is invalid: More than one .fearless marker file was found in[###]", brokenMounts(panel).getFirst());
+  }
+  private static Project busy(Project p, Project.Job job, Project.Busy by){ return new Project(p.entry(), p.facts(), p.mains(), p.claims(), job, Optional.of(by), p.ran()); }
+  @Test void theStatusLineOfABusyProjectSaysWhatMakesTheProjectBusy(@RealTempDir Path dir){
+    Fs.writeUtf8(dir.resolve("notes").resolve("notes.fearless"), "");
+    Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
+    var notes= busy(project(dir.resolve("notes"), Kind.dataEdit, Map.of(), Optional.empty()), new Project.Job.Idle(), new Project.Busy("hello", new Project.Job.Main("hello.Slow")));
+    var panel= new Panel(_ -> {});
+    panel.render(notes, List.of(notes), 800);
+    assertEquals(Project.State.dataEditBusy, notes.state());
+    assertEquals(Project.Action.Check, notes.action());
+    assertEquals(List.of("dataEdit: busy, running hello.Slow of project hello"), statuses(panel));
+    var wait= new Project.Job.Wait("hello.Hello", "notes");
+    var hello= busy(project(dir.resolve("hello"), Kind.code, Map.of(), Optional.of(diary)), wait, new Project.Busy("hello", wait));
+    panel.render(hello, List.of(hello, notes), 800);
+    assertEquals(List.of("code: busy, hello.Hello waits for notes"), statuses(panel));
+  }
+  @Test void aProjectBackToIdleShowsItsMountsAsWhenItWasACodeProject(@RealTempDir Path dir){
+    Fs.writeUtf8(dir.resolve("notes").resolve("notes.fearless"), "");
+    Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
+    var notes= project(dir.resolve("notes"), Kind.dataRead, Map.of(), Optional.empty());
+    var code= project(dir.resolve("hello"), Kind.code, Map.of("hello.Diary", "notes"), Optional.of(diary));
+    var idle= project(dir.resolve("hello"), Kind.idle, Map.of("hello.Diary", "notes"), Optional.empty());
+    var shown= Stream.of(code, idle).map(p -> texts(p, notes)).toList();
+    assertEquals(List.of("hello.Diary", "mounted: notes", "Remove"), shown.getFirst());
+    assertEquals(shown.getFirst(), shown.getLast());
+  }
+  private static List<String> texts(Project p, Project notes){
+    var panel= new Panel(_ -> {});
+    panel.render(p, List.of(p, notes), 800);
+    return all(panel.root).flatMap(c -> c instanceof JLabel l ? Stream.of(l.getText()) : c instanceof javax.swing.JButton b ? Stream.of(b.getText()) : Stream.of()).filter(t -> List.of("hello.Diary", "mounted: notes", "Remove").contains(t) || t != null && t.startsWith("The mount of")).toList();
   }
 }

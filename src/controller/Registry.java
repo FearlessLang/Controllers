@@ -56,6 +56,7 @@ public final class Registry{
   }
   public record Entry(String alias, Path path, Kind kind, List<String> mains, Map<String,String> mounts, Map<String,List<String>> attenuators){
     public Entry{ mains = List.copyOf(mains); mounts = Collections.unmodifiableMap(new LinkedHashMap<>(mounts)); attenuators = Collections.unmodifiableMap(new LinkedHashMap<>(attenuators)); }
+    public Entry withPath(Path p){ return new Entry(alias, p, kind, mains, mounts, attenuators); }
     public Entry withKind(Kind k){ return new Entry(alias, path, k, mains, mounts, attenuators); }
     public Entry withMains(List<String> m){ return new Entry(alias, path, kind, m, mounts, attenuators); }
     public Entry withMounts(Map<String,String> m){ return new Entry(alias, path, kind, mains, m, attenuators); }
@@ -198,7 +199,8 @@ public final class Registry{
     if (differs){ lookup(); }
     return differs;
   }
-  public boolean reaches(Path folder){ return !away.contains(folder) && corresponds(folder) && Names.reachable(folder); }
+  public boolean reaches(Path folder){ return reaches(folder, away); }
+  public static boolean reaches(Path folder, Set<Path> away){ return !away.contains(folder) && corresponds(folder) && Names.reachable(folder); }
   /// a folder whose marker cannot be written gets no name
   public void lookup(){ content = inferred(content, content, away, this::marked); }
   private Entry marked(Entry e){
