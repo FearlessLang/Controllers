@@ -35,6 +35,14 @@ no folder named "%s" exists above
 
 %s""".formatted(expectedDirName, path(startedFrom.toString()), freshCopyThenReport()));
   }
+  public static UserError noDisplay(){
+    return new UserError("""
+The Fearless manager can not start: this session has no display.
+
+The manager shows a window, and a session with no display shows no window.
+Start the manager from a session with a display.
+""");
+  }
   public static UserError couldNotStartGui(Throwable cause){
     return new UserError("""
 Fearless could not open its window.

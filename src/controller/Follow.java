@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import managerMessages.Report;
@@ -28,6 +29,17 @@ final class Follow{
   void end(){ queue.add(Optional.empty()); }
   void applied(){ start("Applied\n"); }
   void refuse(String why){ start("Refused\n"+why); end(); }
+  void progress(Supplier<String> line){
+    start(ProcessHandle.current().pid()+"\n");
+    Thread.startVirtualThread(() -> progressed(line));
+  }
+  private void progressed(Supplier<String> line){
+    while (!closed){
+      send(line.get()+"\n");
+      try{ Thread.sleep(2000); }
+      catch (InterruptedException e){ throw Bug.of(e); }
+    }
+  }
   private void start(String status){
     queue.addFirst(Optional.of(status));
     Thread.startVirtualThread(this::pump);

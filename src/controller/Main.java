@@ -1,7 +1,6 @@
 package controller;
 
 import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 
@@ -13,7 +12,6 @@ import java.io.UncheckedIOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Files;
@@ -169,7 +167,7 @@ public final class Main implements Manager.Exit{
   private static int fatal(UserError e, int code){
     if (started.isEmpty()){ display(e); return code; }
     var main= started.get();
-    if (lock == null && main.othersHoldLock()){
+    if (lock == null && !main.locked()){
       try{ leave(main.msgDir(), "FatalError\n"+e.getMessage()); return 0; }
       catch (UserError w){ display(e); return code; }
     }
@@ -177,8 +175,8 @@ public final class Main implements Manager.Exit{
     main.wipe().ifPresent(Main::display);
     return code;
   }
-  private boolean othersHoldLock(){
-    try{ lock = Fs.openChannel(managerDir.resolve("instance.lock"), CREATE, WRITE).tryLock(); return lock == null; }
+  private boolean locked(){
+    try{ lock = Fs.openChannel(managerDir.resolve("instance.lock"), CREATE, WRITE).tryLock(); return lock != null; }
     catch (IOException e){ return false; }
   }
   private Optional<UserError> wipe(){
@@ -208,6 +206,7 @@ public final class Main implements Manager.Exit{
     catch (OverlappingFileLockException e){ throw Bug.unreachable(); }
     catch (IOException e){ throw Violation.couldNotUseInstanceLock(lockFile, e); }
     if (lock == null){ if (awaitsOpened){ main.leaveOpened(2000); } return; }
+    if (GraphicsEnvironment.isHeadless()){ throw Violation.noDisplay(); }
     UserError.becameManagerOwner();
     main.own();
   }
@@ -220,18 +219,8 @@ public final class Main implements Manager.Exit{
     }
     throw Violation.programFolderNotFound(startedFrom, expected);
   }
-  //Write to a .tmp name, then atomically rename it to .msg: the owner drains
-  //only *.msg, so it can never observe a half written file.
-  //A name already taken gets another id: the rename never replaces a file.
   private static void leave(Path msgDir, String message){
-    var name= String.format(Locale.ROOT, "%020d-%s", System.currentTimeMillis(), UUID.randomUUID());
-    var tmp= msgDir.resolve(name+".tmp");
-    try{
-      Fs.writeString(tmp, message, CREATE_NEW);
-      try{ Fs.move(tmp, msgDir.resolve(name+".msg")); }
-      catch (FileAlreadyExistsException e){ Fs.deleteIfExists(tmp); throw e; }
-    }
-    catch (FileAlreadyExistsException e){ leave(msgDir, message); }
+    try{ mainCoordinator.Main.leave(msgDir, message); }
     catch (IOException e){ throw Violation.couldNotLeaveStartMessage(msgDir, e); }
   }
   private void own() throws Throwable{
