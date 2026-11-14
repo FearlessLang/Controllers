@@ -169,8 +169,7 @@ final class Panel{
   }
   private static String running(Project p, Project.Busy b){
     return switch (b.job()){
-      case Project.Job.Main(var main) -> ", running "+main+(b.project().equals(p.alias()) ? "" : " of project "+b.project());
-      case Project.Job.Wait(var main, var data) -> ", "+main+" waits for "+data;
+      case Project.Job.Main(var main, var waits) -> waits.map(d -> ", "+main+" waits for "+d).orElse(", running "+main+(b.project().equals(p.alias()) ? "" : " of project "+b.project()));
       case Project.Job.Compile _ -> ", compiling";
       case Project.Job.Idle _ -> throw Bug.unreachable();
     };

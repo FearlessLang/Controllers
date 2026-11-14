@@ -66,7 +66,9 @@ public final class Registry{
   public record Content(List<Entry> projects, List<String> reserve){
     public Content{ projects = List.copyOf(projects); reserve = List.copyOf(reserve); }
   }
-  public record Grants(Map<String,Path> mounts, Map<String,Path> locks){}
+  public record Grants(Map<String,Path> mounts, Map<String,Path> locks, List<String> edits){
+    public String locksFirst(){ return "-DfearlessDataLocksFirst="+String.join(",", edits); }
+  }
   private static final List<String> keys= List.of("path", "kind", "mains", "mounts", "attenuators");
   private static final String kinds= "\"idle\", \"code\", \"dataRead\" or \"dataEdit\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
@@ -232,7 +234,7 @@ public final class Registry{
     e.mounts().forEach((type, data) -> c.projects().stream().filter(t -> t.alias().equals(data) && granted(t.kind(), dataEdit.contains(type))).forEach(t -> mounts.put(type, t.path())));
     var locks= new LinkedHashMap<String,Path>();
     mounts.forEach((t, p) -> locks.put(t, lockFile.apply(p)));
-    return new Grants(Collections.unmodifiableMap(mounts), Collections.unmodifiableMap(locks));
+    return new Grants(Collections.unmodifiableMap(mounts), Collections.unmodifiableMap(locks), mounts.keySet().stream().filter(dataEdit::contains).toList());
   }
   private static boolean granted(Kind k, boolean editType){ return editType ? k == Kind.dataEdit : k.isData(); }
   public static String text(Content c){

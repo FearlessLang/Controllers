@@ -17,6 +17,7 @@ import tools.ChildJvm;
 import tools.JavacTool;
 import tools.PathClassLoader;
 import tools.SourceOracle;
+import utils.Push;
 import userMessages.Violation;
 
 /// The compiler and the mains of a project, as the deployed manager runs them: the
@@ -44,7 +45,7 @@ public final class Deployed implements Manager.Tools{
       PathClassLoader.argOf(folder), alias), out);
   }
   @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
-    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.mounts(), grants.locks(), attenuators, Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
+    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.mounts(), grants.locks(), attenuators, Push.of(Association.desk(folder, main), grants.locksFirst()), coordinator(folder).sharedClasspath(), out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Path baseCache(){ return stdLib("baseCache"); }

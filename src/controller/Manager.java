@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Files;
@@ -24,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -100,7 +98,7 @@ public final class Manager{
   public record State(List<Project> projects, Optional<Path> selected, List<String> reserve){
     public Optional<Project> of(Path folder){ return OneOr.opt("project "+folder, projects.stream().filter(p -> Registry.same(p.folder(), folder))); }
     public Optional<Project> shown(){ return selected.flatMap(this::of); }
-    public List<String> running(){ return projects.stream().filter(p -> p.job() instanceof Job.Main || p.job() instanceof Job.Compile).map(p -> p.alias()+" - "+(p.job() instanceof Job.Main(var main) ? main : "compiling")).toList(); }
+    public List<String> running(){ return projects.stream().filter(p -> !(p.job() instanceof Job.Idle)).map(p -> p.alias()+" - "+(p.job() instanceof Job.Main(var main, _) ? main : "compiling")).toList(); }
   }
   enum Verb{
     Show("", "projectName"), Quit(""), Reset(""),
@@ -125,7 +123,7 @@ public final class Manager{
     Registry.Grants grants;
     Map<String,List<String>> attenuators= Map.of();
     Optional<Follow> follow= Optional.empty();
-    TreeMap<Path,FileLock> locks= new TreeMap<>();
+    boolean started;
     Set<String> answered= new HashSet<>();
     boolean released;
     StringBuilder line= new StringBuilder();
@@ -133,6 +131,8 @@ public final class Manager{
     ConcurrentLinkedQueue<String> printed= new ConcurrentLinkedQueue<>();
     long read;
   }
+  private static final String waitsFor= "FearlessWaitsFor:";
+  private static final String locked= "FearlessLocked\n";
   private static final String conflict= "base.IconsConflict";
   private static final String fearless= "base.IconsFearless";
   private static final List<String> numbered= Stream.of("fapp", "ffile").flatMap(k -> IntStream.range(0, 1000).mapToObj(n -> k+String.format(Locale.ROOT, "%03d", n))).toList();
@@ -150,6 +150,7 @@ public final class Manager{
   private volatile boolean ending;
   private volatile String progress= "Waiting for the current request to end.";
   private boolean asking;
+  private Set<Path> checking= Set.of();
   public Manager(Path dir, Tools tools, View view, Exit exit){
     this.dir= dir;
     this.tools= tools;
@@ -157,7 +158,6 @@ public final class Manager{
     this.exit= exit;
     registry= new Registry(dir, this::granted);
     post(this::load);
-    core.scheduleWithFixedDelay(() -> step(this::waits), 100, 100, TimeUnit.MILLISECONDS);
   }
   public State state(){ return state; }
   public void start(){
@@ -298,7 +298,6 @@ public final class Manager{
   }
   private void end(){
     ending = true;
-    live.values().stream().filter(l -> l.job instanceof Job.Wait).forEach(this::unwait);
     var busy= live.keySet().stream().filter(f -> live.get(f).child != null).toList();
     for (int i : Range.of(0, busy.size())){
       progress = "Ending the mains and compilations: "+i+" of "+busy.size()+" ended.";
@@ -329,7 +328,6 @@ public final class Manager{
     var l= live.get(f);
     if (l.child != null && l.job instanceof Job.Main){ endMain(f); }
     if (l.child != null){ endCompile(f, l); ended(f); }
-    if (l.job instanceof Job.Wait){ unwait(l); }
     deleted(f);
     l.released = true;
   }
@@ -457,79 +455,34 @@ public final class Manager{
     l.input = input;
     l.attenuators = attenuated;
     l.follow = follow;
-    try{ next(f); }
-    catch (Refused r){ l.follow = Optional.empty(); throw r; }
+    next(f);
   }
-  private void locks(Path f, String main){
-    var l= live.get(f);
-    var dataEdit= l.mains.orElseThrow().dataEdit();
-    var grants= Registry.grants(registry.content(), registry.of(f).orElseThrow(), dataEdit, this::lockFile);
-    var want= new TreeMap<Path,Boolean>();
-    grants.locks().forEach((t, lock) -> want.merge(lock, dataEdit.contains(t), Boolean::logicalOr));
-    if (l.locks.entrySet().stream().anyMatch(h -> !Objects.equals(want.get(h.getKey()), !h.getValue().isShared()))){ release(l); }
-    for (var w : want.entrySet()){
-      if (l.locks.containsKey(w.getKey())){ continue; }
-      var taken= held(w.getKey()) ? Optional.<FileLock>empty() : take(w.getKey(), w.getValue());
-      if (taken.isEmpty()){ l.job = new Job.Wait(main, OneOr.of("lock "+w.getKey(), registry.all().stream().filter(e -> lockFile(e.path()).equals(w.getKey()))).alias()); return; }
-      l.locks.put(w.getKey(), taken.get());
-    }
-    locked(f, main, grants);
-  }
-  private void locked(Path f, String main, Registry.Grants grants){
-    var l= live.get(f);
+  private void locked(Path f, Live l){
+    var main= ((Job.Main)l.job).main();
+    l.job = new Job.Main(main, Optional.empty());
+    checking = Set.copyOf(l.grants.locks().values());
     project(f).entry().mounts().values().stream().flatMap(d -> registry.named(d).stream()).map(Entry::path).filter(d -> !scan(d)).toList().forEach(this::unreachable);
     var problems= project(f).mountProblems(projects());
-    if (!problems.isEmpty()){
-      release(l);
-      l.job = new Job.Idle();
-      var why= Report.mountsRefused(alias(f), problems);
-      if (l.ran.isEmpty()){ throw new Refused(why); }
-      output(f, why+"\n");
-      ended(f);
-      return;
-    }
-    if (l.ran.isEmpty()){ view.clear(f); l.follow.ifPresent(Follow::applied); }
-    l.grants = grants;
-    output(f, "--- running "+main+" ---\n");
-    l.ran = Push.of(l.ran, new Project.Ran(main, Instant.now()));
-    start(f, new Job.Main(main), () -> tools.run(f, main, l.input, l.grants, l.attenuators.getOrDefault(main, List.of()), out(f)));
-    release(l);
-  }
-  private void waits(){
-    if (ending){ return; }
-    live.keySet().stream().toList().forEach(this::retry);
-  }
-  private void retry(Path f){
-    if (!(live.get(f) instanceof Live l && l.job instanceof Job.Wait(var main, _))){ return; }
-    try{ locks(f, main); }
-    catch (Refused r){ notRun(f, r.getMessage()); }
-  }
-  private void notRun(Path f, String why){
-    var l= live.get(f);
+    checking = Set.of();
+    if (problems.isEmpty()){ started(f, l, main); return; }
+    var child= l.child;
+    l.child = null;
+    child.kill();
+    code(child);
+    l.job = new Job.Idle();
+    var why= Report.mountsRefused(alias(f), problems);
+    if (!l.ran.isEmpty()){ output(f, why+"\n"); ended(f); return; }
     l.follow.ifPresent(fl -> fl.refuse(why));
     l.follow = Optional.empty();
     refused(why);
   }
-  private boolean held(Path lock){ return live.values().stream().anyMatch(l -> l.locks.containsKey(lock)); }
-  private static Optional<FileLock> take(Path lock, boolean edit){
-    try{
-      var ch= FileChannel.open(lock, StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
-      var res= Optional.ofNullable(ch.tryLock(0, Long.MAX_VALUE, !edit));
-      if (res.isEmpty()){ ch.close(); }
-      return res;
-    }
-    catch (IOException e){ throw new UncheckedIOException(e); }
-  }
-  private static void release(Live l){
-    l.locks.values().forEach(k -> Fs.ofV(() -> k.channel().close()));
-    l.locks.clear();
-  }
-  private void unwait(Live l){
-    release(l);
-    l.job = new Job.Idle();
-    if (l.ran.isEmpty()){ l.follow.ifPresent(Follow::applied); }
-    l.follow.ifPresent(Follow::end);
-    l.follow = Optional.empty();
+  private void started(Path f, Live l, String main){
+    if (l.ran.isEmpty()){ view.clear(f); l.follow.ifPresent(Follow::applied); }
+    output(f, "--- running "+main+" ---\n");
+    l.ran = Push.of(l.ran, new Project.Ran(main, Instant.now()));
+    l.started = true;
+    try{ l.child.send(""); }
+    catch (UncheckedIOException e){}
   }
   private void compile(Path f, Optional<Follow> follow){
     runnable(f, Verb.Compile);
@@ -566,7 +519,9 @@ public final class Manager{
     if (ending || l.cut != Cut.none || l.todo.isEmpty()){ ended(f); return; }
     var main= l.todo.getFirst();
     l.todo = l.todo.subList(1, l.todo.size());
-    locks(f, main);
+    l.grants = Registry.grants(registry.content(), registry.of(f).orElseThrow(), l.mains.orElseThrow().dataEdit(), this::lockFile);
+    l.started = false;
+    start(f, new Job.Main(main, Optional.empty()), () -> tools.run(f, main, l.input, l.grants, l.attenuators.getOrDefault(main, List.of()), out(f)));
   }
   private void ended(Path f){
     var l= live.get(f);
@@ -579,7 +534,7 @@ public final class Manager{
     var l= live.get(f);
     try{ l.child = jvm.get(); }
     catch (UncheckedIOException e){
-      output(f, "--- "+(job instanceof Job.Main(var main) ? main : "compile")+" did not start: "+Report.fileFailure(e.getCause())+"\n---\n");
+      output(f, "--- "+(job instanceof Job.Main(var main, _) ? main : "compile")+" did not start: "+Report.fileFailure(e.getCause())+"\n---\n");
       ended(f);
       return;
     }
@@ -600,12 +555,13 @@ public final class Manager{
     l.child = null;
     switch (l.job){
       case Job.Compile _ -> compiled(f, l, ec);
-      case Job.Main(var main) -> mainExited(f, l, main, ec);
-      case Job.Idle _, Job.Wait _ -> throw Bug.unreachable();
+      case Job.Main(var main, _) -> mainExited(f, l, main, ec);
+      case Job.Idle _ -> throw Bug.unreachable();
     }
   }
   private void mainExited(Path f, Live l, String main, int ec){
-    output(f, "--- "+main+(l.cut != Cut.none ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.ran.getLast().since(), Instant.now()).toSeconds()+"s ---\n");
+    flushLine(f, l);
+    if (l.started){ output(f, "--- "+main+(l.cut != Cut.none ? " was terminated" : " exited with "+ec)+" after "+Duration.between(l.ran.getLast().since(), Instant.now()).toSeconds()+"s ---\n"); }
     if (l.cut == Cut.filesUpdated || l.cut == Cut.none && broken(f)){ l.cut = Cut.filesUpdated; output(f, Report.filesUpdated(alias(f), main)+"\n"); }
     next(f);
   }
@@ -668,14 +624,13 @@ public final class Manager{
     var l= live.get(f);
     if (l.job instanceof Job.Compile){ throw new Refused(Report.busy(Verb.Terminate.name(), alias(f), new Project.Busy(alias(f), l.job))); }
     selected = Optional.of(f);
-    if (l.job instanceof Job.Wait){ unwait(l); }
     if (l.child != null){ endMain(f); }
   }
   /// Ends the running main of the project, and the run it belongs to, before the next request is applied.
   private void endMain(Path f){
     var l= live.get(f);
     l.cut = Cut.stopped;
-    output(f, "--- terminating "+((Job.Main)l.job).main()+" ---\n");
+    if (l.started){ output(f, "--- terminating "+((Job.Main)l.job).main()+" ---\n"); }
     var child= l.child;
     child.kill();
     var ec= code(child);
@@ -827,7 +782,7 @@ public final class Manager{
     }
     var fresh= found.get();
     if (compiling){ return true; }
-    if (l.job instanceof Job.Wait || l.job instanceof Job.Main && fresh.stale().isEmpty() && fresh.problem().isEmpty()){ l.facts = fresh; return true; }
+    if (l.job instanceof Job.Main && fresh.stale().isEmpty() && fresh.problem().isEmpty()){ l.facts = fresh; return true; }
     if (l.job instanceof Job.Main){
       if (l.cut == Cut.none){ l.cut = Cut.filesUpdated; }
       l.child.kill();
@@ -856,7 +811,7 @@ public final class Manager{
   private Optional<Facts> facts(Path f){
     var e= registry.of(f).orElseThrow();
     Supplier<Optional<Facts>> read= () -> read(f, e);
-    if (!e.kind().isData() || held(lockFile(f))){ return read.get(); }
+    if (!e.kind().isData() || checking.contains(lockFile(f))){ return read.get(); }
     var known= live.get(f).facts;
     try (var ch= FileChannel.open(lockFile(f), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE)){
       var held= known == null ? ch.lock(0, Long.MAX_VALUE, true) : ch.tryLock(0, Long.MAX_VALUE, true);
@@ -877,7 +832,6 @@ public final class Manager{
     if (l.child != null && l.job instanceof Job.Main){ endMain(f); }
     registry.all().stream().map(Entry::path).filter(g -> mounts(g, f)).toList().forEach(this::endMain);
     if (l.child != null){ endCompile(f, l); }
-    if (l.job instanceof Job.Wait){ unwait(l); }
     l.job = new Job.Idle();
     lost(f, Optional.empty());
   }
@@ -898,7 +852,7 @@ public final class Manager{
   }
   private boolean mounts(Path g, Path f){
     var l= live.get(g);
-    return l.child != null && l.job instanceof Job.Main && l.grants.mounts().containsValue(f);
+    return l.child != null && l.job instanceof Job.Main && l.started && l.grants.mounts().containsValue(f);
   }
   private void rotate(){
     if (ending || !view.visible()){ return; }
@@ -958,12 +912,15 @@ public final class Manager{
   }
   private void late(Path f, Live l, String text){
     if (live.get(f) != l){ return; }
-    if (!(l.job instanceof Job.Compile)){ output(f, text); return; }
+    var parsed= l.job instanceof Job.Compile || l.job instanceof Job.Main && !l.started;
+    if (!parsed){ output(f, text); return; }
     l.line.append(text);
     for (var nl= l.line.indexOf("\n"); nl >= 0; nl = l.line.indexOf("\n")){
       var line= l.line.substring(0, nl+1);
       l.line.delete(0, nl+1);
       if (line.startsWith(ChildMain.takeFreeExtension)){ answer(l, List.of(line.substring(ChildMain.takeFreeExtension.length()).strip().split(" "))); continue; }
+      if (line.startsWith(waitsFor)){ l.job = new Job.Main(((Job.Main)l.job).main(), Optional.of(registry.of(f).orElseThrow().mounts().get(line.substring(waitsFor.length()).strip()))); continue; }
+      if (line.equals(locked)){ locked(f, l); return; }
       output(f, line);
     }
   }

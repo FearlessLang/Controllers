@@ -18,6 +18,7 @@ final class Follow{
   private final LinkedBlockingDeque<Optional<String>> queue= new LinkedBlockingDeque<>();
   private final Socket socket;
   private volatile boolean closed;
+  private boolean started;
   private Follow(Socket socket){ this.socket= socket; }
   static boolean isPort(String text){ var m= port.matcher(text); return m.matches() && Integer.parseInt(m.group(1)) <= 65535; }
   static Follow to(String verb, String text){
@@ -26,7 +27,10 @@ final class Follow{
     catch (IOException e){ throw new Refused(Report.portClosed(verb, number, e)); }
   }
   void send(String text){ if (!closed){ queue.add(Optional.of(text)); } }
-  void end(){ queue.add(Optional.empty()); }
+  void end(){
+    if (!started){ applied(); }
+    queue.add(Optional.empty());
+  }
   void applied(){ start("Applied\n"); }
   void refuse(String why){ start("Refused\n"+why); end(); }
   void progress(Supplier<String> line){
@@ -41,6 +45,7 @@ final class Follow{
     }
   }
   private void start(String status){
+    started = true;
     queue.addFirst(Optional.of(status));
     Thread.startVirtualThread(this::pump);
   }

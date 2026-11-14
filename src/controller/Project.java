@@ -33,8 +33,7 @@ public record Project(Entry entry, Facts facts, Optional<MainsInfo> mains, Mains
   public sealed interface Job{
     record Idle() implements Job{}
     record Compile() implements Job{}
-    record Main(String main) implements Job{}
-    record Wait(String main, String data) implements Job{}
+    record Main(String main, Optional<String> waits) implements Job{}
   }
   public record Busy(String project, Job job){}
   /// a main of the last Run of the project, and when it started

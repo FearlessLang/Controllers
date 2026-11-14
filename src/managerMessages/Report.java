@@ -65,8 +65,7 @@ The arguments are:
     var by= busy.project();
     var job= switch (busy.job()){
       case Job.Compile _ -> "A compilation of project "+disp(by)+" is currently running.";
-      case Job.Main(var main) -> "Main "+disp(main)+" is currently running inside project "+disp(by)+".";
-      case Job.Wait(var main, var data) -> "Main "+disp(main)+" of project "+disp(by)+" waits for the lock of data project "+disp(data)+".";
+      case Job.Main(var main, var waits) -> waits.map(d -> "Main "+disp(main)+" of project "+disp(by)+" waits for the lock of data project "+disp(d)+".").orElse("Main "+disp(main)+" is currently running inside project "+disp(by)+".");
       case Job.Idle _ -> throw Bug.unreachable();
     };
     return job+(by.equals(name) ? "" : "\nProject "+disp(by)+" has a mount of project "+disp(name)+".");

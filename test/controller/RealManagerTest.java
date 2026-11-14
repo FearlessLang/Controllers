@@ -63,7 +63,7 @@ final class RealManagerTest{
   record Real(Path launcher) implements Manager.Tools{
     @Override public ChildJvm compile(Path folder, String alias, Consumer<String> out){ throw Bug.unreachable(); }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
-      return Coordinator.startMain(folder, ResolveResource.stLibPath, main, input, grants.mounts(), grants.locks(), attenuators, List.of("-DfearlessManager.launcher="+launcher), coordinator(folder).sharedClasspath(), out);
+      return Coordinator.startMain(folder, ResolveResource.stLibPath, main, input, grants.mounts(), grants.locks(), attenuators, List.of("-DfearlessManager.launcher="+launcher, grants.locksFirst()), coordinator(folder).sharedClasspath(), out);
     }
     @Override public Coordinator.State check(Path folder){ return coordinator(folder).check(folder); }
     @Override public Path stdLibBase(){ return ResolveResource.stLibPath; }
@@ -107,9 +107,10 @@ final class RealManagerTest{
       catch (InterruptedException e){ throw Bug.of(e); }
     }
   }
-  private static Path compiled(Manager m, Path dir, String name){
+  private static Path compiled(Manager m, Path dir, String name){ return compiled(m, dir, name, "testRealManager"); }
+  private static Path compiled(Manager m, Path dir, String name, String source){
     var project= dir.resolve(name);
-    Fs.copyFresh(ResolveResource.integrationTests.resolve("testRealManager"), project);
+    Fs.copyFresh(ResolveResource.integrationTests.resolve(source), project);
     message(m, "Register", TaggedText.of(project.toString()));
     message(m, "Kind", name, "code");
     coordinator(project).compile(project, ResolveResource.stLibPath, name, cs -> cs.stream().findFirst()).ifPresent(e -> { throw e; });
@@ -141,5 +142,31 @@ final class RealManagerTest{
     assertEquals(List.of(), failures);
     assertEquals(List.of(), view.refused);
     Err.strCmp("--- running realmgr.RegisterTests ---\n--- realmgr.RegisterTests exited with 0 after [###]s ---\n", view.out(project));
+  }
+  private Path ranWithDiary(Path dir, String main){
+    var m= manager(dir);
+    var project= compiled(m, dir, "realdata", "testRealManagerData");
+    var diary= dir.resolve("diary");
+    Fs.writeUtf8(diary.resolve("readme.txt"), "hi\n");
+    message(m, "Register", TaggedText.of(diary.toString()));
+    message(m, "Kind", "diary", "dataEdit");
+    message(m, "Mount", "realdata", "realdata.Diary", "diary");
+    message(m, "SelectMains", "realdata", main);
+    message(m, "Run", "realdata");
+    until(m, Duration.ofSeconds(30), () -> view.out(project).contains("--- "+main+" exited"));
+    until(m, Duration.ofSeconds(10), () -> idle(m));
+    m.stop();
+    assertEquals(List.of(), failures);
+    assertEquals(List.of(), view.refused);
+    return project;
+  }
+  @Test void theJvmOfAMainReleasesTheLocksOfItsDataProjectsBeforeTheMainRuns(@RealTempDir Path dir){
+    var project= ranWithDiary(dir, "realdata.Write");
+    Err.strCmp("--- running realdata.Write ---\n--- realdata.Write exited with 0 after [###]s ---\n", view.out(project));
+    assertEquals("written", Fs.readUtf8(dir.resolve("diary").resolve("note.txt")));
+  }
+  @Test void aRunOfCapManagerInsideLockedIsADeterministicErrorAndTheManagerReceivesNoRun(@RealTempDir Path dir){
+    var project= ranWithDiary(dir, "realdata.LockedRun");
+    Err.strCmp("--- running realdata.LockedRun ---\nCapManager.run is called while the function of a sys.locked runs, or by a process started while the function of a sys.locked runs.\n[###]--- realdata.LockedRun exited with 1 after [###]s ---\n", view.out(project));
   }
 }

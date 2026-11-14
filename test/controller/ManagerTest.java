@@ -86,6 +86,7 @@ public class Child{
   public static void main(String[] a) throws Exception{
     if (a[0].endsWith("take")){ take(a); return; }
     if (a[0].equals("lock")){ lock(a); return; }
+    if (a[0].equals("run")){ locksFirst(a); a = java.util.Arrays.copyOfRange(a, 1, 4); }
     System.out.print(a[0]+"\\n");
     while (a[0].contains("Chatty")){ System.out.print("chat\\n"); System.out.flush(); }
     System.out.flush();
@@ -107,6 +108,24 @@ public class Child{
     System.out.print("compiled\\n");
     System.out.flush();
     System.exit(0);
+  }
+  static void locksFirst(String[] a) throws Exception{
+    var want= new java.util.TreeMap<String,String[]>();
+    var held= new java.util.ArrayList<java.nio.channels.FileChannel>();
+    for (var i= 4; i < a.length; i += 3){ if (!want.containsKey(a[i]) || a[i+1].equals("edit")){ want.put(a[i], new String[]{a[i+1], a[i+2]}); } }
+    for (var w : want.entrySet()){
+      var ch= java.nio.channels.FileChannel.open(tools.PathClassLoader.pathOf(w.getKey()), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.READ, java.nio.file.StandardOpenOption.WRITE);
+      var shared= w.getValue()[0].equals("read");
+      held.add(ch);
+      if (ch.tryLock(0, Long.MAX_VALUE, shared) != null){ continue; }
+      System.out.print("FearlessWaitsFor:"+w.getValue()[1]+"\\n");
+      System.out.flush();
+      ch.lock(0, Long.MAX_VALUE, shared);
+    }
+    System.out.print("FearlessLocked\\n");
+    System.out.flush();
+    if (System.in.read() != '\\n'){ System.exit(121); }
+    for (var ch : held){ ch.close(); }
   }
   static void lock(String[] a) throws Exception{
     var ch= java.nio.channels.FileChannel.open(tools.PathClassLoader.pathOf(a[1]), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.READ, java.nio.file.StandardOpenOption.WRITE);
@@ -145,7 +164,9 @@ public class Child{
     }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
       granted.add(grants);
-      return jvm(out, "ran "+main+input.map(i -> " on "+i.getFileName()).orElse("")+(attenuators.isEmpty() ? "" : " under "+String.join(" ", attenuators)), "0", main.contains("Slow") ? "60000" : main.contains("Pause") ? "3000" : "0");
+      var said= "ran "+main+input.map(i -> " on "+i.getFileName()).orElse("")+(attenuators.isEmpty() ? "" : " under "+String.join(" ", attenuators));
+      var locks= grants.locks().entrySet().stream().flatMap(e -> Stream.of(PathClassLoader.argOf(e.getValue()), grants.edits().contains(e.getKey()) ? "edit" : "read", e.getKey()));
+      return jvm(out, Stream.concat(Stream.of("run", said, "0", main.contains("Slow") ? "60000" : main.contains("Pause") ? "3000" : "0"), locks).toArray(String[]::new));
     }
     @Override public Coordinator.State check(Path folder){ return FakeCache.check(folder, read); }
     @Override public Path stdLibBase(){ return LocalResources.stLibPath; }
@@ -167,7 +188,7 @@ public class Child{
     }
     @Override public void connect(Path eclipse, Path managerDir){ connected.add(eclipse); }
     private static ChildJvm jvm(Consumer<String> out, String... args){
-      return ChildJvm.start(Stream.concat(Stream.of("-cp", classes.toString(), "Child"), Stream.of(args)).toList(), out);
+      return ChildJvm.start(Stream.concat(Stream.of("-cp", classes+File.pathSeparator+PathClassLoader.jar(), "Child"), Stream.of(args)).toList(), out);
     }
   }
   private static final String lockedSetting= "a setting of the desk the user may not change";
@@ -1008,6 +1029,7 @@ The projects are:
     same("[###]\"Lower\" in \"mounts\" is not a Fearless DataRead type name[###]", view.refused.getLast());
     assertEquals(Project.State.codeCompiled, project(m, hello).state());
     send(m, "Run", "hello", "hello.Hello");
+    idle(m);
     assertEquals("""
 Refused request "Run" on project "hello".
 Project "hello" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:
@@ -1020,6 +1042,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     send(m, "Mount", "hello", "hello.Pub nope");
     send(m, "Forget", "nope");
     send(m, "Run", "hello", "hello.Hello");
+    idle(m);
     assertEquals("""
 Refused request "Run" on project "hello".
 Project "hello" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:
@@ -1032,7 +1055,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     idle(m);
     assertEquals(3, view.refused.size());
     var folder= project(m, data).folder();
-    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder, "hello.Diary", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Diary", m.lockFile(folder)))), granted);
+    assertEquals(new Registry.Grants(Map.of("hello.Pub", folder, "hello.Diary", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Diary", m.lockFile(folder)), List.of("hello.Diary")), granted.getLast());
   }
   @Test void attenuatorsAreSetByRequestAndARunStartsEachMainUnderItsOwn(@RealTempDir Path dir){
     var m= manager(dir, known(List.of("hello.NoGui", "hello.NoNet"), "hello.One", "hello.Two"));
@@ -1102,6 +1125,7 @@ The attenuators are:
     send(m, "Mount", "hello", "hello.Pub data");
     Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
     send(m, "Run", "hello", "hello.Hello");
+    idle(m);
     same("""
 Refused request "Run" on project "hello".
 Project "hello" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:
@@ -1260,7 +1284,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     send(m, "Run", "hello", "hello.Slow");
     until(m, _ -> view.out(hello).contains("ran hello.Slow"));
     var folder= project(m, data).folder();
-    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder, "hello.Notes", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Notes", m.lockFile(folder)))), granted);
+    assertEquals(List.of(new Registry.Grants(Map.of("hello.Pub", folder, "hello.Notes", folder), Map.of("hello.Pub", m.lockFile(folder), "hello.Notes", m.lockFile(folder)), List.of("hello.Notes"))), granted);
     var before= info(dir);
     send(m, "Mount", "hello", "hello.Old other");
     send(m, "Kind", "data", "dataRead");
@@ -1708,6 +1732,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     compiled(m, "hello");
     Fs.rmTree(data);
     send(m, "Run", "hello", "hello.Hello");
+    idle(m);
     same("Refused request \"Run\" on project \"hello\".\n[###]The mount of \"data\" on \"hello.Pub\" is broken: no project \"data\" is registered.", view.refused.getLast());
     assertFalse(view.out(hello).contains("running hello.Hello"));
   }
@@ -1745,13 +1770,16 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     try (var server= port()){
       var run= follower(server);
       send(m, "Run", "hello", "hello.Hello", "Port:"+server.getLocalPort());
-      assertEquals(Optional.of(new Project.Busy("hello", new Project.Job.Wait("hello.Hello", "data"))), project(m, hello).busyBy());
+      until(m, _ -> project(m, hello).busyBy().equals(Optional.of(new Project.Busy("hello", new Project.Job.Main("hello.Hello", Optional.of("data"))))));
       assertEquals(Project.State.codeBusy, project(m, hello).state());
+      assertEquals(Project.State.dataEdit, project(m, data).state());
       send(m, "Check", "other");
       assertEquals("The project \"other\" is valid.\n", view.out(other));
       send(m, "Check", "hello");
       assertEquals(List.of("Refused request \"Check\" on project \"hello\".\nMain \"hello.Hello\" of project \"hello\" waits for the lock of data project \"data\"."), view.refused);
-      assertEquals(List.of(), granted);
+      send(m, "Unmount", "hello", "hello.Diary");
+      same("Refused request to change the data projects mounted on the DataRead types of project \"hello\".\nMain \"hello.Hello\" of project \"hello\" waits for the lock of data project \"data\".\nThe data projects of a main stay the same while the main runs.", view.refused.getLast());
+      assertFalse(view.out(hello).contains("running hello.Hello"));
       locker.kill();
       same("Applied\n--- running hello.Hello ---\nran hello.Hello\n--- hello.Hello exited with 0 after [###]s ---\n", run.join());
     }
@@ -1766,6 +1794,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     try (var server= port()){
       var run= follower(server);
       send(m, "Run", "hello", "hello.Hello hello.Two", "Port:"+server.getLocalPort());
+      until(m, _ -> project(m, hello).job().equals(new Project.Job.Main("hello.Hello", Optional.of("data"))));
       assertEquals(Project.Action.Terminate, project(m, hello).action());
       send(m, "Terminate", "hello");
       assertEquals("Applied\n", run.join());
@@ -1777,7 +1806,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     catch (IOException e){ throw new UncheckedIOException(e); }
     finally{ locker.kill(); }
     assertEquals(List.of(), view.refused);
-    assertEquals(1, granted.size());
+    assertEquals(2, granted.size());
     same("--- running hello.Two ---\nran hello.Two\n--- hello.Two exited with 0 after [###]s ---\n", view.out(hello));
   }
   @Test void aMainAfterTheFirstWithABrokenMountDoesNotStartAndTheOutputListsEachBrokenMount(@RealTempDir Path dir){
@@ -1803,7 +1832,7 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
     assertEquals(List.of(), view.refused);
-    assertEquals(1, granted.size());
+    assertEquals(2, granted.size());
   }
   @Test void aRunReadingADataProjectTakesAReadLockBesideTheReadLockOfAnotherProcess(@RealTempDir Path dir){
     var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
@@ -1818,9 +1847,9 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
     finally{ locker.kill(); }
   }
   @Test void aRunThatWaitedForTheLocksIsRefusedWhenTheManagerHoldingTheLocksFindsABrokenMount(@RealTempDir Path dir){
-    var m= manager(dir, known(List.of(), List.of("hello.Pub"), List.of(), "hello.Hello"));
+    var m= manager(dir, known(List.of(), List.of(), List.of("hello.Diary"), "hello.Hello"));
     var hello= code(m, dir, "hello");
-    var data= mounted(m, dir, "dataRead", "hello.Pub");
+    var data= mounted(m, dir, "dataEdit", "hello.Diary");
     var locker= locker(m, data, "edit");
     try (var server= port()){
       var run= follower(server);
@@ -1828,13 +1857,13 @@ Project "hello" runs only with a data project mounted on each DataRead type of t
       assertTrue(project(m, hello).busy());
       Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
       locker.kill();
-      var refusal= "Refused request \"Run\" on project \"hello\".\nProject \"hello\" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:\n  The mount of \"data\" on \"hello.Pub\" is broken: the content of project \"data\" is invalid:\n[###]Bad Name.txt[###]";
+      var refusal= "Refused request \"Run\" on project \"hello\".\nProject \"hello\" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:\n  The mount of \"data\" on \"hello.Diary\" is broken: the content of project \"data\" is invalid:\n[###]Bad Name.txt[###]";
       same("Refused\n"+refusal, run.join());
       same(refusal, view.refused.getLast());
     }
     catch (IOException e){ throw new UncheckedIOException(e); }
     finally{ locker.kill(); }
-    assertEquals(List.of(), granted);
+    assertEquals(1, granted.size());
     assertFalse(project(m, hello).busy());
     same("--- compiling hello ---\ncompiled\n--- compile done ---\n", view.out(hello));
   }

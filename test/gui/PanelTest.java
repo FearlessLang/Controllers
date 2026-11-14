@@ -182,13 +182,13 @@ failed hello.Mine: 1 passed, 1 failed, 1 disabled
   @Test void theStatusLineOfABusyProjectSaysWhatMakesTheProjectBusyAndAWaitingMainShowsTerminate(@RealTempDir Path dir){
     Fs.writeUtf8(dir.resolve("notes").resolve("notes.fearless"), "");
     Fs.writeUtf8(dir.resolve("hello").resolve("hello.fearless"), "");
-    var notes= busy(project(dir.resolve("notes"), Kind.dataEdit, Map.of(), Optional.empty()), new Project.Job.Idle(), new Project.Busy("hello", new Project.Job.Main("hello.Slow")));
+    var notes= busy(project(dir.resolve("notes"), Kind.dataEdit, Map.of(), Optional.empty()), new Project.Job.Idle(), new Project.Busy("hello", new Project.Job.Main("hello.Slow", Optional.empty())));
     var panel= new Panel(_ -> {});
     panel.render(notes, List.of(notes), 800);
     assertEquals(Project.State.dataEditBusy, notes.state());
     assertEquals(Project.Action.Check, notes.action());
     assertEquals(List.of("dataEdit: busy, running hello.Slow of project hello"), statuses(panel));
-    var wait= new Project.Job.Wait("hello.Hello", "notes");
+    var wait= new Project.Job.Main("hello.Hello", Optional.of("notes"));
     var hello= busy(project(dir.resolve("hello"), Kind.code, Map.of(), Optional.of(diary)), wait, new Project.Busy("hello", wait));
     panel.render(hello, List.of(hello, notes), 800);
     assertEquals(List.of("code: busy, hello.Hello waits for notes"), statuses(panel));
