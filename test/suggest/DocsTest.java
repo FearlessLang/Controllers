@@ -16,6 +16,10 @@ final class DocsTest{
   static void same(String expected, String actual){ Err.strCmp(expected, actual); }
   static final String txt= """
 package base
+  "numbers"
+    Nat: A natural number.
+      NatMatch
+  Block: The block of a result R.
 
 Nat : Sealed, ToStr
 \tread !=(read Nat):Bool
@@ -93,6 +97,24 @@ EList[E:*]
 """);
     same("mut .get(Nat):E\nthe element as mut", d.method("EList", 1, "mut", ".get", 1).orElseThrow());
     same("read .get(Nat):read/imm E\nthe element as read", d.method("EList", 1, "read", ".get", 1).orElseThrow());
+  }
+  @Test void theMethodsSharingTheirDocumentationHaveItUnderTheirLastLine(){
+    var d= new Docs("""
+package base
+
+EList[E:*]
+\t.size:Nat
+\tmut .get(Nat):E
+\tread .get(Nat):read/imm E
+    the element at an index
+\t.get(Nat,Nat):E
+    the element at two indexes
+""");
+    same("mut .get(Nat):E\nthe element at an index", d.method("EList", 1, "mut", ".get", 1).orElseThrow());
+    same("read .get(Nat):read/imm E\nthe element at an index", d.method("EList", 1, "read", ".get", 1).orElseThrow());
+    same("mut .get(Nat):E\nread .get(Nat):read/imm E\nthe element at an index", d.method("EList", 1, "imm", ".get", 1).orElseThrow());
+    same(".size:Nat", d.method("EList", 1, "imm", ".size", 0).orElseThrow());
+    same(".get(Nat,Nat):E\nthe element at two indexes", d.method("EList", 1, "imm", ".get", 2).orElseThrow());
   }
   @Test void aCapabilityVariantWithNoLineOfItsOwnComesWithTheLinesOfItsMethod(){
     same("read !=(read Nat):Bool\nfrom: DataType[Nat,Nat]!=", method("Nat", 0, "imm", "!=", 1));
