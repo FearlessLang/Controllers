@@ -6,10 +6,13 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 /// The documentation of the types of one package and of their methods, from the text rendering
-/// the compiler writes next to the api json (docBuilder.HtmlDocRenderer.renderText): a type's
+/// the compiler writes next to the api json (docBuilder.HtmlDocRenderer.renderText): the groups
+/// of the package and their names, on indented lines; then a type's
 /// header line, Name or Name[X1:bounds,..,Xn:bounds], then " : " and its supertypes if any; the
 /// type's own documentation under it; then one line per method, [RC] name[Bs](Ts):T (no RC is imm), opened by
-/// a tab, with its own documentation under that. A tab opens a method line and nothing else;
+/// a tab, with its own documentation under that; the methods with one name and one number of
+/// parameters that share their documentation have consecutive lines, and that documentation is
+/// under the last of those lines. A tab opens a method line and nothing else;
 /// documentation lines are indented or blank. Every public type and every method of a type is
 /// there: a missing one is an error. An anonymous literal, whose name is private, has no entry.
 public final class Docs{
@@ -18,7 +21,7 @@ public final class Docs{
   private final List<String> lines;
   public Docs(String txt){ this.lines= List.of(txt.split("\n")); }
   /// the type's line and its own documentation, the lines before its first method
-  public Optional<String> type(String simple, int arity){ return header(simple, arity).map(this::text); }
+  public Optional<String> type(String simple, int arity){ return header(simple, arity).map(i -> text(i, List.of())); }
   /// the method's line and its documentation
   public Optional<String> method(String simple, int arity, String rc, String name, int n){
     return header(simple, arity).map(i -> methods(i, simple, rc, name+"/"+n));
@@ -27,7 +30,8 @@ public final class Docs{
     var all= IntStream.range(i+1, entryEnd(i)).filter(j -> lines.get(j).startsWith("\t") && signature(lines.get(j)).endsWith(" "+method)).boxed().toList();
     if (all.isEmpty()){ throw new IllegalArgumentException("No method "+rc+" "+method+" of "+simple+" in the documentation"); }
     var exact= all.stream().filter(j -> signature(lines.get(j)).equals(rc+" "+method)).toList();
-    return String.join("\n", (exact.isEmpty() ? all : exact).stream().map(this::text).toList());
+    var res= exact.isEmpty() ? all.stream().map(j -> text(j, List.of())) : exact.stream().map(j -> text(j, all));
+    return String.join("\n", res.toList());
   }
   private Optional<Integer> header(String simple, int arity){
     var res= IntStream.range(0, lines.size()).filter(i -> isHeader(lines.get(i), simple, arity)).boxed().findFirst();
@@ -41,10 +45,12 @@ public final class Docs{
   }
   private static boolean opens(String line){ return !line.isBlank() && !line.startsWith(" "); }
   private int entryEnd(int i){ return IntStream.range(i+1, lines.size()).filter(j -> opens(lines.get(j)) && !lines.get(j).startsWith("\t")).findFirst().orElse(lines.size()); }
-  /// line i and the lines under it, up to the next line opening a type or a method
-  private String text(int i){
+  /// line i and the lines under the last line of skip directly following line i, up to the next line opening a type or a method
+  private String text(int i, List<Integer> skip){
     var res= new StringBuilder(lines.get(i).strip());
-    for (int j= i+1; j < lines.size() && !opens(lines.get(j)); j += 1){ res.append("\n").append(lines.get(j).strip()); }
+    int j= i+1;
+    for (; skip.contains(j); j += 1){}
+    for (; j < lines.size() && !opens(lines.get(j)); j += 1){ res.append("\n").append(lines.get(j).strip()); }
     return res.toString().strip();
   }
   /// RC name/arity of a method line, [RC] name[Bs](T1,..,Tn):T
