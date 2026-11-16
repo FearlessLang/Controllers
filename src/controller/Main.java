@@ -71,6 +71,7 @@ public final class Main implements Manager.Exit{
   private Path msgDir(){ return managerDir.resolve("messages"); }
   public static void main(String[] args){
     NativeLocaleForcer.forceEnglish();
+    NativeLocaleForcer.nonReparentingOnSway();
     Fs.onSymbolicLink= Report::symbolicLink;
     var exitCode= 0;
     try{ NativeLocaleForcer.requireUtf8FileNames(); run(startMessages(args)); }
