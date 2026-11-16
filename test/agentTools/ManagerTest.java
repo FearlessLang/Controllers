@@ -361,7 +361,7 @@ abstract class ManagerTest{
     on("fedora_cosmic", () -> waitDoubleClick(val(100), val(818), val(294))),
     on("debian_mate", () -> waitDoubleClick(val(100), val(393), val(353))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(100), val(878), val(430))),
-    on("arch_sway", () -> waitDoubleClick(val(100), val(240), val(165))),
+    on("arch_sway", () -> waitDoubleClick(val(500), val(240), val(165))),
     on("void_i3", () -> waitDoubleClick(val(100), val(241), val(122))),
     on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(348), val(155))));
   //double clicks fearlessManaged0_001w, the launcher whose name ends with w
@@ -377,7 +377,7 @@ abstract class ManagerTest{
     on("fedora_cosmic", () -> waitDoubleClick(val(100), val(888), val(343))),
     on("debian_mate", () -> waitDoubleClick(val(100), val(553), val(353))),
     on("xubuntu_xfce", () -> waitDoubleClick(val(100), val(1015), val(430))),
-    on("arch_sway", () -> waitDoubleClick(val(100), val(376), val(165))),
+    on("arch_sway", () -> waitDoubleClick(val(500), val(376), val(165))),
     on("void_i3", () -> waitDoubleClick(val(100), val(378), val(122))),
     on("omarchy_hyprland", () -> waitDoubleClick(val(300), val(510), val(155))));
   final Action openFiles= action("openFiles",
