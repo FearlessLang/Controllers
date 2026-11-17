@@ -58,7 +58,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(2000))),//the marker double click starts a second launcher in the guest, which hands its message to the manager, which shows the project
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action managerShown= action("managerShown",
@@ -73,7 +73,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(200))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(20000))),//the manager starts from the launcher: a JVM start in the guest, then the first paint of its window
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action managerHidden= action("managerHidden",
@@ -88,7 +88,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(2000))),//the manager window leaves the screen up to two seconds after the key closing it
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action managerBack= action("managerBack",
@@ -103,7 +103,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(1000))),//the second launcher hands its message to the manager, which shows its window again
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action hiddenAgain= action("hiddenAgain",
@@ -118,7 +118,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(2000))),//the manager window leaves the screen up to two seconds after the key closing it
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action trayMenuShown= action("trayMenuShown",
@@ -133,7 +133,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(500))),
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action backFromTray= action("backFromTray",
@@ -148,7 +148,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(1000))),//the manager shows its window again after the choice in the tray menu
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action hiddenThird= action("hiddenThird",
@@ -163,7 +163,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(2000))),//the manager window leaves the screen up to two seconds after the key closing it
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action trayIconRight= action("trayIconRight",
@@ -193,7 +193,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(500))),
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   final Action trayQuit= action("trayQuit",
@@ -223,7 +223,7 @@ final class WindowCloseTest extends ManagerTest{
     on("fedora_cosmic", () -> waitAfter(val(100))),
     on("debian_mate", () -> waitAfter(val(100))),
     on("xubuntu_xfce", () -> waitAfter(val(100))),
-    on("arch_sway", () -> waitAfter(val(100))),
+    on("arch_sway", () -> waitAfter(val(1000))),//the manager ends and its tray icon leaves the bar
     on("void_i3", () -> waitAfter(val(100))),
     on("omarchy_hyprland", () -> waitAfter(val(100))));
   @Override void walk() throws Throwable{
