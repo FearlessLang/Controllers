@@ -27,6 +27,7 @@ final class Tokens{
     BadUStrUnclosed("\\x22[^\\x22\\x0A]*(?=\\x0A|\\z)"), BadSStrUnclosed("`[^`\\x0A]*(?=\\x0A|\\z)"),
     UStr("\\x22[^\\x22\\x0A]*\\x22"), SStr("`[^`\\x0A]*`"),
     DotName("\\._*[a-z][A-Za-z0-9_]*'*"),
+    BadDotName("\\._*[A-Z][A-Za-z0-9_]*'*"), BadDot("\\.(?=\\s)"), BadChar("[@$]"),
     UppercaseId("(?:(?!(?:con|prn|aux|nul)(?![a-z0-9_])|(?:com|lpt)[1-9](?![a-z0-9_]))[a-z][a-z0-9_]*\\x2E)?_*[A-Z][A-Za-z0-9_]*'*"),
     BadUppercaseId("(?:[a-z][a-z0-9_]*\\x2E)?_*[A-Z][A-Za-z0-9_]*'*"),
     LowercaseId("_*[a-z][A-Za-z0-9_]*'*"),
