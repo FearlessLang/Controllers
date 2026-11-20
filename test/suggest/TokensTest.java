@@ -20,6 +20,10 @@ final class TokensTest{
     same("LowercaseId|x BadUnopenedBlockCommentClose|*/", tokens("x */"));
     same("BadUStrUnclosed|\"ab", tokens("\"ab"));
     same("BadUnclosedBlockComment|/* a", tokens("/* a"));
+    same("LowercaseId|x DotName|.y BadDotName|.Size", tokens("x.y.Size"));
+    same("UppercaseId|Base BadDotName|.Nat", tokens("Base.Nat"));
+    same("LowercaseId|x BadDot|. LowercaseId|m", tokens("x. m"));
+    same("BadChar|$ LowercaseId|x BadChar|@", tokens("$x @"));
   }
   @Test void aQuoteFollowedByALowercaseLetterOrAnUnderscoreClosesNoString(){
     same("SQuote|' LowercaseId|a DotName|.m Arrow|-> SQuote|' LowercaseId|b DotName|.n", tokens("'a .m -> 'b .n"));
