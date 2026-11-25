@@ -2333,7 +2333,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     for (var c : List.of(
       Map.entry("{\"hello.Foo'\": "+main+"}\n", "Main \"hello.Foo'\" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\"."),
       Map.entry("{\"hello.Foo_bar\": "+main+"}\n", "Main \"hello.Foo_bar\" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\"."),
-      Map.entry("{\"hello.Con\": "+main+"}\n", "Main \"hello.Con\" cannot have the shortcut file \"con.fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
+      Map.entry("{\"hello.Con\": "+main+"}\n", "Main \"hello.Con\" cannot have the shortcut file \"con.fapp010\": a file name in a project is at most 200 characters long, and its part before the dot has at most 191 characters and is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."),
       Map.entry("{\"b.Bar\": "+main+", \"a.Bar\": "+main+"}\n", "Mains \"a.Bar\" and \"b.Bar\" cannot both have the shortcut file \"bar.fapp010\": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension."))){
       infos.put("hello", c.getKey());
       touch(hello);
@@ -2350,20 +2350,19 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     var hello= code(m, dir, "hello");
     var calls= associated.size();
     var bar= claim("base.IconsConflict", "icons/conflict.png", "", "", "fapp010");
-    var longName= "hello.L"+"o".repeat(192);
-    for (var c : List.of(
-      Map.entry(info(longName, bar, ""), "Main \""+longName+"\" cannot have the shortcut file \"l"+"o".repeat(192)+".fapp010\": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name."))){
-      infos.put("hello", c.getKey());
+    for (var n : List.of(192, 191)){
+      var longName= "hello.L"+"o".repeat(n);
+      infos.put("hello", info(longName, bar, ""));
       touch(hello);
       compiled(m, "hello");
-      same("--- compiling hello ---\ncompiled\n"+c.getValue()+"\n--- compile failed ---\n", view.out(hello));
+      same("--- compiling hello ---\ncompiled\nMain \""+longName+"\" cannot have the shortcut file \"l"+"o".repeat(n)+".fapp010\": a file name in a project is at most 200 characters long, and its part before the dot has at most 191 characters and is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.\n--- compile failed ---\n", view.out(hello));
       assertEquals(List.of(".fearless_out", "_hello", "hello.fearless"), top(hello));
     }
-    assertEquals(calls+1, associated.size());
-    infos.put("hello", info("hello.L"+"o".repeat(191), bar, ""));
+    assertEquals(calls+2, associated.size());
+    infos.put("hello", info("hello.L"+"o".repeat(190), bar, ""));
     touch(hello);
     compiled(m, "hello");
-    assertTrue(Files.exists(hello.resolve("l"+"o".repeat(191)+".fapp010")));
+    assertTrue(Files.exists(hello.resolve("l"+"o".repeat(190)+".fapp010")));
     infos.put("hello", info("hello.Todo", bar, ""));
     touch(hello);
     compiled(m, "hello");

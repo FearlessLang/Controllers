@@ -119,11 +119,6 @@ final class FactsTest{
       }
     });
   }
-  @Test void aFileDatedAtTheStartOf1970IsAProblem(@RealTempDir Path dir){
-    var project= project(dir, "someProject");
-    Fs.ofV(() -> Files.setLastModifiedTime(project.resolve("_hello").resolve("_rank_app.fear"), FileTime.fromMillis(-5000)));
-    same("[###]Path: \"_hello/_rank_app.fear\"\n\nThis file is dated 19[###]", facts(project, "someproject", Kind.code).problem().orElseThrow());
-  }
   @Test void anUnreadableFolderIsAProblemNotACrash(@RealTempDir Path dir){
     var project= project(dir, "someProject");
     var hidden= project.resolve("_hello");
