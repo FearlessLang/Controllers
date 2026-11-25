@@ -322,7 +322,7 @@ Fix changes the folder of project "hello":
 - Fix cleans the text of the Fearless source files: Fix removes the byte order mark, turns every line ending into a line feed,
   the typographic quotes and dashes into ' " and -, every tab into a space, an accented letter into the letter without the accent,
   and removes every other character that a Fearless source file cannot hold;
-- Fix sets to the current time the files with no time or with a time in the future;
+- Fix sets to the current time the files with a time in the future;
 - Fix deletes the folders and the zips left with nothing inside;
 - Fix moves to the folder "Hello_fix" next to the project folder ("Hello_fix2" when that name is taken, and so on) what a project cannot hold:
   symbolic links, junctions and the other entries that are neither files nor folders;

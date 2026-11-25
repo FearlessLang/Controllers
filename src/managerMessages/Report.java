@@ -182,7 +182,7 @@ Fix changes the folder of project %s:
 - Fix cleans the text of the Fearless source files: Fix removes the byte order mark, turns every line ending into a line feed,
   the typographic quotes and dashes into ' " and -, every tab into a space, an accented letter into the letter without the accent,
   and removes every other character that a Fearless source file cannot hold;
-- Fix sets to the current time the files with no time or with a time in the future;
+- Fix sets to the current time the files with a time in the future;
 - Fix deletes the folders and the zips left with nothing inside;
 - Fix moves to the folder %s next to the project folder (%s when that name is taken, and so on) what a project cannot hold:
   symbolic links, junctions and the other entries that are neither files nor folders;
@@ -250,7 +250,7 @@ The Output lists every change. A change of Fix cannot be undone.""".formatted(di
     return new UserError("Main "+disp(main)+" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\".");
   }
   public static UserError shortcutBadFileName(String main, String file){
-    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
+    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot has at most 191 characters and is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
   }
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" cannot both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
