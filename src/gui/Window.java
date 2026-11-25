@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -65,6 +66,8 @@ import controller.Manager;
 import controller.Manager.State;
 import controller.Project;
 import controller.Registry;
+import mainCoordinator.Main.Answer;
+import mainCoordinator.Main.Refusal;
 import managerMessages.Report;
 import metaParser.PrettyFileName;
 import managerMessages.Violation;
@@ -174,16 +177,23 @@ public final class Window implements Manager.View{
   @Override public void tell(String text){ refuse(text); }
   private void say(String text){ JOptionPane.showMessageDialog(frame, text, "Fearless", JOptionPane.PLAIN_MESSAGE); }
   @Override public void choose(Path file, List<Project.Claimant> choices){ SwingUtilities.invokeLater(() -> chooser(file, choices)); }
-  @Override public boolean take(String question){
-    var asked= new FutureTask<>(() -> ask(question));
+  @Override public Answer ask(Refusal refusal){ return asked(() -> mainCoordinator.Main.ask(refusal), new Answer(List.of(), List.of())); }
+  @Override public Optional<Path> unreachable(String error, Optional<String> refusal){ return asked(() -> { refusal.ifPresent(this::say); return located(error); }, Optional.empty()); }
+  private <T> T asked(Callable<T> dialog, T none){
+    var asked= new FutureTask<>(() -> { showNow(); return dialog.call(); });
     SwingUtilities.invokeLater(asked);
     try{ return asked.get(); }
-    catch (InterruptedException e){ SwingUtilities.invokeLater(() -> Stream.of(frame.getOwnedWindows()).forEach(java.awt.Window::dispose)); return false; }
+    catch (InterruptedException e){ SwingUtilities.invokeLater(() -> Stream.of(JOptionPane.getRootFrame(), frame).flatMap(w -> Stream.of(w.getOwnedWindows())).forEach(java.awt.Window::dispose)); return none; }
     catch (ExecutionException e){ throw Bug.of(e); }
   }
-  private boolean ask(String question){
-    showNow();
-    return JOptionPane.showConfirmDialog(frame, question, "Fearless", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+  private Optional<Path> located(String error){
+    var locate= JOptionPane.showOptionDialog(frame, error, "Fearless", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, new Object[]{"Locate", "Forget"}, "Locate") == 0;
+    if (!locate){ return Optional.empty(); }
+    var chooser= new JFileChooser();
+    chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+    chooser.setDialogTitle("Locate the folder of the project");
+    if (chooser.showOpenDialog(frame) != JFileChooser.APPROVE_OPTION){ return located(error); }
+    return Optional.of(chooser.getSelectedFile().toPath());
   }
   @Override public void edited(Path file){
     SwingUtilities.invokeLater(() -> { var editor= editors.remove(file); if (editor != null){ editor.dispose(); } });

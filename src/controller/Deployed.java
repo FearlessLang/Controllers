@@ -11,11 +11,13 @@ import core.E.Literal;
 import core.OtherPackages;
 import fileAssociations.Icon;
 import fileAssociations.WindowIcon;
+import mainCoordinator.Main.Refusal;
 import naiveBackend.BackendTools;
 import tools.ChildJvm;
 import tools.JavacTool;
 import tools.PathClassLoader;
 import tools.SourceOracle;
+import utils.Push;
 import userMessages.Violation;
 
 /// The compiler and the mains of a project, as the deployed manager runs them: the
@@ -43,12 +45,12 @@ public final class Deployed implements Manager.Tools{
       PathClassLoader.argOf(folder), alias), out);
   }
   @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
-    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.mounts(), grants.locks(), attenuators, Association.desk(folder, main), coordinator(folder).sharedClasspath(), out);
+    return Coordinator.startMain(folder, stdLib("base"), main, input, grants.mounts(), grants.locks(), attenuators, Push.of(Association.desk(folder, main), grants.locksFirst()), coordinator(folder).sharedClasspath(), out);
   }
   @Override public Path stdLibBase(){ return stdLib("base"); }
   @Override public Path baseCache(){ return stdLib("baseCache"); }
-  @Override public void associate(List<Icon> captured, List<String> taken, List<Project.Claimant> preloads){
-    mainCoordinator.Main.reconcile(Association.launcher(), "Fearless Manager", captured, taken, preloads.stream().map(Deployed::window).toList(), Association.iconFile(), Violation::associationsAmbiguous);
+  @Override public Optional<Refusal> associate(List<Icon> captured, List<String> taken, List<Project.Claimant> preloads){
+    return mainCoordinator.Main.reconcile(Association.launcher(), "Fearless Manager", captured, taken, preloads.stream().map(Deployed::window).toList(), Association.iconFile());
   }
   private static WindowIcon window(Project.Claimant c){
     return new WindowIcon(Association.deskId(c.folder(), c.main())+"-"+c.claim().icon(), c.main().substring(c.main().lastIndexOf('.')+1), c.folder(), c.png());

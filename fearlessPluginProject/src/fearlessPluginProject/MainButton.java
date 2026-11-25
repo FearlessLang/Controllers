@@ -1,7 +1,6 @@
 package fearlessPluginProject;
 
-import java.io.IOException;
-import java.nio.file.Files;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +35,7 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.menus.UIElement;
 
 import suggest.Cached;
+import suggest.Shapes;
 
 public final class MainButton extends AbstractHandler implements IElementUpdater{
   static final String id= "fearlessPluginProject.main";
@@ -64,7 +64,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     return new State(action, all, all.stream().filter(p.mains()::contains).toList());
   }
   @Override public Object execute(ExecutionEvent event){
-    var alias= target(HandlerUtil.getActiveWorkbenchWindow(event)).orElseThrow();
+    var alias= alias(HandlerUtil.getActiveWorkbenchWindow(event)).orElseThrow();
     if (Follow.followed().filter(f -> !f.compile && f.alias.equals(alias)).isPresent()){ ManagerLink.send("Terminate", alias); return null; }
     var s= of(alias, ManagerLink.projects());
     switch (s.action()){
@@ -83,7 +83,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   }
   @Override public void setEnabled(Object context){
     var window= ((IEvaluationContext)context).getVariable(ISources.ACTIVE_WORKBENCH_WINDOW_NAME);
-    setBaseEnabled(window instanceof IWorkbenchWindow w && target(w).filter(MainButton::pressable).isPresent());
+    setBaseEnabled(window instanceof IWorkbenchWindow w && alias(w).filter(MainButton::pressable).isPresent());
   }
   private static boolean pressable(String alias){
     var followed= Follow.followed();
@@ -95,7 +95,7 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
   @Override public void updateElement(UIElement element, @SuppressWarnings("rawtypes") Map parameters){
     var window= element.getServiceLocator().getService(IWorkbenchWindow.class);
     if (watched.add(window)){ window.getSelectionService().addPostSelectionListener((part, selection) -> refresh()); }
-    var alias= target(window);
+    var alias= alias(window);
     var terminate= alias.isPresent() && Follow.followed().filter(f -> !f.compile && f.alias.equals(alias.get())).isPresent();
     var s= alias.map(found::get).orElse(new State(Action.run, List.of(), List.of()));
     var icon= terminate ? List.of("org.eclipse.debug.ui", "icons/full/elcl16/terminate_co.png") : switch (s.action()){
@@ -107,22 +107,19 @@ public final class MainButton extends AbstractHandler implements IElementUpdater
     var verb= terminate ? "Terminate" : switch (s.action()){ case check -> "Check"; case compile -> "Compile"; case run -> s.mains().size() > 1 ? "Run V" : "Run"; };
     element.setTooltip(alias.map(a -> verb+" "+a).orElse(verb));
   }
-  private static Optional<String> target(IWorkbenchWindow window){
+  static Optional<IResource> target(IWorkbenchWindow window){
     var page= Optional.ofNullable(window.getActivePage());
     var selected= page.filter(p -> !(p.getActivePart() instanceof IEditorPart)).map(p -> p.getSelection()).filter(s -> s instanceof IStructuredSelection).map(s -> ((IStructuredSelection)s).getFirstElement());
     var edited= page.map(p -> p.getActiveEditor()).map(e -> (Object)e.getEditorInput());
-    return Stream.of(selected, edited).flatMap(Optional::stream).map(o -> Adapters.adapt(o, IResource.class)).filter(r -> r != null)
-      .map(r -> FearlessWatcher.alias(r.getProject())).filter(found::containsKey).findFirst();
+    return Stream.of(selected, edited).flatMap(Optional::stream).map(o -> Adapters.adapt(o, IResource.class)).filter(r -> r != null && Nature.marks(r.getProject()) && found.containsKey(FearlessWatcher.alias(r.getProject()))).findFirst();
   }
+  private static Optional<String> alias(IWorkbenchWindow window){ return target(window).map(r -> FearlessWatcher.alias(r.getProject())); }
   private static Action action(String alias, ManagerLink.Project p){
     if (!p.kind().equals("code") || !marked(p.folder(), alias)){ return Action.check; }
     return switch (Cached.state(p.folder(), ManagerLink.baseCache)){ case invalid -> Action.check; case outOfDate -> Action.compile; case compiled -> Action.run; };
   }
   private static boolean marked(Path folder, String alias){
-    if (!Files.isDirectory(folder)){ return false; }
-    try (var s= Files.list(folder)){
-      return s.filter(f -> f.getFileName().toString().endsWith(".fearless") && !f.getFileName().toString().startsWith(".") && Files.isRegularFile(f)).map(f -> f.getFileName().toString()).toList().equals(List.of(alias+".fearless"));
-    }
-    catch (IOException e){ return false; }
+    try{ return Shapes.markers(folder).stream().map(f -> f.getFileName().toString()).toList().equals(List.of(alias+Shapes.ext)); }
+    catch (UncheckedIOException e){ return false; }
   }
 }

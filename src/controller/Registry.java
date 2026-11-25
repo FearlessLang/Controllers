@@ -45,6 +45,7 @@ import userMessages.UserError;
 import utils.Join;
 import utils.OneOr;
 import utils.Push;
+import suggest.Shapes;
 
 /// The registered projects and the reserve of `projects.info`: read once, then
 /// kept in memory and written back whole on every change.
@@ -56,6 +57,7 @@ public final class Registry{
   }
   public record Entry(String alias, Path path, Kind kind, List<String> mains, Map<String,String> mounts, Map<String,List<String>> attenuators){
     public Entry{ mains = List.copyOf(mains); mounts = Collections.unmodifiableMap(new LinkedHashMap<>(mounts)); attenuators = Collections.unmodifiableMap(new LinkedHashMap<>(attenuators)); }
+    public Entry withPath(Path p){ return new Entry(alias, p, kind, mains, mounts, attenuators); }
     public Entry withKind(Kind k){ return new Entry(alias, path, k, mains, mounts, attenuators); }
     public Entry withMains(List<String> m){ return new Entry(alias, path, kind, m, mounts, attenuators); }
     public Entry withMounts(Map<String,String> m){ return new Entry(alias, path, kind, mains, m, attenuators); }
@@ -64,7 +66,9 @@ public final class Registry{
   public record Content(List<Entry> projects, List<String> reserve){
     public Content{ projects = List.copyOf(projects); reserve = List.copyOf(reserve); }
   }
-  public record Grants(Map<String,Path> mounts, Map<String,Path> locks){}
+  public record Grants(Map<String,Path> mounts, Map<String,Path> locks, List<String> edits){
+    public String locksFirst(){ return "-DfearlessDataLocksFirst="+String.join(",", edits); }
+  }
   private static final List<String> keys= List.of("path", "kind", "mains", "mounts", "attenuators");
   private static final String kinds= "\"idle\", \"code\", \"dataRead\" or \"dataEdit\"";
   private static final String mainShape= "a Fearless main name: a package name, a dot, then a type name, like \"hello.Hello1\"";
@@ -194,15 +198,16 @@ public final class Registry{
   }
   /// true when the check did a lookup
   public boolean nameCheck(Path folder){
-    var differs= reaches(folder) && !Names.marker(folder).equals(of(folder).orElseThrow().alias());
+    var differs= reaches(folder) && !Shapes.marker(folder).equals(of(folder).orElseThrow().alias());
     if (differs){ lookup(); }
     return differs;
   }
-  public boolean reaches(Path folder){ return !away.contains(folder) && corresponds(folder) && Names.reachable(folder); }
+  public boolean reaches(Path folder){ return reaches(folder, away); }
+  public static boolean reaches(Path folder, Set<Path> away){ return !away.contains(folder) && corresponds(folder) && Shapes.reachable(folder); }
   /// a folder whose marker cannot be written gets no name
   public void lookup(){ content = inferred(content, content, away, this::marked); }
   private Entry marked(Entry e){
-    if (e.alias().isEmpty() || !reaches(e.path()) || Names.marker(e.path()).equals(e.alias())){ return e; }
+    if (e.alias().isEmpty() || !reaches(e.path()) || Shapes.marker(e.path()).equals(e.alias())){ return e; }
     try{ Names.nameAs(e.path(), e.alias()); return e; }
     catch (UncheckedIOException _){ return new Entry("", e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()); }
   }
@@ -211,7 +216,7 @@ public final class Registry{
     var taken= new HashSet<String>();
     var res= new ArrayList<Entry>();
     for (var e : c.projects()){
-      var name= !away.contains(e.path()) && Names.reachable(e.path()) ? Names.infer(e.path(), taken) : known.projects().stream().filter(k -> same(k.path(), e.path())).map(Entry::alias).filter(n -> !taken.contains(n)).findFirst().orElse("");
+      var name= !away.contains(e.path()) && Shapes.reachable(e.path()) ? Shapes.infer(e.path(), taken) : known.projects().stream().filter(k -> same(k.path(), e.path())).map(Entry::alias).filter(n -> !taken.contains(n)).findFirst().orElse("");
       var named= mark.apply(new Entry(name, e.path(), e.kind(), e.mains(), e.mounts(), e.attenuators()));
       taken.add(named.alias());
       res.add(named);
@@ -229,7 +234,7 @@ public final class Registry{
     e.mounts().forEach((type, data) -> c.projects().stream().filter(t -> t.alias().equals(data) && granted(t.kind(), dataEdit.contains(type))).forEach(t -> mounts.put(type, t.path())));
     var locks= new LinkedHashMap<String,Path>();
     mounts.forEach((t, p) -> locks.put(t, lockFile.apply(p)));
-    return new Grants(Collections.unmodifiableMap(mounts), Collections.unmodifiableMap(locks));
+    return new Grants(Collections.unmodifiableMap(mounts), Collections.unmodifiableMap(locks), mounts.keySet().stream().filter(dataEdit::contains).toList());
   }
   private static boolean granted(Kind k, boolean editType){ return editType ? k == Kind.dataEdit : k.isData(); }
   public static String text(Content c){

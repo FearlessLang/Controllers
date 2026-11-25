@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 
-import controller.Project;
+import controller.Project.Busy;
 import controller.Project.Job;
 import userMessages.UserError;
 import userMessages.Violation;
@@ -61,15 +61,16 @@ The arguments are:
   public static String portClosed(String verb, int port, IOException e){ return "Refused request "+disp(verb)+": the manager was given the port "+port+", but no program of this machine accepts a connection there: "+fileFailure(e); }
 
   //-- requests the state of the project refuses
-  private static String running(String name, Job job){
-    return switch (job){
-      case Job.Compile _ -> "A compilation of project "+disp(name)+" is currently running.";
-      case Job.Main(var main) -> "Main "+disp(main)+" is currently running inside project "+disp(name)+".";
+  private static String running(String name, Busy busy){
+    var by= busy.project();
+    var job= switch (busy.job()){
+      case Job.Compile _ -> "A compilation of project "+disp(by)+" is currently running.";
+      case Job.Main(var main, var waits) -> waits.map(d -> "Main "+disp(main)+" of project "+disp(by)+" waits for the lock of data project "+disp(d)+".").orElse("Main "+disp(main)+" is currently running inside project "+disp(by)+".");
       case Job.Idle _ -> throw Bug.unreachable();
     };
+    return job+(by.equals(name) ? "" : "\nProject "+disp(by)+" has a mount of project "+disp(name)+".");
   }
-  public static String busy(String verb, String name, Job job){ return "Refused request "+disp(verb)+" on project "+disp(name)+".\n"+running(name, job); }
-  public static String inUse(String verb, String name, String user, Job job){ return refused(verb, name)+"\n"+running(user, job)+(user.equals(name) ? "" : "\nProject "+disp(user)+" has a mount of project "+disp(name)+"."); }
+  public static String busy(String verb, String name, Busy busy){ return refused(verb, name)+"\n"+running(name, busy); }
   public static String notCode(String verb, String name, String kind){ return refused(verb, name)+"\nThe kind of project "+disp(name)+" is "+disp(kind)+": only a project of kind \"code\" accepts request "+disp(verb)+"."; }
   public static String invalidContent(String verb, String name, String why){ return refused(verb, name)+"\nThe content of project "+disp(name)+" is invalid:\n"+why.stripTrailing(); }
   public static String notCompiled(String name, String state){ return refused("Run", name)+"\nThe state of project "+disp(name)+" is "+disp(state)+": only a project in state \"code: compiled\" runs a main."; }
@@ -80,9 +81,9 @@ The arguments are:
   public static String notAnAttenuator(String name, String main, String attenuator, List<String> attenuators){
     return refused("Run", name)+"\nMain "+disp(main)+" is attenuated by "+disp(attenuator)+", and "+disp(attenuator)+" is not an attenuator of project "+disp(name)+"."+Join.of(attenuators.stream().map(a -> "\n  "+a), "\nThe attenuators are:", "", "", "\nThe project has no attenuator.");
   }
-  public static String kindWhileBusy(String name, String kind, Job job){ return "Refused request to change the kind of project "+disp(name)+" to "+disp(kind)+".\n"+running(name, job); }
-  public static String removedWhileBusy(String name, Job job){ return "Refused request to remove project "+disp(name)+".\n"+running(name, job); }
-  public static String extensionWhileBusy(String name, String ext, Job job){ return "Refused request to remove "+disp(ext)+" from \"reserve\": a main of project "+disp(name)+" claims "+disp(ext)+".\n"+running(name, job); }
+  public static String kindWhileBusy(String name, String kind, Busy busy){ return "Refused request to change the kind of project "+disp(name)+" to "+disp(kind)+".\n"+running(name, busy); }
+  public static String removedWhileBusy(String name, Busy busy){ return "Refused request to remove project "+disp(name)+".\n"+running(name, busy); }
+  public static String extensionWhileBusy(String name, String ext, Busy busy){ return "Refused request to remove "+disp(ext)+" from \"reserve\": a main of project "+disp(name)+" claims "+disp(ext)+".\n"+running(name, busy); }
   public static String mountsRefused(String name, List<String> problems){
     return refused("Run", name)+"\nProject "+disp(name)+" runs only with a data project mounted on each DataRead type of the project, and with no broken mount:"+Join.of(problems.stream().map(p -> "\n  "+p.replace("\n", "\n  ")), "", "", "");
   }
@@ -93,7 +94,7 @@ The arguments are:
   public static String mountNotData(String data, String kind){ return "the kind of project "+disp(data)+" is "+disp(kind)+", and only a project of kind \"dataRead\" or \"dataEdit\" is a data project."; }
   public static String mountNotEditable(String data, String type){ return "the kind of project "+disp(data)+" is \"dataRead\", and "+disp(type)+" is a DataEdit type: only a project of kind \"dataEdit\" is mounted on a DataEdit type."; }
   public static String mountInvalid(String data, String why){ return "the content of project "+disp(data)+" is invalid:\n"+why.stripTrailing(); }
-  public static String grantsWhileRunning(String name, Job job){ return "Refused request to change the data projects mounted on the DataRead types of project "+disp(name)+".\n"+running(name, job)+"\nThe data projects of a main stay the same while the main runs."; }
+  public static String grantsWhileRunning(String name, Job job){ return "Refused request to change the data projects mounted on the DataRead types of project "+disp(name)+".\n"+running(name, new Busy(name, job))+"\nThe data projects of a main stay the same while the main runs."; }
 
   //-- registering a folder
   public static UserError symbolicLink(Path p){ return new UserError("This path is a symbolic link/junction/mount point, and Fearless does not follow symbolic links/junctions/mount points:\n"+path(p.toString())); }
@@ -105,7 +106,7 @@ The arguments are:
   public static String importNoFiles(String file){ return "The zip "+disp(file)+" holds no file."; }
   public static String importNoMarker(String file, String name){ return "The zip "+disp(file)+" has no "+disp(name+".fearless")+" at its top level: the zip of an app holds the marker of its project."; }
   public static String importSelectProject(){ return "Select a project first: a lib zip goes into the folder \"lib\" of the selected project."; }
-  public static String importBusy(Path target){ return "The import does not replace\n"+path(target.toString())+"\nwhile its project compiles or runs a main."; }
+  public static String importBusy(Path target){ return "The import does not replace\n"+path(target.toString())+"\nwhile its project is busy: compiling, running a main, waiting for the locks of its data projects to run a main, or mounted by a running main."; }
   public static String importReplace(Path target){ return path(target.toString())+"\nexists already. Replacing it deletes everything it holds."; }
   public static String importNotWritten(Path target, IOException e){ return "The import cannot write\n"+path(target.toString())+"\n"+fileFailure(e); }
   public static String storeNotOpened(String url, IOException e){ return "The store\n"+path(url)+"\ncannot be opened: "+fileFailure(e); }
@@ -136,10 +137,7 @@ never part of a project, and no project is inside it.
 
   //-- the content of a project folder
   public static String folderUnreadable(Path folder, IOException e){ return "The folder of this project cannot be read:\n"+path(folder.toString())+"\n"+fileFailure(e)+"\nGive Fearless access to it, or forget this project."; }
-  public static String unreachable(String name, Path folder){
-    var project= name.isEmpty() ? "The project" : "The project "+disp(name);
-    return project+" connects to the folder "+disp(folder.toString())+".\nThis folder is now unreachable.\n"+project+" has now been removed.";
-  }
+  public static String unreachable(Path folder){ return "The folder "+disp(folder.toString())+" of a registered project is unreachable."; }
   public static String markersMany(Path folder, String marker){ return "More than one .fearless marker file was found in\n"+path(folder.toString())+"\nA project folder holds exactly one, and its name is the project name: keep only \""+marker+"\"."; }
   public static UserError projectIconsMany(Path dir, List<Path> found){
     return new UserError("""
@@ -167,6 +165,7 @@ Replace that file with a PNG image, or remove it.
   }
   public static String outOfDate(){ return "The compilation cache of this project is out of date."; }
   public static String filesUpdated(String name, String main){ return "Some files inside the project "+disp(name)+" were updated while main "+disp(main)+" was running."; }
+  public static String dataInvalid(String data, String main){ return "The data project "+disp(data)+" became invalid while main "+disp(main)+" was running."; }
   public static String resetQuestion(){ return "Reset ends the manager and every main and compilation it runs, forgets every registered project and removes the file associations of every program of the Fearless family, this manager included.\nNothing in the project folders changes."; }
   public static String fixQuestion(String name, Path folder){
     var f= folder.getFileName().toString();
@@ -226,6 +225,7 @@ The Output lists every change. A change of Fix cannot be undone.""".formatted(di
   public static String infoMountBadName(String name, String label){ return "\""+name+"\" in "+label+" is not a valid project name."; }
   public static String infoAttenuatorsNotObject(){ return "\"attenuators\" must be an object {...} mapping a main name to a list of attenuator names."; }
   public static String infoAttenuatorsEmpty(String label){ return label+" names no attenuator: a main with no attenuator is left out of \"attenuators\"."; }
+  public static String metadataUnreachable(Path file, Path folder){ return refusedPath("EditMetadata", file)+"\nThe edit adds a project with the folder\n"+path(folder.toString())+"\nand the manager can not reach that folder."; }
   public static String metadataNoFile(Path file){ return refusedPath("EditMetadata", file)+"\nNo file is at that path."; }
   public static String metadataHeld(Path file, String held){ return refusedPath("EditMetadata", file)+"\n"+held; }
   public static String metadataNotUtf8(Path file){ return refusedPath("EditMetadata", file)+"\nThe bytes of the file do not form valid UTF-8 text."; }
@@ -234,7 +234,7 @@ The Output lists every change. A change of Fix cannot be undone.""".formatted(di
 
   //-- Eclipse
   public static String noEclipse(Path chosen){
-    return "Eclipse is not connected: no Eclipse folder, a folder holding the file \".eclipseproduct\", is found from\n"+path(chosen.toString())+"\nSelect the Eclipse folder, a file in it, a file in a folder of it, or a folder holding only the Eclipse folder.";
+    return "Eclipse is not connected: no Eclipse folder, a folder holding the file \".eclipseproduct\", is found from\n"+path(chosen.toString())+"\nSelect the Eclipse folder, a file in it, a file in a folder of it, the folder holding the Eclipse folder as Contents/Eclipse, or a folder holding only the Eclipse folder.";
   }
   public static String eclipseConnected(Path eclipse){ return "Eclipse is connected:\n"+path(eclipse.toString())+"\nRestart Eclipse if it is running: Eclipse loads the Fearless plugin when it starts.\nThen open the Fearless perspective: Window > Perspective > Open Perspective > Other... > Fearless."; }
   public static String eclipseNotConnected(Path chosen, String why){ return "Eclipse is not connected from\n"+path(chosen.toString())+"\n"+why; }
@@ -250,13 +250,11 @@ The Output lists every change. A change of Fix cannot be undone.""".formatted(di
     return new UserError("Main "+disp(main)+" cannot have a Shortcut: its name has no matching file name. A main with a Shortcut has a name that can be mapped to a file name like \"FooBar\" can be mapped to \"foo_bar\".");
   }
   public static UserError shortcutBadFileName(String main, String file){
-    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
+    return new UserError("Main "+disp(main)+" cannot have the shortcut file "+disp(file)+": a file name in a project is at most 200 characters long, and its part before the dot has at most 191 characters and is not \"con\", \"prn\", \"aux\", \"nul\", \"com1\"..\"com9\" or \"lpt1\"..\"lpt9\", reserved on Windows. Give this main another name.");
   }
   public static UserError shortcutsCollide(String main1, String main2, String file){
     return new UserError("Mains "+disp(main1)+" and "+disp(main2)+" cannot both have the shortcut file "+disp(file)+": a shortcut file is named by the name of its main and the extension of its Shortcut. Rename one of the two mains, or give one of their Shortcuts another extension.");
   }
-  public static final String releasing= "removes those extensions from the reserve of the manager, and deletes the compilation cache of every project with a main claiming one of those extensions";
-  public static String claimedBy(List<Project.Claimant> cs){ return Join.of(cs.stream().map(c -> disp(c.main())+" of project "+disp(c.alias())), " claimed by ", " and ", "", ""); }
 
   //-- what the window opens
   public static String nothingToOpen(Path path){ return "Nothing is opened: nothing exists at\n"+path(path.toString()); }
