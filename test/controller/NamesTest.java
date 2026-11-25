@@ -47,7 +47,7 @@ final class NamesTest{
     assertEquals("p2fast", Names.free(project, "2fast", Set.of()));
     assertEquals("pcon", Names.free(project, "con", Set.of()));
     assertEquals("com", Names.free(project, "Com", Set.of()));
-    assertEquals("_elvin", Names.free(project, "\u212Aelvin", Set.of()));
+    assertEquals("p_elvin", Names.free(project, "\u212Aelvin", Set.of()));
     assertEquals("_x", Names.free(project, "\u0130x", Set.of()));
     assertEquals("_rger", Names.free(project, "\u00c4rger", Set.of()));
   }
