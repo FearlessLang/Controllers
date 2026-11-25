@@ -35,7 +35,6 @@ final class Names{
   private static Stream<String> pkg(String folder){
     var name= folder.substring(1);
     if (name.equals("base") || name.equals("rank")){ return Stream.of("\""+folder+"\" is a reserved package name: \"base\" and \"rank\" belong to the standard library."); }
-    if (windows.contains(name)){ return Stream.of("\""+folder+"\" is not a valid package folder: \""+name+"\" is named like a Windows device, and Windows cannot hold it."); }
     return name.matches("[a-z][a-z0-9_]*") ? Stream.of() : Stream.of("\""+folder+"\" is not a valid package folder: after \"_\" a package name starts with a lowercase letter.");
   }
   private static Optional<String> segment(String s, boolean file){

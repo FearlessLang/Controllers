@@ -521,7 +521,7 @@ public final class Manager{
     l.released = false;
     var failed= ec != 0;
     if (ec == ChildMain.cacheCorrupted){
-      var why= Fs.readUtf8(f.resolve(Facts.outDir).resolve("_error.txt"));
+      var why= Fs.readUtf8(f.resolve(Facts.outDir).resolve("error.txt"));
       deleted(f);
       errorFile(f, why);
     }
@@ -543,13 +543,13 @@ public final class Manager{
     scan(f);
     ended(f);
   }
-  /// A failing step after Coordinator.compile: the corruption rule for a corrupted cache, else the error in _error.txt and in the Output.
+  /// A failing step after Coordinator.compile: the corruption rule for a corrupted cache, else the error in error.txt and in the Output.
   private void stepFailed(Path f, String why){
     output(f, why.stripTrailing()+"\n");
     if (UserError.cacheCorrupted(why)){ corrupted(f, why); return; }
     errorFile(f, why);
   }
-  /// _error.txt passes the error on to Eclipse: a folder where it cannot be written gets none
+  /// error.txt passes the error on to Eclipse: a folder where it cannot be written gets none
   private void errorFile(Path f, String why){
     try{ Coordinator.writeError(f, why); }
     catch (UncheckedIOException | UserError _){}

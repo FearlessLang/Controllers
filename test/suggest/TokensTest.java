@@ -14,7 +14,7 @@ final class TokensTest{
     same("DotName|.m OSquareArg|[ RCap|mut CSquare|]", tokens(".m[mut]"));
   }
   @Test void theKindsFrontendRejectsAreTokensToo(){
-    same("BadUppercaseId|con.Foo", tokens("con.Foo"));
+    same("UppercaseId|con.Foo", tokens("con.Foo"));
     same("UppercaseId|cons.Foo", tokens("cons.Foo"));
     same("BadSStrQuote|'a'", tokens("'a'"));
     same("LowercaseId|x BadUnopenedBlockCommentClose|*/", tokens("x */"));

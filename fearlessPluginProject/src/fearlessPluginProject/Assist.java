@@ -70,11 +70,11 @@ public final class Assist implements IContentAssistProcessorExtension{
     if (project == null || at.size() != 1){ return null; }
     var pkg= segments.get(at.getFirst()).substring(1);
     var out= ManagerLink.out(project.folder());
-    var unfinished= Files.exists(out.resolve("_unfinished.txt"));
+    var unfinished= Files.exists(out.resolve("unfinished.txt"));
     var text= viewer.getDocument().get();
     var head= file.getName().startsWith("_rank_") ? text : Cached.rankText(project.folder(), pkg);
     var read= ManagerLink.jsons(out).toList();
-    var types= Stream.concat(Stream.of(ManagerLink.baseCache.resolve("base.json")), read.stream()).flatMap(p -> types(p).stream()).toList();
+    var types= Stream.concat(Stream.of(ManagerLink.baseCache.resolve("_base.json")), read.stream()).flatMap(p -> types(p).stream()).toList();
     var api= new Api(types);
     var r= Resolver.of(api, pkg, Cached.packages(project.folder(), pkg), head, text);
     return new At(FearlessWatcher.alias(file.getProject()), out, api, r, unfinished, read);
@@ -92,8 +92,8 @@ public final class Assist implements IContentAssistProcessorExtension{
     catch (Broken e){ return new ICompletionProposal[]{ clean(FearlessWatcher.alias(file(viewer).getProject()), e.getMessage()) }; }
   }
   private static IFile file(ITextViewer viewer){ return ResourcesPlugin.getWorkspace().getRoot().getFile(FileBuffers.getTextFileBufferManager().getTextFileBuffer(viewer.getDocument()).getLocation()); }
-  /// _unfinished.txt was there before the files were read, or is there now, or a <pkg>.json that was read is gone
-  private static boolean forgiven(At a){ return a.unfinished() || Files.exists(a.out().resolve("_unfinished.txt")) || a.read().stream().anyMatch(p -> !Files.exists(p)); }
+  /// unfinished.txt was there before the files were read, or is there now, or a _<pkg>.json that was read is gone
+  private static boolean forgiven(At a){ return a.unfinished() || Files.exists(a.out().resolve("unfinished.txt")) || a.read().stream().anyMatch(p -> !Files.exists(p)); }
   private static ICompletionProposal[] proposals(At a, int offset, boolean documented){
     var s= a.r().suggest(offset);
     var typeProposals= s.types().stream().map(t -> typeProposal(t, s.from(), offset, doc(a, documented, t.name(), d -> d.type(simple(t.name()), t.args().size()))));
@@ -132,7 +132,7 @@ public final class Assist implements IContentAssistProcessorExtension{
   private static String pkg(String name){ return name.substring(0, name.indexOf('.')); }
   private static String simple(String name){ return name.substring(name.indexOf('.')+1); }
   private static Path txt(Path out, String pkg){
-    return pkg.equals("base") ? ManagerLink.baseCache.resolve("base.txt") : out.resolve(pkg+".txt");
+    return pkg.equals("base") ? ManagerLink.baseCache.resolve("_base.txt") : out.resolve("_"+pkg+".txt");
   }
   private static synchronized List<Type> types(Path json){
     var stamp= json.toFile().lastModified();

@@ -115,23 +115,23 @@ public class Child{
       if (folder.getFileName().toString().equals("nojvm")){ throw new UncheckedIOException(new IOException("Cannot run program \"java\": error=2, No such file or directory")); }
       var mains= infos.getOrDefault(folder.getFileName().toString(), "{}");
       var outDir= folder.resolve(Facts.outDir);
-      FakeCache.at(outDir.resolve("_unfinished.txt"), "", 0);
+      FakeCache.at(outDir.resolve("unfinished.txt"), "", 0);
       if (mains.equals("fail")){ Coordinator.writeError(folder, "broken source\n"); return jvm(out, "broken source", "1", "0"); }
-      Fs.ofV(() -> Files.deleteIfExists(outDir.resolve("_error.txt")));
+      Fs.ofV(() -> Files.deleteIfExists(outDir.resolve("error.txt")));
       var stamp= FakeCache.after(folder);
-      FakeCache.at(outDir.resolve(alias+".jar"), "", stamp);
+      FakeCache.at(outDir.resolve("_"+alias+".jar"), "", stamp);
       Pattern.compile("\\[\"([a-z][a-z0-9_]*\\.[A-Za-z0-9_]+)\", \"([^\"]*)\", \"([^\"]*)\", \"([^\"]*)\"").matcher(mains).results().map(r -> new MainsInfo.Claim(r.group(1), r.group(2), r.group(3), r.group(4), "", "")).distinct()
         .forEach(c -> image(Coordinator.iconFiles(folder, c).getFirst(), 64, 64, "png"));
       if (folder.getFileName().toString().equals("edited")){ touch(folder); }
       if (folder.getFileName().toString().equals("slowcompile")){ return jvm(out, "compiling", "1", "3000"); }
-      var previous= outDir.resolve(alias+".json");
+      var previous= outDir.resolve("_"+alias+".json");
       if (Files.exists(previous)){
         for (var r : Pattern.compile("\\\\\"\\\\\", \\\\\"((fapp|ffile)[0-9]{3})\\\\\"\\]").matcher(Fs.readUtf8(previous)).results().toList()){ mains = mains.replaceFirst("@@"+r.group(2), r.group(1)); }
       }
       var template= outDir.resolve("template.txt");
       Fs.writeUtf8(template, FakeCache.json(FakeCache.manifest(mains)));
       var asks= Pattern.compile("@@(fapp|ffile)").matcher(mains).results().map(r -> IntStream.range(0, 1000).mapToObj(n -> r.group(1)+String.format(Locale.ROOT, "%03d", n)).collect(Collectors.joining(","))).toList();
-      return ChildJvm.start(Stream.concat(Stream.of("-cp", classes+File.pathSeparator+PathClassLoader.jar(), "Child", folder.getFileName().toString().startsWith("slow") ? "slowtake" : "take", PathClassLoader.argOf(template), PathClassLoader.argOf(outDir.resolve(alias+".json"))), asks.stream()).toList(), out);
+      return ChildJvm.start(Stream.concat(Stream.of("-cp", classes+File.pathSeparator+PathClassLoader.jar(), "Child", folder.getFileName().toString().startsWith("slow") ? "slowtake" : "take", PathClassLoader.argOf(template), PathClassLoader.argOf(outDir.resolve("_"+alias+".json"))), asks.stream()).toList(), out);
     }
     @Override public ChildJvm run(Path folder, String main, Optional<Path> input, Registry.Grants grants, List<String> attenuators, Consumer<String> out){
       granted.add(grants);
@@ -604,7 +604,7 @@ ran hello.Hello
 """, view.out(hello));
     assertEquals(List.of(hello, hello), view.cleared);
     assertEquals(List.of("hello.Hello"), project(m, hello).entry().mains());
-    assertFalse(Files.exists(hello.resolve(Facts.outDir).resolve("_error.txt")));
+    assertFalse(Files.exists(hello.resolve(Facts.outDir).resolve("error.txt")));
   }
   @Test void aRunNeverCompiles(@RealTempDir Path dir){
     var m= manager(dir, "hello.Hello");
@@ -620,7 +620,7 @@ ran hello.Hello
     infos.put("hello", "fail");
     compiled(m, "hello");
     same("--- compiling hello ---\nbroken source\n--- compile failed with 1 ---\n", view.out(hello));
-    var error= hello.resolve(Facts.outDir).resolve("_error.txt");
+    var error= hello.resolve(Facts.outDir).resolve("error.txt");
     assertEquals("broken source\n", Fs.readUtf8(error));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
     assertEquals(Optional.empty(), project(m, hello).problem());
@@ -725,7 +725,7 @@ ran hello.Slow
     var hello= code(m, dir, "hello");
     Fs.writeUtf8(hello.resolve("other.fearless"), "");
     send(m, "Check", "hello");
-    var error= hello.resolve(Facts.outDir).resolve("_error.txt");
+    var error= hello.resolve(Facts.outDir).resolve("error.txt");
     same("More than one .fearless marker file was found in[###]keep only \"hello.fearless\".[###]", Fs.readUtf8(error));
     Fs.ofV(() -> Files.delete(error));
     send(m, "Check", "hello");
@@ -902,7 +902,7 @@ The projects are:
     Fs.writeUtf8(data.resolve("Bad Name.txt"), "");
     send(m, "Check", "data");
     assertEquals("The project \"data\" is valid.\n", view.out(data));
-    var checkError= data.resolve(Facts.outDir).resolve("_error.txt");
+    var checkError= data.resolve(Facts.outDir).resolve("error.txt");
     assertFalse(Files.exists(checkError));
     assertEquals(Project.State.idle, project(m, data).state());
     send(m, "Kind", "data", "dataRead");
@@ -1220,7 +1220,7 @@ Tools read such a name in different encodings, so the same entry may get a diffe
     assertEquals(List.of("other "+other), listed(m));
     assertEquals(Kind.code, project(m, other).kind());
     assertFalse(Files.exists(other.resolve(Facts.outDir).resolve("other.built")));
-    assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
+    assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("_hello.json")));
   }
   @Test void anEditChangingThePathOfAProjectWithARunningMainIsRefused(@RealTempDir Path dir){
     var m= manager(dir, "hello.Slow");
@@ -1450,7 +1450,7 @@ Refused request "Register" on path
 [###]closed
 The folder cannot be read or changed: access denied: [###]closed[###]""", view.refused.get(0));
     same("[###]readOnly\nThe folder cannot be read or changed: access denied: [###]readOnly[###]", view.refused.get(1));
-    same("[###]data\nThe folder cannot be read or changed: access denied: [###]_unfinished.txt[###]", view.refused.get(2));
+    same("[###]data\nThe folder cannot be read or changed: access denied: [###]unfinished.txt[###]", view.refused.get(2));
     same("Eclipse is not connected from\n[###]closed\naccess denied: [###]closed", view.refused.get(3));
     assertEquals(List.of("partly "+partly), listed(m));
     same("""
@@ -1467,7 +1467,7 @@ Give Fearless access to it, or forget this project.""", project(m, partly).probl
     Fs.writeUtf8(cache.resolve("a.built"), "");
     Disk.noWrite(cache);
     send(again, "DeleteCache", "data");
-    same("--- the compilation cache is not deleted: access denied: [###]_unfinished.txt\n---\n", view.out(cached));
+    same("--- the compilation cache is not deleted: access denied: [###]unfinished.txt\n---\n", view.out(cached));
     List.of(closed, readOnly, cache, hidden).forEach(Disk::allow);
   }
   @Test void aManagerFolderThatCanNotBeWrittenIsFatalForEveryChangeAndARefusalWritesNothing(@RealTempDir Path dir){
@@ -1891,8 +1891,8 @@ The desktop opens those files with other programs:
   private static Map<String,List<String>> claimed(Manager m){
     return Project.claimed(m.state().projects()).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream().map(c -> c.label()+(c.shortcut() ? " shortcut " : " openWith ")+c.claim().icon()).toList()));
   }
-  private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve(project.getFileName()+".json"); }
-  private static String compileError(Path project){ return Fs.readUtf8(project.resolve(Facts.outDir).resolve("_error.txt")); }
+  private static Path mainsInfo(Path project){ return project.resolve(Facts.outDir).resolve("_"+project.getFileName()+".json"); }
+  private static String compileError(Path project){ return Fs.readUtf8(project.resolve(Facts.outDir).resolve("error.txt")); }
   private static void touch(Path project){
     var src= project.resolve("_"+project.getFileName()).resolve("_rank_app.fear");
     Fs.ofV(() -> Files.setLastModifiedTime(src, FileTime.fromMillis(FakeCache.after(project))));
@@ -2031,7 +2031,7 @@ ran hello.Slow
 Some files inside the project "hello" were updated while main "hello.Slow" was running.
 """, view.out(hello));
     assertEquals(shown+1, view.shown);
-    assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
+    assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("_hello.json")));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
   @Test void aSecondMarkerWrittenWhileAMainRunsTerminatesTheMain(@RealTempDir Path dir){
@@ -2049,7 +2049,7 @@ ran hello.Slow
 --- hello.Slow was terminated after [###]s ---
 Some files inside the project "hello" were updated while main "hello.Slow" was running.
 """, view.out(hello));
-    assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("hello.json")));
+    assertTrue(Files.exists(hello.resolve(Facts.outDir).resolve("_hello.json")));
     assertEquals(Project.State.codeInvalid, project(m, hello).state());
   }
   @Test void theDesktopOpensEachCapturedExtensionWithItsIconOrTheConflictIcon(@RealTempDir Path dir){
@@ -2289,7 +2289,7 @@ Some files inside the project "hello" were updated while main "hello.Slow" was r
     Disk.allow(hello);
     var notWritten= "--- hello.fapp010 is not written: access denied: "+hello.resolve("hello.fapp010")+"\n---\n";
     assertEquals("--- compiling hello ---\ncompiled\n"+notWritten+"--- compile failed ---\n", view.out(hello));
-    assertEquals(notWritten, Fs.readUtf8(hello.resolve(Facts.outDir).resolve("_error.txt")));
+    assertEquals(notWritten, Fs.readUtf8(hello.resolve(Facts.outDir).resolve("error.txt")));
     assertEquals(List.of(".fapp010 hello/.fearless_out/icons/_base/icons/conflict.png"), wanted(dir));
     assertEquals(Project.State.codeOutdated, project(m, hello).state());
   }
