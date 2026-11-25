@@ -62,13 +62,13 @@ public final class ManagerLink{
   }
   static Stream<Path> jsons(Path out){
     if (!Files.isDirectory(out)){ return Stream.of(); }
-    try (var files= Files.list(out)){ return files.filter(p -> p.getFileName().toString().endsWith(".json") && !p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
+    try (var files= Files.list(out)){ return files.filter(p -> p.getFileName().toString().endsWith(".json") && p.getFileName().toString().startsWith("_")).sorted().toList().stream(); }
     catch (NoSuchFileException e){ return Stream.of(); }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
-  /// the error of _error.txt, while _error.txt is not a stale error file (see EclipseDesign)
+  /// the error of error.txt, while error.txt is not a stale error file (see EclipseDesign)
   static Optional<String> error(Path folder){
-    var file= out(folder).resolve("_error.txt");
+    var file= out(folder).resolve("error.txt");
     var time= stamp(file);
     if (time.isEmpty() || stale(folder, time.get())){ return Optional.empty(); }
     return present(file).map(Map.Entry::getValue);

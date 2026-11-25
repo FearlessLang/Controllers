@@ -45,10 +45,10 @@ final class FactsTest{
     Fs.walkV(folder, s -> s.filter(Files::isRegularFile).forEach(f -> Fs.ofV(() -> Files.setLastModifiedTime(f, old))));
   }
   private static void at(Path file, String content, long stamp){ FakeCache.at(file, content, stamp); }
-  /// The real Coordinator.check, over a base cache holding a base.json with no type.
+  /// The real Coordinator.check, over a base cache holding a _base.json with no type.
   static Facts facts(Path project, String alias, Kind kind){
     var base= project.getParent().resolve("baseCache");
-    FakeCache.at(base.resolve("base.json"), FakeCache.json(FakeCache.manifest("{}")), 0);
+    FakeCache.at(base.resolve("_base.json"), FakeCache.json(FakeCache.manifest("{}")), 0);
     var c= new Coordinator(){ @Override public Optional<Path> baseCachePath(){ return Optional.of(base); } };
     return Facts.of(project, alias, kind, c::check, java.time.Instant.MAX).orElseThrow();
   }
@@ -82,7 +82,7 @@ final class FactsTest{
   }
   @Test void anOutFolderHoldingNoPackageIsOutOfDate(@RealTempDir Path dir){
     var project= project(dir, "someProject");
-    Fs.writeUtf8(project.resolve(Facts.outDir).resolve("_error.txt"), "broken");
+    Fs.writeUtf8(project.resolve(Facts.outDir).resolve("error.txt"), "broken");
     var facts= facts(project, "someproject", Kind.code);
     assertEquals(Optional.of("The compilation cache of this project is out of date."), facts.stale());
   }

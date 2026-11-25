@@ -29,7 +29,7 @@ import org.osgi.framework.FrameworkUtil;
 
 
 /// Started with the workbench, and every two seconds, mirrors the registered projects of the
-/// manager into the workspace and reflects their files: the error of _error.txt into the
+/// manager into the workspace and reflects their files: the error of error.txt into the
 /// Problems view, and the unit test log the running main writes into the JUnit view.
 /// A mirrored project lives in the workspace's own folder and reaches the real project folder
 /// only through a linked folder, so Eclipse never writes into that folder. The linked folder

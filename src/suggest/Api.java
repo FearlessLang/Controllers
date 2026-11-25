@@ -65,7 +65,7 @@ public final class Api{
   List<Ty> types(String pkg){
     return types.values().stream().filter(t -> t.name.startsWith(pkg+".") && !t.name.startsWith(pkg+"._")).map(t -> new Ty(t.name, t.bs.stream().map(b -> new Ty(b, List.of())).toList())).toList();
   }
-  /// The <pkg>.json the compiler writes, {"inputsSnapshot":"..",\n"manifest":"..",\n"types":[..]}\n
+  /// The _<pkg>.json the compiler writes, {"inputsSnapshot":"..",\n"manifest":"..",\n"types":[..]}\n
   /// (coordinator.OutputHelper), with a type [name, rc, [[X, rcs..]..], [[C, ts..]..], methods, self], a method
   /// [name, rc, [[X, rcs..]..], [ts..], ret, origin, origin arity, abs|concrete] and a type
   /// [x, [rc,] X] or [c, rc, C, ts..]; a malformed text is an error

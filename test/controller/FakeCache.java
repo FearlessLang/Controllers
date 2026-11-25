@@ -12,7 +12,7 @@ import coordinator.MainsInfo;
 import tools.Fs;
 
 /// A compilation cache in the layout of CoordinatorDesign, written by the tests, and the check of it the tests use in place of Coordinator.check:
-/// compiled when every <pkg>.jar is not older than every file of a package of the project and no _unfinished.txt is there.
+/// compiled when every _<pkg>.jar is not older than every file of a package of the project and no unfinished.txt is there.
 final class FakeCache{
   static String manifest(String mains){ return "{\n  \"mains\": "+mains.strip()+",\n  \"attenuators\": [],\n  \"dataRead\": [],\n  \"dataEdit\": []\n}\n"; }
   static String json(String manifest){ return "{\"inputsSnapshot\":\"\",\n\"manifest\":"+q(manifest)+",\n\"types\":[]}\n"; }
@@ -20,8 +20,8 @@ final class FakeCache{
   static void write(Path project, String pkg, long stamp){ write(project, pkg, stamp, "{}"); }
   static void write(Path project, String pkg, long stamp, String mains){
     var out= project.resolve(Coordinator.outDir);
-    at(out.resolve(pkg+".json"), json(manifest(mains)), stamp);
-    at(out.resolve(pkg+".jar"), "", stamp);
+    at(out.resolve("_"+pkg+".json"), json(manifest(mains)), stamp);
+    at(out.resolve("_"+pkg+".jar"), "", stamp);
   }
   static void at(Path file, String content, long stamp){
     Fs.writeUtf8(file, content);
@@ -30,7 +30,7 @@ final class FakeCache{
   static long after(Path project){ return Fs.walk(project, s -> s.filter(Files::isRegularFile).mapToLong(Fs::lastModified).max().orElse(0))+1; }
   static Coordinator.State check(Path project, Function<Path,Optional<MainsInfo>> read){
     var out= project.resolve(Coordinator.outDir);
-    if (!Fs.isDirectory(out) || Fs.exists(out.resolve("_unfinished.txt"))){ return new Coordinator.State.OutOfDate(); }
+    if (!Fs.isDirectory(out) || Fs.exists(out.resolve("unfinished.txt"))){ return new Coordinator.State.OutOfDate(); }
     var jars= Fs.walk(out, s -> s.filter(p -> p.getFileName().toString().endsWith(".jar")).mapToLong(Fs::lastModified).toArray());
     if (jars.length == 0){ return new Coordinator.State.OutOfDate(); }
     var oldest= java.util.Arrays.stream(jars).min().getAsLong();

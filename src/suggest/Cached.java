@@ -43,7 +43,7 @@ public final class Cached{
     try{ pkgs= packages(folder); }
     catch (Invalid e){ return State.invalid; }
     var out= folder.resolve(".fearless_out");
-    if (Files.exists(out.resolve("_unfinished.txt")) || others(out, pkgs)){ return State.outOfDate; }
+    if (Files.exists(out.resolve("unfinished.txt")) || others(out, pkgs)){ return State.outOfDate; }
     var maps= maps(pkgs);
     return pkgs.stream().allMatch(p -> upToDate(p, pkgs, maps, out, baseCache)) ? State.compiled : State.outOfDate;
   }
@@ -59,22 +59,22 @@ public final class Cached{
   }
   private static boolean others(Path out, List<Pkg> pkgs){
     if (!Files.isDirectory(out)){ return false; }
-    var kept= Stream.concat(Stream.of("_error.txt", "_unfinished.txt", "_compile_start.txt", "icons"), pkgs.stream().flatMap(p -> Stream.of(".json", ".jar", ".html", ".txt").map(x -> p.name()+x))).toList();
+    var kept= Stream.concat(Stream.of("error.txt", "unfinished.txt", "compile_start.txt", "icons"), pkgs.stream().flatMap(p -> Stream.of(".json", ".jar", ".html", ".txt").map(x -> "_"+p.name()+x))).toList();
     try (var s= Files.list(out)){ return s.anyMatch(f -> !f.getFileName().toString().startsWith(".") && !kept.contains(f.getFileName().toString())); }
     catch (NoSuchFileException e){ return false; }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static boolean upToDate(Pkg p, List<Pkg> pkgs, Map<String,Map<String,String>> maps, Path out, Path baseCache){
-    var json= out.resolve(p.name()+".json");
-    var jar= stamp(out.resolve(p.name()+".jar"));
+    var json= out.resolve("_"+p.name()+".json");
+    var jar= stamp(out.resolve("_"+p.name()+".jar"));
     if (!Files.exists(json) || jar < 0){ return false; }
-    try{ return Api.parse(Files.readString(json)).inputsSnapshot().equals(snapshot(p, pkgs, maps, out, baseCache)) && stamp(out.resolve("_compile_start.txt")) >= p.files().stream().mapToLong(Ref::stamp).max().getAsLong(); }
+    try{ return Api.parse(Files.readString(json)).inputsSnapshot().equals(snapshot(p, pkgs, maps, out, baseCache)) && stamp(out.resolve("compile_start.txt")) >= p.files().stream().mapToLong(Ref::stamp).max().getAsLong(); }
     catch (IllegalArgumentException|NoSuchFileException e){ return false; }
     catch (IOException e){ throw new UncheckedIOException(e); }
   }
   private static String snapshot(Pkg p, List<Pkg> pkgs, Map<String,Map<String,String>> maps, Path out, Path baseCache){
     var paths= p.files().stream().map(Ref::fearPath).sorted().toList();
-    var lower= Stream.concat(Stream.of("base "+stamp(baseCache.resolve("base.jar"))), pkgs.stream().filter(q -> q.rank() < p.rank()).map(q -> q.name()+" "+stamp(out.resolve(q.name()+".jar")))).sorted().toList();
+    var lower= Stream.concat(Stream.of("base "+stamp(baseCache.resolve("_base.jar"))), pkgs.stream().filter(q -> q.rank() < p.rank()).map(q -> q.name()+" "+stamp(out.resolve("_"+q.name()+".jar")))).sorted().toList();
     var directives= maps.getOrDefault(p.name(), Map.of()).entrySet().stream().map(e -> e.getKey()+" "+e.getValue()).sorted().toList();
     return String.join("\n", paths)+"\n---\n"+String.join("\n", lower)+"\n---\n"+String.join("\n", directives);
   }

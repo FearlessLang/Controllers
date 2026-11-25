@@ -279,7 +279,7 @@ public final class Window implements Manager.View{
     manager.add(item("Add folder...", () -> choose("Add a Fearless project folder", p -> Main.command("Register "+TaggedText.base16(p)))));
     manager.add(item("Edit project metadata...", this::editMetadata));
     manager.add(item("Connect Eclipse...", () -> choose("Select Eclipse: its folder, a file in it, or the folder it was unzipped into", p -> Main.command("ConnectEclipse "+TaggedText.base16(p)))));
-    manager.add(item("Base documentation", () -> open(this::say, Deployed.stdLib("baseCache").resolve("base.html"))));
+    manager.add(item("Base documentation", () -> open(this::say, Deployed.stdLib("baseCache").resolve("_base.html"))));
     manager.add(item("Info", () -> Thread.startVirtualThread(this::info)));
     manager.addSeparator();
     manager.add(item("Reset", this::reset));

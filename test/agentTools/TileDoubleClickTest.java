@@ -256,7 +256,7 @@ final class TileDoubleClickTest extends ManagerTest{
     var button= region;
     same(before, button);
     stabilize();
-    assertFalse(Files.exists(tapped.resolve(".fearless_out").resolve("tapped.json")));
+    assertFalse(Files.exists(tapped.resolve(".fearless_out").resolve("_tapped.json")));
     compile.go();
     compiled.go();
     var compiledLook= look();

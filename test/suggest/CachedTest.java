@@ -19,7 +19,7 @@ import coordinator.Coordinator;
 import suggest.Cached.State;
 import tools.Fs;
 
-/// Cached.state against Coordinator.check, over a base cache holding a base.json with no type and a base.jar of time 1000.
+/// Cached.state against Coordinator.check, over a base cache holding a _base.json with no type and a _base.jar of time 1000.
 final class CachedTest{
   static final long old= System.currentTimeMillis()-3_600_000;
   static String q(String s){ return "\""+s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")+"\""; }
@@ -30,8 +30,8 @@ final class CachedTest{
   }
   static Path base(Path dir){
     var base= dir.resolve("baseCache");
-    at(base.resolve("base.json"), json(""), 1000);
-    at(base.resolve("base.jar"), "", 1000);
+    at(base.resolve("_base.json"), json(""), 1000);
+    at(base.resolve("_base.jar"), "", 1000);
     return base;
   }
   /// the package lib of rank core, and the package app of rank app, with a map directive of app overriding the one of lib
@@ -45,11 +45,11 @@ final class CachedTest{
   }
   static void compiled(Path project){
     var out= project.resolve(".fearless_out");
-    at(out.resolve("_compile_start.txt"), "", old+500);
-    at(out.resolve("lib.json"), json("fear:/_lib/_rank_core.fear\n---\nbase 1000\n---\n"), old+1000);
-    at(out.resolve("lib.jar"), "", old+1000);
-    at(out.resolve("app.json"), json("fear:/_app/_rank_app.fear\nfear:/_app/a.fear\n---\nbase 1000\nlib "+(old+1000)+"\n---\ny lib"), old+2000);
-    at(out.resolve("app.jar"), "", old+2000);
+    at(out.resolve("compile_start.txt"), "", old+500);
+    at(out.resolve("_lib.json"), json("fear:/_lib/_rank_core.fear\n---\nbase 1000\n---\n"), old+1000);
+    at(out.resolve("_lib.jar"), "", old+1000);
+    at(out.resolve("_app.json"), json("fear:/_app/_rank_app.fear\nfear:/_app/a.fear\n---\nbase 1000\nlib "+(old+1000)+"\n---\ny lib"), old+2000);
+    at(out.resolve("_app.jar"), "", old+2000);
   }
   static void same(State expected, Path project, Path base){
     var c= new Coordinator(){ @Override public Optional<Path> baseCachePath(){ return Optional.of(base); } };
@@ -81,7 +81,7 @@ final class CachedTest{
   @Test void anUnfinishedFileMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
-    at(project.resolve(".fearless_out").resolve("_unfinished.txt"), "", old);
+    at(project.resolve(".fearless_out").resolve("unfinished.txt"), "", old);
     same(State.outOfDate, project, base(dir));
   }
   @Test void anOtherFileMakesTheProjectOutOfDate(@RealTempDir Path dir){
@@ -93,9 +93,9 @@ final class CachedTest{
   @Test void theErrorFileAndTheIconsAreNoOtherFiles(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
-    at(project.resolve(".fearless_out").resolve("_error.txt"), "broken", old);
+    at(project.resolve(".fearless_out").resolve("error.txt"), "broken", old);
     at(project.resolve(".fearless_out").resolve("icons").resolve("a.png"), "", old);
-    at(project.resolve(".fearless_out").resolve("app.html"), "", old);
+    at(project.resolve(".fearless_out").resolve("_app.html"), "", old);
     at(project.resolve(".fearless_out").resolve(".app.html.swp"), "", old);
     same(State.compiled, project, base(dir));
   }
@@ -108,7 +108,7 @@ final class CachedTest{
   @Test void aLowerJarWithAnotherTimeMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
-    Fs.ofV(() -> Files.setLastModifiedTime(project.resolve(".fearless_out").resolve("lib.jar"), FileTime.fromMillis(old+1500)));
+    Fs.ofV(() -> Files.setLastModifiedTime(project.resolve(".fearless_out").resolve("_lib.jar"), FileTime.fromMillis(old+1500)));
     same(State.outOfDate, project, base(dir));
   }
   @Test void aRemovedPackageMakesTheProjectOutOfDate(@RealTempDir Path dir){
@@ -121,7 +121,7 @@ final class CachedTest{
   @Test void aMalformedJsonMakesTheProjectOutOfDate(@RealTempDir Path dir){
     var project= project(dir);
     compiled(project);
-    at(project.resolve(".fearless_out").resolve("app.json"), "{", old+2000);
+    at(project.resolve(".fearless_out").resolve("_app.json"), "{", old+2000);
     assertEquals(State.outOfDate, Cached.state(project, base(dir)));
   }
   @Test void aFearFileOutsideOfAPackageIsInvalid(@RealTempDir Path dir){
@@ -151,9 +151,9 @@ final class CachedTest{
     Fs.ofV(() -> Files.write(file, bytes.toByteArray()));
     Fs.ofV(() -> Files.setLastModifiedTime(file, FileTime.fromMillis(old)));
     var out= project.resolve(".fearless_out");
-    at(out.resolve("_compile_start.txt"), "", old+500);
-    at(out.resolve("zp.json"), json("fear:/extra/_zp/_rank_core.fear\n---\nbase 1000\n---\n"), old+1000);
-    at(out.resolve("zp.jar"), "", old+1000);
+    at(out.resolve("compile_start.txt"), "", old+500);
+    at(out.resolve("_zp.json"), json("fear:/extra/_zp/_rank_core.fear\n---\nbase 1000\n---\n"), old+1000);
+    at(out.resolve("_zp.jar"), "", old+1000);
     same(State.compiled, project, base(dir));
   }
   @Test void theRankFileOfAPackageIsFoundUnderAnyFolderOfThePackage(@RealTempDir Path dir){

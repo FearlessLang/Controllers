@@ -37,7 +37,7 @@
     "types": {
       "patterns": [
         {
-          "match": "(?:(?!(?:con|prn|aux|nul)(?![a-z0-9_])|(?:com|lpt)[1-9](?![a-z0-9_]))[a-z][a-z0-9_]*\\.)?_*[A-Z][A-Za-z0-9_]*'*",
+          "match": "(?:[a-z][a-z0-9_]*\\.)?_*[A-Z][A-Za-z0-9_]*'*",
           "name": "entity.name.type.fearless"
         }
       ]

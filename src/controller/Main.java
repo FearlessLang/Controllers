@@ -116,7 +116,7 @@ public final class Main implements Manager.Exit{
   }
   private static final String typeNames= "typeName1..typeNamen";
   private static final Pattern projectName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$)[a-z_][a-z0-9_]{0,190}");
-  private static final Pattern typeName= Pattern.compile("(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])[.])[a-z][a-z0-9_]*[.]_*[A-Z][A-Za-z0-9_]*'*");
+  private static final Pattern typeName= Pattern.compile("[a-z][a-z0-9_]*[.]_*[A-Z][A-Za-z0-9_]*'*");
   /// The message of a call: the verb, then the arguments of the verb and the port, one per line.
   private static String call(String call){
     var words= List.of(call.split(" ", -1));

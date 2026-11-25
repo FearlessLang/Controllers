@@ -127,7 +127,6 @@ final class ManagerFolderTest{
     assertEquals(invalid("FearlessCommandShow Hello", "\"Hello\" is not "+Report.callProjectName+"."), message("FearlessCommandShow Hello"));
     assertEquals(invalid("FearlessCommandShow con", "\"con\" is not "+Report.callProjectName+"."), message("FearlessCommandShow con"));
     assertEquals(invalid("FearlessCommandMount hello Pub data", "\"Pub\" is not "+Report.callTypeName+"."), message("FearlessCommandMount hello Pub data"));
-    assertEquals(invalid("FearlessCommandMount hello prn.Pub data", "\"prn.Pub\" is not "+Report.callTypeName+"."), message("FearlessCommandMount hello prn.Pub data"));
     assertEquals(invalid("FearlessCommandCompile hello Port:0", "\"Port:0\" is not "+Report.callPort+"."), message("FearlessCommandCompile hello Port:0"));
     assertEquals(invalid("FearlessCommandKind hello code Port:65536", "\"Port:65536\" is not "+Report.callPort+"."), message("FearlessCommandKind hello code Port:65536"));
     assertEquals(invalid("FearlessCommandSelectMains hello hello.A hello.B hello.A", "the mains of \"FearlessCommandSelectMains\" are all different, and \"hello.A\" is named twice."), message("FearlessCommandSelectMains hello hello.A hello.B hello.A"));
